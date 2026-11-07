@@ -133,5 +133,6 @@ HUD_CMD_EVADE,Evade,閃開
 HUD_CMD_GUARD,Hold,守住
 HUD_SHEILA_DOWN,Sheila is down — {0}s to pull her up,席菈倒下——{0} 秒內拉起
 HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒下——戰鬥結束後會起來
+CONVOY_START,"The Undertaker blocks South Street. Get the cart through the arch to the crossing.",送葬者擋在南街。護著車隊穿過石拱，送到路口。
 CONVOY_THROUGH,The cart is through the crossing. Sheila's burning blade brings the Undertaker down.,車隊通過了路口。席菈的薪火劍把送葬者斬倒。
 HUD_STRUGGLE,Mash {key} to break free ({n}),連按 {key} 掙脫（{n}）

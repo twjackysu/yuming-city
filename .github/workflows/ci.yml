@@ -47,11 +47,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
           scripts/screenshot.sh build/title.png 30
-          scripts/screenshot.sh build/sandbox.png 120 --level=sandbox --perf || true
-          scripts/screenshot.sh build/dialogue.png 150 --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
-          scripts/screenshot.sh build/bell.png 120 --level=sandbox --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
+          scripts/screenshot.sh build/town.png 120 --level=frostbridge --perf || true
+          scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
+          scripts/screenshot.sh build/bell.png 120 --level=frostbridge --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
           scripts/screenshot.sh build/combat.png 14 --level=sandbox --boss --insight --locale=zh_TW || true
-          scripts/screenshot.sh build/ninebreath.png 24 --level=sandbox --arch=restored --locale=zh_TW || true
+          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --arch=restored --locale=zh_TW || true
 
       - name: 打包
         run: |
@@ -69,7 +69,7 @@ jobs:
           path: |
             build/*.zip
             build/title.png
-            build/sandbox.png
+            build/town.png
             build/dialogue.png
             build/bell.png
             build/combat.png
@@ -84,7 +84,7 @@ jobs:
         run: |
           FILES=(build/*.zip)
           [[ -s build/title.png ]] && FILES+=(build/title.png)
-          [[ -s build/sandbox.png ]] && FILES+=(build/sandbox.png)
+          [[ -s build/town.png ]] && FILES+=(build/town.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
           [[ -s build/bell.png ]] && FILES+=(build/bell.png)
           [[ -s build/combat.png ]] && FILES+=(build/combat.png)

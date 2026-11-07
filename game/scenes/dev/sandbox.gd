@@ -1,24 +1,13 @@
-extends Node3D
-## 開發用沙盒：冬夜小廣場，用來測移動、鏡頭、光霧（docs/design/03-art-audio-direction.md）。
-## 環境在程式裡生成，之後霜橋鎮白盒會沿用同一套 FrostbridgeLook 設定。
+extends StoryLevel
+## 開發用沙盒：一條直街，用來測移動、鏡頭、光霧、戰鬥（docs/design/03-art-audio-direction.md）。
+## 正式關卡是霜橋鎮（scenes/levels/frostbridge.gd）；劇情邏輯兩邊共用 StoryLevel，環境共用 FrostbridgeLook。
+## 沙盒保留一個方塊一個 CSG 的寫法（方便改），霜橋鎮用 StaticBatch 合併。
 
-const STONE: Color = Color(0.26, 0.28, 0.32)
-const WALL: Color = Color(0.18, 0.19, 0.22)
-const ROOF: Color = Color(0.11, 0.11, 0.13)
-const SNOW: Color = Color(0.66, 0.71, 0.78)
-const LAMP: Color = Color(0.95, 0.72, 0.42)
-const MOON: Color = Color(0.55, 0.65, 0.85)
-
-var _rng := RandomNumberGenerator.new()
-## 北街（鐘樓附近）的房子；敲完九下後沉陷
-var _north_houses: Array[Node3D] = []
-var _north_collapsed: bool = false
-var _bell: Node3D
-var _bell_light: OmniLight3D
-## 南街石拱（九息可保存物）
-var arch_site: NineBreathSite
-## 送葬者戰（鐵架拋擲、車隊抵達）；沒有 --boss 時是 null
-var encounter: ConvoyEncounter
+const STONE: Color = FrostbridgeLook.STONE
+const WALL: Color = FrostbridgeLook.WALL
+const ROOF: Color = FrostbridgeLook.ROOF
+const SNOW: Color = FrostbridgeLook.SNOW
+const LAMP: Color = FrostbridgeLook.LAMP
 
 
 func _ready() -> void:
@@ -66,11 +55,7 @@ func _ready() -> void:
 	# 截圖用：`--lock` 一開始就鎖定最近的敵人
 	if dev_args.has("lock"):
 		($Player as PlayerController).toggle_lock.call_deferred()
-	add_child(CutsceneView.new())
-	Game.cutscene_started.connect(_on_cutscene_started)
-	Game.cutscene_ended.connect(_on_cutscene_ended)
-	if Game.session.state.get_flag("slice.north_street_collapsed", false):
-		collapse_north_street(false)
+	_init_story()
 	var spawn: Marker3D = $Spawn
 	var player: Node3D = $Player
 	player.global_transform = spawn.global_transform
@@ -90,41 +75,7 @@ func _ready() -> void:
 
 
 func _build_environment() -> void:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.03, 0.04, 0.07)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.3, 0.38, 0.55)
-	env.ambient_light_energy = 0.45
-	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.1
-	env.glow_enabled = true
-	env.glow_intensity = 0.7
-	env.glow_bloom = 0.08
-	env.glow_hdr_threshold = 1.2
-	env.ssao_enabled = true
-	env.ssao_intensity = 1.6
-	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.03
-	env.volumetric_fog_albedo = Color(0.62, 0.68, 0.8)
-	env.volumetric_fog_emission = Color(0.045, 0.06, 0.1)
-	env.volumetric_fog_anisotropy = 0.5
-	env.volumetric_fog_length = 80.0
-	env.adjustment_enabled = true
-	env.adjustment_saturation = 0.85
-	env.adjustment_contrast = 1.08
-	var we := WorldEnvironment.new()
-	we.environment = env
-	add_child(we)
-
-	var moon := DirectionalLight3D.new()
-	moon.light_color = MOON
-	moon.light_energy = 0.6
-	moon.light_volumetric_fog_energy = 1.5
-	moon.shadow_enabled = true
-	moon.directional_shadow_max_distance = 60.0
-	moon.rotation_degrees = Vector3(-38.0, 35.0, 0.0)
-	add_child(moon)
+	FrostbridgeLook.build_environment(self)
 
 
 func _mat(color: Color, roughness: float = 0.9) -> StandardMaterial3D:
@@ -261,36 +212,6 @@ func _build_bell_tower(pos: Vector3) -> void:
 	add_child(glow)
 
 
-## 送葬者戰：送葬者（＋席菈）（＋傷者車隊：從廣場穿過南街石拱往鐘樓）＋ConvoyEncounter。測試也用這個。
-func spawn_convoy_fight(with_caravan: bool, with_sheila: bool = true, boss_pos: Vector3 = Vector3(0.0, 0.0, -6.0)) -> ConvoyEncounter:
-	var boss := Undertaker.new()
-	boss.name = "Undertaker"
-	boss.position = boss_pos
-	add_child(boss)
-	if with_sheila and not has_node("Sheila"):
-		var ally := Sheila.new()
-		ally.name = "Sheila"
-		ally.position = Vector3(-1.4, 0.0, 3.2)
-		add_child(ally)
-	var caravan: Caravan = null
-	if with_caravan:
-		caravan = Caravan.new()
-		caravan.name = "Caravan"
-		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
-		add_child(caravan)
-	encounter = ConvoyEncounter.new().setup(boss, caravan, arch_site)
-	encounter.name = "ConvoyEncounter"
-	encounter.banner.connect(_banner)
-	add_child(encounter)
-	return encounter
-
-
-func _banner(key: String, seconds: float) -> void:
-	var hud: Hud = get_node_or_null("Hud") as Hud
-	if hud != null:
-		hud.show_banner(key, seconds)
-
-
 ## 暫時的劇情觸發區：讓「新遊戲 → 找到梨販 → 敲鐘」在沙盒裡能手動與自動驗證。
 ## 霜橋鎮白盒完成後由正式的互動（對話、敲鐘）取代。
 func _build_story_triggers() -> void:
@@ -300,102 +221,11 @@ func _build_story_triggers() -> void:
 	_trigger("BellTowerTrigger", Vector3(0.0, 1.0, -22.8), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
 
 
-func _trigger(node_name: String, pos: Vector3, size: Vector3, action: Callable) -> Area3D:
-	var area := Area3D.new()
-	area.name = node_name
-	area.position = pos
-	area.monitorable = false
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = size
-	shape.shape = box
-	area.add_child(shape)
-	area.body_entered.connect(func(body: Node3D) -> void:
-		if body is PlayerController:
-			action.call())
-	add_child(area)
-	return area
-
-
-func _on_pear_seller() -> void:
-	if not Game.session.state.get_flag("slice.met_pear_seller", false):
-		Game.start_dialogue("slice_pear_seller")
-
-
-func _on_bell_tower() -> void:
-	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "ring_bell" or Game.is_player_locked():
-		return
-	# 中途讀檔或重來時從第一下重新數
-	Game.session.set_flag("slice.bell_rings", 0)
-	Game.play_cutscene("slice_bell_nine")
-
-
 ## 過場鏡頭位置（CutsceneView 依名字找）。
 func _build_cutscene_cameras() -> void:
 	_camera_marker("BellCamWide", Vector3(2.6, 1.7, -7.0), Vector3(0.0, 13.0, -26.0))
 	_camera_marker("BellCamRope", Vector3(2.2, 13.4, -19.8), Vector3(0.0, 15.2, -23.5))
 	_camera_marker("NorthStreetCam", Vector3(-1.5, 10.0, -11.0), Vector3(0.0, 1.0, -34.0))
-
-
-func _camera_marker(marker_name: String, pos: Vector3, target: Vector3) -> void:
-	var m := Marker3D.new()
-	m.name = marker_name
-	add_child(m)
-	m.look_at_from_position(pos, target)
-
-
-func _on_cutscene_started(r: CutsceneRunner) -> void:
-	r.event_fired.connect(_on_cutscene_event)
-
-
-func _on_cutscene_event(event: String, _shot: Dictionary) -> void:
-	match event:
-		"ring", "ring_final":
-			ring_bell_visual(event == "ring_final")
-		"collapse":
-			collapse_north_street(true)
-
-
-func _on_cutscene_ended(_id: String, _skipped: bool) -> void:
-	# 跳過時沒有 collapse 事件：照旗標補上結果
-	if Game.session.state.get_flag("slice.north_street_collapsed", false) and not _north_collapsed:
-		collapse_north_street(false)
-
-
-## 鐘擺一下＋鐘樓的燈亮一下。
-func ring_bell_visual(final: bool) -> void:
-	if _bell == null:
-		return
-	Sfx.play_flat(self, "bell_ninth" if final else "bell", 0.0 if final else -3.0)
-	var t := create_tween()
-	t.tween_property(_bell, "rotation_degrees:x", 16.0 if final else 11.0, 0.12).set_trans(Tween.TRANS_SINE)
-	t.tween_property(_bell, "rotation_degrees:x", -8.0, 0.35).set_trans(Tween.TRANS_SINE)
-	t.tween_property(_bell, "rotation_degrees:x", 0.0, 0.5).set_trans(Tween.TRANS_SINE)
-	var flash := create_tween()
-	flash.tween_property(_bell_light, "light_energy", 14.0 if final else 9.0, 0.06)
-	flash.tween_property(_bell_light, "light_energy", 4.0, 0.9)
-
-
-## 北街陷落：鐘樓附近的房子沉下去、歪掉。animate=false 時直接放到最後狀態（讀檔、跳過）。
-func collapse_north_street(animate: bool) -> void:
-	_north_collapsed = true
-	var i: int = 0
-	for house: Node3D in _north_houses:
-		var h: float = float(house.get_meta("height", 5.0))
-		var end_pos: Vector3 = house.position + Vector3(0, -h * 0.65, 0)
-		var tilt := Vector3(_rng.randf_range(-9, 9), 0, _rng.randf_range(-12, 12))
-		if animate:
-			var t := create_tween().set_parallel()
-			t.tween_property(house, "position", end_pos, 1.6).set_delay(i * 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-			t.tween_property(house, "rotation_degrees", tilt, 1.6).set_delay(i * 0.12)
-		else:
-			house.position = end_pos
-			house.rotation_degrees = tilt
-		i += 1
-
-
-func is_north_collapsed() -> bool:
-	return _north_collapsed
 
 
 ## 梨販的攤子：木桌、布篷、一盞暖燈、一個披斗篷的人影（之後換成角色）。

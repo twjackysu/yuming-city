@@ -15,14 +15,15 @@ signal player_died
 ## 倒下到自動重試的時間（真實時間）
 const RETRY_DELAY_SEC: float = 2.2
 
-## 關卡 id -> 場景。切片場景完成前，所有檢查點都在 sandbox。
+## 關卡 id -> 場景。切片的檢查點都在霜橋鎮；沙盒留給開發測試（`++ --level=sandbox`）。
 const LEVELS: Dictionary = {
+	"frostbridge": "res://scenes/levels/frostbridge.tscn",
 	"sandbox": "res://scenes/dev/sandbox.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
 }
 ## 檢查點 -> 關卡 id
 const CHECKPOINT_LEVELS: Dictionary = {}
-const DEFAULT_LEVEL: String = "sandbox"
+const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 
 var session: GameSession

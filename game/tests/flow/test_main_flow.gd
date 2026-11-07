@@ -106,12 +106,21 @@ func test_sandbox_player_walks_forward() -> void:
 
 ## 場景層面：沙盒裡走進梨販與鐘樓的觸發區 → 任務推進、自動存檔、HUD 目標跟著換。
 func test_sandbox_triggers_advance_quest() -> void:
+	await _triggers_advance_quest("res://scenes/dev/sandbox.tscn")
+
+
+## 同一條路線在霜橋鎮（正式關卡）。
+func test_frostbridge_triggers_advance_quest() -> void:
+	await _triggers_advance_quest("res://scenes/levels/frostbridge.tscn")
+
+
+func _triggers_advance_quest(path: String) -> void:
 	var game: Node = tree.root.get_node("Game")
 	var original: GameSession = game.get("session") as GameSession
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	game.set("session", s)
 	s.new_game()
-	var level: Node3D = (load("res://scenes/dev/sandbox.tscn") as PackedScene).instantiate() as Node3D
+	var level: Node3D = (load(path) as PackedScene).instantiate() as Node3D
 	tree.root.add_child(level)
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
@@ -149,7 +158,7 @@ func test_sandbox_triggers_advance_quest() -> void:
 	for c: Node in level.get_children():
 		if c is CutsceneView:
 			view = c as CutsceneView
-	assert_not_null(view, "沙盒有過場畫面")
+	assert_not_null(view, "關卡有過場畫面")
 	assert_true(view.is_open(), "黑邊與字幕打開")
 	assert_false(cs.press("interact"), "開場鏡頭還不能敲")
 	cs.update(10.0)
