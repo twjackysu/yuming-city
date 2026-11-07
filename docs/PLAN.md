@@ -12,8 +12,10 @@
 | `scripts/get-godot.sh`、`scripts/check.sh`、`scripts/screenshot.sh` | ✅ |
 | `game/` 專案骨架、標題畫面、繁中＋英文 | ✅ |
 | 測試框架、CI（測試＋匯出 Windows／Linux＋截圖＋prerelease latest） | ✅ |
-| 中文字型管線（Noto CJK 子集化） | ⬜ |
-| 設計文件 `docs/design/01`–`05` | ⬜ |
+| 中文字型管線（Noto CJK 子集化） | ✅ |
+| 原作章節摘要 `00-story-digest.md` | ✅ |
+| 設計文件 `docs/design/01`–`05` | 🔨 01 初稿（切片部分） |
+| 核心邏輯先行：存檔（版本＋遷移）、九息狀態機 | ✅（提前完成 M1.1／M1.2 的一部分） |
 
 ## 階段 1：垂直切片《霜橋鎮的第九聲鐘》（11/10–11/30）
 

@@ -8,6 +8,13 @@
 |---|---|---|---|
 | Godot Engine 4.7.2 | MIT（另含第三方元件授權，見 Godot 的 `COPYRIGHT.txt`） | https://godotengine.org/license/ | 遊戲引擎；遊戲內需附授權聲明 |
 
+## 字型
+
+| 名稱 | 授權 | 來源 | 用途 |
+|---|---|---|---|
+| Noto Serif CJK TC（SemiBold，Serif 2.003） | SIL Open Font License 1.1 | https://github.com/notofonts/noto-cjk | 標題字型；建置時依用字子集化（`scripts/gen_fonts.py`） |
+| Noto Sans CJK TC（Regular／Medium，Sans 2.004） | SIL Open Font License 1.1 | https://github.com/notofonts/noto-cjk | 介面字型；同上 |
+
 ## 程式生成素材
 
 以下由本專案程式生成，無第三方授權問題：

@@ -2,6 +2,24 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-012　2026-11-07　九息的狀態語意
+
+- 決策：可保存物件只有三態 BROKEN → RESTORED（倒數九息，每息 1 秒）→ SPENT（化灰，最終狀態，不會回到損壞）。代價在 activate 時付，同一段記憶只付一次。存檔若落在九息中間，讀檔一律視為 SPENT。狀態存在旗標 `ninebreath.<object_id>`。
+- 理由：照原作（九次心跳後石拱化灰）；避免讀檔重複扣代價或卡在半途。
+- 影響：場景節點只負責顯示、碰撞切換與把玩家推出碰撞體；邏輯在 `game/src/core/nine_breath.gd`。
+
+## D-011　2026-11-07　存檔格式：JSON＋版本號＋逐版遷移
+
+- 決策：`{"version", "saved_at", "state"}`，目前 v1；改格式就加版本與遷移步驟和測試。寫檔先寫 `.tmp` 再改名，舊檔留 `.bak`，主檔壞掉自動讀 `.bak`。拒絕讀取比遊戲新的存檔版本。
+- 理由：純文字好除錯、好測試；遷移鏈保證舊存檔能讀。
+- 影響：之後 Steam 雲端存檔同步 `user://saves/` 下的 JSON 即可。
+
+## D-010　2026-11-07　字型：Noto CJK TC 建置時子集化
+
+- 決策：從 notofonts/noto-cjk release 下載（SHA-256 固定），依翻譯與資料檔用字子集化，標題用 Noto Serif CJK TC SemiBold，介面用 Noto Sans CJK TC。產物不進 git；字型不存在時退回系統字型。
+- 理由：繁中字形在各系統一致、標題有質感；子集後每個字型約 100 KB；OFL 授權可商用。
+- 影響：新增文字檔類型時要確認 `gen_fonts.py` 的收字範圍涵蓋；測試會檢查缺字。
+
 ## D-009　2026-11-07　畫面驗證用 xvfb＋軟體 Vulkan 截圖
 
 - 決策：遊戲支援 `-- --screenshot=<png> --frames=<n>`，跑 n 幀後存檔結束；`scripts/screenshot.sh` 以 xvfb-run 執行，Vulkan 失敗時改 opengl3。CI 也截一張標題畫面放到 release。
