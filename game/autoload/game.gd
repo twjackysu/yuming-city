@@ -134,6 +134,25 @@ func is_in_cutscene() -> bool:
 	return cutscene != null and cutscene.is_running()
 
 
+var _hit_stop_token: int = 0
+
+
+## 打擊停頓：短暫把時間放慢，用真實時間計時後恢復（重疊時以最後一次為準）。
+func hit_stop(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	_hit_stop_token += 1
+	var token: int = _hit_stop_token
+	Engine.time_scale = CombatTuning.num("feel.hit_stop_time_scale", 0.05)
+	await get_tree().create_timer(seconds, true, false, true).timeout
+	if token == _hit_stop_token:
+		Engine.time_scale = 1.0
+
+
+func is_hit_stopped() -> bool:
+	return Engine.time_scale < 1.0
+
+
 ## 玩家角色不能移動（對話或過場中）。
 func is_player_locked() -> bool:
 	return is_in_dialogue() or is_in_cutscene()
@@ -159,6 +178,7 @@ func _on_dialogue_finished(dialogue_id: String) -> void:
 
 
 func back_to_title() -> void:
+	Engine.time_scale = 1.0
 	dialogue = null
 	cutscene = null
 	get_tree().change_scene_to_file(TITLE_SCENE)

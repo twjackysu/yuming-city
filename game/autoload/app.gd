@@ -30,6 +30,10 @@ func _input(event: InputEvent) -> void:
 	var d: int = InputGlyphs.device_of_event(event)
 	if d >= 0:
 		set_device(d)
+	# 開發用：F5 重新載入戰鬥數值（user://tuning.json 覆寫，D-014）
+	var key: InputEventKey = event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.keycode == KEY_F5:
+		CombatTuning.load_tuning()
 
 
 func set_device(device: int) -> void:

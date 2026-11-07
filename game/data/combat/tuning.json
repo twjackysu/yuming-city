@@ -1,0 +1,30 @@
+{
+  "noen": {
+    "max_hp": 100,
+    "blunt_damage": 6,
+    "blunt_stagger": 20,
+    "strike_window": [0.35, 0.6],
+    "strike_range": 1.9,
+    "strike_arc_deg": 110,
+    "dodge_time": 0.35,
+    "dodge_invuln": 0.25,
+    "dodge_cooldown": 0.2
+  },
+  "sheila": {"max_hp": 160, "slash_damage": 18, "stamina": 100, "stamina_regen": 25},
+  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8},
+  "undertaker": {"max_hp": 900, "phase2_hp": 450, "stagger_max": 200},
+  "dummy": {"max_hp": 60, "reset_after": 3.0},
+  "feel": {
+    "hit_stop": 0.06,
+    "hit_stop_kill": 0.12,
+    "hit_stop_time_scale": 0.05,
+    "shake_hit": 0.22,
+    "shake_kill": 0.4,
+    "reduced_shake_scale": 0.25
+  },
+  "difficulty": {
+    "story": {"enemy_damage": 0.5, "telegraph": 1.3, "command_window": 1.0},
+    "standard": {"enemy_damage": 1.0, "telegraph": 1.0, "command_window": 0.6},
+    "hard": {"enemy_damage": 1.4, "telegraph": 0.85, "command_window": 0.35}
+  }
+}

@@ -37,6 +37,11 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 @onready var _lantern: Node3D = $Body/Lantern
 
 var _puppet: Puppet
+## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
+var health: Health
+var _swing_resolved: bool = true
+var _shake: float = 0.0
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -48,6 +53,10 @@ func _ready() -> void:
 	_lantern.reparent(_puppet.hand("L"), false)
 	_lantern.position = Vector3(0, -0.12, 0)
 	_arm.add_excluded_object(get_rid())
+	health = Health.new(CombatTuning.num("noen.max_hp", 100.0))
+	health.name = "Health"
+	health.invulnerable_check = is_invulnerable
+	add_child(health)
 	yaw = rotation.y
 	snap_camera()
 	_camera.current = true
@@ -99,7 +108,8 @@ func _physics_process(delta: float) -> void:
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
 	elif Input.is_action_just_pressed("attack") and _puppet.action == "":
-		_puppet.play_action("attack")
+		start_attack()
+	_update_swing()
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	if _dodge_left > 0.0:
@@ -126,6 +136,88 @@ func _physics_process(delta: float) -> void:
 	var fov_target: float = FOV_SPRINT if sprinting else FOV_WALK
 	_camera.fov = lerpf(_camera.fov, fov_target, clampf(4.0 * delta, 0.0, 1.0))
 	_follow_rig(delta)
+
+
+func is_invulnerable() -> bool:
+	return invulnerable
+
+
+func start_attack() -> void:
+	_puppet.play_action("attack")
+	_swing_resolved = false
+
+
+## 鐘錘下劈：動作進到命中區間（strike_window，動作時間比例）時判定一次。
+func _update_swing() -> void:
+	if _swing_resolved:
+		return
+	if _puppet.action != "attack":
+		_swing_resolved = true
+		return
+	var t: float = _puppet.action_time / float(Puppet.ACTION_TIME["attack"])
+	var window: Vector2 = CombatTuning.pair("noen.strike_window", Vector2(0.35, 0.6))
+	if t >= window.x:
+		_swing_resolved = true
+		if t <= window.y:
+			strike()
+
+
+## 對前方扇形內所有 damageable 群組的目標造成鈍擊。回傳命中數。
+func strike() -> int:
+	var forward: Vector3 = -_body.global_basis.z
+	var reach: float = CombatTuning.num("noen.strike_range", 1.9)
+	var arc: float = CombatTuning.num("noen.strike_arc_deg", 110.0)
+	var damage: float = CombatTuning.num("noen.blunt_damage", 6.0)
+	var stagger: float = CombatTuning.num("noen.blunt_stagger", 20.0)
+	var hits: int = 0
+	var killed: bool = false
+	for n: Node in get_tree().get_nodes_in_group("damageable"):
+		var target: Node3D = n as Node3D
+		if target == null or target == self:
+			continue
+		if not in_strike_arc(global_position, forward, target.global_position, reach, arc):
+			continue
+		var h: Health = target.get_node_or_null("Health") as Health
+		if h != null and h.apply_damage(damage, {"source": self, "stagger": stagger, "kind": "blunt"}):
+			hits += 1
+			killed = killed or h.is_dead()
+	if hits > 0:
+		Game.hit_stop(CombatTuning.num("feel.hit_stop_kill" if killed else "feel.hit_stop", 0.06))
+		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))
+	return hits
+
+
+## 水平面上的扇形判定（不看高度）。純函式。
+static func in_strike_arc(origin: Vector3, forward: Vector3, target: Vector3, reach: float, arc_deg: float) -> bool:
+	var d := Vector3(target.x - origin.x, 0.0, target.z - origin.z)
+	var dist: float = d.length()
+	if dist > reach:
+		return false
+	if dist < 0.3:
+		return true
+	var f := Vector3(forward.x, 0.0, forward.z)
+	if f.length() < 0.001:
+		return false
+	return f.angle_to(d) <= deg_to_rad(arc_deg * 0.5)
+
+
+## 鏡頭震動（減少晃動開啟時縮到 reduced_shake_scale）。
+func shake(amount: float) -> void:
+	var k: float = CombatTuning.num("feel.reduced_shake_scale", 0.25) if Settings.reduce_camera_shake else 1.0
+	_shake = maxf(_shake, amount * k)
+
+
+func shake_amount() -> float:
+	return _shake
+
+
+func _process(delta: float) -> void:
+	if _shake <= 0.0:
+		return
+	_shake = maxf(_shake - 2.5 * delta, 0.0)
+	var a: float = _shake * _shake
+	_camera.h_offset = _rng.randf_range(-1.0, 1.0) * 0.12 * a
+	_camera.v_offset = _rng.randf_range(-1.0, 1.0) * 0.12 * a
 
 
 func _follow_rig(delta: float) -> void:

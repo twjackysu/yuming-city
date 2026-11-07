@@ -43,6 +43,11 @@ if [[ "$status" != "0" ]]; then
   echo "測試失敗（exit $status）" >&2
   exit 1
 fi
+# GDScript 執行期錯誤會讓測試函式中途結束、卻不留下失敗紀錄，所以一律視為失敗
+if grep -n "SCRIPT ERROR" "$LOG_DIR/tests.log"; then
+  echo "測試中有 SCRIPT ERROR（見上）" >&2
+  exit 1
+fi
 
 if [[ "$DO_EXPORT" == "1" ]]; then
   echo "== export"

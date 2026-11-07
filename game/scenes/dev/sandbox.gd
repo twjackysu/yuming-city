@@ -28,6 +28,10 @@ func _ready() -> void:
 		_build_lamp_post(p)
 	_build_story_triggers()
 	_build_cutscene_cameras()
+	var dummy := TrainingDummy.new()
+	dummy.name = "TrainingDummy"
+	dummy.position = Vector3(-2.6, 0.0, -4.0)
+	add_child(dummy)
 	add_child(CutsceneView.new())
 	Game.cutscene_started.connect(_on_cutscene_started)
 	Game.cutscene_ended.connect(_on_cutscene_ended)
