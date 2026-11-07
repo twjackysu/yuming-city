@@ -1,6 +1,6 @@
 extends Node3D
 ## Benchmark：載入沙盒，鏡頭沿固定路徑飛過街道，結束後把統計寫到 user://benchmark/*.json。
-## 用法：YumingCity.exe -- --benchmark [--bench-seconds=30]
+## 用法：YumingCity.exe ++ --benchmark [--bench-seconds=30]（`++` 與 `--` 相同，但 PowerShell 不會吃掉）
 ## 結果檔路徑會印在主控台與畫面上；Windows 在 %APPDATA%\YumingCity\benchmark\。
 
 const LEVEL: String = "res://scenes/dev/sandbox.tscn"
