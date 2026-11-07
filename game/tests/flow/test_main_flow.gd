@@ -63,8 +63,21 @@ func test_boot_to_title() -> void:
 
 
 func test_autoloads_present() -> void:
-	for name: String in ["App", "Settings", "Game"]:
+	for name: String in ["App", "Settings", "Game", "Perf"]:
 		assert_true(tree.root.has_node(name), "autoload %s" % name)
+
+
+func test_perf_snapshot_has_measurements() -> void:
+	var perf: Node = tree.root.get_node_or_null("Perf")
+	assert_not_null(perf, "Perf")
+	if perf == null:
+		return
+	for i: int in 5:
+		await tree.process_frame
+	var d: Dictionary = perf.call("snapshot")
+	for key: String in ["avg_fps", "low1_fps", "avg_ms", "render_cpu_ms", "render_gpu_ms", "draw_calls", "vram_mb", "driver", "adapter"]:
+		assert_true(d.has(key), "snapshot 有 %s" % key)
+	assert_true(str(perf.call("snapshot_text")).contains("FPS"), "overlay 文字")
 
 
 func test_sandbox_player_walks_forward() -> void:

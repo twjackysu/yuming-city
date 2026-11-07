@@ -23,6 +23,7 @@ boot_splash/show_image=false
 App="*res://autoload/app.gd"
 Settings="*res://autoload/settings.gd"
 Game="*res://autoload/game.gd"
+Perf="*res://autoload/perf.gd"
 
 [debug]
 
