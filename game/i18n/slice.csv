@@ -43,3 +43,15 @@ JM_ARCH_FATHER_BODY,"That evening he bought a hot sweet potato and broke it in t
 JM_ARCH_FATHER_RESIDUE,His face is still there. The taste of the sweet potato is still there.,父親的臉還在，熱薯的味道還在。
 RESCUE_HOLD_HINT,Hold {key} — clear the rubble,按住 {key}　搬開瓦礫
 RESCUE_SAVED,Pulled out from under the rubble.,從瓦礫下拉出來了。
+DLG_SHEILA_001,Your right arm is broken.,你右手骨折了。
+DLG_SHEILA_002,I can still carry.,還能搬。
+DLG_SHEILA_003,That doesn't mean it isn't broken.,那不代表沒有骨折。
+DLG_SHEILA_004,"Sheila, Royal Wardens. One question. The blood on the bell tower — is it yours?",席菈，王室巡界隊。現在問你一件事。鐘樓上的血，是你的嗎？
+DLG_SHEILA_005,Yes.,是。
+DLG_SHEILA_006,How many times did you ring it?,你敲了幾下？
+DLG_SHEILA_C_NINE,Nine.,九下。
+DLG_SHEILA_C_EIGHT,...Eight.,……八下。
+DLG_SHEILA_L01,The whole town heard that bell. So did I. I counted.,整座鎮都聽見了那口鐘。我也聽見了。我數了。
+DLG_SHEILA_007,Nine isn't opening a door.,九下不是開門。
+DLG_SHEILA_008,It's a death knell.,是報喪。
+SHEILA_MEET_ASHWALKER,Something crawls out of the crack — an Ashwalker.,裂縫裡爬出了東西——灰巡者。

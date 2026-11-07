@@ -74,9 +74,13 @@ func _ready() -> void:
 		player.global_position = CHECKPOINT_SPAWNS[cp] as Vector3
 	if dev_args.has("at") and DEV_SPAWNS.has(str(dev_args["at"])):
 		player.global_position = DEV_SPAWNS[str(dev_args["at"])] as Vector3
-	# 席菈在「席菈」段落會合（M1.3 11/26）；之後的檢查點一進場就在身邊
-	if stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
+	# 席菈：「席菈」段落在主街北段等諾恩（救出三人後出現）；之後的檢查點一進場就在身邊
+	if stage == "meet_sheila":
+		_begin_sheila_meet()
+	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
+	Game.session.stage_changed.connect(_on_stage_changed)
+	Game.dialogue_ended.connect(_on_dialogue_ended)
 	# 截圖用：`--rescue` 直接跳到敲完九下、北街陷落的救援段落，諾恩站在第一個受困者旁
 	if dev_args.has("rescue"):
 		Game.session.set_flag("slice.met_pear_seller", true)
@@ -127,6 +131,60 @@ func collapse_north_street(animate: bool) -> void:
 		site.position = RESCUE_SPOTS[id] as Vector3
 		site.rescued.connect(func(_id: String) -> void: _banner("RESCUE_SAVED", 2.5))
 		add_child(site)
+
+
+# ---------------------------------------------------------------- 席菈（段落 4）
+
+const SHEILA_WAIT_POS: Vector3 = Vector3(1.6, 0.0, -21.0)
+const ASHWALKER_POS: Vector3 = Vector3(0.0, 0.0, -34.0)
+const SHEILA_TALK_RANGE: float = 2.6
+
+var ashwalker: Ashwalker
+
+
+func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
+	if quest_id == GameSession.MAIN_QUEST and to_stage == "meet_sheila":
+		_begin_sheila_meet()
+
+
+## 席菈出現；已經談過（讀檔）就直接放灰巡者。
+func _begin_sheila_meet() -> void:
+	_spawn_sheila(SHEILA_WAIT_POS)
+	if Game.session.state.get_flag("slice.sheila_talked", false):
+		_spawn_ashwalker()
+
+
+func _physics_process(_delta: float) -> void:
+	# 席菈段落：走到她身邊 → 夾板、「你敲了幾下」
+	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "meet_sheila":
+		return
+	if Game.session.state.get_flag("slice.sheila_talked", false) or Game.is_player_locked():
+		return
+	var sheila: Node3D = get_node_or_null("Sheila") as Node3D
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if sheila != null and player != null and sheila.global_position.distance_to(player.global_position) <= SHEILA_TALK_RANGE:
+		Game.start_dialogue("slice_sheila_meet")
+
+
+func _on_dialogue_ended(dialogue_id: String) -> void:
+	if dialogue_id == "slice_sheila_meet" and Game.session.state.get_flag("slice.sheila_talked", false):
+		_spawn_ashwalker()
+
+
+## 協作教學戰：北街裂縫爬出一隻灰巡者；倒下 → slice.ashwalker_defeated。
+func _spawn_ashwalker() -> void:
+	if ashwalker != null or Game.session.state.get_flag("slice.ashwalker_defeated", false):
+		return
+	ashwalker = Ashwalker.new()
+	ashwalker.name = "Ashwalker"
+	ashwalker.position = ASHWALKER_POS
+	add_child(ashwalker)
+	ashwalker.health.died.connect(_on_ashwalker_died)
+	_banner("SHEILA_MEET_ASHWALKER", 3.0)
+
+
+func _on_ashwalker_died() -> void:
+	Game.session.set_flag("slice.ashwalker_defeated", true)
 
 
 # ---------------------------------------------------------------- 送葬者戰
