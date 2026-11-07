@@ -6,6 +6,7 @@
 2. **Steam（不急，12 月初前）**：Steamworks 開發者帳號、App 費用、App ID、商店頁、內容分級問卷只有你能處理。AI 生成的素材上架時需要在 Steam 問卷申報，用了哪些會記在 `docs/CREDITS.md`。
 3. **Git LFS**：雲端 session 推不了 LFS（上傳被網路代理擋），所以 loop 只 commit 文字檔，素材在建置時程序生成。你從自己電腦推 LFS 沒問題；要給我素材時照 `docs/ART_REQUESTS.md` 放進 `art-inbox/`。如果 loop 下載不到 LFS 內容，會再請你改用 GitHub Release 附件。
 4. **最大的美術缺口是有骨架、有動畫的角色模型**：需求與規格在 `docs/ART_REQUESTS.md` 第 1、2 項。在你提供之前，loop 會用程序生成的人偶加程式動畫頂上，不會卡進度。
+5. **意見題：英文名**。暫定 諾恩 Noen、席菈 Sheila、霜橋鎮 Frostbridge、弔鐘人 Bellmourner、九息 Nine Breaths、送葬者 Undertaker（完整表在 `docs/design/01-adaptation.md`）。有偏好請回覆，沒回覆就照這樣用。
 
 ---
 

@@ -15,7 +15,10 @@
 - 格式：`.glb`（glTF 2.0 binary），含骨架與蒙皮，Y 軸朝上，單位公尺，身高約 1.7–1.8m，面朝 -Z（Godot 前方）。
 - 面數：15k–40k 三角面；材質 PBR（BaseColor、Normal、ORM），貼圖 2048×2048 以內，嵌入 glb。
 - 骨架：Mixamo 自動綁定的標準人形骨架即可（loop 會在 Godot 用 `SkeletonProfileHumanoid` 重新對應）。
-- 外觀方向：寒冷北方小鎮、實用的冬衣與皮革；席菈慣用左手持劍。細節等 `docs/design/03-art-audio-direction.md` 完成後補上參考描述。
+- 外觀方向（依原作第一部第一、二章）：
+  - 諾恩：23 歲，北方小鎮出身的普通青年，縫補過的冬衣；切片中右手骨折後夾著木板。
+  - 席菈：約 25 歲，沾泥的白色短斗篷，背一把比肩膀還寬的斷劍，左耳一枚銅環，右眉一道舊疤，胸前銀徽（三把交錯的劍）。切片中以右手持劍。
+  - 更多細節等 `docs/design/03-art-audio-direction.md` 完成後補上。
 - 建議來源：AI 3D 生成（Meshy、Tripo 等）→ Mixamo 自動綁定 → 匯出 FBX 後轉 glb（或直接給 FBX，loop 轉）。
 - 命名：`art-inbox/characters/noen/noen.glb`、`art-inbox/characters/sheila/sheila.glb`（英文名暫定，以 `docs/design/01-adaptation.md` 定案為準；資料夾名不影響匯入）。
 - 程式替代品：程序生成的低面數人偶（膠囊與方塊組合）＋程式驅動的走路擺動與攻擊動作。
