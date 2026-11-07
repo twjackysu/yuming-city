@@ -21,3 +21,7 @@ steam_appid.txt
 # OS
 Thumbs.db
 .DS_Store
+
+# 本機 3D 生成設定及未驗收下載
+.tripo/
+art-work/

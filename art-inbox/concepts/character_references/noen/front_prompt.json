@@ -1,0 +1,5 @@
+{
+  "asset": "noen_front",
+  "prompt": "Edit the supplied Noen character sheet into ONE SINGLE front view of the SAME man: use the leftmost figure ONLY. Preserve identical facial identity, hair, patched long charcoal coat, shirt, trousers, boots, wooden splints and wrapping on his anatomical RIGHT forearm. Full body from crown to soles with margin, centered, neutral A-pose, hands open arms away from torso, fingers separated, no other views, no weapons, neutral grey backdrop, even neutral studio illumination. Realistic premium game character reference, not illustration or cartoon. Portrait composition, request actual 2048x3072 PNG. This is a clean isolated single-subject input for image-to-3D. No text, labels, watermark.",
+  "reference": "noen/noen_views.png"
+}

@@ -54,3 +54,7 @@
 第一批 AI 概念草案與來源記錄已加入 `art-inbox/concepts/`，圖集見該目錄 `README.md`；實際解析度及 SHA-256 見 `manifest.json`。這批尚未通過長邊 2048 與角色細節驗收，不能將第 4 項標為正式完成。第 1–3 項正式模型／動畫尚未交付；完整待驗收條件見 `art-inbox/README.md`。本次不更動既有程序替代品與遊戲邏輯。
 
 美術驗收需同時符合 [美術品質標準](ART_QUALITY_BAR.md)：目標為 3A 視覺質感，不接受粗糙程序人偶作為正式模型交付。
+
+## 高品質建模準備（2026-11-08）
+
+已加入四個角色的寫實多視角參考與諾恩獨立正面圖，來源見 `art-inbox/concepts/character_references/`。正式模型仍未交付；Tripo CLI 已準備且 dry-run 通過，但帳號尚未授權，未發出生成請求。完整接續流程與驗證限制見 [ART_PRODUCTION.md](ART_PRODUCTION.md)。

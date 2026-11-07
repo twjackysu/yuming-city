@@ -31,3 +31,5 @@
 ## AI 生成素材
 
 - 美術概念草案：霜橋鎮冬夜、廢鐘樓、南街石拱、席菈與諾恩（`art-inbox/concepts/`）。2026-11-08 使用 OpenAI 內建 image_gen 依本專案文字設定生成；未使用第三方參考圖。來源與使用條件見該目錄 `SOURCE.txt`，提示與實際解析度見 `prompts.json`、`manifest.json`。尚未用作遊戲內資產；若上架時使用，需納入 Steam AI 內容申報。
+
+- 角色四面設計參考與諾恩獨立正面圖：`art-inbox/concepts/character_references/`，2026-11-08 使用內建 OpenAI image_gen 依原創文字設定生成，未使用第三方角色參考；來源與條款見該目錄 SOURCE.txt，提示與檔案記錄隨附。屬設計參考，尚未作為正式 3D 或運行時素材。
