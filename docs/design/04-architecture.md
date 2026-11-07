@@ -18,7 +18,7 @@ game/
 scripts/                 # get-godot、check、screenshot、gen-assets
 ```
 
-## 現況（11/8 第 3 輪結束）
+## 現況（11/8 第 4 輪結束）
 
 | 模組 | 位置 | 職責 |
 |---|---|---|
@@ -41,6 +41,10 @@ scripts/                 # get-godot、check、screenshot、gen-assets
 | DialogueDB／DialogueRunner | `src/core/` | 對話資料驗證、台詞與選項、效果（D-018）；`Game.start_dialogue()` 接任務 |
 | Puppet | `scenes/actors/puppet/` | 程序人偶與程式動畫，介面固定以便換模型（D-017） |
 | PauseMenu／SettingsMenu／Hud／DialogueBox | `scenes/ui/` | 暫停、設定、目標與存檔提示、對話框；文字全走翻譯 key |
+| ControlsMenu／InputGlyphs | `scenes/ui/`、`src/ui/` | 按鍵重新綁定（衝突交換、存 `[input]`）；依最後使用的裝置顯示鍵名（D-020） |
+| CutsceneRunner／CutsceneView／HoldToSkip | `src/core/`、`scenes/ui/`、`src/ui/` | 資料驅動過場與可互動演出、按住跳過（D-021）；`Game.play_cutscene()` |
+| CombatTuning／Health | `src/core/` | 戰鬥數值（`data/combat/tuning.json`＋`user://tuning.json`、F5）；生命元件 |
+| EnemyBrain／Ashwalker／TrainingDummy | `src/core/`、`scenes/actors/` | 一般敵人狀態機（追、前兆、出招、破綻、失衡跪地）；練習木樁（D-022） |
 
 ## 接下來的結構（切片）
 

@@ -1,40 +1,42 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 20 秒；第一次會下載 Godot 與字型來源）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（沒有 update 會找不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 30 秒；第一次會下載 Godot 與字型來源）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（沒有 update 會找不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（目前超前約 1 週）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 3 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI。
-- **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。
-- 截圖用旗標：`--level=sandbox`、`--open=pause|settings`、`--quality=0..2`、`--dialogue=slice_pear_seller --dialogue-steps=2`、`--locale=zh_TW`。
+- 上一輪（第 4 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI。
+- **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，先 `git stash` 再 pull／push 程式 commit。
+- 截圖旗標：`--level=sandbox`、`--open=pause|settings|controls`、`--quality=0..2`、`--dialogue=<id> --dialogue-steps=N`、`--cutscene=slice_bell_nine --cutscene-steps=N`（跳過開場後敲 N 下）、`--enemies`（沙盒放灰巡者）、`--device=pad`、`--locale=zh_TW`。軟體渲染很慢：幀數超過約 100 會超過 2 分鐘，背景執行或用小幀數。
 
-## 1. 按鍵重新綁定＋裝置圖示（05 計畫 11/13，M1.1 收尾）
+## 1. 看穿＋弱點（05 計畫 11/16 收尾）
 
-- 設定選單加「按鍵」子頁：列出 `InputSetup.BINDINGS` 的動作（每個動作一個翻譯 key `ACT_*`），按下後等待下一個鍵／手把鍵寫入；存到 `settings.cfg` 的 `[input]`，啟動時覆寫預設（04 架構「輸入」）。衝突時交換。「恢復預設」按鈕。
-- `InputGlyphs`（`src/ui/`）：依最後輸入裝置發 `device_changed`；對話框提示（`HUD_DLG_HINT`）改成顯示目前裝置的鍵名（`[F]`／`Ⓐ`）。
-- 測試：重新綁定存讀、衝突交換、恢復預設、裝置切換訊號。
+- 按住 `insight`（右鍵／LT）：灰巡者頭上顯示已知資訊（弱點「左膝（已證實）」、招式名），文字走翻譯 key；不放慢時間（02-gameplay）。
+- 弱點命中：`in_strike_arc` 內再判斷打點在敵人左膝附近（敵人 local 空間 x<0、y<0.6）→ 傷害 ×、失衡加倍；之後席菈「打弱點」指令共用。
+- `EnemyBrain` 加「前兆中受擊不打斷」與「破綻中受擊加倍失衡」，數值放 tuning.json。
+- 測試：看穿顯示切換、弱點命中倍率。
 
-## 2. 過場跳過＋M1.1 驗收（05 計畫 11/14）
+## 2. 席菈（05 計畫 11/17）
 
-- `Cutscene` 最小框架：一串鏡頭點（Marker3D）＋字幕行（翻譯 key）＋時長；按住互動鍵跳過（共用 DialogueBox 的按住邏輯，抽成 `HoldToSkip`）；跳過時套用結束效果。
-- 用它做「敲鐘」的短演出替換沙盒鐘樓觸發區的即時推進（目前走到鐘樓就直接設 `slice.bell_rings = 9`）。
-- 驗收：對照 `docs/vertical-slice.md`「必須驗證」清單，把 M1.1 涵蓋的項目在 PLAN 打勾。
+- `CompanionBrain`（純邏輯）：跟隨、自主攻擊最近敵人、三個指令（打弱點／閃開／守住）、指令冷卻 1.5 秒、拒絕指令（附理由 key）。時機窗依 `difficulty.*.command_window`。
+- `Sheila` 節點：程序人偶換配色（白短斗篷、寬斷劍），體力 100。
+- 測試：指令時機窗成功／失敗、冷卻、拒絕。
 
-## 3. M1.2 戰鬥起步（05 計畫 11/15）
+## 3. 難度選單＋打擊回饋音效
 
-- `CombatTuning`（`data/combat/*.json`＋`user://tuning.json` 熱重載，D-014）、`Health`、受傷／死亡 → `GameSession.retry_from_checkpoint()`、閃避無敵（PlayerController 已有 `invulnerable`）、鐘錘鈍擊命中判定（人偶 attack 的 35～60% 區間）、hit stop、鏡頭震動（`Settings.reduce_camera_shake` 為 true 時減到 25%）。
-- 沙盒放一個木樁假人驗證命中與 hit stop。
+- 設定加「難度」（故事／標準／困難），存 `settings.cfg`；`EnemyBrain.configure` 與爪擊傷害讀目前難度（現在寫死 standard）。
+- `scripts/gen-assets.sh` 加 Python 程序生成音效：鐘聲（敲鐘九下用，第九聲更低更長）、鈍擊、爪擊、閃避風聲；接到 SFX 匯流排；CREDITS 記「程序生成」。
 
-## 4. 改編文件補完（01-adaptation 的「待補」）
+## 4. 送葬者第一階段（05 計畫 11/18）
 
-- 全篇章節 → 遊戲章節對應表、12/31 版本範圍（初判：切片＋第一部第 3～6 章）、角色弧線。12/1 前要有。
-- 切片事後對話（艾妲：「你爸以前買梨，老說我爸秤不準」）要和梨販對話呼應：付出 `arch_father_last_talk` 後，諾恩答不出「真的不準？」——寫進 01 的切片段落，再做成 `slice_ada_aftermath.json`。
+- 照 02-gameplay 招式表：鐵架橫掃／下砸／衝撞＋霜紋前兆；鎖定鏡頭（`lock_on`）。
 
 ## 備註
 
-- 暫停後立刻截圖時，SpringArm 還沒伸長，鏡頭會在角色身上（只有截圖模式會遇到，實際遊玩不會）。
-- 沙盒 draw calls 約 236（CSG 很多），人偶再加約 30 個 MeshInstance；霜橋鎮白盒時把靜態 CSG 烘成 MeshInstance 或合併，benchmark 會反映。
-- 標題畫面的霧層幾乎看不出來（`title_fog.gdshader` 的霧強度可再調）；放到打磨階段。
-- 測試輸出裡 `QuestRunner: 推進超過 256 步` 的 ERROR 是 `test_cycle_guard` 故意觸發的，不是失敗。
-- CI 有 Node 20 deprecation 警告（actions/checkout@v4 等），目前被強制用 Node 24 跑，不影響結果；之後確認新版號再升級。
+- 敲鐘演出目前在沙盒：走到鐘樓（任務 ring_bell 時）→ 開場鏡頭 → 每按一次互動鍵敲一下（提示「[F] 敲鐘 n／9」）→ 第九下北街房屋沉陷 → 收尾鏡頭。按住互動鍵 1 秒跳過。
+- 灰巡者沒有放進沙盒預設（會干擾流程測試），用 `--enemies` 開啟；正式遭遇戰在 M1.3 的霜橋鎮。
+- 測試輸出裡兩個 ERROR 是故意的：`QuestRunner: 推進超過 256 步`（test_cycle_guard）、`CutsceneRunner: 過場 no_such_cutscene 不存在`（test_cutscene）。`SCRIPT ERROR` 則一律算失敗（check.sh 會擋）。
+- 沙盒 draw calls 約 236（CSG 很多）＋人偶、木樁、鐘；霜橋鎮白盒時把靜態 CSG 烘成 MeshInstance 或合併，benchmark 會反映。
+- 標題畫面的霧層幾乎看不出來（`title_fog.gdshader` 霧強度可再調）；放到打磨階段。
+- 鐘的造型、按鍵設定頁的手把圖示（目前是文字 A／B／LB）都是打磨階段的項目。
+- CI 有 Node 20 deprecation 警告（actions/checkout@v4 等），目前被強制用 Node 24 跑，不影響結果。
 - `art-inbox/` 目前不存在；Jacky 放素材時會建立。
