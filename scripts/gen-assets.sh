@@ -11,3 +11,5 @@ if ! python3 -c "import fontTools" 2>/dev/null; then
 fi
 # -P：不把腳本目錄放進 sys.path（保留 user site，pip --user 裝的 fonttools 才找得到）
 python3 -P "$ROOT/scripts/gen_fonts.py"
+# 音效（標準函式庫即可，不需安裝套件）
+python3 -P "$ROOT/scripts/gen_sfx.py"

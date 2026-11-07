@@ -1,5 +1,5 @@
 extends Node
-## 玩家設定：語言、音量、字幕、畫質、顯示、鏡頭晃動、按鍵。存在 user://settings.cfg，與存檔分開。
+## 玩家設定：難度、語言、音量、字幕、畫質、顯示、鏡頭晃動、按鍵。存在 user://settings.cfg，與存檔分開。
 ## UI 改值後呼叫 apply()（即時生效），關閉選單時 save_settings()。
 
 signal changed
@@ -12,8 +12,13 @@ const BUSES: PackedStringArray = ["Music", "SFX", "Voice", "UI"]
 const BUS_SEND: Dictionary = {"Music": "Master", "SFX": "Master", "Voice": "Master", "UI": "SFX"}
 ## 有音量滑桿的匯流排（設定檔的 key 為 <bus 小寫>_volume）
 const VOLUME_BUSES: PackedStringArray = ["Master", "Music", "SFX", "Voice"]
+## 難度（02-gameplay：只調敵人傷害、前兆長度、指令時機窗，不改代價與流程）；數值在 tuning.json 的 difficulty.*
+const DIFFICULTIES: PackedStringArray = ["story", "standard", "hard"]
+const DIFFICULTY_KEYS: PackedStringArray = ["DIFF_STORY", "DIFF_STANDARD", "DIFF_HARD"]
+const DEFAULT_DIFFICULTY: String = "standard"
 
 var locale: String = DEFAULT_LOCALE
+var difficulty: String = DEFAULT_DIFFICULTY
 ## 匯流排名 -> 線性音量 0..1
 var volumes: Dictionary = {"Master": 1.0, "Music": 0.8, "SFX": 1.0, "Voice": 1.0}
 var subtitles_enabled: bool = true
@@ -41,6 +46,8 @@ func _ready() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--locale="):
 			locale = normalize_locale(arg.substr("--locale=".length()))
+		elif arg.begins_with("--difficulty="):
+			difficulty = normalize_difficulty(arg.substr("--difficulty=".length()))
 		elif arg.begins_with("--quality="):
 			quality = QualityPreset.clamp_level(int(arg.substr("--quality=".length())))
 	apply()
@@ -72,6 +79,15 @@ static func normalize_locale(value: String) -> String:
 	if SUPPORTED_LOCALES.has(value):
 		return value
 	return DEFAULT_LOCALE
+
+
+static func normalize_difficulty(value: String) -> String:
+	return value if DIFFICULTIES.has(value) else DEFAULT_DIFFICULTY
+
+
+func set_difficulty(value: String) -> void:
+	difficulty = normalize_difficulty(value)
+	changed.emit()
 
 
 func set_locale(value: String) -> void:
@@ -193,6 +209,7 @@ func load_settings(path: String = _config_path) -> void:
 		return
 	locale = normalize_locale(str(cfg.get_value("general", "locale", pick_default_locale(OS.get_locale()))))
 	subtitles_enabled = bool(cfg.get_value("general", "subtitles", true))
+	difficulty = normalize_difficulty(str(cfg.get_value("gameplay", "difficulty", DEFAULT_DIFFICULTY)))
 	reduce_camera_shake = bool(cfg.get_value("general", "reduce_camera_shake", false))
 	for bus_name: String in VOLUME_BUSES:
 		var key: String = bus_name.to_lower() + "_volume"
@@ -211,6 +228,7 @@ func save_settings(path: String = _config_path) -> Error:
 	var cfg := ConfigFile.new()
 	cfg.set_value("general", "locale", locale)
 	cfg.set_value("general", "subtitles", subtitles_enabled)
+	cfg.set_value("gameplay", "difficulty", difficulty)
 	cfg.set_value("general", "reduce_camera_shake", reduce_camera_shake)
 	for bus_name: String in VOLUME_BUSES:
 		cfg.set_value("audio", bus_name.to_lower() + "_volume", volume(bus_name))

@@ -23,7 +23,8 @@ var leader: Node3D
 var target: Node3D
 ## 守住的位置（下「守住」時記下諾恩當時的位置）
 var guard_point: Vector3 = Vector3.ZERO
-var difficulty: String = "standard"
+## 空字串＝用設定裡的難度（指令時機窗、被反擊的傷害）；設定改了即時套用
+var difficulty: String = ""
 
 var _body: Node3D
 var _puppet: Puppet
@@ -36,6 +37,9 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 func _ready() -> void:
 	add_to_group("companion")
 	add_to_group("heartbeat")
+	if difficulty == "":
+		difficulty = Settings.difficulty
+		Settings.changed.connect(_on_settings_changed)
 	brain = CompanionBrain.new().configure(difficulty)
 	health = Health.new(CombatTuning.num("sheila.max_hp", 160.0))
 	health.name = "Health"
@@ -75,6 +79,12 @@ func order(cmd: String) -> Dictionary:
 	return result
 
 
+func _on_settings_changed() -> void:
+	if Settings.difficulty != difficulty:
+		difficulty = Settings.difficulty
+		brain.command_window = CombatTuning.num("difficulty.%s.command_window" % difficulty, 0.6)
+
+
 func say(key: String) -> void:
 	if key == "":
 		return
@@ -93,6 +103,10 @@ func puppet() -> Puppet:
 
 func _perform(act: String) -> void:
 	var h: Health = target.get_node_or_null("Health") as Health if target != null else null
+	if act in [CompanionBrain.ACT_SLASH, CompanionBrain.ACT_WEAK_STRIKE, CompanionBrain.ACT_COUNTER, CompanionBrain.ACT_COUNTERED]:
+		Sfx.play_at(self, "slash", global_position + Vector3.UP, -3.0)
+	elif act == CompanionBrain.ACT_DODGE:
+		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -6.0)
 	match act:
 		CompanionBrain.ACT_SLASH:
 			_face(target)

@@ -108,3 +108,7 @@ SHEILA_REFUSE_STAMINA,Let me breathe — one second.,喘口氣……等我一下
 SHEILA_REFUSE_DOWN,(Sheila is down),（席菈倒下了）
 SHEILA_REFUSE_UNKNOWN,What?,什麼？
 SHEILA_BUSY,I heard you!,聽到了！
+SET_DIFFICULTY,Difficulty,難度
+DIFF_STORY,Story,故事
+DIFF_STANDARD,Standard,標準
+DIFF_HARD,Hard,困難

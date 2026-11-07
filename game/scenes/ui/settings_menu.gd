@@ -95,6 +95,10 @@ func _build() -> void:
 	_rows.add_theme_constant_override("separation", 8)
 	box.add_child(_rows)
 
+	_add_cycler("SET_DIFFICULTY", "Difficulty", Settings.DIFFICULTIES.size(),
+		func() -> int: return Settings.DIFFICULTIES.find(Settings.difficulty),
+		func(i: int) -> void: Settings.set_difficulty(Settings.DIFFICULTIES[i]),
+		func(i: int) -> String: return Settings.DIFFICULTY_KEYS[i])
 	_add_cycler("MENU_LANGUAGE", "Language", Settings.SUPPORTED_LOCALES.size(),
 		func() -> int: return Settings.SUPPORTED_LOCALES.find(Settings.locale),
 		func(i: int) -> void: Settings.set_locale(Settings.SUPPORTED_LOCALES[i]),

@@ -115,6 +115,7 @@ func _physics_process(delta: float) -> void:
 		_dodge_dir = _dodge_dir.normalized()
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
+		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -4.0)
 	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead():
 		start_attack()
 	_update_swing()
@@ -208,6 +209,7 @@ func strike() -> int:
 				last_weak_hits += 1
 			killed = killed or h.is_dead()
 	if hits > 0:
+		Sfx.play_at(self, "blunt_weak" if last_weak_hits > 0 else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
 		var stop_key: String = "feel.hit_stop_kill" if killed else ("feel.hit_stop_weak" if last_weak_hits > 0 else "feel.hit_stop")
 		Game.hit_stop(CombatTuning.num(stop_key, 0.06))
 		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))

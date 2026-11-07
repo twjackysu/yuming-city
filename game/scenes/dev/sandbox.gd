@@ -332,6 +332,7 @@ func _on_cutscene_ended(_id: String, _skipped: bool) -> void:
 func ring_bell_visual(final: bool) -> void:
 	if _bell == null:
 		return
+	Sfx.play_flat(self, "bell_ninth" if final else "bell", 0.0 if final else -3.0)
 	var t := create_tween()
 	t.tween_property(_bell, "rotation_degrees:x", 16.0 if final else 11.0, 0.12).set_trans(Tween.TRANS_SINE)
 	t.tween_property(_bell, "rotation_degrees:x", -8.0, 0.35).set_trans(Tween.TRANS_SINE)

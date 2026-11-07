@@ -20,7 +20,8 @@ var _body: Node3D
 var _claw_mat: StandardMaterial3D
 ## 看穿資訊的執行期修正（id → 是否已證實），之後由觀察或劇情改
 var intel_overrides: Dictionary = {}
-var difficulty: String = "standard"
+## 空字串＝用設定裡的難度；設定改了即時套用（前兆長度、傷害）
+var difficulty: String = ""
 var _insight_label: Label3D
 var _weak_marker: MeshInstance3D
 var _weak_mat: StandardMaterial3D
@@ -30,6 +31,9 @@ var _insight_shown: bool = false
 func _ready() -> void:
 	add_to_group("damageable")
 	add_to_group("enemies")
+	if difficulty == "":
+		difficulty = Settings.difficulty
+		Settings.changed.connect(_on_settings_changed)
 	brain = EnemyBrain.new().configure("ashwalker", difficulty)
 	health = Health.new(CombatTuning.num("ashwalker.max_hp", 60.0))
 	health.name = "Health"
@@ -62,6 +66,12 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_look()
 	_update_insight()
+
+
+func _on_settings_changed() -> void:
+	if Settings.difficulty != difficulty:
+		difficulty = Settings.difficulty
+		brain.configure("ashwalker", difficulty)
 
 
 func forward() -> Vector3:
@@ -129,6 +139,7 @@ func _strike() -> bool:
 	if target == null:
 		return false
 	var forward: Vector3 = -_body.global_basis.z
+	Sfx.play_at(self, "claw", global_position + forward * 0.8 + Vector3.UP, -2.0)
 	if not PlayerController.in_strike_arc(global_position, forward, target.global_position, brain.attack_range + 0.4, 100.0):
 		return false
 	var h: Health = target.get_node_or_null("Health") as Health
