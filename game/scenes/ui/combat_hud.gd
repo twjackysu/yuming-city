@@ -30,6 +30,9 @@ var cooldowns: Dictionary = {}
 var _sheila_name: Label
 var _noen_name: Label
 var _cmd_labels: Array[Label] = []
+var _struggle: Label
+## 被抓時的掙扎提示
+var struggle_shown: bool = false
 var _alpha: float = 0.0
 
 
@@ -46,6 +49,10 @@ func _ready() -> void:
 		l.set_meta("glyph", true)
 		l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		_cmd_labels.append(l)
+	_struggle = _label("", 30, Color(1.0, 0.92, 0.85))
+	_struggle.set_meta("glyph", true)
+	_struggle.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_struggle.visible = false
 	modulate.a = 0.0
 
 
@@ -97,6 +104,11 @@ func refresh(player: PlayerController, sheila: Sheila) -> void:
 		else:
 			_sheila_name.text = "SPK_SHEILA"
 	_sheila_name.visible = sheila_present
+	struggle_shown = player != null and player.grabbed_by != null
+	_struggle.visible = struggle_shown
+	if struggle_shown:
+		var k: String = InputGlyphs.label_for_action("dodge", App.last_device)
+		_struggle.text = tr("HUD_STRUGGLE").format({"key": k, "n": player.struggle_need - player.struggle})
 	for i: int in COMMANDS.size():
 		var c: Array = COMMANDS[i]
 		var key: String = InputGlyphs.label_for_action(str(c[0]), App.last_device)
@@ -130,6 +142,7 @@ func _layout() -> void:
 	_sheila_name.position = o + Vector2(0, 22)
 	for i: int in _cmd_labels.size():
 		_cmd_labels[i].position = o + Vector2(BAR_W + 40.0, -24.0 + 28.0 * float(i))
+	_struggle.position = Vector2((size.x - _struggle.size.x) * 0.5, size.y * 0.62)
 
 
 func _draw() -> void:

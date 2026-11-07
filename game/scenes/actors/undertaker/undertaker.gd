@@ -23,6 +23,8 @@ var frame_thrown: bool = false
 ## 舉起鐵架的剩餘秒數（>0 時站著不動）
 var throw_windup: float = 0.0
 var _throw_total: float = 1.0
+## 最近抓住的諾恩（被打中弱點時鬆手）
+var _grabbed: PlayerController
 ## 第二下的觀察距離：諾恩在這個範圍內沒被打到才算「看過」
 const WITNESS_RANGE: float = 8.0
 
@@ -139,6 +141,12 @@ func _grab() -> Node3D:
 		hurt(guard, brain.move_num("grab", "damage", 20.0) * 0.5, "grab_blocked")
 		return null
 	hurt(best, brain.move_num("grab", "damage", 20.0), "grab")
+	var p: PlayerController = best as PlayerController
+	if p != null:
+		_grabbed = p
+		p.begin_grab(self, brain.move_num("grab", "hold", 2.0), int(brain.move_num("grab", "struggle", 5.0)), brain.move_num("grab", "squeeze_damage", 12.0))
+		# 抓著人的時候站著不動
+		brain.recover_sec = maxf(brain.recover_sec, brain.move_num("grab", "hold", 2.0))
 	return best
 
 
@@ -223,6 +231,9 @@ func _after_move_phase2() -> void:
 
 func _on_damaged(amount: float, info: Dictionary) -> void:
 	super._on_damaged(amount, info)
+	# 抓著諾恩時被打中弱點（席菈「打弱點」）就鬆手
+	if str(info.get("weak", "")) != "" and _grabbed != null and is_instance_valid(_grabbed) and _grabbed.grabbed_by == self:
+		_grabbed.release_grab(true)
 	if phase == 1 and health.hp <= CombatTuning.num("undertaker.phase2_hp", 450.0) and not health.is_dead():
 		enter_phase_two()
 

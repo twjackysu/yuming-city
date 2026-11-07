@@ -44,6 +44,12 @@ var last_weak_hits: int = 0
 ## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
 var lock_target: Node3D = null
 var lock_blocked: float = 0.0
+## 被抓（送葬者抓取）：抓住的人、剩餘秒數、已掙扎次數、需要幾次
+var grabbed_by: Node3D = null
+var grab_left: float = 0.0
+var struggle: int = 0
+var struggle_need: int = 5
+var _grab_squeeze: float = 12.0
 var _flick_acc: float = 0.0
 var _pad_flick_armed: bool = true
 var _lock_marker: MeshInstance3D
@@ -134,6 +140,13 @@ func _physics_process(delta: float) -> void:
 	if pad.length() > PAD_DEADZONE:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 	_update_camera_distance(delta)
+	if grabbed_by != null:
+		_grab_tick(delta)
+		velocity = Vector3(0.0, 0.0 if is_on_floor() else velocity.y - GRAVITY * delta, 0.0)
+		_puppet.set_move_speed(0.0)
+		move_and_slide()
+		_follow_rig(delta)
+		return
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var talking: bool = Game.is_player_locked()
@@ -189,7 +202,62 @@ func _physics_process(delta: float) -> void:
 	_follow_rig(delta)
 
 
+## 被抓住 seconds 秒；這段時間連按閃避或攻擊掙扎，滿 need 次掙脫；時間到被捏一下（squeeze 傷害）才放開。
+func begin_grab(by: Node3D, seconds: float, need: int = 5, squeeze: float = 12.0) -> void:
+	if health.is_dead():
+		return
+	grabbed_by = by
+	grab_left = seconds
+	struggle = 0
+	struggle_need = need
+	_grab_squeeze = squeeze
+	_dodge_left = 0.0
+	invulnerable = false
+	shake(0.35)
+
+
+## 掙扎一下。回傳是否因此掙脫。
+func struggle_press() -> bool:
+	if grabbed_by == null:
+		return false
+	struggle += 1
+	shake(0.12)
+	if struggle >= struggle_need:
+		release_grab(true)
+		return true
+	return false
+
+
+func release_grab(escaped: bool) -> void:
+	if grabbed_by == null:
+		return
+	var by: Node3D = grabbed_by
+	grabbed_by = null
+	grab_left = 0.0
+	if not escaped:
+		health.apply_damage(_grab_squeeze, {"source": by, "kind": "grab_squeeze"})
+	if is_instance_valid(by):
+		var away: Vector3 = global_position - by.global_position
+		away.y = 0.0
+		if away.length() > 0.01:
+			global_position += away.normalized() * 1.0
+
+
+func _grab_tick(delta: float) -> void:
+	var h: Health = grabbed_by.get_node_or_null("Health") as Health if is_instance_valid(grabbed_by) else null
+	if not is_instance_valid(grabbed_by) or (h != null and h.is_dead()):
+		release_grab(true)
+		return
+	if not Game.is_player_locked() and (Input.is_action_just_pressed("dodge") or Input.is_action_just_pressed("attack")):
+		if struggle_press():
+			return
+	grab_left -= delta
+	if grab_left <= 0.0:
+		release_grab(false)
+
+
 func _on_died() -> void:
+	release_grab(true)
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Game.on_player_died()

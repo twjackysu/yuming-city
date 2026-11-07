@@ -316,3 +316,45 @@ func test_difficulty_change_keeps_phase_two() -> void:
 	assert_eq(boss.brain.pattern[0], "double_slam")
 	root.queue_free()
 	await tree.process_frame
+
+
+func test_grab_player_struggle_and_release() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var boss: Undertaker = a[2]
+	boss.global_position = Vector3(0, 0, 0)
+	player.global_position = Vector3(0, 0, -1.6)
+	# 送葬者的狀態機停掉，只測抓取（不然牠會在測試中一直出招把諾恩打倒，倒下狀態會漏到後面的測試）
+	boss.set_physics_process(false)
+	await tree.physics_frame
+	boss._body.rotation.y = 0.0
+	assert_eq(boss._grab(), player, "抓到諾恩")
+	assert_true(player.grabbed_by == boss, "被抓住")
+	for i: int in 4:
+		assert_false(player.struggle_press(), "掙扎 %d 次還沒掙脫" % (i + 1))
+	assert_true(player.struggle_press(), "第 5 次掙脫")
+	assert_true(player.grabbed_by == null)
+	assert_true(player.global_position.distance_to(boss.global_position) > 2.2, "掙脫後被推開")
+	# 沒掙脫：2 秒後被捏一下才放開
+	player.global_position = Vector3(0, 0, -1.6)
+	boss._body.rotation.y = 0.0
+	boss._grab()
+	assert_true(player.grabbed_by == boss)
+	var hp_before: float = player.health.hp
+	for i: int in 140:
+		await tree.physics_frame
+		if player.grabbed_by == null:
+			break
+	assert_true(player.grabbed_by == null, "時間到放開")
+	assert_true(player.health.hp < hp_before, "沒掙脫：被捏一下（%.0f → %.0f）" % [hp_before, player.health.hp])
+	# 抓著時被打中弱點（席菈打弱點）就鬆手
+	player.global_position = Vector3(0, 0, -1.6)
+	boss._body.rotation.y = 0.0
+	boss.brain.state = EnemyBrain.State.RECOVER
+	boss._grab()
+	assert_true(player.grabbed_by == boss)
+	boss.health.apply_damage(60.0, {"weak": "frame_joint", "stagger": 0.0})
+	assert_true(player.grabbed_by == null, "席菈打中弱點：鬆手")
+	root.queue_free()
+	await tree.process_frame
