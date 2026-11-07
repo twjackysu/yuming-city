@@ -85,6 +85,7 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")
 	assert_true(level._north_houses.size() >= 4, "北街至少四棟可以陷落的房子")
 	assert_true(int(level.get("light_count")) <= 40, "燈的數量有上限（%d）" % int(level.get("light_count")))
+	assert_true(int(level.get("lantern_count")) >= 6, "不少房子門口有掛燈（%d）" % int(level.get("lantern_count")))
 	assert_false(level.has_node("Sheila"), "新遊戲時席菈還沒登場")
 	assert_false(level.has_node("Undertaker"), "送葬者還沒出現")
 	await _free(level)

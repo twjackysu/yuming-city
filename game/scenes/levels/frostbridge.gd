@@ -43,6 +43,7 @@ var look := FrostbridgeLook.new()
 var _batch := StaticBatch.new()
 ## 統計（測試、benchmark 用）
 var light_count: int = 0
+var lantern_count: int = 0
 
 
 func _ready() -> void:
@@ -423,6 +424,12 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	batch.add_box_at(_axis_size(dir, face, 1.0, 0.12, 2.1), front + dir * door_off + Vector3(0, 1.05, 0), look.mat(FrostbridgeLook.WOOD), false)
 	var lit_mat := look.glow(FrostbridgeLook.LAMP, 1.4)
 	var dark_mat := look.mat(Color(0.06, 0.07, 0.09), 0.3)
+	# 門邊的掛燈（概念圖：每幾戶門口一盞）。用位置算的雜湊決定，不動 _rng（房子配置保持不變）。
+	# 有掛燈的房子，窗戶只發光不另外打燈（燈數上限見 test_frostbridge）。
+	var lantern: bool = fposmod(sin(center.x * 12.9898 + center.z * 78.233) * 43758.5453, 1.0) < 0.45
+	if lantern:
+		var side: float = 1.0 if door_off < 0.0 else -1.0
+		_door_lantern(batch, holder, front + dir * (door_off + side * 0.85), face)
 	var floors: int = 2 if h > 5.6 else 1
 	for f: int in floors:
 		for side: float in [-1.0, 1.0]:
@@ -432,7 +439,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4, 0)
 			var lit: bool = _rng.randf() < 0.4
 			batch.add_box_at(_axis_size(dir, face, 0.7, 0.08, 0.9), pos, lit_mat if lit else dark_mat, false)
-			if lit and light_count < 22:
+			if lit and not lantern and light_count < 22:
 				var l := OmniLight3D.new()
 				l.light_color = FrostbridgeLook.LAMP
 				l.light_energy = 0.45
@@ -443,6 +450,29 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 				light_count += 1
 	if collapsible:
 		batch.build(holder, "Mesh")
+
+
+## 門邊掛燈：木支架從牆伸出、燈罩發光、上面一片小屋頂；燈數還有額度時加一盞暖光。
+func _door_lantern(batch: StaticBatch, holder: Node3D, wall_pos: Vector3, face: Vector3) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)
+	var out: Vector3 = wall_pos + face * 0.32
+	lantern_count += 1
+	batch.add_box_at(Vector3(0.06, 0.06, 0.06) + Vector3(absf(face.x), 0, absf(face.z)) * 0.5, wall_pos + face * 0.25 + Vector3(0, 2.62, 0), wood, false)
+	batch.add_box_at(Vector3(0.02, 0.18, 0.02), out + Vector3(0, 2.5, 0), iron, false)
+	batch.add_box_at(Vector3(0.3, 0.05, 0.3), out + Vector3(0, 2.4, 0), iron, false)
+	batch.add_box_at(Vector3(0.2, 0.28, 0.2), out + Vector3(0, 2.23, 0), look.glow(FrostbridgeLook.LAMP, 3.2), false)
+	batch.add_box_at(Vector3(0.24, 0.04, 0.24), out + Vector3(0, 2.07, 0), iron, false)
+	if light_count < 22:
+		var l := OmniLight3D.new()
+		l.light_color = FrostbridgeLook.LAMP
+		l.light_energy = 0.85
+		l.omni_range = 5.0
+		l.omni_attenuation = 1.4
+		l.light_volumetric_fog_energy = 1.2
+		l.position = out + face * 0.15 + Vector3(0, 2.2, 0)
+		holder.add_child(l)
+		light_count += 1
 
 
 func _build_well(pos: Vector3) -> void:
