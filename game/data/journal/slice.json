@@ -7,8 +7,15 @@
       "context": "JM_ARCH_FATHER_CONTEXT",
       "body": "JM_ARCH_FATHER_BODY",
       "residue": "JM_ARCH_FATHER_RESIDUE",
-      "people": ["father"],
-      "places": ["south_arch"]
+      "people": [
+        "father"
+      ],
+      "places": [
+        "south_arch"
+      ],
+      "unlocked_when": {
+        "flag": "slice.saw_south_arch"
+      }
     }
   ]
 }

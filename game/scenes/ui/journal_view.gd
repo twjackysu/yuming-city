@@ -13,6 +13,8 @@ const CUT: Color = Color(0.13, 0.135, 0.15)
 
 var _root: Control
 var _list: VBoxContainer
+## 還沒有任何條目時的提示
+var _empty: Label
 var _hint: Label
 var _objective: Label
 var _peek: PanelContainer
@@ -108,6 +110,7 @@ func _refresh() -> void:
 		return
 	for id: String in j.visible_ids(Game.session.state):
 		_list.add_child(_card(j.view(id, Game.session.state)))
+	_empty.visible = _list.get_child_count() == 0
 	_hint.text = TranslationServer.translate("JOURNAL_HINT_CLOSE").format({"key": InputGlyphs.label_for_action("journal", App.last_device)})
 
 
@@ -206,6 +209,13 @@ func _build() -> void:
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_list.add_theme_constant_override("separation", 16)
 	scroll.add_child(_list)
+	_empty = Label.new()
+	_empty.name = "Empty"
+	_empty.text = "JOURNAL_EMPTY"
+	_empty.add_theme_font_size_override("font_size", 18)
+	_empty.add_theme_color_override("font_color", INK_DIM)
+	col.add_child(_empty)
+	col.move_child(_empty, scroll.get_index())
 	_hint = Label.new()
 	_hint.add_theme_font_size_override("font_size", 16)
 	_hint.add_theme_color_override("font_color", INK_DIM)

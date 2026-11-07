@@ -176,3 +176,45 @@ func test_convoy_trigger_ignored_before_escort() -> void:
 		await tree.physics_frame
 	assert_true(level.encounter == null, "還沒到護送階段：南街不會開打")
 	await _free(level)
+
+
+## 段落 1「看見南街石拱」：走進南街 → 諾恩想起父親 → 日記解鎖；護送時沒逛過也會解鎖（重現的代價要存在）。
+func test_arch_memory_unlocks_journal() -> void:
+	var s := _session()
+	var game: Node = tree.root.get_node("Game")
+	var journal: Journal = game.get("journal") as Journal
+	assert_eq(journal.visible_ids(s.state).size(), 0, "新遊戲：日記是空的")
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var trig: Vector3 = (level.get_node("ArchMemoryTrigger") as Node3D).global_position
+	player.global_position = Vector3(trig.x, 0.05, trig.z)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(game.call("is_in_dialogue"), "走進南街 → 諾恩的獨白")
+	var box: DialogueBox = level.get_node("DialogueBox") as DialogueBox
+	for i: int in 10:
+		if not bool(game.call("is_in_dialogue")):
+			break
+		box.press_continue()
+		await tree.process_frame
+	assert_eq(s.state.get_flag("slice.saw_south_arch"), true)
+	assert_true(journal.visible_ids(s.state).has("arch_father_last_talk"), "日記解鎖父親那段")
+	# 再走進去不會重複
+	player.global_position = Vector3(0.0, 0.05, 2.0)
+	for i: int in 2:
+		await tree.physics_frame
+	player.global_position = Vector3(trig.x, 0.05, trig.z)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_false(game.call("is_in_dialogue"), "只說一次")
+	await _free(level)
+
+
+func test_convoy_unlocks_arch_memory_without_visit() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	(level as Node).call("start_convoy")
+	assert_eq(s.state.get_flag("slice.saw_south_arch"), true, "護送開打時補上石拱的記憶")
+	await _free(level)
+

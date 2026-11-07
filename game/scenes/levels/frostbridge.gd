@@ -248,6 +248,15 @@ func _spawn_sheila(pos: Vector3) -> void:
 	add_child(ally)
 
 
+# ---------------------------------------------------------------- 看見南街石拱（段落 1）
+
+## 第一次走進南街看到石拱：諾恩想起父親躲在柱子後 → 日記解鎖那段記憶（之後的重現代價就是它）。
+func _on_arch_memory() -> void:
+	if Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
+		return
+	Game.start_dialogue("slice_arch_memory")
+
+
 ## 護送階段走進南街口 → 送葬者戰開始（只觸發一次）。
 func _on_south_street() -> void:
 	if encounter != null:
@@ -260,6 +269,9 @@ func _on_south_street() -> void:
 func start_convoy() -> ConvoyEncounter:
 	if encounter != null:
 		return encounter
+	# 沒先逛過南街也要有這段記憶：重現石拱的代價就是它
+	if not Game.session.state.get_flag("slice.saw_south_arch", false):
+		Game.session.set_flag("slice.saw_south_arch", true)
 	spawn_convoy_fight(true)
 	encounter.finished.connect(_on_convoy_finished)
 	_banner("CONVOY_START", 3.5)
@@ -278,6 +290,7 @@ func _build_story_triggers() -> void:
 	_trigger("BellTowerTrigger", Vector3(0.0, 1.0, TOWER_Z + 3.7), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
 	_trigger("CellarTrigger", CELLAR_POS + Vector3(0.0, 1.0, 0.0), Vector3(1.8, 2.0, 1.6), _on_cellar)
 	_trigger("ConvoyTrigger", Vector3(0.0, 1.0, PLAZA_S + 2.0), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_south_street)
+	_trigger("ArchMemoryTrigger", Vector3(0.0, 1.0, ARCH_Z - 5.5), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_arch_memory)
 
 
 ## 過場鏡頭（CutsceneView 依名字找；slice_bell_nine.json 用到這三個）。
