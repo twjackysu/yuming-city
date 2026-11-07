@@ -17,8 +17,8 @@ var _bell: Node3D
 var _bell_light: OmniLight3D
 ## 南街石拱（九息可保存物）
 var arch_site: NineBreathSite
-## 鐵架拋擲（送葬者第二階段觸發）
-var frame_throw: FrameThrowEvent
+## 送葬者戰（鐵架拋擲、車隊抵達）；沒有 --boss 時是 null
+var encounter: ConvoyEncounter
 
 
 func _ready() -> void:
@@ -71,7 +71,10 @@ func _ready() -> void:
 		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
 		add_child(caravan)
 	if has_node("Undertaker"):
-		($Undertaker as Undertaker).frame_throw_started.connect(start_frame_throw)
+		encounter = ConvoyEncounter.new().setup($Undertaker as Undertaker, get_node_or_null("Caravan") as Caravan, arch_site)
+		encounter.name = "ConvoyEncounter"
+		encounter.banner.connect(_banner)
+		add_child(encounter)
 	if dev_args.has("phase2") and has_node("Undertaker"):
 		($Undertaker as Undertaker).enter_phase_two.call_deferred()
 	# 截圖用：`--insight` 一開始就按住看穿
@@ -273,28 +276,6 @@ func _build_bell_tower(pos: Vector3) -> void:
 	m.emission_energy_multiplier = 4.0
 	glow.material = m
 	add_child(glow)
-
-
-## 鐵架拋擲開始：提示＋倒數；落下時石拱是實體就擋下，否則席菈燒薪火劍。
-func start_frame_throw() -> void:
-	if frame_throw != null:
-		return
-	frame_throw = FrameThrowEvent.new()
-	frame_throw.resolved.connect(_on_frame_throw_resolved)
-	_banner("FRAME_THROW_WARN", FrameThrowEvent.WINDUP_SEC)
-
-
-func _physics_process(delta: float) -> void:
-	if frame_throw != null and not frame_throw.is_resolved():
-		frame_throw.tick(delta, arch_site.is_solid(), Game.session.state)
-
-
-func _on_frame_throw_resolved(outcome: String) -> void:
-	_banner("FRAME_THROW_ARCH" if outcome == "arch" else "FRAME_THROW_KINDLING", 3.5)
-	var p: PlayerController = get_node_or_null("Player") as PlayerController
-	if p != null:
-		p.shake(0.6)
-	Sfx.play_at(self, "blunt_weak", arch_site.global_position + Vector3.UP * 2.0, 6.0, 0.02, 14.0)
 
 
 func _banner(key: String, seconds: float) -> void:

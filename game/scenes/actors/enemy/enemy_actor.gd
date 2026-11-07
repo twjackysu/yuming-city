@@ -58,6 +58,13 @@ func _physics_process(delta: float) -> void:
 		if brain.state in [EnemyBrain.State.CHASE, EnemyBrain.State.TELEGRAPH] and d.length() > 0.01:
 			var face: float = atan2(-d.x, -d.z)
 			_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
+	if _held(delta):
+		# 劇情動作中（送葬者舉起鐵架）：不追、不出招
+		velocity = Vector3(0.0, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, 0.0)
+		move_and_slide()
+		_update_look()
+		_update_insight()
+		return
 	if brain.tick(delta, dist):
 		_on_strike()
 	var horizontal := Vector3.ZERO
@@ -138,6 +145,11 @@ func _on_strike_tick(_delta: float) -> Vector3:
 
 func _after_move() -> void:
 	pass
+
+
+## 回傳 true＝這一幀被劇情動作佔住（不跑狀態機、不移動）。
+func _held(_delta: float) -> bool:
+	return false
 
 
 func _update_look() -> void:

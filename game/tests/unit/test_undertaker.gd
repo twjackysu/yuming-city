@@ -296,3 +296,23 @@ func test_grab_blocked_by_guarding_sheila() -> void:
 	assert_true(sheila.health.hp < hp0, "席菈替他挨了一下")
 	root.queue_free()
 	await tree.process_frame
+
+
+func test_difficulty_change_keeps_phase_two() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	boss.global_position = Vector3(0, 0, -30)
+	await tree.physics_frame
+	var before: String = Settings.difficulty
+	boss.enter_phase_two()
+	Settings.difficulty = "story" if before != "story" else "hard"
+	boss._on_settings_changed()
+	assert_eq(boss.brain.pattern[0], "double_slam", "換難度後還是第二階段輪替")
+	assert_true(absf(boss.brain.move_num("slam", "telegraph") - 0.7) < 0.001, "下砸前兆仍是 0.7")
+	assert_true(bool(boss.brain.unreadable.get("double_slam_2", false)), "第二下仍讀不懂")
+	Settings.difficulty = before
+	boss._on_settings_changed()
+	assert_eq(boss.brain.pattern[0], "double_slam")
+	root.queue_free()
+	await tree.process_frame

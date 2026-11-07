@@ -20,6 +20,9 @@ var phase: int = 1
 ## 測試或場景可以指定；空的就用 Game.session.state
 var state: GameState
 var frame_thrown: bool = false
+## 舉起鐵架的剩餘秒數（>0 時站著不動）
+var throw_windup: float = 0.0
+var _throw_total: float = 1.0
 ## 第二下的觀察距離：諾恩在這個範圍內沒被打到才算「看過」
 const WITNESS_RANGE: float = 8.0
 
@@ -167,6 +170,26 @@ func _check_frame_throw() -> void:
 		trigger_frame_throw()
 
 
+## 鐵架拋擲的前兆：站定、把鐵架舉過頭（ConvoyEncounter 呼叫）。
+func begin_throw_windup(seconds: float) -> void:
+	throw_windup = seconds
+	_throw_total = maxf(seconds, 0.01)
+	Sfx.play_at(self, "whoosh", global_position + Vector3.UP * 3.0, 2.0, 0.0, 10.0)
+
+
+## 鐵架擲出去了（被石拱擋下或被薪火劍斬斷）：鐵架離身，之後是空手（之後換模型時拿掉背上的鐵架）。
+func end_throw(_outcome: String) -> void:
+	throw_windup = 0.0
+	brain.force_kneel(1.2)
+
+
+func _held(delta: float) -> bool:
+	if throw_windup <= 0.0:
+		return false
+	throw_windup = maxf(throw_windup - delta, 0.0)
+	return true
+
+
 func trigger_frame_throw() -> void:
 	if frame_thrown:
 		return
@@ -209,15 +232,28 @@ func enter_phase_two() -> void:
 	phase = 2
 	intel_overrides["slam"] = false
 	intel_overrides["double_slam"] = false
+	brain.unreadable["double_slam_2"] = true
+	_apply_phase_two_brain()
+	phase_changed.emit(phase)
+	_check_frame_throw()
+
+
+## 第二階段的招式數值與輪替（難度改了、brain 重新 configure 後也要再套一次）。
+func _apply_phase_two_brain() -> void:
 	var slam: Dictionary = (brain.moves.get("slam", {}) as Dictionary).duplicate()
 	slam["telegraph"] = float(slam.get("telegraph_phase2", 0.7))
 	brain.moves["slam"] = slam
-	brain.unreadable["double_slam_2"] = true
 	var pat: Variant = CombatTuning.value("undertaker.pattern_phase2", [])
 	if pat is Array:
 		brain.set_pattern(PackedStringArray(pat as Array))
-	phase_changed.emit(phase)
-	_check_frame_throw()
+
+
+func _on_settings_changed() -> void:
+	var unread: Dictionary = brain.unreadable.duplicate()
+	super._on_settings_changed()
+	brain.unreadable = unread
+	if phase == 2:
+		_apply_phase_two_brain()
 
 
 func _shake_player(amount: float) -> void:
@@ -246,6 +282,10 @@ func _update_look() -> void:
 				lean = Vector3(30.0 * p, 0, 0)
 			"charge":
 				lean = Vector3(22.0 * p, 0, 0)
+	if throw_windup > 0.0:
+		# 舉起鐵架：上身後仰，越接近擲出越後仰
+		var k: float = 1.0 - throw_windup / _throw_total
+		lean = Vector3(-10.0 - 25.0 * k, 0, 0)
 	(_body.get_node("Torso") as Node3D).rotation_degrees = lean
 
 
