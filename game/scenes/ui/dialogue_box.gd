@@ -14,7 +14,7 @@ var _text: Label
 var _hint: Label
 var _choices: VBoxContainer
 var _reveal: Tween
-var _hold: float = 0.0
+var _hold := HoldToSkip.new(HOLD_SKIP_SEC)
 var _mouse_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -88,16 +88,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	if not is_open() or runner == null:
-		_hold = 0.0
+		_hold.reset()
 		return
-	if Input.is_action_pressed("interact") and runner.visible_choices.is_empty():
-		_hold += delta
-		if _hold >= HOLD_SKIP_SEC:
-			_hold = 0.0
-			runner.skip_to_choice()
-			_finish_reveal()
-	else:
-		_hold = 0.0
+	var holding: bool = Input.is_action_pressed("interact") and runner.visible_choices.is_empty()
+	if _hold.update(holding, delta):
+		runner.skip_to_choice()
+		_finish_reveal()
 
 
 func _on_line(speaker_key: String, text_key: String) -> void:

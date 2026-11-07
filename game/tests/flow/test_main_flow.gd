@@ -142,9 +142,34 @@ func test_sandbox_triggers_advance_quest() -> void:
 	assert_eq(_auto_checkpoint(), "bell_tower", "進入檢查點自動存檔")
 
 	await _teleport(player, (level.get_node("BellTowerTrigger") as Node3D).global_position)
+	assert_true(game.call("is_in_cutscene"), "走到鐘樓 → 敲鐘演出")
+	assert_true(game.call("is_player_locked"), "演出中不能走")
+	var cs: CutsceneRunner = game.get("cutscene") as CutsceneRunner
+	var view: CutsceneView = null
+	for c: Node in level.get_children():
+		if c is CutsceneView:
+			view = c as CutsceneView
+	assert_not_null(view, "沙盒有過場畫面")
+	assert_true(view.is_open(), "黑邊與字幕打開")
+	assert_false(cs.press("interact"), "開場鏡頭還不能敲")
+	cs.update(10.0)
+	assert_true(cs.is_waiting(), "等玩家敲第一下")
+	assert_true(view.prompt_text().contains("0／9"), "提示顯示次數：" + view.prompt_text())
+	for i: int in 8:
+		assert_true(cs.press("interact"), "敲第 %d 下" % (i + 1))
+	assert_eq(int(s.state.get_flag("slice.bell_rings", 0)), 8, "親手敲了八下")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "第八下還沒陷落")
+	assert_true(cs.press("interact"), "第九下")
 	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "rescue", "敲鐘九聲 → 救援")
 	assert_eq(s.state.get_flag("slice.north_street_collapsed"), true, "北街陷落")
+	assert_true(level.call("is_north_collapsed"), "畫面上北街沉下去")
 	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_RESCUE")
+	cs.update(10.0)
+	cs.update(10.0)
+	assert_false(game.call("is_in_cutscene"), "演出結束")
+	assert_false(view.is_open(), "黑邊收起")
+	assert_eq(s.state.get_flag("slice.bell_cutscene_seen"), true, "on_end 套用")
+	assert_false(game.call("is_player_locked"), "可以走了")
 
 	level.queue_free()
 	await tree.process_frame

@@ -84,7 +84,7 @@ func _physics_process(delta: float) -> void:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var talking: bool = Game.is_in_dialogue()
+	var talking: bool = Game.is_player_locked()
 	if talking:
 		input = Vector2.ZERO
 	var dir: Vector3 = move_direction(input, yaw)

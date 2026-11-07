@@ -8,6 +8,8 @@ extends Node
 signal level_loaded(level_id: String)
 signal dialogue_started(runner: DialogueRunner)
 signal dialogue_ended(dialogue_id: String)
+signal cutscene_started(runner: CutsceneRunner)
+signal cutscene_ended(cutscene_id: String, skipped: bool)
 
 ## 關卡 id -> 場景。切片場景完成前，所有檢查點都在 sandbox。
 const LEVELS: Dictionary = {
@@ -23,6 +25,8 @@ var session: GameSession
 var dialogues: DialogueDB
 ## 進行中的對話（沒有則為 null）
 var dialogue: DialogueRunner
+## 進行中的過場（沒有則為 null）；時間由這裡推進，暫停時跟著停
+var cutscene: CutsceneRunner
 
 
 func _ready() -> void:
@@ -45,6 +49,18 @@ func _ready() -> void:
 			start_dialogue(dlg)
 			for i: int in steps:
 				dialogue.advance())
+	# 截圖用：`-- --level=sandbox --cutscene=slice_bell_nine --cutscene-steps=3`（跳過開場鏡頭後敲 N 下）
+	if args.has("cutscene"):
+		var cs_id: String = str(args["cutscene"])
+		var presses: int = int(args.get("cutscene-steps", 0))
+		get_tree().create_timer(0.5).timeout.connect(func() -> void:
+			if not play_cutscene(cs_id):
+				return
+			cutscene.update(100.0)
+			for i: int in presses:
+				cutscene.press(cutscene.awaited_action())
+			if not cutscene.is_waiting():
+				cutscene.update(0.0))
 
 
 func has_continue() -> bool:
@@ -98,6 +114,41 @@ func is_in_dialogue() -> bool:
 	return dialogue != null and dialogue.is_running()
 
 
+## 開始一段過場；已有過場或對話進行中時回傳 false。
+func play_cutscene(cutscene_id: String) -> bool:
+	if is_in_cutscene() or is_in_dialogue():
+		return false
+	var r := CutsceneRunner.new(session.state)
+	r.state_changed.connect(_on_dialogue_state_changed)
+	r.finished.connect(_on_cutscene_finished)
+	cutscene = r
+	cutscene_started.emit(r)
+	if not r.start(cutscene_id):
+		cutscene = null
+		cutscene_ended.emit(cutscene_id, true)
+		return false
+	return true
+
+
+func is_in_cutscene() -> bool:
+	return cutscene != null and cutscene.is_running()
+
+
+## 玩家角色不能移動（對話或過場中）。
+func is_player_locked() -> bool:
+	return is_in_dialogue() or is_in_cutscene()
+
+
+func _process(delta: float) -> void:
+	if cutscene != null and cutscene.is_running():
+		cutscene.update(delta)
+
+
+func _on_cutscene_finished(cutscene_id: String, skipped: bool) -> void:
+	cutscene = null
+	cutscene_ended.emit(cutscene_id, skipped)
+
+
 func _on_dialogue_state_changed() -> void:
 	session.advance()
 
@@ -109,4 +160,5 @@ func _on_dialogue_finished(dialogue_id: String) -> void:
 
 func back_to_title() -> void:
 	dialogue = null
+	cutscene = null
 	get_tree().change_scene_to_file(TITLE_SCENE)
