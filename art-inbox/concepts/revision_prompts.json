@@ -1,0 +1,22 @@
+[
+  {
+    "asset": "frostbridge_winter",
+    "prompt": "Edit this image. Deliver an actual 2048 pixel wide PNG (2048x1024 landscape for environment or 2048x1360 for characters); resolution is essential. Preserve the composition, lighting, all objects and design. Enhance clarity at the higher resolution. ",
+    "selected": false
+  },
+  {
+    "asset": "ruined_bell_tower",
+    "prompt": "Edit this image. Deliver an actual 2048 pixel wide PNG (2048x1024 landscape for environment or 2048x1360 for characters); resolution is essential. Preserve the composition, lighting, all objects and design. Enhance clarity at the higher resolution. ",
+    "selected": false
+  },
+  {
+    "asset": "south_street_arch",
+    "prompt": "Edit this image. Deliver an actual 2048 pixel wide PNG (2048x1024 landscape for environment or 2048x1360 for characters); resolution is essential. Preserve the composition, lighting, all objects and design. Enhance clarity at the higher resolution. ",
+    "selected": false
+  },
+  {
+    "asset": "sheila_and_noen",
+    "prompt": "Edit this image. Deliver an actual 2048 pixel wide PNG (2048x1024 landscape for environment or 2048x1360 for characters); resolution is essential. Preserve the composition, lighting, all objects and design. Enhance clarity at the higher resolution. Correct Sheila's broken sword to be a genuinely broad heavy broken blade wider than her shoulder span, carried on her back with right hand on hilt, and her silver chest badge to depict three crossed swords, not a cross. Keep Noen's right splinted arm and left held hammer.",
+    "selected": true
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "asset": "frostbridge_winter",
+    "file": "frostbridge_winter/frostbridge_winter.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 2615966,
+    "sha256": "920bcacbdefbfe260e57df68b17325036d0ac8d77eee33076187cda2bcc09370",
+    "meets_requested_resolution": false,
+    "status": "concept_draft_not_accepted"
+  },
+  {
+    "asset": "ruined_bell_tower",
+    "file": "ruined_bell_tower/ruined_bell_tower.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 2500800,
+    "sha256": "c2909e0557a8d3c86377f691b06f2287f3fa1d13de1c85a6b493aed489218390",
+    "meets_requested_resolution": false,
+    "status": "concept_draft_not_accepted"
+  },
+  {
+    "asset": "sheila_and_noen",
+    "file": "sheila_and_noen/sheila_and_noen.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 3283134,
+    "sha256": "1770ffd1f01d72f650a60d9e9d79b2b1993024562218f4876145dc56b90ef05a",
+    "meets_requested_resolution": false,
+    "status": "concept_draft_not_accepted"
+  },
+  {
+    "asset": "south_street_arch",
+    "file": "south_street_arch/south_street_arch.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 2420555,
+    "sha256": "c6f3d78a6242626fb02f79a131326b36bb2802f7604acd9afad2b517c8faee1a",
+    "meets_requested_resolution": false,
+    "status": "concept_draft_not_accepted"
+  }
+]
