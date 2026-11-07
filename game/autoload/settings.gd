@@ -16,6 +16,10 @@ var _config_path: String = SETTINGS_PATH
 
 func _ready() -> void:
 	load_settings()
+	# 開發／截圖用：`-- --locale=zh_TW` 暫時覆寫語言（不寫入設定檔）
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--locale="):
+			locale = normalize_locale(arg.substr("--locale=".length()))
 	apply()
 
 
