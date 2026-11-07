@@ -18,12 +18,12 @@ game/
 scripts/                 # get-godot、check、screenshot、gen-assets
 ```
 
-## 現況（11/8 第 2 輪結束）
+## 現況（11/8 第 3 輪結束）
 
 | 模組 | 位置 | 職責 |
 |---|---|---|
 | App | `autoload/app.gd` | 解析 `--` 後的命令列（截圖模式等）、套用字型主題、註冊按鍵 |
-| Settings | `autoload/settings.gd` | 語言、音量、字幕；存 `user://settings.cfg` |
+| Settings | `autoload/settings.gd` | 語言、各匯流排音量、字幕、畫質、全螢幕、垂直同步、減少晃動；存 `user://settings.cfg` |
 | GameState | `src/core/game_state.gd` | 章節、檢查點、旗標、任務階段、已付記憶、遊玩時間 |
 | SaveCodec | `src/core/save_codec.gd` | JSON＋版本號、逐版遷移、`.tmp` 改名、`.bak` 回復（D-011） |
 | NineBreath | `src/core/nine_breath.gd` | 九息狀態機（D-012） |
@@ -36,7 +36,11 @@ scripts/                 # get-godot、check、screenshot、gen-assets
 | FrameStats／BenchmarkRun | `src/core/` | 幀時間統計、benchmark 計時與報告 |
 | PlayerController | `scenes/actors/player/` | 第三人稱移動、閃避、越肩鏡頭 |
 | Sandbox／Benchmark | `scenes/dev/`、`scenes/bench/` | 冬夜街道沙盒；固定鏡頭路徑 benchmark |
-| Boot | `scenes/boot/` | 標題畫面（霧 shader）；新遊戲／繼續接上 Game |
+| Boot | `scenes/boot/` | 標題畫面（霧 shader）；新遊戲／繼續／設定 |
+| QualityPreset | `src/core/quality_preset.gd` | 畫質三級：效果開關、MSAA、體積霧格點（D-019） |
+| DialogueDB／DialogueRunner | `src/core/` | 對話資料驗證、台詞與選項、效果（D-018）；`Game.start_dialogue()` 接任務 |
+| Puppet | `scenes/actors/puppet/` | 程序人偶與程式動畫，介面固定以便換模型（D-017） |
+| PauseMenu／SettingsMenu／Hud／DialogueBox | `scenes/ui/` | 暫停、設定、目標與存檔提示、對話框；文字全走翻譯 key |
 
 ## 接下來的結構（切片）
 
@@ -108,4 +112,4 @@ scenes/dev/             sandbox（測試移動、鏡頭、戰鬥用）
 
 - `scripts/check.sh`：import（兩次，D-006）→ 所有腳本載入 → `tests/unit` → `tests/flow`。
 - 主線流程測試（`tests/flow/test_main_flow.gd`）會逐步長大：開機 → 標題 → 新遊戲 → 各檢查點 → 存檔 → 讀檔 → 切片結尾，在 GameState／QuestRunner 層面跑，不需要畫面。
-- 命令列旗標（`--` 之後）：`--screenshot=<png> --frames=<n>`（已有）、`--locale=zh_TW`（已有）、`--level=<id> --spawn=<id>`（直接進關卡）、`--benchmark`（跑 benchmark 後結束）。
+- 命令列旗標（`--` 之後）：`--screenshot=<png> --frames=<n>`（已有）、`--locale=zh_TW`（已有）、`--quality=0..2`、`--open=pause|settings`、`--dialogue=<id> --dialogue-steps=<n>`（截圖用，已有）、`--level=<id> --spawn=<id>`（直接進關卡）、`--benchmark`（跑 benchmark 後結束）。

@@ -3,7 +3,7 @@
 只列需要你處理或想聽你意見的重點；處理完的會刪掉。沒回覆的意見題，loop 會照預設做。
 
 1. **試玩＋第一次效能量測（約 5 分鐘）**：從 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 Windows zip 並解壓。
-   - 雙擊 `YumingCity.exe` →「新遊戲」會進入冬夜街道沙盒，可以用 WASD／滑鼠或手把走動，F3 開效能 overlay。
+   - 雙擊 `YumingCity.exe` →「新遊戲」會進入冬夜街道沙盒，可以用 WASD／滑鼠或手把走動；右前方的梨販攤走過去會開始對話，Esc 暫停、可以試設定（畫質低／中／高的差別最明顯）。F3 開效能 overlay。
    - 量測：在解壓的資料夾開 PowerShell 或命令提示字元，執行 `.\YumingCity.exe ++ --benchmark`（`++` 是 Godot 的使用者參數分隔符，PowerShell 也不會吃掉），約 35 秒後自動結束；結果在 `%APPDATA%\YumingCity\benchmark\bench-*.json`。請把那個 JSON 的內容（或檔案）貼到下面回覆區，並註明顯示卡型號與螢幕解析度。
    - 打不開或畫面怪怪的，回覆錯誤訊息或截圖說明即可。
 2. **Steam（不急，12 月初前）**：Steamworks 開發者帳號、App 費用、App ID、商店頁、內容分級問卷只有你能處理。AI 生成的素材上架時需要在 Steam 問卷申報，用了哪些會記在 `docs/CREDITS.md`。

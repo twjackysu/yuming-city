@@ -2,6 +2,24 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-019　2026-11-08　畫質三級只切開關；設定即時生效、關閉選單才存檔
+
+- 決策：`QualityPreset`（低／中／高）只切換效果開關與 MSAA，不改場景調好的霧色與密度。低畫質關體積霧時改開便宜的深度霧（顏色取自場景的體積霧），保住冬夜氛圍。場景的 WorldEnvironment 進樹時由 Settings 自動套用（`node_added`），場景不用自己處理。音訊匯流排 Master／Music／SFX／Voice／UI（UI 接 SFX）由程式建立。設定改值即時生效，關閉設定選單時才寫 `settings.cfg`（語言切換例外，立即寫入）。
+- 理由：場景只需要做一份「中」畫質的調整；畫質選項可以測試；拖滑桿不會一直寫檔。
+- 影響：新場景只要用 WorldEnvironment 就自動支援畫質；之後新增的效果（SDFGI、陰影距離等）加在 `QualityPreset` 一處。
+
+## D-018　2026-11-08　對話：JSON 節點圖＋DialogueRunner，由 Game 接到任務
+
+- 決策：對話放 `game/data/dialogue/*.json`（格式見 `dialogue_db.gd` 開頭），文字 key 放 `i18n/slice.csv`。`DialogueRunner` 是純邏輯（台詞、條件過濾選項、效果）；`Game.start_dialogue(id)` 建立 runner、效果套用後呼叫 `session.advance()` 推進任務；`DialogueBox` 只聽訊號。驗證規則：next／choices 指向存在節點、不能同時有 next 與 choices、每組選項至少一個無條件選項（避免卡住）、所有節點都要從 start 走得到。跳過只跳到下一個選項，不替玩家做選擇。
+- 理由：照 04 架構與 D-013；對話與任務共用 StoryLogic，條件與效果都可測；「付過的記憶讓選項消失」直接用 `{"not": {"memory_paid": ...}}` 表達。
+- 影響：對話中玩家不能移動（`Game.is_in_dialogue()`）；對話狀態不存檔（從檢查點重建時重新觸發）。
+
+## D-017　2026-11-08　程序人偶用 Node3D 關節，不用 Skeleton3D
+
+- 決策：`Puppet`（`scenes/actors/puppet/`）用 Node3D 樞紐＋膠囊肢體，程式算姿勢（待機呼吸、走跑步態、前滾、鐘錘下劈）。對外介面固定：`set_move_speed`、`play_action("dodge"|"attack")`、`current_state()` ∈ `STATES`（idle／walk／run／dodge／attack）、`hand("L"|"R")`。
+- 理由：程序骨架＋蒙皮的價值在換模型時才出現，但那時會整個換成 Jacky 提供的模型與 AnimationTree；Node3D 樞紐更快、好測、剪影一樣清楚。05 計畫原寫 Skeleton3D，改為介面相容即可。
+- 影響：正式模型到位時，新增一個同介面的類別（內部用 AnimationTree，狀態名沿用 STATES），PlayerController 不用改。
+
 ## D-016　2026-11-08　效能量測：overlay＋benchmark JSON；開發工具文字不翻譯
 
 - 決策：`Perf` autoload（F3／`--perf`）顯示 FPS、1% low、CPU／GPU 渲染時間、draw calls、VRAM、驅動與顯示卡；`--benchmark` 跑固定鏡頭路徑 30 秒（暖機 2 秒不計），寫 `user://benchmark/bench-*.json`。達標判定：平均 ≥ 60 fps 且 1% low ≥ 45 fps。overlay 與 benchmark 是開發／量測工具，文字用英文技術縮寫、不走翻譯 key（不出現在玩家選單）。

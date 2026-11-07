@@ -1,41 +1,39 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 15 秒；第一次會下載 Godot 與字型來源）。截圖前確認 `apt-get install -y xvfb mesa-vulkan-drivers`，否則會退回 OpenGL（沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 20 秒；第一次會下載 Godot 與字型來源）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（沒有 update 會找不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`。
 
 ## 0. 開工先確認
 
-- 上一輪結束時 CI 全綠（最後一次 run 42393121387 驗到 6121a2f）；release `latest`（0544afd）有 Windows zip 與 `sandbox.png`。開工時照常看最近的 CI。
+- 上一輪（第 3 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。
+- 截圖用旗標：`--level=sandbox`、`--open=pause|settings`、`--quality=0..2`、`--dialogue=slice_pear_seller --dialogue-steps=2`、`--locale=zh_TW`。
 
-## 1. 暫停選單＋設定選單（05 計畫 11/11，可提前）
+## 1. 按鍵重新綁定＋裝置圖示（05 計畫 11/13，M1.1 收尾）
 
-- `scenes/ui/pause_menu`：Esc／Start 暫停（`get_tree().paused`），繼續、設定、回標題；暫停時釋放滑鼠。
-- `scenes/ui/settings_menu`：語言、主音量／音樂／音效（建立匯流排 Master／Music／SFX／Voice／UI）、字幕開關、畫質三級（低：關體積霧／SSAO／Glow，中：預設，高：加 SSR）、「減少鏡頭晃動」。Settings autoload 擴充並存到 `settings.cfg`；畫質要套到目前場景的 WorldEnvironment（建議做一個 `QualityPreset` 純類別回傳 Environment 參數，測試它）。
-- 所有文字走翻譯 key（`strings.csv`）；i18n 測試會檢查場景寫死文字。
-- 標題畫面也能開設定。
+- 設定選單加「按鍵」子頁：列出 `InputSetup.BINDINGS` 的動作（每個動作一個翻譯 key `ACT_*`），按下後等待下一個鍵／手把鍵寫入；存到 `settings.cfg` 的 `[input]`，啟動時覆寫預設（04 架構「輸入」）。衝突時交換。「恢復預設」按鈕。
+- `InputGlyphs`（`src/ui/`）：依最後輸入裝置發 `device_changed`；對話框提示（`HUD_DLG_HINT`）改成顯示目前裝置的鍵名（`[F]`／`Ⓐ`）。
+- 測試：重新綁定存讀、衝突交換、恢復預設、裝置切換訊號。
 
-## 2. HUD：目前目標＋存檔提示
+## 2. 過場跳過＋M1.1 驗收（05 計畫 11/14）
 
-- `scenes/ui/hud`：左上顯示 `Game.session.objective_key()` 的翻譯；`checkpoint_reached` 時右下閃一下「已存檔」圖示。用 Game 的訊號，不輪詢。
-- 沙盒加幾個觸發區（Area3D）設旗標，讓「新遊戲 → 走到梨販 → 目標變成敲鐘」在沙盒裡能手動驗證；流程測試加一條場景層面的驗證（玩家進觸發區 → 任務推進）。
+- `Cutscene` 最小框架：一串鏡頭點（Marker3D）＋字幕行（翻譯 key）＋時長；按住互動鍵跳過（共用 DialogueBox 的按住邏輯，抽成 `HoldToSkip`）；跳過時套用結束效果。
+- 用它做「敲鐘」的短演出替換沙盒鐘樓觸發區的即時推進（目前走到鐘樓就直接設 `slice.bell_rings = 9`）。
+- 驗收：對照 `docs/vertical-slice.md`「必須驗證」清單，把 M1.1 涵蓋的項目在 PLAN 打勾。
 
-## 3. 程序人偶（05 計畫 11/13）
+## 3. M1.2 戰鬥起步（05 計畫 11/15）
 
-- Skeleton3D 由程式建立（骨盆、脊椎、頭、上臂、前臂、大腿、小腿），膠囊肢體綁骨；程式動畫：待機呼吸、走、跑、閃避翻滾、揮擊。介面設計成之後可直接換 Jacky 提供的模型（AnimationTree 狀態名固定：idle／walk／run／dodge／attack）。
-- 截圖對照：剪影在霧中要認得出來（03 的「第一眼質感檢查」）。
+- `CombatTuning`（`data/combat/*.json`＋`user://tuning.json` 熱重載，D-014）、`Health`、受傷／死亡 → `GameSession.retry_from_checkpoint()`、閃避無敵（PlayerController 已有 `invulnerable`）、鐘錘鈍擊命中判定（人偶 attack 的 35～60% 區間）、hit stop、鏡頭震動（`Settings.reduce_camera_shake` 為 true 時減到 25%）。
+- 沙盒放一個木樁假人驗證命中與 hit stop。
 
-## 4. 對話系統（05 計畫 11/14）
+## 4. 改編文件補完（01-adaptation 的「待補」）
 
-- `DialogueDB`／`DialogueRunner`（04 架構、D-013）：節點、選項、`if`／`do` 只用 StoryLogic；付過的記憶讓選項消失。資料放 `data/dialogue/`、文字放 `i18n/slice.csv`。
-- 字幕 UI＋按住跳過。
-
-## 5. 改編文件補完（01-adaptation 的「待補」）
-
-- 全篇章節 → 遊戲章節對應表、12/31 版本範圍（初判：切片＋第一部第 3～6 章）、角色弧線。不急，但 12/1 前要有，階段 2 挑內容用。
+- 全篇章節 → 遊戲章節對應表、12/31 版本範圍（初判：切片＋第一部第 3～6 章）、角色弧線。12/1 前要有。
+- 切片事後對話（艾妲：「你爸以前買梨，老說我爸秤不準」）要和梨販對話呼應：付出 `arch_father_last_talk` 後，諾恩答不出「真的不準？」——寫進 01 的切片段落，再做成 `slice_ada_aftermath.json`。
 
 ## 備註
 
-- 沙盒 draw calls 約 236（CSG 很多）；霜橋鎮白盒時把靜態 CSG 烘成 MeshInstance 或合併，benchmark 會反映。
+- 暫停後立刻截圖時，SpringArm 還沒伸長，鏡頭會在角色身上（只有截圖模式會遇到，實際遊玩不會）。
+- 沙盒 draw calls 約 236（CSG 很多），人偶再加約 30 個 MeshInstance；霜橋鎮白盒時把靜態 CSG 烘成 MeshInstance 或合併，benchmark 會反映。
 - 標題畫面的霧層幾乎看不出來（`title_fog.gdshader` 的霧強度可再調）；放到打磨階段。
 - 測試輸出裡 `QuestRunner: 推進超過 256 步` 的 ERROR 是 `test_cycle_guard` 故意觸發的，不是失敗。
 - CI 有 Node 20 deprecation 警告（actions/checkout@v4 等），目前被強制用 Node 24 跑，不影響結果；之後確認新版號再升級。
