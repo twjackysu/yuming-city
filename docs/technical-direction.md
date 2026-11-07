@@ -1,54 +1,63 @@
-# 技術方向建議
+# 技術方向
 
-研究日期：2026-11-07。這是技術選型建議，尚未代表引擎已安裝或遊戲已編譯。
+更新：2026-11-07（引擎由 UE5 改為 Godot 4，見 DECISIONS D-001）。
 
 ## 決策
 
-建議 Unreal Engine 5，以 C++ 建立系統底層，Blueprint 實作設計層；首發 Windows 64-bit / Steam，採 DirectX 12。先以第三人稱、章節式動作 RPG 加城市據點驗證。這些遊戲形式是建議，可在原型階段調整。
+- **引擎**：Godot 4.7.2 stable（標準版），固定在 `scripts/get-godot.sh`，不因新版發布就升級。
+- **語言**：GDScript＋靜態型別；未加型別的宣告視為錯誤。不使用 C#／.NET。
+- **渲染**：Forward+。Windows 預設 D3D12，失敗時由 Godot 退回 Vulkan。
+- **平台**：首發 Windows 64-bit／Steam；CI 順便匯出 Linux 供測試。
+- **形式**：第三人稱、單人、章節式敘事動作 RPG，搭配城市據點（原型階段可調整，改了記 DECISIONS）。
 
-UE 的 C++ / Blueprint 混合架構符合本專案需要：敘事、關卡與互動可快速迭代，核心狀態與效能敏感邏輯保留文字程式碼及可測試邊界。不要把每個物件都做逐幀輪詢，也不需要把全部 Blueprint 轉成 C++；先用 Unreal Insights 找瓶頸。
+選 Godot 的原因：開發 loop 在沒有 GPU 的 Linux 雲端 session 執行，Godot 能在 Linux 與 GitHub Actions 上 import、測試、匯出 Windows 版；場景與腳本是純文字，每次修改都能被自動驗證。開源、無權利金。
 
 ## 分工
 
-| 領域 | 建議 |
+| 領域 | 做法 |
 |---|---|
-| 戰鬥、能力代價、存檔版本、任務狀態 | C++，向 Blueprint 暴露明確介面 |
-| 互動、遭遇配置、UI 流程、角色調參 | Blueprint + Data Assets / Data Tables |
-| 對話演出 | Sequencer，與任務狀態分開，支援跳過與續接 |
-| 同伴 AI | 先做小規模狀態與行為原型，再決定 StateTree / Behavior Tree 配置 |
-| 畫面 | 評估 Nanite、Lumen、Virtual Shadow Maps，依目標硬體與實測取捨 |
-| 音效 | 先使用引擎內建音訊工具，需求明確後才加入第三方音訊中介層 |
-| 開發工具 | Visual Studio 或 Rider；MSVC / Windows SDK 版本依選定 UE 文件安裝 |
-| 輔助自動化 | Python / PowerShell，用於資產檢查、建置與打包，不作主要遊戲執行語言 |
-| 版本控制 | GitHub + Git LFS；二進位資產採責任分配或鎖定，團隊擴大再評估 Perforce |
-
-不建議本案自製引擎。Unity + C# 或 Godot 可製作 PC 遊戲，但本案以高畫質 3D 戰鬥和敘事演出為目標，優先評估 UE 的整合流程；這是對本案的選型判斷，不表示其他引擎無法達成。
+| 戰鬥、九息、記憶代價、存檔、任務狀態 | 純 GDScript 類別（`RefCounted`／`Resource`），不依賴場景，可以 headless 單元測試 |
+| 互動、遭遇配置、UI 流程、角色調參 | 場景（`.tscn`）＋資料資源（`.tres`／JSON） |
+| 任務與對話 | 資料驅動（文字檔），演出與任務狀態分開，支援跳過與續接 |
+| 同伴 AI | 小型狀態機，先做席菈一人，指令與自主行為分開 |
+| 畫面 | Forward+、體積霧、SDFGI／VoxelGI 依實測取捨，後製（tonemap、bloom、色調）做成畫質選項 |
+| 音效 | Godot 內建音訊匯流排；程序生成音效先頂上 |
+| 自動化 | Bash／Python：下載引擎、生成素材、檢查與匯出（`scripts/`） |
+| 版本控制 | GitHub；大型二進位資產走 Git LFS |
 
 ## 九息能力的工程邊界
 
-不做整個世界任意倒轉或任意毀壞物復原。第一版讓設計者標記可保存物件，提供完整態 / 損壞態資料與碰撞切換。九秒倒數結束後還原指定狀態，處理玩家站位、相依物件與存檔。
+不做整個世界任意倒轉或任意毀壞物復原。設計者在場景中標記「可保存物件」，提供完整態／損壞態與碰撞切換。九秒倒數結束後還原指定狀態，處理玩家站位（避免卡進碰撞體）、相依物件與存檔。
 
-記憶代價由可追蹤的故事旗標與已知關聯決定，確認時清楚揭示可能後果；不要隨機刪除玩家存檔或任意扣除已購內容。小說的失憶是角色事件，不等於玩家必須失去操作知識。
+實作上，可保存物件的狀態是純資料（列舉＋計時），存檔只記錄「已付代價」與「物件最終狀態」，讀檔不會重複扣代價，也不會停在九秒中間。
+
+記憶代價由可追蹤的故事旗標與已知關聯決定，確認前清楚揭示可能後果；不隨機刪除玩家存檔或已取得內容。小說的失憶是角色事件，不等於玩家必須失去操作知識。
 
 ## GPU 與效能目標
 
-「有 GPU」仍不足以定義最低規格：顯示記憶體、GPU 世代、CPU、RAM、SSD 都會影響體驗。先選 NVIDIA 與 AMD 的中階實機作基準，待代表性關卡打包實測後再公布最低 / 建議配備。
+「有 GPU」不足以定義最低規格：顯示記憶體、GPU 世代、CPU、RAM、SSD 都會影響體驗。待代表性關卡打包實測後再公布最低／建議配備。
 
-原型驗收目標：在指定測試機上，1080p 中等畫質、60 fps（每幀約 16.7 ms）；另外記錄 1440p 高畫質表現。這是待驗證目標，不是已達成的承諾。
+原型驗收目標：中階獨顯、1080p 中等畫質、60 fps（每幀約 16.7 ms）；另外記錄 1440p 高畫質表現。這是待驗證目標，不是已達成的承諾。
 
-記錄 CPU / GPU frame time、1% low、VRAM、記憶體、串流與 shader / PSO 引起的卡頓。將升頻與光追做成可調畫質選項，避免把硬體光追作為第一版必要條件。Nanite / Lumen 不保證任何素材自動跑得快。
+量測方式（開發 session 沒有 GPU，所以讓遊戲自己量）：
+
+- 內建效能 overlay：CPU／GPU frame time、FPS、1% low、draw calls、VRAM、記憶體。
+- benchmark 場景：固定鏡頭路徑跑固定秒數，結束後把統計寫成 JSON 到 `user://benchmark/`。
+- shader 編譯卡頓：記錄首次出現各材質時的尖峰；必要時做 shader 預熱。
+- 實機量測步驟寫在 `docs/FOR_JACKY.md`，由 Jacky 在 Windows 實機執行打包版本。
+- 升頻（FSR）、SSR、SSAO、SDFGI、體積霧都做成畫質選項；不把光追當作必要條件。
 
 ## 發行與成本
 
-遊戲先能離線遊玩；Steam 成就、雲端存檔與手把整合在基本存檔及輸入流程穩定後加入。上架仍需另行處理 Steamworks 帳戶、商店內容、建置測試與發行程序，本 repo 建立不等於已完成上架。
+遊戲先能離線遊玩。存檔與輸入穩定後，用 GodotSteam（GDExtension）加入成就與雲端存檔。Steamworks 帳號、App ID、商店頁、分級問卷只有 Jacky 能處理；`steam_appid.txt` 與任何憑證不進 git。
 
-Epic 目前公開的標準遊戲授權說明：產品終身總收入超過 US$1,000,000 的部分通常收取 5% 權利金，具體豁免、優惠及計算依適用 EULA。Steam 的平台費用另計。正式商業發行前確認適用版本條款。
+Godot 採 MIT 授權，沒有權利金；遊戲內需附上 Godot 與第三方元件的授權聲明（見 `docs/CREDITS.md`）。Steam 平台費用另計。
 
-3A 品質涉及角色美術、場景、動作捕捉 / 動畫、音效、演出、QA、最佳化和製作管理。引擎能提供工具，不能取代這些工作。先用一段 20–30 分鐘的代表性關卡驗證團隊產能與每分鐘內容成本，再估完整遊戲。
+3A 品質涉及角色美術、場景、動畫、音效、演出、QA、最佳化。引擎提供工具，不能取代這些工作。先用 20–30 分鐘的垂直切片驗證每分鐘內容的成本，再估完整遊戲。
 
 ## 官方來源
 
-- [Epic：C++ 與 Blueprint 分工](https://dev.epicgames.com/documentation/en-us/unreal-engine/coding-in-unreal-engine-blueprint-vs-cplusplus)
-- [Epic：硬體與軟體需求](https://dev.epicgames.com/documentation/en-us/unreal-engine/hardware-and-software-specifications-for-unreal-engine)
-- [Epic：Lumen 技術細節](https://dev.epicgames.com/documentation/en-us/unreal-engine/lumen-technical-details-in-unreal-engine)
-- [Epic：授權](https://www.unrealengine.com/license)
+- [Godot 4.7.2 下載與發行說明](https://godotengine.org/download/archive/4.7.2-stable/)
+- [Godot 文件：GDScript 靜態型別](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/static_typing.html)
+- [Godot 文件：匯出](https://docs.godotengine.org/en/stable/tutorials/export/exporting_projects.html)
+- [Godot 授權](https://godotengine.org/license/)
