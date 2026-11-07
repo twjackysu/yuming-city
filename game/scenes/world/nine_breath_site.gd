@@ -310,9 +310,9 @@ func _build() -> void:
 	_label.fixed_size = true
 	_label.pixel_size = 0.0009
 	_label.font_size = 30
-	_label.outline_size = 10
+	_label.outline_size = 18
 	_label.modulate = Color(0.85, 0.94, 1.0)
-	_label.outline_modulate = Color(0.02, 0.04, 0.08, 0.85)
+	_label.outline_modulate = Color(0.02, 0.03, 0.06, 0.95)
 	_label.position = Vector3(0, 2.6, 0)
 	var f: Font = UiFonts.load_font(UiFonts.UI_SANS)
 	if f != null:

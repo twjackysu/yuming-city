@@ -96,6 +96,7 @@ func _ready() -> void:
 		if dev_args.has("phase2") and has_node("Undertaker"):
 			($Undertaker as Undertaker).enter_phase_two.call_deferred()
 	if dev_args.has("arch"):
+		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
 		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
 		player.rotation.y = PI + deg_to_rad(8.0)
 		player.yaw = player.rotation.y

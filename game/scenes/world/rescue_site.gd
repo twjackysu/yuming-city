@@ -194,7 +194,7 @@ func _build() -> void:
 	_label.fixed_size = true
 	_label.pixel_size = 0.0009
 	_label.font_size = 30
-	_label.outline_size = 10
+	_label.outline_size = 18
 	_label.modulate = Color(0.95, 0.9, 0.8)
 	_label.position = Vector3(0, 1.4, 0)
 	_label.visible = false

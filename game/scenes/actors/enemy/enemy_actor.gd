@@ -237,7 +237,7 @@ func _build_insight() -> void:
 	_insight_label.fixed_size = true
 	_insight_label.pixel_size = 0.0009
 	_insight_label.font_size = 30
-	_insight_label.outline_size = 10
+	_insight_label.outline_size = 18
 	_insight_label.modulate = Color(0.82, 0.92, 1.0)
 	_insight_label.outline_modulate = Color(0.02, 0.04, 0.08, 0.85)
 	_insight_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
