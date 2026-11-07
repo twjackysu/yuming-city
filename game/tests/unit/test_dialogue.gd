@@ -1,0 +1,80 @@
+extends TestCase
+## 對話：資料驗證、選項條件（付過的記憶讓選項消失）、效果推進任務、跳過不跳選項。
+
+
+func _db() -> DialogueDB:
+	var db := DialogueDB.load_default()
+	assert_eq(db.errors, PackedStringArray(), "對話資料沒有錯誤")
+	return db
+
+
+func test_default_data_is_valid_and_keys_exist() -> void:
+	var db: DialogueDB = _db()
+	assert_true(db.has_dialogue("slice_pear_seller"), "梨販對話")
+	TranslationServer.set_locale("en")
+	for key: String in db.translation_keys():
+		assert_ne(TranslationServer.translate(key), StringName(key), "對話用到不存在的翻譯 key：" + key)
+	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
+
+
+func test_validation_catches_mistakes() -> void:
+	var bad_next: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {"x": {"speaker": "S", "text": "T", "next": "nope"}}})
+	assert_true(bad_next.size() > 0 and bad_next[0].contains("nope"), "next 指向不存在的節點")
+	var both: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
+		"x": {"speaker": "S", "text": "T", "next": "y", "choices": [{"text": "C", "next": "y"}]},
+		"y": {"speaker": "S", "text": "T"}}})
+	assert_true(both.size() > 0, "next 與 choices 不能並存")
+	var all_conditional: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
+		"x": {"speaker": "S", "text": "T", "choices": [{"text": "C", "next": "y", "if": {"flag": "k"}}]},
+		"y": {"speaker": "S", "text": "T"}}})
+	assert_true(all_conditional.size() > 0, "所有選項都有條件會卡住")
+	var orphan: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
+		"x": {"speaker": "S", "text": "T"}, "lost": {"speaker": "S", "text": "T"}}})
+	assert_true(orphan.size() == 1 and orphan[0].contains("lost"), "走不到的節點")
+	var bad_effect: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
+		"x": {"speaker": "S", "text": "T", "do": {"run": "os.exit"}}}})
+	assert_true(bad_effect.size() > 0, "效果只能用 set／add")
+
+
+func test_pear_seller_buy_route_advances_quest() -> void:
+	var state := GameState.new()
+	var quests := QuestRunner.new(QuestDB.load_default(), state)
+	quests.start(GameSession.MAIN_QUEST)
+	var r := DialogueRunner.new(_db(), state)
+	r.state_changed.connect(quests.evaluate)
+	var lines: Array[String] = []
+	r.line_shown.connect(func(_speaker: String, text: String) -> void: lines.append(text))
+	assert_true(r.start("slice_pear_seller"))
+	r.skip_to_choice()
+	assert_eq(",".join(PackedStringArray(lines)), "DLG_PEAR_001,DLG_PEAR_002,DLG_PEAR_003", "跳過只跳到選項為止")
+	assert_eq(r.visible_choices.size(), 3, "三個選項")
+	assert_true(r.choose(0), "買梨")
+	assert_eq(state.get_flag("slice.bought_pears"), true, "選項效果")
+	assert_eq(quests.stage_of(GameSession.MAIN_QUEST), "explore_town", "還沒說完不推進")
+	r.advance()
+	assert_eq(r.current().get("text"), "DLG_PEAR_007")
+	assert_eq(quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "道別節點設旗標 → 任務推進")
+	var done: Array[bool] = [false]
+	r.finished.connect(func(_id: String) -> void: done[0] = true)
+	assert_false(r.advance(), "最後一句之後結束")
+	assert_true(done[0] and not r.is_running())
+
+
+func test_paid_memory_hides_choice() -> void:
+	var state := GameState.new()
+	var r := DialogueRunner.new(_db(), state)
+	r.start("slice_pear_seller")
+	r.skip_to_choice()
+	var texts: Array[String] = []
+	for c: Dictionary in r.visible_choices:
+		texts.append(str(c["text"]))
+	assert_true(texts.has("DLG_PEAR_C_FATHER"), "還記得父親時可以提他")
+	var state2 := GameState.new()
+	state2.pay_memory("arch_father_last_talk")
+	var r2 := DialogueRunner.new(_db(), state2)
+	r2.start("slice_pear_seller")
+	r2.skip_to_choice()
+	assert_eq(r2.visible_choices.size(), 2, "付出記憶後，那個選項消失")
+	for c: Dictionary in r2.visible_choices:
+		assert_ne(str(c["text"]), "DLG_PEAR_C_FATHER")
+	assert_false(r2.choose(5), "超出範圍的選項無效")

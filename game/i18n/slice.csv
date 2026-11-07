@@ -6,3 +6,16 @@ Q_SLICE_OBJ_RESCUE,Pull the trapped out of North Street,把北街被困的人救
 Q_SLICE_OBJ_SHEILA,Stand with the border warden,和巡界隊員並肩作戰
 Q_SLICE_OBJ_CONVOY,Get the wounded cart through the crossing,讓傷者車隊通過路口
 Q_SLICE_OBJ_CELLAR,Go down to the pear seller's cellar,下到梨販家的地窖
+SPK_NOEN,Noen,諾恩
+SPK_PEAR_SELLER,Pear Seller,梨販
+SPK_ADA,Ada,艾妲
+DLG_PEAR_001,"Noen? Out on an eclipse night. Here — the last of this winter's pears.",諾恩？月蝕夜還出門。來，今年最後一批冬梨。
+DLG_PEAR_002,"Father, your scale is leaning your way again.",爹，你的秤又往自己那邊歪了。
+DLG_PEAR_003,"Nonsense. This scale is more honest than the mayor.",胡說，這秤比鎮長還老實。
+DLG_PEAR_C_BUY,"Two, please.",給我兩個。
+DLG_PEAR_C_FATHER,"My father always said your scale was off.",我爸也老說你的秤不準。
+DLG_PEAR_C_LEAVE,"I should go.",我先走了。
+DLG_PEAR_004,"Two for the price of one and a half. Don't tell your father.",兩個算你一個半的錢。別跟你爹說。
+DLG_PEAR_005,"He said it every time. And every time, he bought some anyway.",他每回都這樣說，每回都還是買。
+DLG_PEAR_006,"Because ours are the sweetest in Frostbridge. The scale has nothing to do with it.",因為我們家的梨是霜橋鎮最甜的。跟秤沒關係。
+DLG_PEAR_007,"Stay away from the bell tower tonight. The wind feels wrong.",今晚別往鐘樓那邊去。風不對。

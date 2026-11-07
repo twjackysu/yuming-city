@@ -123,7 +123,21 @@ func test_sandbox_triggers_advance_quest() -> void:
 	assert_eq(int(s.state.get_flag("slice.bell_rings", 0)), 0, "順序不對時鐘樓不觸發")
 
 	await _teleport(player, (level.get_node("PearSellerTrigger") as Node3D).global_position)
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "走到梨販 → 敲鐘")
+	assert_true(game.call("is_in_dialogue"), "走到梨販 → 開始對話")
+	var box: DialogueBox = level.get_node("DialogueBox") as DialogueBox
+	assert_true(box.is_open(), "對話框打開")
+	var choices: Node = box.find_child("Choices", true, false)
+	for i: int in 30:
+		if not bool(game.call("is_in_dialogue")):
+			break
+		if choices.get_child_count() > 0:
+			(choices.get_child(choices.get_child_count() - 1) as Button).pressed.emit()  # 「我先走了」
+		else:
+			box.press_continue()
+		await tree.process_frame
+	assert_false(game.call("is_in_dialogue"), "對話走完")
+	assert_false(box.is_open(), "對話框關閉")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "和梨販說完話 → 敲鐘")
 	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_BELL", "HUD 目標更新")
 	assert_eq(_auto_checkpoint(), "bell_tower", "進入檢查點自動存檔")
 

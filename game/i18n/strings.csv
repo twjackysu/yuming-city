@@ -30,3 +30,4 @@ OPT_OFF,Off,關
 HUD_OBJECTIVE,OBJECTIVE,目標
 HUD_SAVED,Saved,已存檔
 HUD_SAVE_FAILED,Save failed,存檔失敗
+HUD_DLG_HINT,Interact: continue · Hold: skip,互動鍵：繼續・按住：跳過

@@ -84,11 +84,16 @@ func _physics_process(delta: float) -> void:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var talking: bool = Game.is_in_dialogue()
+	if talking:
+		input = Vector2.ZERO
 	var dir: Vector3 = move_direction(input, yaw)
 	var sprinting: bool = Input.is_action_pressed("sprint") and input.length() > 0.1
 
 	_dodge_cooldown = maxf(_dodge_cooldown - delta, 0.0)
-	if Input.is_action_just_pressed("dodge") and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
+	if talking:
+		pass
+	elif Input.is_action_just_pressed("dodge") and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
 		_dodge_dir = dir if dir.length() > 0.1 else -_body.global_basis.z
 		_dodge_dir = _dodge_dir.normalized()
 		_dodge_left = DODGE_TIME

@@ -6,6 +6,8 @@ extends Node
 ## `-- --benchmark` 跑效能測試後結束（結果在 user://benchmark/）。
 
 signal level_loaded(level_id: String)
+signal dialogue_started(runner: DialogueRunner)
+signal dialogue_ended(dialogue_id: String)
 
 ## 關卡 id -> 場景。切片場景完成前，所有檢查點都在 sandbox。
 const LEVELS: Dictionary = {
@@ -18,10 +20,16 @@ const DEFAULT_LEVEL: String = "sandbox"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 
 var session: GameSession
+var dialogues: DialogueDB
+## 進行中的對話（沒有則為 null）
+var dialogue: DialogueRunner
 
 
 func _ready() -> void:
 	session = GameSession.new(QuestDB.load_default())
+	dialogues = DialogueDB.load_default()
+	for e: String in dialogues.errors:
+		push_error("Game: 對話資料錯誤 " + e)
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
@@ -29,6 +37,14 @@ func _ready() -> void:
 	if level != "":
 		session.new_game.call_deferred()
 		go_to_level.call_deferred(level)
+	# 截圖用：`-- --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2`
+	if args.has("dialogue"):
+		var dlg: String = str(args["dialogue"])
+		var steps: int = int(args.get("dialogue-steps", 0))
+		get_tree().create_timer(0.5).timeout.connect(func() -> void:
+			start_dialogue(dlg)
+			for i: int in steps:
+				dialogue.advance())
 
 
 func has_continue() -> bool:
@@ -63,5 +79,34 @@ func go_to_level(level_id: String) -> void:
 	level_loaded.emit(level_id)
 
 
+## 開始一段對話；效果套用後讓任務推進。已有對話進行中時回傳 false。
+func start_dialogue(dialogue_id: String) -> bool:
+	if is_in_dialogue():
+		return false
+	var r := DialogueRunner.new(dialogues, session.state)
+	r.state_changed.connect(_on_dialogue_state_changed)
+	r.finished.connect(_on_dialogue_finished)
+	dialogue = r
+	if not r.start(dialogue_id):
+		dialogue = null
+		return false
+	dialogue_started.emit(r)
+	return true
+
+
+func is_in_dialogue() -> bool:
+	return dialogue != null and dialogue.is_running()
+
+
+func _on_dialogue_state_changed() -> void:
+	session.advance()
+
+
+func _on_dialogue_finished(dialogue_id: String) -> void:
+	dialogue = null
+	dialogue_ended.emit(dialogue_id)
+
+
 func back_to_title() -> void:
+	dialogue = null
 	get_tree().change_scene_to_file(TITLE_SCENE)

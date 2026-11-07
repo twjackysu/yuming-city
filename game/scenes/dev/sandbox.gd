@@ -223,7 +223,8 @@ func _trigger(node_name: String, pos: Vector3, size: Vector3, action: Callable) 
 
 
 func _on_pear_seller() -> void:
-	Game.session.set_flag("slice.met_pear_seller", true)
+	if not Game.session.state.get_flag("slice.met_pear_seller", false):
+		Game.start_dialogue("slice_pear_seller")
 
 
 func _on_bell_tower() -> void:

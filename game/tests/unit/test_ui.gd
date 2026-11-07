@@ -12,6 +12,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	tree.root.get_node("Game").set("dialogue", null)
 	if _saved_session != null:
 		(tree.root.get_node("Game") as Node).set("session", _saved_session)
 		_saved_session = null
@@ -135,4 +136,39 @@ func test_hud_follows_objective_and_autosave() -> void:
 	assert_eq(hud.saved_label().text, "HUD_SAVED", "檢查點存檔成功")
 	assert_true(hud.saved_label().modulate.a > 0.0, "存檔提示開始顯示")
 	hud.queue_free()
+	await tree.process_frame
+
+
+func test_dialogue_box_reveal_and_choices() -> void:
+	var s: GameSession = _use_temp_session()
+	s.new_game()
+	var box: DialogueBox = (load("res://scenes/ui/dialogue_box.tscn") as PackedScene).instantiate() as DialogueBox
+	tree.root.add_child(box)
+	await tree.process_frame
+	assert_false(box.is_open(), "沒有對話時隱藏")
+	var game: Node = tree.root.get_node("Game")
+	assert_true(game.call("start_dialogue", "slice_pear_seller"), "開始對話")
+	assert_false(game.call("start_dialogue", "slice_pear_seller"), "對話中不能再開一段")
+	assert_true(box.is_open(), "對話框打開")
+	assert_true(box.is_revealing(), "台詞逐字浮現")
+	box.press_continue()
+	assert_false(box.is_revealing(), "第一次按：先顯示完整")
+	assert_eq((box.find_child("Text", true, false) as Label).text, "DLG_PEAR_001", "還在第一句")
+	box.press_continue()
+	assert_eq((box.find_child("Text", true, false) as Label).text, "DLG_PEAR_002", "第二次按：下一句")
+	_assert_texts_are_keys(box, "對話框")
+	(game.get("dialogue") as DialogueRunner).skip_to_choice()
+	var choices: Node = box.find_child("Choices", true, false)
+	assert_eq(choices.get_child_count(), 3, "選項按鈕")
+	_assert_texts_are_keys(box, "對話選項")
+	(choices.get_child(0) as Button).pressed.emit()
+	assert_eq(s.state.get_flag("slice.bought_pears"), true, "按下選項套用效果")
+	for i: int in 10:
+		if not bool(game.call("is_in_dialogue")):
+			break
+		box.press_continue()
+	assert_false(game.call("is_in_dialogue"), "對話結束")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "任務推進")
+	assert_false(box.is_open())
+	box.queue_free()
 	await tree.process_frame
