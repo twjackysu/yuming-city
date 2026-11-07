@@ -79,6 +79,8 @@ func _ready() -> void:
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
 	if dev_args.has("convoy"):
 		player.global_position = Vector3(0.0, 0.05, 10.0)
+		player.rotation.y = PI  # 面向南街
+		player.yaw = player.rotation.y
 		start_convoy()
 		if dev_args.has("phase2") and has_node("Undertaker"):
 			($Undertaker as Undertaker).enter_phase_two.call_deferred()
@@ -349,7 +351,7 @@ func _build_bell_tower(pos: Vector3) -> void:
 	l.light_energy = 4.0
 	l.omni_range = 16.0
 	l.light_volumetric_fog_energy = 2.0
-	l.position = pos + Vector3(0, 13.0, 3.1)
+	l.position = pos + Vector3(1.2, 15.4, 2.3)  # 鐘室前緣：敲鐘時照亮鐘身，平時給街道一點暖光
 	add_child(l)
 	_bell_light = l
 	light_count += 1

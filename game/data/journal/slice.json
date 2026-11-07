@@ -1,0 +1,14 @@
+{
+  "id": "slice",
+  "entries": [
+    {
+      "id": "arch_father_last_talk",
+      "title": "JM_ARCH_FATHER_TITLE",
+      "context": "JM_ARCH_FATHER_CONTEXT",
+      "body": "JM_ARCH_FATHER_BODY",
+      "residue": "JM_ARCH_FATHER_RESIDUE",
+      "people": ["father"],
+      "places": ["south_arch"]
+    }
+  ]
+}

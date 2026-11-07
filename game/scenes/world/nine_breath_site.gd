@@ -107,6 +107,7 @@ func update_hold(delta: float, pressed: bool) -> bool:
 		hold = HOLD_SEC * 0.6
 	_arch.visible = hold > 0.0
 	_arch.material_override = _ghost_mat
+	_set_journal_highlight(hold > 0.0)
 	if hold > 0.0:
 		_ghost_mat.albedo_color.a = 0.05 + 0.15 * clampf(hold / HOLD_SEC, 0.0, 1.0)
 	if hold >= HOLD_SEC:
@@ -114,10 +115,22 @@ func update_hold(delta: float, pressed: bool) -> bool:
 	return false
 
 
+## 預覽中：日記裡這段記憶標亮（JournalView 在畫面一角顯示這張卡）。
+func _set_journal_highlight(on: bool) -> void:
+	var j: Journal = Game.journal
+	if j == null:
+		return
+	if on:
+		j.highlighted = memory_id
+	elif j.highlighted == memory_id:
+		j.highlighted = ""
+
+
 func activate() -> bool:
 	if not nb.activate(_state()):
 		return false
 	hold = 0.0
+	_set_journal_highlight(false)
 	_apply_phase(true)
 	_push_out_heartbeats()
 	Sfx.play_at(self, "bell_ninth", global_position + Vector3.UP * 3.0, -2.0, 0.0, 12.0)
@@ -339,3 +352,7 @@ func _build() -> void:
 	ramp.set_color(1, Color(0.4, 0.4, 0.42, 0.0))
 	_ash.color_ramp = ramp
 	add_child(_ash)
+
+
+func _exit_tree() -> void:
+	_set_journal_highlight(false)

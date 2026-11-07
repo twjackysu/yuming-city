@@ -17,9 +17,12 @@ var arch_site: NineBreathSite
 var encounter: ConvoyEncounter
 
 
-## 劇情相關的共通初始化：過場畫面、過場事件、讀檔後的北街狀態。
+## 劇情相關的共通初始化：過場畫面、日記畫面、過場事件、讀檔後的北街狀態。
 func _init_story() -> void:
 	add_child(CutsceneView.new())
+	var journal := JournalView.new()
+	journal.name = "JournalView"
+	add_child(journal)
 	Game.cutscene_started.connect(_on_cutscene_started)
 	Game.cutscene_ended.connect(_on_cutscene_ended)
 	if Game.session.state.get_flag("slice.north_street_collapsed", false):
