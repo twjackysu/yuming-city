@@ -83,8 +83,14 @@ jobs:
           [[ -s build/sandbox.png ]] && FILES+=(build/sandbox.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
           [[ -s build/bell.png ]] && FILES+=(build/bell.png)
+          # main 上已經有更新的程式 commit 時跳過（下一個 run 會發布），不刪舊版。
+          # 這種情況下用 GITHUB_TOKEN 在舊 commit 建 tag，若 workflow 檔已改過會被 403 擋（run 42398212944、42402903825）。
+          git fetch --quiet origin main
+          if ! git diff --quiet "$GITHUB_SHA" FETCH_HEAD -- . ':!docs' ':!.loop' ':!*.md'; then
+            echo "main 已有更新的程式 commit，跳過發布 latest"
+            exit 0
+          fi
           gh release delete latest --yes --cleanup-tag || true
-          # 偶爾會遇到暫時性的 403（11/8 run 42398212944），刪掉舊版後重試建立，避免 latest 消失
           for attempt in 1 2 3; do
             if gh release create latest "${FILES[@]}" \
               --prerelease \
