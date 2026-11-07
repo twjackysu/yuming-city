@@ -12,6 +12,7 @@ var _frame: int = 0
 
 func _ready() -> void:
 	get_tree().root.theme = UiFonts.build_theme()
+	InputSetup.ensure_actions()
 	var args: Dictionary = parse_user_args(OS.get_cmdline_user_args())
 	screenshot_path = str(args.get("screenshot", ""))
 	screenshot_frames = int(args.get("frames", 60))
