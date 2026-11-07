@@ -8,7 +8,7 @@ extends StoryLevel
 ##   路口  z∈[34,42]、x∈[-20,20]：傷者車隊的終點
 ## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；會動的（北街房子、鐘）各自一個節點。
 ##
-## 開發用旗標（`++ --level=frostbridge ...`）：`--convoy` 直接開打送葬者戰、`--phase2`、
+## 開發用旗標（`++ --level=frostbridge ...`）：`--rescue` 跳到救援段落、`--convoy` 直接開打送葬者戰、`--phase2`、
 ## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|north|south|cross`（出生位置）。
 
 const PLAZA_HALF: float = 11.0
@@ -77,6 +77,12 @@ func _ready() -> void:
 	# 席菈在「席菈」段落會合（M1.3 11/26）；之後的檢查點一進場就在身邊
 	if stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
+	# 截圖用：`--rescue` 直接跳到敲完九下、北街陷落的救援段落，諾恩站在第一個受困者旁
+	if dev_args.has("rescue"):
+		Game.session.set_flag("slice.met_pear_seller", true)
+		Game.session.set_flag("slice.bell_rings", 9)
+		collapse_north_street(false)
+		player.global_position = Vector3(-1.4, 0.05, -30.2)
 	if dev_args.has("convoy"):
 		player.global_position = Vector3(0.0, 0.05, 10.0)
 		player.rotation.y = PI  # 面向南街
@@ -97,6 +103,30 @@ func _ready() -> void:
 				arch_site.activate()
 				arch_site.nb.tick(9.5, Game.session.state)
 	player.snap_camera()
+
+
+# ---------------------------------------------------------------- 救援（段落 3）
+
+## 北街陷落後才有受困者；讀檔時已陷落也會在這裡生成。
+const RESCUE_SPOTS: Dictionary = {
+	"north_a": Vector3(-3.0, 0.0, -33.0),
+	"north_b": Vector3(3.0, 0.0, -37.5),
+	"north_c": Vector3(-2.8, 0.0, -42.0),
+	"north_d": Vector3(3.1, 0.0, -45.0),
+}
+
+
+func collapse_north_street(animate: bool) -> void:
+	super(animate)
+	for id: String in RESCUE_SPOTS:
+		if has_node("Rescue_" + id):
+			continue
+		var site := RescueSite.new()
+		site.name = "Rescue_" + id
+		site.site_id = id
+		site.position = RESCUE_SPOTS[id] as Vector3
+		site.rescued.connect(func(_id: String) -> void: _banner("RESCUE_SAVED", 2.5))
+		add_child(site)
 
 
 # ---------------------------------------------------------------- 送葬者戰

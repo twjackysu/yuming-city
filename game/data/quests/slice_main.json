@@ -19,7 +19,7 @@
       "id": "rescue",
       "objective": "Q_SLICE_OBJ_RESCUE",
       "checkpoint": "rescue",
-      "done_when": {"flag": "slice.rescue_done"}
+      "done_when": {"any": [{"flag": "slice.rescue_done"}, {"flag": "slice.rescued_count", "gte": 3}]}
     },
     {
       "id": "meet_sheila",

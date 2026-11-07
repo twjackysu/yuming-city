@@ -41,3 +41,5 @@ JM_ARCH_FATHER_TITLE,Beneath the South Street Arch,南街石拱下
 JM_ARCH_FATHER_CONTEXT,Father waited for me under that arch every day after school. He'd hide behind a pillar and make me find him.,那座拱門，是父親每天接我放學時等我的地方。他會躲在柱子後，故意讓我找。
 JM_ARCH_FATHER_BODY,"That evening he bought a hot sweet potato and broke it in two, the bigger half for me. ""If you can't find me, wait under the arch. I'll always come out."" ""What if you never do?"" ""Then it's your turn to hide, and I'll come looking.""",那個傍晚，他買了一個熱薯，掰成兩半，大的給我。「找不到我的時候，就在拱下等。我一定會出來。」「要是你一直不出來呢？」「那就換你躲，換我來找。」
 JM_ARCH_FATHER_RESIDUE,His face is still there. The taste of the sweet potato is still there.,父親的臉還在，熱薯的味道還在。
+RESCUE_HOLD_HINT,Hold {key} — clear the rubble,按住 {key}　搬開瓦礫
+RESCUE_SAVED,Pulled out from under the rubble.,從瓦礫下拉出來了。
