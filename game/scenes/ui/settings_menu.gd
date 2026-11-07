@@ -113,6 +113,7 @@ func _build() -> void:
 	_add_toggle("SET_FULLSCREEN", "Fullscreen", "fullscreen")
 	_add_toggle("SET_VSYNC", "Vsync", "vsync")
 	_add_toggle("SET_REDUCE_SHAKE", "ReduceShake", "reduce_camera_shake")
+	_add_toggle("SET_OBJECTIVE_MARKER", "ObjectiveMarker", "objective_marker")
 	_add_controls_row()
 
 	var spacer := Control.new()

@@ -50,6 +50,18 @@ func objective_key(quest_id: String) -> String:
 	return str(db.stage(quest_id, stage_of(quest_id)).get("objective", ""))
 
 
+## 目前階段的目標指引（QuestDB.validate_marker 的格式）；marker_if 第一個成立的優先。沒有就回傳 null。
+func marker_spec(quest_id: String) -> Variant:
+	if not is_active(quest_id):
+		return null
+	var st: Dictionary = db.stage(quest_id, stage_of(quest_id))
+	for alt: Variant in (st.get("marker_if", []) as Array):
+		var a: Dictionary = alt as Dictionary
+		if StoryLogic.check(a["when"] as Dictionary, state):
+			return a["marker"]
+	return st.get("marker", null)
+
+
 ## 檢查所有進行中的任務，條件成立就推進（可以一次推進多個階段）。
 ## 回傳本次推進的紀錄：[{quest, from, to}]
 func evaluate() -> Array[Dictionary]:

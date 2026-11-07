@@ -6,7 +6,9 @@ extends RefCounted
 ##   "id": "slice_main", "title": "Q_SLICE_MAIN_TITLE",
 ##   "stages": [
 ##     {"id": "explore_town", "objective": "Q_...", "checkpoint": "start",
-##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段"}
+##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段",
+##      "marker": "選填：目標指引指向哪裡（見 validate_marker）",
+##      "marker_if": [{"when": {...條件}, "marker": ...}]  選填：第一個成立的取代 marker}
 ##   ],
 ##   "on_complete": {...效果}
 ## }
@@ -129,6 +131,22 @@ static func validate_quest(q: Dictionary) -> PackedStringArray:
 			var err: String = StoryLogic.validate_condition(st["done_when"])
 			if err != "":
 				out.append("階段 %s 的 done_when：%s" % [sid, err])
+		if st.has("marker"):
+			var me: String = validate_marker(st["marker"])
+			if me != "":
+				out.append("階段 %s 的 marker：%s" % [sid, me])
+		if st.has("marker_if"):
+			if not st["marker_if"] is Array:
+				out.append("階段 %s 的 marker_if 必須是陣列" % sid)
+			else:
+				for alt: Variant in (st["marker_if"] as Array):
+					if not alt is Dictionary or not (alt as Dictionary).has("when") or not (alt as Dictionary).has("marker"):
+						out.append("階段 %s 的 marker_if 每一項都要有 when 與 marker" % sid)
+						continue
+					var ce: String = StoryLogic.validate_condition((alt as Dictionary)["when"])
+					var me2: String = validate_marker((alt as Dictionary)["marker"])
+					if ce != "" or me2 != "":
+						out.append("階段 %s 的 marker_if：%s%s" % [sid, ce, me2])
 		if st.has("on_done"):
 			var e: String = StoryLogic.validate_effects(st["on_done"])
 			if e != "":
@@ -143,3 +161,22 @@ static func validate_quest(q: Dictionary) -> PackedStringArray:
 		if e2 != "":
 			out.append("on_complete：%s" % e2)
 	return out
+
+
+## 目標指引的目標（02-gameplay「目標指引」）：
+##   "node:<名稱>"     關卡底下的節點（Node3D）
+##   "nearest:<前綴>"  名稱以前綴開頭、還沒完成的節點中最近的一個（有 is_available() 就要回傳 true）
+##   [x, y, z]         固定位置
+static func validate_marker(m: Variant) -> String:
+	if m is String:
+		var t: String = m as String
+		for prefix: String in ["node:", "nearest:"]:
+			if t.begins_with(prefix) and t.length() > prefix.length():
+				return ""
+		return "不認得的目標 %s（node:／nearest:）" % t
+	if m is Array and (m as Array).size() == 3:
+		for v: Variant in (m as Array):
+			if not (v is float or v is int):
+				return "座標必須是數字"
+		return ""
+	return "必須是字串或 [x, y, z]"

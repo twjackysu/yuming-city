@@ -1,6 +1,6 @@
 class_name Hud
 extends CanvasLayer
-## 關卡 HUD：左上目前目標，右下存檔提示。只聽 Game.session 的訊號，不輪詢。
+## 關卡 HUD：左上目前目標，右下存檔提示，目標指引（ObjectiveGuide）。只聽 Game.session 的訊號，不輪詢。
 ## 目標換了會淡入，停留一陣子後淡出（03：探索時幾乎沒有 HUD）；按「日誌」鍵（Tab／Back）再顯示。
 ## 進入檢查點（自動存檔）時右下閃一下「已存檔」（失敗則顯示「存檔失敗」）。
 
@@ -18,6 +18,8 @@ var _objective_tween: Tween
 var _banner: Label
 ## 戰鬥 HUD（生命、體力、指令）
 var combat: CombatHud
+## 目標指引（指向目前目標的小菱形＋距離）
+var guide: ObjectiveGuide
 var _banner_tween: Tween
 
 
@@ -105,6 +107,15 @@ func _build() -> void:
 	_banner.modulate.a = 0.0
 	combat = CombatHud.new()
 	add_child(combat)
+	guide = ObjectiveGuide.new()
+	add_child(guide)
+
+
+func _process(delta: float) -> void:
+	# 目標文字亮著時指引也全亮；關卡＝Hud 的父節點
+	guide.emphasized = is_objective_shown()
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	guide.refresh(get_parent(), player, get_viewport().get_camera_3d(), combat.in_combat, delta)
 
 
 func _set_objective(key: String, animate: bool) -> void:

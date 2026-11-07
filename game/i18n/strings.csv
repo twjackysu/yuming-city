@@ -22,6 +22,8 @@ SET_QUALITY,Graphics Quality,畫質
 SET_FULLSCREEN,Fullscreen,全螢幕
 SET_VSYNC,V-Sync,垂直同步
 SET_REDUCE_SHAKE,Reduce Camera Shake,減少鏡頭晃動
+SET_OBJECTIVE_MARKER,Objective Marker,目標指引
+GUIDE_DISTANCE,{m} m,{m} 公尺
 QUALITY_LOW,Low,低
 QUALITY_MEDIUM,Medium,中
 QUALITY_HIGH,High,高

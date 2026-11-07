@@ -26,6 +26,8 @@ var quality: QualityPreset.Level = QualityPreset.DEFAULT_LEVEL
 var fullscreen: bool = false
 var vsync: bool = true
 var reduce_camera_shake: bool = false
+## 目標指引（HUD 上指向目前目標的小菱形＋距離；02-gameplay「目標指引」）
+var objective_marker: bool = true
 ## 目前的按鍵綁定（格式見 InputSetup）；存檔時只寫跟預設不同的動作到 [input]
 var input_bindings: Dictionary = InputSetup.defaults()
 
@@ -123,6 +125,8 @@ func set_option(option: String, value: bool) -> void:
 			vsync = value
 		"reduce_camera_shake":
 			reduce_camera_shake = value
+		"objective_marker":
+			objective_marker = value
 		_:
 			push_error("Settings: 沒有選項 %s" % option)
 			return
@@ -140,6 +144,8 @@ func get_option(option: String) -> bool:
 			return vsync
 		"reduce_camera_shake":
 			return reduce_camera_shake
+		"objective_marker":
+			return objective_marker
 	return false
 
 
@@ -211,6 +217,7 @@ func load_settings(path: String = _config_path) -> void:
 	subtitles_enabled = bool(cfg.get_value("general", "subtitles", true))
 	difficulty = normalize_difficulty(str(cfg.get_value("gameplay", "difficulty", DEFAULT_DIFFICULTY)))
 	reduce_camera_shake = bool(cfg.get_value("general", "reduce_camera_shake", false))
+	objective_marker = bool(cfg.get_value("general", "objective_marker", true))
 	for bus_name: String in VOLUME_BUSES:
 		var key: String = bus_name.to_lower() + "_volume"
 		volumes[bus_name] = clampf(float(cfg.get_value("audio", key, volumes.get(bus_name, 1.0))), 0.0, 1.0)
@@ -230,6 +237,7 @@ func save_settings(path: String = _config_path) -> Error:
 	cfg.set_value("general", "subtitles", subtitles_enabled)
 	cfg.set_value("gameplay", "difficulty", difficulty)
 	cfg.set_value("general", "reduce_camera_shake", reduce_camera_shake)
+	cfg.set_value("general", "objective_marker", objective_marker)
 	for bus_name: String in VOLUME_BUSES:
 		cfg.set_value("audio", bus_name.to_lower() + "_volume", volume(bus_name))
 	cfg.set_value("video", "quality", int(quality))

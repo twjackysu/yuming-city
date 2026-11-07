@@ -90,6 +90,34 @@ func test_layout_nodes_and_batching() -> void:
 	await _free(level)
 
 
+func test_objective_guide_points_to_current_target() -> void:
+	var s: GameSession = _session()
+	var level: StoryLevel = await _load()
+	var hud: Hud = level.get_node("Hud") as Hud
+	for i: int in 3:
+		await tree.process_frame
+	var player: Node3D = level.get_node("Player") as Node3D
+	var stall: Vector3 = (level.get_node("PearSellerTrigger") as Node3D).global_position
+	var expect: float = Vector2(stall.x - player.global_position.x, stall.z - player.global_position.z).length()
+	assert_true(hud.guide.shown, "新遊戲時指向梨販")
+	assert_true(absf(hud.guide.distance - expect) < 0.5, "距離是到梨販的水平距離（%.1f／%.1f）" % [hud.guide.distance, expect])
+	var settings: Node = tree.root.get_node("Settings")
+	settings.set("objective_marker", false)
+	await tree.process_frame
+	assert_false(hud.guide.shown, "設定關掉就不顯示")
+	settings.set("objective_marker", true)
+	# 敲鐘階段改指鐘樓
+	s.set_flag("slice.met_pear_seller", true)
+	await tree.process_frame
+	var tower: Vector3 = (level.get_node("BellTowerTrigger") as Node3D).global_position
+	assert_true(absf(hud.guide.distance - Vector2(tower.x - player.global_position.x, tower.z - player.global_position.z).length()) < 0.5, "敲鐘階段指向鐘樓")
+	# 走到目標旁邊就不顯示
+	player.global_position = Vector3(tower.x, 0.05, tower.z + 1.0)
+	await tree.process_frame
+	assert_false(hud.guide.shown, "到了目標旁邊就不顯示")
+	await _free(level)
+
+
 func test_player_walks_on_plaza_and_is_boxed_in() -> void:
 	_session()
 	var level: StoryLevel = await _load()
