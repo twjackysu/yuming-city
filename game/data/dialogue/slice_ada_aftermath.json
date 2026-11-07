@@ -1,0 +1,18 @@
+{
+  "id": "slice_ada_aftermath",
+  "start": "ada_list",
+  "nodes": {
+    "ada_list": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_001",
+      "choices": [
+        {"text": "DLG_AFTER_C_REMEMBER", "next": "remember", "if": {"not": {"memory_paid": "arch_father_last_talk"}}},
+        {"text": "DLG_AFTER_C_ASK", "next": "forgot"}
+      ]
+    },
+    "remember": {"speaker": "SPK_ADA", "text": "DLG_AFTER_002", "next": "give_pear"},
+    "give_pear": {"speaker": "SPK_ADA", "text": "DLG_AFTER_003", "next": "cellar", "do": {"set": {"slice.ada_gave_pear": true}}},
+    "forgot": {"speaker": "SPK_ADA", "text": "DLG_AFTER_004", "next": "cellar"},
+    "cellar": {"speaker": "SPK_ADA", "text": "DLG_AFTER_005", "do": {"set": {"slice.ada_talked_aftermath": true}}}
+  }
+}

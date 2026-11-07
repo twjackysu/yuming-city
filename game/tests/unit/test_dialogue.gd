@@ -78,3 +78,18 @@ func test_paid_memory_hides_choice() -> void:
 	for c: Dictionary in r2.visible_choices:
 		assert_ne(str(c["text"]), "DLG_PEAR_C_FATHER")
 	assert_false(r2.choose(5), "超出範圍的選項無效")
+
+
+func test_ada_aftermath_reflects_paid_memory() -> void:
+	var db: DialogueDB = DialogueDB.load_default()
+	assert_eq(db.errors, PackedStringArray(), "對話資料沒有錯")
+	var keep := GameState.new()
+	var r := DialogueRunner.new(db, keep)
+	assert_true(r.start("slice_ada_aftermath"))
+	assert_eq(r.visible_choices.size(), 2, "記得父親：可以答，也可以反問")
+	var paid := GameState.new()
+	paid.pay_memory("arch_father_last_talk")
+	var r2 := DialogueRunner.new(db, paid)
+	assert_true(r2.start("slice_ada_aftermath"))
+	assert_eq(r2.visible_choices.size(), 1, "付了石拱的記憶：只剩「……真的不準？」")
+	assert_eq(str(r2.visible_choices[0]["text"]), "DLG_AFTER_C_ASK")
