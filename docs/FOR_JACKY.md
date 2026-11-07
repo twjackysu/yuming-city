@@ -5,7 +5,7 @@
 1. **試玩＋第一次效能量測（約 10 分鐘）**：從 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 Windows zip 並解壓，雙擊 `YumingCity.exe`。
    - 「新遊戲」→ 右前方梨販攤走過去開始對話 → 說完話走到街底鐘樓，會進入敲鐘演出：**每按一次 F（手把 A）敲一下，親手敲九下**；按住 1 秒可跳過。左前方有練習木樁，滑鼠左鍵／X 揮鐘錘試打擊感。
    - Esc → 設定 →「按鍵設定」可以改鍵；用手把時提示會自動換成 [A]。
-   - 想試戰鬥：在解壓資料夾開 PowerShell，執行 `.\YumingCity.exe ++ --level=sandbox --enemies`（灰巡者＋席菈）或 `--boss`（送葬者＋席菈）。右鍵／LT 按住看穿、中鍵／R3 鎖定、Q／E／R（十字鍵上／右／下）叫席菈打弱點／閃開／守住；設定裡可切難度。
+   - 想試戰鬥：在解壓資料夾開 PowerShell，執行 `.\YumingCity.exe ++ --level=sandbox --enemies`（灰巡者＋席菈）或 `--convoy`（完整送葬者戰：保護傷者車隊通過路口；加 `--phase2` 直接從第二階段開始）。右鍵／LT 按住看穿、中鍵／R3 鎖定、Q／E／R（十字鍵上／右／下）叫席菈打弱點／閃開／守住；送葬者舉起鐵架時到南街石拱旁按住 V／Y 一秒發動九息；設定裡可切難度。
    - 量測：`.\YumingCity.exe ++ --benchmark`，約 35 秒後自動結束；結果在 `%APPDATA%\YumingCity\benchmark\bench-*.json`。請把 JSON 內容貼到下面回覆區，並註明顯示卡型號與螢幕解析度。
    - 打擊感、敲鐘的節奏、前兆夠不夠清楚、喊指令好不好上手——任何一句感想都很有用；打不開或畫面怪怪的，回覆錯誤訊息或截圖即可。
 2. **Steam（不急，12 月初前）**：Steamworks 開發者帳號、App 費用、App ID、商店頁、內容分級問卷只有你能處理。AI 生成的素材上架時需要在 Steam 問卷申報，用了哪些會記在 `docs/CREDITS.md`。
