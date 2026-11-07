@@ -21,6 +21,8 @@
 
 - 標題畫面背景（`game/scenes/boot/title_fog.gdshader`）
 - 遊戲圖示（`game/icon.svg`）
+- 音效：鐘聲、第九聲鐘、鈍擊、弱點鈍擊、爪擊、斬擊、閃避風聲（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
+- 角色與敵人外型：諾恩、席菈（程序人偶換配色＋斷劍）、灰巡者、送葬者（CSG／程序 mesh，霜紋前兆為程序扇形／圓形／直線）
 
 ## 第三方素材
 

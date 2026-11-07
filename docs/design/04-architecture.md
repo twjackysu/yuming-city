@@ -18,7 +18,7 @@ game/
 scripts/                 # get-godot、check、screenshot、gen-assets
 ```
 
-## 現況（11/8 第 4 輪結束）
+## 現況（11/8 第 5 輪結束）
 
 | 模組 | 位置 | 職責 |
 |---|---|---|
@@ -45,6 +45,10 @@ scripts/                 # get-godot、check、screenshot、gen-assets
 | CutsceneRunner／CutsceneView／HoldToSkip | `src/core/`、`scenes/ui/`、`src/ui/` | 資料驅動過場與可互動演出、按住跳過（D-021）；`Game.play_cutscene()` |
 | CombatTuning／Health | `src/core/` | 戰鬥數值（`data/combat/tuning.json`＋`user://tuning.json`、F5）；生命元件 |
 | EnemyBrain／Ashwalker／TrainingDummy | `src/core/`、`scenes/actors/` | 一般敵人狀態機（追、前兆、出招、破綻、失衡跪地）；練習木樁（D-022） |
+| EnemyActor／Undertaker | `scenes/actors/enemy/`、`scenes/actors/undertaker/` | 敵人共用基底（追最近心跳、看穿、弱點、難度、`hit_heartbeats`）；EnemyBrain 多招（`moves`＋`pattern`）；送葬者第一階段（D-026） |
+| EnemyIntel | `src/core/enemy_intel.gd`、`data/combat/intel.json` | 看穿資料與文字（已證實／未證實）、弱點方向判定（D-024） |
+| CompanionBrain／Sheila | `src/core/companion_brain.gd`、`scenes/actors/sheila/` | 席菈：跟隨、自主斬擊、三指令、時機窗、冷卻、拒絕（D-025） |
+| Sfx | `src/core/sfx.gd`、`scripts/gen_sfx.py` | 程序音效（建置時產生、不進 git），SFX 匯流排（D-027） |
 
 ## 接下來的結構（切片）
 
