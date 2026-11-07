@@ -13,3 +13,5 @@ fi
 python3 -P "$ROOT/scripts/gen_fonts.py"
 # 音效（標準函式庫即可，不需安裝套件）
 python3 -P "$ROOT/scripts/gen_sfx.py"
+# 正式角色模型（art-inbox/characters → game/assets/characters，收件檢查不過就用程序人偶）
+python3 -P "$ROOT/scripts/import_characters.py"

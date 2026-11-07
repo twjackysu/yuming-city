@@ -24,6 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 只下載正式角色模型（概念圖等其他 LFS 檔不需要進遊戲）；沒有模型時什麼都不做
+      - name: 下載角色模型（Git LFS）
+        run: git lfs pull --include="art-inbox/characters/**" || echo "沒有角色模型或 LFS 下載失敗，用程序人偶"
+
       - name: Cache Godot 與 export templates
         uses: actions/cache@v4
         with:

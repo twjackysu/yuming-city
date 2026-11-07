@@ -6,6 +6,10 @@ extends Node3D
 ## 對外介面固定，之後換成有骨架的模型＋AnimationTree 時，外部（PlayerController 等）不用改：
 ##   set_move_speed(m/s)、play_action("dodge"|"attack")、current_state() ∈ STATES、hand("L"|"R")
 ## STATES 也就是將來 AnimationTree 狀態機的狀態名。
+##
+## 正式模型：設 character_id（"noen"、"sheila"…），CharacterModels 找得到匯入過的 GLB 就用模型＋AnimationPlayer，
+## 找不到（或模型沒有骨架）就用程序人偶。模型缺的動作：閃避退回整個人前滾、其他退回 idle。
+## 碰撞、AI、弱點判定都不跟模型走（04-architecture「角色模型接入點」）。
 
 const STATES: PackedStringArray = ["idle", "walk", "run", "dodge", "attack"]
 const WALK_MIN_SPEED: float = 0.3
@@ -22,6 +26,17 @@ const FOREARM_LEN: float = 0.28
 @export var trim_color: Color = Color(0.3, 0.24, 0.18)
 @export var skin_color: Color = Color(0.62, 0.52, 0.45)
 
+## 正式模型 id（CharacterModels.path_for）；空字串＝程序人偶
+@export var character_id: String = ""
+## 直接指定模型場景（測試、工具）；優先於 character_id
+var model_scene: PackedScene = null
+## 用模型時：模型根節點、動畫播放器、骨架；用程序人偶時都是 null
+var model: Node3D = null
+var anim: AnimationPlayer = null
+var skeleton: Skeleton3D = null
+## 模型目前播的動作（測試用）
+var model_animation: String = ""
+
 var move_speed: float = 0.0
 var action: String = ""
 var action_time: float = 0.0
@@ -35,7 +50,15 @@ var _coat: MeshInstance3D
 
 
 func _ready() -> void:
+	if model_scene == null:
+		model_scene = CharacterModels.scene_for(character_id)
+	if model_scene != null and _build_model():
+		return
 	_build()
+
+
+func uses_model() -> bool:
+	return model != null
 
 
 func _process(delta: float) -> void:
@@ -85,7 +108,82 @@ func advance(delta: float) -> void:
 		if action_time >= float(ACTION_TIME[action]):
 			action = ""
 			action_time = 0.0
+	if model != null:
+		_animate_model()
+		return
 	_pose(speed_t)
+
+
+## 模型：依狀態換動作；缺的動作退回（閃避＝整個人前滾，其他＝idle）。
+func _animate_model() -> void:
+	var state: String = current_state()
+	var name_found: String = CharacterModels.find_animation(anim, state)
+	_roll.rotation.x = 0.0
+	_roll.position = Vector3.ZERO
+	if name_found == "" and state == "dodge":
+		var t: float = clampf(action_time / float(ACTION_TIME["dodge"]), 0.0, 1.0)
+		_roll.position = Vector3(0, 0.5 - 0.35 * sin(t * PI), 0)
+		_roll.rotation.x = -TAU * ease(t, -1.8)
+	if name_found == "":
+		name_found = CharacterModels.find_animation(anim, "idle")
+	if name_found == "":
+		return
+	if model_animation != name_found:
+		model_animation = name_found
+		anim.play(name_found, 0.15)
+	# 步頻跟速度走（動作表的走路約 1.6 m/s、跑步約 RUN_SPEED）
+	match state:
+		"walk":
+			anim.speed_scale = clampf(move_speed / 1.6, 0.6, 1.6)
+		"run":
+			anim.speed_scale = clampf(move_speed / RUN_SPEED, 0.7, 1.4)
+		_:
+			anim.speed_scale = 1.0
+
+
+## 換成正式模型；沒有骨架就放棄（回傳 false，用程序人偶）。
+func _build_model() -> bool:
+	var inst: Node3D = model_scene.instantiate() as Node3D
+	if inst == null:
+		return false
+	var skels: Array[Node] = inst.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		push_warning("Puppet: 模型 %s 沒有骨架，改用程序人偶" % character_id)
+		inst.free()
+		return false
+	_roll = Node3D.new()
+	_roll.name = "Roll"
+	add_child(_roll)
+	model = inst
+	model.name = "Model"
+	_roll.add_child(model)
+	skeleton = skels[0] as Skeleton3D
+	var players: Array[Node] = inst.find_children("*", "AnimationPlayer", true, false)
+	anim = players[0] as AnimationPlayer if not players.is_empty() else null
+	if anim != null:
+		for st: String in CharacterModels.LOOPING:
+			var n: String = CharacterModels.find_animation(anim, st)
+			if n != "":
+				anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	# 掛點：手骨骼上的 BoneAttachment3D；找不到骨骼就放在大約的位置
+	for side: String in ["L", "R"]:
+		var bone: int = CharacterModels.find_hand_bone(skeleton, side)
+		var holder: Node3D
+		if bone >= 0:
+			var att := BoneAttachment3D.new()
+			att.bone_name = skeleton.get_bone_name(bone)
+			skeleton.add_child(att)
+			holder = att
+		else:
+			push_warning("Puppet: 模型 %s 找不到 %s 手骨骼，掛點用估計位置" % [character_id, side])
+			holder = Node3D.new()
+			holder.position = Vector3(-0.3 if side == "L" else 0.3, 0.95, 0.0)
+			model.add_child(holder)
+		holder.name = "Hand" + side
+		joints["hand_" + side] = holder
+	_add_hammer()
+	_animate_model()
+	return true
 
 
 func _pose(speed_t: float) -> void:
@@ -210,8 +308,6 @@ func _build() -> void:
 	var trim: StandardMaterial3D = _mat(trim_color)
 	var skin: StandardMaterial3D = _mat(skin_color, 0.7)
 	var dark: StandardMaterial3D = _mat(Color(0.08, 0.08, 0.09))
-	var iron: StandardMaterial3D = _mat(Color(0.32, 0.3, 0.28), 0.45)
-	iron.metallic = 0.7
 
 	_roll = Node3D.new()
 	_roll.name = "Roll"
@@ -294,7 +390,15 @@ func _build() -> void:
 		boot.position = Vector3(0, -SHIN_LEN - 0.02, -0.05)
 		knee.add_child(boot)
 
-	# 右手：鐘錘（握柄＋鐵錘頭）
+	_add_hammer()
+	_pose(0.0)
+
+
+## 右手：鐘錘（握柄＋鐵錘頭）。正式模型也掛在右手掛點（武器之後換成模型）。
+func _add_hammer() -> void:
+	var trim: StandardMaterial3D = _mat(trim_color)
+	var iron: StandardMaterial3D = _mat(Color(0.32, 0.3, 0.28), 0.45)
+	iron.metallic = 0.7
 	var hammer := Node3D.new()
 	hammer.name = "BellHammer"
 	hand("R").add_child(hammer)
@@ -318,4 +422,3 @@ func _build() -> void:
 	head_iron.position = Vector3(0, 0.5, 0)
 	head_iron.rotation = Vector3(0, 0, PI * 0.5)
 	hammer.add_child(head_iron)
-	_pose(0.0)

@@ -25,3 +25,5 @@ Thumbs.db
 # 本機 3D 生成設定及未驗收下載
 .tripo/
 art-work/
+# 從 art-inbox/characters 收件檢查後複製進專案的模型（scripts/import_characters.py）
+game/assets/characters/

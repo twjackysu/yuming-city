@@ -307,6 +307,7 @@ func _build() -> void:
 	add_child(_body)
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
+	_puppet.character_id = "sheila"
 	# 白短斗篷、灰藍滾邊（03 美術：席菈是畫面裡最亮的人形）
 	_puppet.coat_color = Color(0.74, 0.74, 0.76)
 	_puppet.trim_color = Color(0.36, 0.42, 0.5)

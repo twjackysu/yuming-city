@@ -79,6 +79,7 @@ func _ready() -> void:
 	add_to_group("heartbeat")
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
+	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
 	# 提燈掛在左手
 	_lantern.reparent(_puppet.hand("L"), false)
