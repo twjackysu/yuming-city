@@ -109,6 +109,7 @@ SHEILA_REFUSE_NO_TARGET,Hit what?,打誰？
 SHEILA_REFUSE_STAMINA,Let me breathe — one second.,喘口氣……等我一下。
 SHEILA_REFUSE_DOWN,(Sheila is down),（席菈倒下了）
 SHEILA_REFUSE_UNKNOWN,What?,什麼？
+SHEILA_REFUSE_WOUNDED,"If I dodge, it lands on the wounded. I'm staying.",我一閃開，砸到的就是車上的傷者。我不走。
 SHEILA_BUSY,I heard you!,聽到了！
 SET_DIFFICULTY,Difficulty,難度
 DIFF_STORY,Story,故事

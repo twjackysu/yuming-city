@@ -96,6 +96,18 @@ func test_cooldown_and_refusals() -> void:
 	assert_eq(c.command("dance", e)["line"], "SHEILA_REFUSE_UNKNOWN")
 
 
+func test_refuses_to_dodge_beside_the_wounded() -> void:
+	var c := CompanionBrain.new().configure()
+	c.near_wounded = true
+	var r: Dictionary = c.command("evade", _telegraphing(0.6))
+	assert_false(bool(r["accepted"]), "傷者在旁邊不閃")
+	assert_eq(r["line"], "SHEILA_REFUSE_WOUNDED", "說理由")
+	assert_eq(c.cooldown_left("evade"), 0.0, "被拒絕的不進冷卻")
+	assert_true(bool(c.command("guard", _telegraphing(0.6))["accepted"]), "守住可以")
+	c.near_wounded = false
+	assert_true(bool(c.command("evade", _telegraphing(0.6))["accepted"]), "離開車隊就照做")
+
+
 func test_guard_toggle_and_moves() -> void:
 	var c := CompanionBrain.new().configure()
 	assert_eq(c.command("guard", null)["line"], "SHEILA_ACK_GUARD")

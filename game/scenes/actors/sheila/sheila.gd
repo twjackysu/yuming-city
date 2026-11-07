@@ -75,10 +75,19 @@ func order(cmd: String) -> Dictionary:
 		target = _pick_target()
 	if cmd == "guard" and leader != null:
 		guard_point = leader.global_position
+	brain.near_wounded = _near_wounded()
 	var result: Dictionary = brain.command(cmd, _brain_of(target))
 	say(str(result.get("line", "")))
 	command_answered.emit(cmd, result)
 	return result
+
+
+## 她在傷者車隊旁（3 公尺內）而且目標敵人也靠近車隊（5 公尺內）：閃開會讓攻擊砸到傷者。
+func _near_wounded() -> bool:
+	var c: Node3D = get_tree().get_first_node_in_group("caravan") as Node3D
+	if c == null or target == null or not is_instance_valid(target):
+		return false
+	return global_position.distance_to(c.global_position) <= 3.0 and target.global_position.distance_to(c.global_position) <= 5.0
 
 
 func _on_settings_changed() -> void:

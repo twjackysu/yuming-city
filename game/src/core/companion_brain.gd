@@ -36,6 +36,8 @@ var command_window: float = 0.6
 ## 閃開成功後的無敵時間
 var evade_invuln: float = 0.5
 var guard_active: bool = false
+## 她站在傷者旁邊、敵人也在旁邊：叫她「閃開」＝讓攻擊砸到傷者 → 拒絕並說理由（02-gameplay）。場景每次下指令前設定。
+var near_wounded: bool = false
 
 var _cooldowns: Dictionary = {}
 var _slash_timer: float = 0.0
@@ -115,6 +117,8 @@ func command(cmd: String, target: EnemyBrain) -> Dictionary:
 		"evade":
 			if not alive:
 				return _refuse("SHEILA_REFUSE_NO_TARGET")
+			if near_wounded:
+				return _refuse("SHEILA_REFUSE_WOUNDED")
 			if stamina < dodge_cost:
 				return _refuse("SHEILA_REFUSE_STAMINA")
 			_accept(cmd)
