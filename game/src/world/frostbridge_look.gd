@@ -85,6 +85,35 @@ func glow(color: Color, energy: float) -> StandardMaterial3D:
 
 
 const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
+const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
+## 灰泥色（月光下偏冷／偏暖兩種），石牆的石頭色
+const PLASTER: Color = Color(0.4, 0.4, 0.41)
+const PLASTER_WARM: Color = Color(0.45, 0.4, 0.34)
+const WALL_STONE: Color = Color(0.26, 0.27, 0.3)
+
+
+## 半木構外牆（half_timber.gdshader）：一樓石牆、樓上灰泥＋木框。plaster 用 PLASTER／PLASTER_WARM。
+func half_timber(plaster: Color) -> ShaderMaterial:
+	return _wall_material("timber/%s" % plaster.to_html(), plaster, 2.6, 1.0)
+
+
+## 整面石牆（後牆、城牆、鐘樓、煙囪）：同一個 shader，石牆高度拉到頂。block_scale 放大石塊。
+func stone_wall(block_scale: float = 1.0) -> ShaderMaterial:
+	return _wall_material("stonewall/%.2f" % block_scale, PLASTER, 99.0, block_scale)
+
+
+func _wall_material(key: String, plaster: Color, stone_height: float, block_scale: float) -> ShaderMaterial:
+	if _mats.has(key):
+		return _mats[key] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(HALF_TIMBER_SHADER) as Shader
+	m.set_shader_parameter("plaster_color", plaster)
+	m.set_shader_parameter("stone_color", WALL_STONE)
+	m.set_shader_parameter("stone_height", stone_height)
+	m.set_shader_parameter("block_scale", block_scale)
+	m.set_shader_parameter("snow_color", SNOW)
+	_mats[key] = m
+	return m
 
 
 ## 濕石板路（wet_cobble.gdshader）：石塊大小 stone_size 公尺、水窪比例 puddles（0～1）。

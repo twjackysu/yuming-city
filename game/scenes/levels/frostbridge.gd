@@ -352,7 +352,7 @@ func _build_streets() -> void:
 	_row(Vector3(-MAIN_HALF, 0, NORTH_START - 0.3), Vector3(-MAIN_HALF, 0, NORTH_END - 3.0), Vector3.RIGHT, true)
 	_row(Vector3(MAIN_HALF, 0, NORTH_END - 3.0), Vector3(MAIN_HALF, 0, NORTH_START - 0.3), Vector3.LEFT, true)
 	# 北城牆
-	_batch.add_box_at(Vector3(44.0, 9.0, 1.6), Vector3(0.0, 4.5, TOWER_Z - 5.5), look.mat(FrostbridgeLook.WALL_WARM))
+	_batch.add_box_at(Vector3(44.0, 9.0, 1.6), Vector3(0.0, 4.5, TOWER_Z - 5.5), look.stone_wall(1.6))
 	_batch.add_box_at(Vector3(44.6, 0.5, 2.0), Vector3(0.0, 9.2, TOWER_Z - 5.5), look.mat(FrostbridgeLook.ROOF))
 	_batch.add_box_at(Vector3(44.6, 0.14, 2.0), Vector3(0.0, 9.5, TOWER_Z - 5.5), look.mat(FrostbridgeLook.SNOW), false)
 	# 南街
@@ -363,7 +363,7 @@ func _build_streets() -> void:
 	_row(Vector3(SOUTH_HALF + 6.0, 0, CROSS_N), Vector3(CROSS_HALF, 0, CROSS_N), Vector3.BACK)
 	_row(Vector3(CROSS_HALF, 0, CROSS_S), Vector3(-CROSS_HALF, 0, CROSS_S), Vector3.FORWARD)
 	for sx: float in [-1.0, 1.0]:
-		_batch.add_box_at(Vector3(1.6, 6.0, CROSS_S - CROSS_N + 2.0), Vector3(sx * (CROSS_HALF + 0.8), 3.0, (CROSS_N + CROSS_S) * 0.5), look.mat(FrostbridgeLook.WALL_WARM))
+		_batch.add_box_at(Vector3(1.6, 6.0, CROSS_S - CROSS_N + 2.0), Vector3(sx * (CROSS_HALF + 0.8), 3.0, (CROSS_N + CROSS_S) * 0.5), look.stone_wall(1.6))
 
 
 ## 一排房子：從 from 排到 to（都在街道邊線上），正面朝 face（指向街道）。
@@ -382,7 +382,7 @@ func _row(from: Vector3, to: Vector3, face: Vector3, collapsible: bool = false) 
 		_house(center, w, depth, h, dir, face, collapsible)
 		t += w + _rng.randf_range(0.15, 0.4)
 	var back: Vector3 = (from + to) * 0.5 - face * 6.9
-	_batch.add_box_at(_axis_size(dir, face, length + 1.0, 0.6, 4.0), back + Vector3(0, 2.0, 0), look.mat(FrostbridgeLook.WALL))
+	_batch.add_box_at(_axis_size(dir, face, length + 1.0, 0.6, 4.0), back + Vector3(0, 2.0, 0), look.stone_wall())
 
 
 static func _axis_size(dir: Vector3, face: Vector3, along: float, across: float, height: float) -> Vector3:
@@ -402,8 +402,8 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 		add_child(holder)
 		_north_houses.append(holder)
 		origin = Vector3.ZERO
-	var wall_color: Color = FrostbridgeLook.WALL if _rng.randf() < 0.6 else FrostbridgeLook.WALL_WARM
-	batch.add_box_at(_axis_size(dir, face, w, depth, h), origin + Vector3(0, h * 0.5, 0), look.mat(wall_color))
+	var plaster: Color = FrostbridgeLook.PLASTER if _rng.randf() < 0.6 else FrostbridgeLook.PLASTER_WARM
+	batch.add_box_at(_axis_size(dir, face, w, depth, h), origin + Vector3(0, h * 0.5, 0), look.half_timber(plaster))
 	# 屋簷＋三角屋頂（屋脊沿街道方向）＋屋頂積雪
 	batch.add_box_at(_axis_size(dir, face, w + 0.5, depth + 0.7, 0.25), origin + Vector3(0, h + 0.12, 0), look.mat(FrostbridgeLook.ROOF), false)
 	var roof_h: float = _rng.randf_range(1.4, 2.4)
@@ -416,7 +416,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.18 + roof_h * 0.82 * 0.5 + 0.06, 0)), look.mat(FrostbridgeLook.SNOW))
 	if _rng.randf() < 0.35:
 		var c: Vector3 = origin + dir * _rng.randf_range(-w * 0.3, w * 0.3) - face * depth * 0.2
-		batch.add_box_at(Vector3(0.6, 1.6, 0.6), c + Vector3(0, h + roof_h * 0.6, 0), look.mat(FrostbridgeLook.WALL_WARM), false)
+		batch.add_box_at(Vector3(0.6, 1.6, 0.6), c + Vector3(0, h + roof_h * 0.6, 0), look.stone_wall(), false)
 	# 正面：門＋窗（部分亮燈）
 	var front: Vector3 = origin + face * (depth * 0.5)
 	var door_off: float = _rng.randf_range(-w * 0.25, w * 0.25)
@@ -484,7 +484,7 @@ func _lamp_post(pos: Vector3, shadows: bool) -> void:
 
 
 func _build_bell_tower(pos: Vector3) -> void:
-	var wall := look.mat(FrostbridgeLook.WALL_WARM)
+	var wall := look.stone_wall(1.3)
 	var roof := look.mat(FrostbridgeLook.ROOF)
 	_batch.add_box_at(Vector3(5.0, 14.0, 5.0), pos + Vector3(0, 7.0, 0), wall)
 	_batch.add_box_at(Vector3(5.8, 0.5, 5.8), pos + Vector3(0, 14.25, 0), roof)

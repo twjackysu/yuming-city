@@ -70,6 +70,7 @@ func test_layout_nodes_and_batching() -> void:
 			meshes += 1
 	assert_true(meshes > 3 and meshes <= 24, "整個小鎮合併成少數幾個 mesh（實際 %d）" % meshes)
 	var wet: int = 0
+	var timber: int = 0
 	for c: Node in town.get_children():
 		var mi: MeshInstance3D = c as MeshInstance3D
 		if mi == null:
@@ -77,7 +78,10 @@ func test_layout_nodes_and_batching() -> void:
 		var sm: ShaderMaterial = mi.material_override as ShaderMaterial
 		if sm != null and sm.shader.resource_path == FrostbridgeLook.WET_COBBLE_SHADER:
 			wet += 1
+		if sm != null and sm.shader.resource_path == FrostbridgeLook.HALF_TIMBER_SHADER:
+			timber += 1
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
+	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")
 	assert_true(level._north_houses.size() >= 4, "北街至少四棟可以陷落的房子")
 	assert_true(int(level.get("light_count")) <= 40, "燈的數量有上限（%d）" % int(level.get("light_count")))
