@@ -18,12 +18,13 @@
 
 - `scripts/check.sh`：92 個測試全綠（新增重新綁定／衝突／壞設定檔／鍵名與裝置切換／按鍵設定頁操作、過場驗證與推進與跳過、流程測試改成親手敲九下、戰鬥數值與覆寫、Health、扇形、木樁命中＋停頓＋震動、灰巡者狀態機與場景內爪擊、閃避無敵、死亡重試回檢查點、收束對話依記憶過濾選項）。
 - 畫面：xvfb＋lavapipe 看過按鍵設定頁（繁中）、手把提示 [A]、敲鐘提示 3／9 與黑邊、木樁。修了：鐘的錐體上下顛倒、提示字壓在鐘上。
-- CI：重新綁定 run 42401979630、過場 run 42402604445 綠燈；之後幾次 push 間隔太近被 concurrency 取消，最後一次結果見下一則或 Actions。
+- CI：重新綁定 run 42401979630、過場 run 42402604445、收束對話 run 42403248771（含戰鬥、灰巡者、死亡重試的所有程式）綠燈，latest 有 `bell.png`。死亡重試 run 42402903825 測試與匯出綠燈，但發布 latest 時 403（見下）。CI 修正 run 42404425846 綠燈、latest 已更新（f44b331）。
 
 **遇到的問題**
 
 - `CombatTuning.reload()` 跟 GDScript 內建的 `Script.reload()` 撞名，測試呼叫到後者 → 改名 `load_tuning()`。這個錯誤當時被測試框架當成「通過」，所以加了 SCRIPT ERROR 檢查。
 - 軟體渲染截圖 200 幀會超過 2 分鐘；改用背景執行＋較少幀數。
+- 發布 latest 偶爾 403「Resource not accessible by integration」：兩次都是 main 上已經有改過 workflow 檔的新 commit，舊 run 用 GITHUB_TOKEN 在舊 commit 建 tag 被擋，而且「先刪再建」讓 latest 暫時消失。修正：main 已有更新的程式 commit 時舊 run 直接跳過發布（f44b331）。
 
 ## 2026-11-08 01:27–02:05　第 3 輪：暫停／設定選單、HUD、程序人偶、對話系統
 
