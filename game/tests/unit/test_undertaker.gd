@@ -156,3 +156,143 @@ func test_phase_two_makes_slam_unverified() -> void:
 	assert_true(absf(boss.brain.move_num("slam", "telegraph") - 0.7) < 0.001, "下砸前兆縮短到 0.7")
 	root.queue_free()
 	await tree.process_frame
+
+
+func test_double_slam_chain_and_phase_two_pattern() -> void:
+	var b := EnemyBrain.new().configure("undertaker")
+	b.set_pattern(PackedStringArray(["double_slam", "sweep"]))
+	b.tick(0.1, 10.0)
+	b.tick(0.01, 2.0)
+	assert_eq(b.move_id, "double_slam")
+	assert_true(absf(b.telegraph_sec - 0.7) < 0.001, "第一下前兆 0.7")
+	assert_eq(b.intel_move(), "double_slam")
+	b.tick(b.telegraph_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "strike")
+	b.tick(b.strike_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "telegraph", "第一下之後沒有破綻，直接第二下的前兆")
+	assert_eq(b.move_id, "double_slam_2")
+	assert_true(absf(b.telegraph_sec - 0.5) < 0.001, "第二下前兆只有 0.5")
+	assert_eq(b.intel_move(), "double_slam", "看穿把第二下對回「連續下砸」")
+	b.tick(b.telegraph_sec + 0.01, 2.0)
+	b.tick(b.strike_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "recover", "第二下之後才有破綻")
+	assert_true(absf(b.recover_sec - 0.7) < 0.001)
+	b.tick(b.recover_sec + 0.01, 2.0)
+	b.tick(0.01, 2.0)
+	assert_eq(b.move_id, "sweep", "連段的後續招不在輪替裡")
+
+
+func test_phase_two_intel_and_unverified_evade() -> void:
+	TranslationServer.set_locale("zh_TW")
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	boss.state = GameState.new()
+	boss.global_position = Vector3(0, 0, -30)
+	await tree.physics_frame
+	var lines: PackedStringArray = EnemyIntel.lines("undertaker", boss.intel_overrides)
+	assert_false(", ".join(lines).contains("連續下砸"), "第一階段看穿沒有攻略沒寫的招")
+	boss.enter_phase_two()
+	assert_eq(boss.brain.pattern, PackedStringArray(["double_slam", "sweep", "grab", "charge"]), "第二階段輪替")
+	lines = EnemyIntel.lines("undertaker", boss.intel_overrides)
+	assert_true(lines.has("招式：連續下砸（未證實？）"), ", ".join(lines))
+	assert_false(", ".join(lines).contains("抓取"), "抓取出現過才顯示")
+	# 第二下前兆中：攻略沒寫，席菈的「閃開」算失敗
+	var b: EnemyBrain = boss.brain
+	b.move_id = "double_slam_2"
+	b.state = EnemyBrain.State.TELEGRAPH
+	b.telegraph_sec = 0.5
+	b.time_in_state = 0.45
+	var c := CompanionBrain.new().configure("story")
+	assert_false(c.evade_in_window(b), "還沒看過第二下：閃開抓不到時機")
+	var verified: Array[bool] = [false]
+	boss.double_slam_verified.connect(func() -> void: verified[0] = true)
+	boss.note_second_slam(false, true)
+	assert_false(verified[0], "被打中不算看過")
+	boss.note_second_slam(true, false)
+	assert_false(verified[0], "離太遠不算看過")
+	boss.note_second_slam(true, true)
+	assert_true(verified[0], "近處閃過一次＝看過")
+	assert_true(c.evade_in_window(b), "看過之後閃開有效")
+	lines = EnemyIntel.lines("undertaker", boss.intel_overrides)
+	assert_true(lines.has("招式：連續下砸（已證實）"), ", ".join(lines))
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_frame_throw_triggers_once() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	var st := GameState.new()
+	boss.state = st
+	boss.global_position = Vector3(0, 0, -30)
+	await tree.physics_frame
+	var n: Array[int] = [0]
+	boss.frame_throw_started.connect(func() -> void: n[0] += 1)
+	boss.health.apply_damage(460.0, {"stagger": 0.0})
+	assert_eq(boss.phase, 2)
+	assert_eq(n[0], 0, "440 還沒到拋擲")
+	boss.health.apply_damage(150.0, {"stagger": 0.0})
+	await tree.physics_frame
+	assert_eq(n[0], 1, "生命 ≤ 300 拋擲")
+	assert_eq(st.get_flag("slice.frame_thrown", false), true)
+	boss.health.apply_damage(50.0, {"stagger": 0.0})
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_eq(n[0], 1, "只觸發一次")
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_frame_throw_on_caravan_half() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	boss.state = GameState.new()
+	boss.global_position = Vector3(0, 0, -30)
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(10, 0, 0), Vector3(10, 0, -10)])
+	root.add_child(caravan)
+	await tree.physics_frame
+	boss.enter_phase_two()
+	assert_false(boss.frame_thrown)
+	caravan.runner.traveled = 5.2
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(boss.frame_thrown, "車隊過半拋擲")
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_grab_blocked_by_guarding_sheila() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var boss: Undertaker = a[2]
+	player.global_position = Vector3(0, 0, -20)
+	boss.global_position = Vector3(0, 0, 0)
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(0, 0, -1.6), Vector3(0, 0, -1.7)])
+	root.add_child(caravan)
+	caravan.runner.speed = 0.0
+	await tree.physics_frame
+	boss._body.rotation.y = 0.0
+	var victim: Node3D = boss._grab()
+	assert_eq(victim, caravan, "抓前方最近的心跳（傷者）")
+	assert_eq(caravan.runner.injured, 1)
+	assert_true(bool(boss.intel_overrides.get("grab", false)), "抓過一次看穿就有抓取")
+	var sheila := Sheila.new()
+	sheila.position = Vector3(1.2, 0, -1.6)
+	root.add_child(sheila)
+	await tree.physics_frame
+	sheila.brain.guard_active = true
+	sheila.global_position = Vector3(1.2, 0, -1.6)
+	caravan.runner.stop_left = 0.0
+	var hp0: float = sheila.health.hp
+	victim = boss._grab()
+	assert_eq(victim, null, "席菈守著，擋下")
+	assert_eq(caravan.runner.injured, 1, "傷者沒有增加")
+	assert_true(sheila.health.hp < hp0, "席菈替他挨了一下")
+	root.queue_free()
+	await tree.process_frame

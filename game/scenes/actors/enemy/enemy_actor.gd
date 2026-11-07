@@ -199,7 +199,7 @@ func _update_insight() -> void:
 	if _player != null and brain.state != EnemyBrain.State.DEAD:
 		on = _player.insight_active and global_position.distance_to(_player.global_position) <= INSIGHT_RANGE
 	if on:
-		_insight_label.text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, brain.current_move()))
+		_insight_label.text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, brain.intel_move()))
 		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
 		_weak_mat.albedo_color.a = 0.45 + 0.4 * pulse
 	if on != _insight_shown:

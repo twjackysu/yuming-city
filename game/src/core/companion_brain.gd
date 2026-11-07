@@ -118,8 +118,9 @@ func command(cmd: String, target: EnemyBrain) -> Dictionary:
 
 
 ## 「閃開」的時機窗：前兆進度落在後 command_window 比例內（故事難度 1.0＝整段前兆都算）。
+## 讀不懂的招（攻略沒寫、諾恩還沒看過）一律算失敗。
 func evade_in_window(target: EnemyBrain) -> bool:
-	if target == null or target.state != EnemyBrain.State.TELEGRAPH:
+	if target == null or target.state != EnemyBrain.State.TELEGRAPH or not target.is_readable():
 		return false
 	return target.telegraph_progress() >= 1.0 - command_window - 0.0001
 

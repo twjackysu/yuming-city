@@ -61,6 +61,9 @@ static func lines(enemy_id: String, overrides: Dictionary = {}, current_move: St
 		if not m is Dictionary:
 			continue
 		var md: Dictionary = m as Dictionary
+		# hidden：攻略沒寫的招（送葬者第二階段），出現過（overrides 有這個 id）才顯示
+		if bool(md.get("hidden", false)) and not overrides.has(str(md.get("id", ""))):
+			continue
 		var line: String = TranslationServer.translate("INSIGHT_MOVE").format([_label(md, overrides)])
 		if current_move != "" and str(md.get("id", "")) == current_move:
 			line = TranslationServer.translate("INSIGHT_CURRENT").format([line])

@@ -57,6 +57,14 @@ func _ready() -> void:
 			ally.name = "Sheila"
 			ally.position = Vector3(-1.4, 0.0, 3.2)
 			add_child(ally)
+	# 開發用：`--caravan` 放傷者車隊（從廣場穿過南街石拱往鐘樓）；`--phase2` 送葬者直接進第二階段
+	if dev_args.has("caravan"):
+		var caravan := Caravan.new()
+		caravan.name = "Caravan"
+		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
+		add_child(caravan)
+	if dev_args.has("phase2") and has_node("Undertaker"):
+		($Undertaker as Undertaker).enter_phase_two.call_deferred()
 	# 截圖用：`--insight` 一開始就按住看穿
 	if dev_args.has("insight"):
 		Input.action_press("insight")

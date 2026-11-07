@@ -1,5 +1,5 @@
 {
-  "_comment": "看穿（insight）顯示的「諾恩已知」資訊：來自前世攻略，可能是錯的。verified=false 顯示「未證實？」。exposed_arc：攻擊者在敵人哪一側時打得到這個弱點（相對敵人正面的角度，正值＝敵人的左側；第一個數大於第二個時表示跨過 ±180°，例如 [120, -120]＝背後）。",
+  "_comment": "看穿（insight）顯示的「諾恩已知」資訊：來自前世攻略，可能是錯的。verified=false 顯示「未證實？」。exposed_arc：攻擊者在敵人哪一側時打得到這個弱點（相對敵人正面的角度，正值＝敵人的左側；第一個數大於第二個時表示跨過 ±180°，例如 [120, -120]＝背後）。 hidden=true：攻略沒寫的招，出現過（執行期 overrides 有這個 id）才顯示。",
   "ashwalker": {
     "name": "ENEMY_ASHWALKER",
     "weakpoints": [
@@ -59,6 +59,18 @@
         "id": "charge",
         "label": "MOVE_CHARGE",
         "verified": true
+      },
+      {
+        "id": "double_slam",
+        "label": "MOVE_DOUBLE_SLAM",
+        "verified": false,
+        "hidden": true
+      },
+      {
+        "id": "grab",
+        "label": "MOVE_GRAB",
+        "verified": false,
+        "hidden": true
       }
     ]
   }

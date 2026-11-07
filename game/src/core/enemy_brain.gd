@@ -5,6 +5,8 @@ extends RefCounted
 ## 數值來自 CombatTuning（<prefix>.*、difficulty.*.telegraph）。
 ## 一般敵人只有一招（attack_range 內就出）；精英敵人在 <prefix>.moves 定義多招，依 <prefix>.pattern 輪流，
 ## 每招有自己的距離（min_range～range）、前兆、出招、破綻時間（送葬者：橫掃／下砸／衝撞）。
+## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻；送葬者連續下砸）。
+## 讀不懂的招（unreadable[id] = true）：席菈的「閃開」對它一律算失敗，直到諾恩看過一次（看穿變已證實）。
 
 enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD }
 
@@ -29,6 +31,8 @@ var move_id: String = "claw"
 ## 多招敵人：id → {telegraph, active, recover, min_range, range, ...}；空的＝一般敵人單招
 var moves: Dictionary = {}
 var pattern: PackedStringArray = []
+## 讀不懂的招：id → true（看穿未證實、席菈抓不到時機）
+var unreadable: Dictionary = {}
 var _pattern_i: int = 0
 var _telegraph_mult: float = 1.0
 var _base_telegraph: float = 0.8
@@ -87,7 +91,12 @@ func tick(delta: float, dist_to_target: float) -> bool:
 				return true
 		State.STRIKE:
 			if time_in_state >= strike_sec:
-				_enter(State.RECOVER)
+				var nxt: String = _chain_of(move_id)
+				if nxt != "":
+					_set_move(nxt)
+					_enter(State.TELEGRAPH)
+				else:
+					_enter(State.RECOVER)
 		State.RECOVER:
 			if time_in_state >= recover_sec:
 				_enter(State.CHASE)
@@ -111,12 +120,45 @@ func _choose_move(dist: float) -> bool:
 		var id: String = pattern[i]
 		if dist >= move_num(id, "min_range", 0.0) and dist <= move_num(id, "range", attack_range):
 			_pattern_i = (i + 1) % pattern.size()
-			move_id = id
-			telegraph_sec = move_num(id, "telegraph", _base_telegraph) * _telegraph_mult
-			strike_sec = move_num(id, "active", 0.15)
-			recover_sec = move_num(id, "recover", _base_recover)
+			_set_move(id)
 			return true
 	return false
+
+
+func _set_move(id: String) -> void:
+	move_id = id
+	telegraph_sec = move_num(id, "telegraph", _base_telegraph) * _telegraph_mult
+	strike_sec = move_num(id, "active", 0.15)
+	recover_sec = move_num(id, "recover", _base_recover)
+
+
+func _chain_of(id: String) -> String:
+	var m: Variant = moves.get(id, {})
+	return str((m as Dictionary).get("chain", "")) if m is Dictionary else ""
+
+
+## 換招式輪替（第二階段）。從新 pattern 的第一招開始。
+func set_pattern(p: PackedStringArray) -> void:
+	if p.is_empty():
+		return
+	pattern = p
+	_pattern_i = 0
+	if state in [State.IDLE, State.CHASE]:
+		move_id = pattern[0]
+
+
+## 看穿用的招式 id：連段的後續招（"intel": "double_slam"）對回同一條資訊。
+func intel_move() -> String:
+	var cur: String = current_move()
+	if cur == "":
+		return ""
+	var m: Variant = moves.get(cur, {})
+	return str((m as Dictionary).get("intel", cur)) if m is Dictionary else cur
+
+
+## 目前這招讀得懂嗎（席菈「閃開」的前提）。
+func is_readable() -> bool:
+	return not bool(unreadable.get(move_id, false))
 
 
 ## 前兆進度 0..1（畫面上的霜紋亮度用）。
