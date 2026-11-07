@@ -70,7 +70,11 @@ func test_hold_to_rescue_and_quest_advances() -> void:
 	assert_eq(sites.size(), 4, "讀檔時已陷落：受困者都在")
 	var a: RescueSite = sites[0]
 	assert_true(a.is_available())
-	assert_false(a.update_hold(1.0, true), "按不夠久")
+	assert_false(a.update_hold(0.2, true), "按不夠久")
+	assert_eq(a.scrape_count, 1, "一按下就有刮石聲")
+	assert_false(a.update_hold(0.2, true))
+	assert_eq(a.scrape_count, 2, "按住每 0.35 秒刮一下")
+	assert_false(a.update_hold(0.6, true), "按不夠久")
 	a.update_hold(0.1, false)
 	assert_eq(a.hold, 0.0, "放開歸零")
 	assert_true(a.update_hold(1.7, true), "按滿救出")

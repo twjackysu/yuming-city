@@ -4,7 +4,7 @@ extends RefCounted
 ## 檔案不存在時安靜跳過，不影響遊戲。全部走 SFX 匯流排（設定裡的「音效」音量）。
 
 const DIR: String = "res://assets/generated/sfx/"
-const NAMES: PackedStringArray = ["bell", "bell_ninth", "blunt", "blunt_weak", "claw", "slash", "whoosh"]
+const NAMES: PackedStringArray = ["bell", "bell_ninth", "blunt", "blunt_weak", "claw", "slash", "whoosh", "rubble_scrape"]
 
 static var _cache: Dictionary = {}
 

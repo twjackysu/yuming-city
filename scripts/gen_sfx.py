@@ -126,6 +126,29 @@ def heartbeat(seconds=0.9):
     return onepole_lp(out, 420)
 
 
+def scrape(seconds=0.42, seed=9):
+    """搬瓦礫：石頭互相刮、碎石滾落（帶顆粒的中頻雜訊＋幾下小碰撞）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    band = onepole_lp(hp(noise(n, rng), 280), 2600)
+    out = []
+    grain = 0.0
+    for i in range(n):
+        t = i / RATE
+        if rng.random() < 0.004:
+            grain = rng.uniform(0.6, 1.0)
+        grain *= 0.9993
+        env = min(t / 0.04, 1.0) * math.exp(-max(t - 0.12, 0.0) * 7)
+        out.append(band[i] * env * (0.35 + grain))
+    for k in range(3):
+        start = int(rng.uniform(0.05, seconds - 0.12) * RATE)
+        hit = thump(0.1, rng.uniform(220, 320), 90, crack=0.4, seed=seed + k + 1)
+        for j, v in enumerate(hit):
+            if start + j < n:
+                out[start + j] += 0.35 * v
+    return out
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -136,6 +159,7 @@ def main():
         write("slash", swish(0.28, 900, 7000, seed=5, rise=0.3, metal=0.25)),
         write("whoosh", swish(0.35, 200, 1600, seed=6, rise=0.45)),
         write("heartbeat", heartbeat()),
+        write("rubble_scrape", scrape()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

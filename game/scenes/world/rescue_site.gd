@@ -20,6 +20,9 @@ var _rubble: Node3D
 var _person: Node3D
 var _label: Label3D
 var _done: bool = false
+## 搬瓦礫的刮石聲間隔與次數（測試用）
+const SCRAPE_EVERY: float = 0.35
+var scrape_count: int = 0
 
 
 func _ready() -> void:
@@ -70,7 +73,12 @@ func update_hold(delta: float, pressed: bool) -> bool:
 	if not is_available():
 		hold = 0.0
 		return false
+	var before: float = hold
 	hold = hold + delta if pressed else 0.0
+	# 搬的時候每 0.35 秒刮一下石頭（第一下立刻響）
+	if pressed and is_inside_tree() and (before == 0.0 or floorf(hold / SCRAPE_EVERY) > floorf(before / SCRAPE_EVERY)):
+		Sfx.play_at(self, "rubble_scrape", global_position + Vector3.UP * 0.4, -6.0, 0.12, 8.0)
+		scrape_count += 1
 	# 搬的時候瓦礫跟著晃
 	_rubble.position = Vector3(sin(hold * 40.0), 0.0, cos(hold * 33.0)) * 0.03 * minf(hold, 1.0) if hold > 0.0 else Vector3.ZERO
 	if hold >= HOLD_SEC:
@@ -183,8 +191,8 @@ func _build() -> void:
 	_rubble.add_child(lamp)
 	var glow := OmniLight3D.new()
 	glow.light_color = Color(0.95, 0.72, 0.42)
-	glow.light_energy = 0.9
-	glow.omni_range = 2.8
+	glow.light_energy = 1.5
+	glow.omni_range = 3.6
 	glow.light_volumetric_fog_energy = 0.8
 	glow.position = Vector3(0.8, 0.4, 0.4)
 	add_child(glow)
