@@ -13,16 +13,21 @@ func _ready() -> void:
 	if serif != null:
 		(%Title as Label).add_theme_font_override("font", serif)
 		(%Subtitle as Label).add_theme_font_override("font", serif)
-	_continue.disabled = true  # 存檔系統完成前先停用
+	_continue.disabled = not Game.has_continue()
 	_new_game.pressed.connect(_on_new_game)
+	_continue.pressed.connect(_on_continue)
 	_language.pressed.connect(_on_language)
 	_quit.pressed.connect(func() -> void: get_tree().quit())
 	_new_game.grab_focus.call_deferred()
 
 
 func _on_new_game() -> void:
-	# 垂直切片場景尚未建立；先保留入口。
-	print("[Boot] new game requested")
+	Game.new_game()
+
+
+func _on_continue() -> void:
+	if not Game.continue_game():
+		_continue.disabled = true
 
 
 func _on_language() -> void:

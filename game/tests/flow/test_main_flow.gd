@@ -62,6 +62,35 @@ func test_boot_to_title() -> void:
 	await tree.process_frame
 
 
+func test_autoloads_present() -> void:
+	for name: String in ["App", "Settings", "Game"]:
+		assert_true(tree.root.has_node(name), "autoload %s" % name)
+
+
+func test_sandbox_player_walks_forward() -> void:
+	var packed: PackedScene = load("res://scenes/dev/sandbox.tscn") as PackedScene
+	assert_not_null(packed, "沙盒場景")
+	if packed == null:
+		return
+	var level: Node3D = packed.instantiate() as Node3D
+	tree.root.add_child(level)
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	assert_not_null(player, "玩家")
+	for i: int in 10:
+		await tree.physics_frame
+	var start: Vector3 = player.global_position
+	Input.action_press("move_forward")
+	for i: int in 30:
+		await tree.physics_frame
+	Input.action_release("move_forward")
+	var moved: Vector3 = player.global_position - start
+	assert_true(moved.z < -0.5, "按前進 0.5 秒會往鏡頭前方（-Z）走，實際位移 %s" % moved)
+	assert_true(absf(player.global_position.y) < 0.3, "站在地上沒有掉下去（y=%.2f）" % player.global_position.y)
+	level.queue_free()
+	await tree.process_frame
+
+
 func test_new_game_to_slice_end_with_nine_breaths() -> void:
 	var g := GameSession.new(QuestDB.load_default(), _dir)
 	g.new_game()
