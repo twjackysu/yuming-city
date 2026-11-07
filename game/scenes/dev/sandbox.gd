@@ -32,6 +32,12 @@ func _ready() -> void:
 	dummy.name = "TrainingDummy"
 	dummy.position = Vector3(-2.6, 0.0, -4.0)
 	add_child(dummy)
+	# 開發用：`-- --level=sandbox --enemies` 在街上放一隻灰巡者（正式遭遇戰在 M1.3 的霜橋鎮）
+	if App.parse_user_args(OS.get_cmdline_user_args()).has("enemies"):
+		var walker := Ashwalker.new()
+		walker.name = "Ashwalker"
+		walker.position = Vector3(2.0, 0.0, -12.0)
+		add_child(walker)
 	add_child(CutsceneView.new())
 	Game.cutscene_started.connect(_on_cutscene_started)
 	Game.cutscene_ended.connect(_on_cutscene_ended)

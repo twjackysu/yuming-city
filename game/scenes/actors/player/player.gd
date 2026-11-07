@@ -46,6 +46,7 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rig.top_level = true
+	add_to_group("player")
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
 	_body.add_child(_puppet)
