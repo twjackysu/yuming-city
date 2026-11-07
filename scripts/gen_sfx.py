@@ -111,6 +111,21 @@ def swish(seconds, lo, hi, seed, rise=0.35, metal=0.0):
     return out
 
 
+def heartbeat(seconds=0.9):
+    """九息倒數：低沉的「咚—咚」（lub-dub），尾巴帶一點空間感。"""
+    a = thump(0.22, 75, 38, seed=7)
+    b = thump(0.2, 68, 34, seed=8)
+    n = int(seconds * RATE)
+    out = [0.0] * n
+    off = int(0.17 * RATE)
+    for i, v in enumerate(a):
+        out[i] += 0.95 * v
+    for i, v in enumerate(b):
+        if off + i < n:
+            out[off + i] += 0.7 * v
+    return onepole_lp(out, 420)
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -120,6 +135,7 @@ def main():
         write("claw", swish(0.22, 1800, 9000, seed=4, rise=0.2)),
         write("slash", swish(0.28, 900, 7000, seed=5, rise=0.3, metal=0.25)),
         write("whoosh", swish(0.35, 200, 1600, seed=6, rise=0.45)),
+        write("heartbeat", heartbeat()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

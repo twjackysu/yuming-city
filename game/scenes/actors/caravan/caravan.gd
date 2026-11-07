@@ -8,7 +8,7 @@ signal hit_taken(injured: int)
 signal arrived
 
 const WOOD: Color = Color(0.3, 0.22, 0.15)
-const CLOTH: Color = Color(0.55, 0.52, 0.48)
+const CLOTH: Color = Color(0.32, 0.29, 0.26)
 
 var route: PackedVector3Array = []
 var runner: CaravanRunner
@@ -104,15 +104,15 @@ func _build() -> void:
 	for i: int in 2:
 		var x: float = -0.3 + 0.6 * float(i)
 		var body := CSGCylinder3D.new()
-		body.radius = 0.2
+		body.radius = 0.16
 		body.height = 1.4
 		body.rotation_degrees = Vector3(90, 0, 0)
-		body.position = Vector3(x, 0.86, 0.15)
+		body.position = Vector3(x, 0.82, 0.15)
 		body.material = cloth
 		_cart.add_child(body)
 		var head := CSGSphere3D.new()
 		head.radius = 0.13
-		head.position = Vector3(x, 0.86, -0.7)
+		head.position = Vector3(x, 0.84, -0.66)
 		head.material = skin
 		_cart.add_child(head)
 	# 推車的人掛的提燈：暗處也看得到車隊在哪

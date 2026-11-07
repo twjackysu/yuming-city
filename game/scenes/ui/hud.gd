@@ -15,6 +15,8 @@ var _saved: Label
 var _died: Label
 var _saved_tween: Tween
 var _objective_tween: Tween
+var _banner: Label
+var _banner_tween: Tween
 
 
 func _ready() -> void:
@@ -87,6 +89,18 @@ func _build() -> void:
 	add_child(anchor)
 	anchor.add_child(_saved)
 	_saved.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 40)
+	# 戰鬥中的劇情提示（鐵架拋擲等）：畫面上方置中，淡入淡出
+	_banner = Label.new()
+	_banner.name = "Banner"
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.add_theme_font_size_override("font_size", 28)
+	_banner.add_theme_color_override("font_color", Color(0.9, 0.93, 0.98))
+	_banner.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_banner.add_theme_constant_override("shadow_offset_y", 2)
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(_banner)
+	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 110)
+	_banner.modulate.a = 0.0
 
 
 func _set_objective(key: String, animate: bool) -> void:
@@ -130,6 +144,23 @@ func _on_player_died() -> void:
 
 func is_death_shown() -> bool:
 	return _died.visible
+
+
+## 畫面上方的一行提示（翻譯 key），停留 seconds 秒後淡出。
+func show_banner(key: String, seconds: float = 3.0) -> void:
+	_banner.text = key
+	_banner.reset_size()
+	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 110)
+	if _banner_tween != null:
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	_banner_tween.tween_property(_banner, "modulate:a", 1.0, 0.2)
+	_banner_tween.tween_interval(seconds)
+	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.6)
+
+
+func banner_text() -> String:
+	return _banner.text if _banner.modulate.a > 0.0 or (_banner_tween != null and _banner_tween.is_running()) else ""
 
 
 func _show_saved() -> void:

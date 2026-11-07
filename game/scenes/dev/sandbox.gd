@@ -15,6 +15,10 @@ var _north_houses: Array[Node3D] = []
 var _north_collapsed: bool = false
 var _bell: Node3D
 var _bell_light: OmniLight3D
+## 南街石拱（九息可保存物）
+var arch_site: NineBreathSite
+## 鐵架拋擲（送葬者第二階段觸發）
+var frame_throw: FrameThrowEvent
 
 
 func _ready() -> void:
@@ -23,7 +27,10 @@ func _ready() -> void:
 	_build_ground()
 	_build_houses()
 	_build_bell_tower(Vector3(0.0, 0.0, -26.0))
-	_build_arch(Vector3(0.0, 0.0, -9.0))
+	arch_site = NineBreathSite.new()
+	arch_site.name = "SouthArch"
+	arch_site.position = Vector3(0.0, 0.0, -9.0)
+	add_child(arch_site)
 	for p: Vector3 in [Vector3(-3.5, 0, -4), Vector3(3.5, 0, -14), Vector3(-3.5, 0, -20)]:
 		_build_lamp_post(p)
 	_build_story_triggers()
@@ -63,6 +70,8 @@ func _ready() -> void:
 		caravan.name = "Caravan"
 		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
 		add_child(caravan)
+	if has_node("Undertaker"):
+		($Undertaker as Undertaker).frame_throw_started.connect(start_frame_throw)
 	if dev_args.has("phase2") and has_node("Undertaker"):
 		($Undertaker as Undertaker).enter_phase_two.call_deferred()
 	# 截圖用：`--insight` 一開始就按住看穿
@@ -79,6 +88,18 @@ func _ready() -> void:
 	var spawn: Marker3D = $Spawn
 	var player: Node3D = $Player
 	player.global_transform = spawn.global_transform
+	# 截圖用：`--arch=preview|restored|spent` 諾恩站在南街石拱前
+	if dev_args.has("arch"):
+		player.global_position = Vector3(-0.6, 0.0, -4.6)
+		(player as PlayerController).yaw = deg_to_rad(-8.0)
+		match str(dev_args["arch"]):
+			"preview":
+				arch_site.debug_preview = true
+			"restored":
+				arch_site.activate.call_deferred()
+			"spent":
+				arch_site.activate()
+				arch_site.nb.tick(9.5, Game.session.state)
 	(player as PlayerController).snap_camera()
 
 
@@ -254,29 +275,32 @@ func _build_bell_tower(pos: Vector3) -> void:
 	add_child(glow)
 
 
-## 南街石拱（之後的九息物件；這裡只是外形）。
-func _build_arch(pos: Vector3) -> void:
-	var arch := CSGCombiner3D.new()
-	arch.position = pos
-	arch.use_collision = true
-	add_child(arch)
-	var block := CSGBox3D.new()
-	block.size = Vector3(5.0, 4.6, 1.2)
-	block.position = Vector3(0, 2.3, 0)
-	block.material = _mat(Color(0.34, 0.33, 0.33))
-	arch.add_child(block)
-	var hole := CSGCylinder3D.new()
-	hole.operation = CSGShape3D.OPERATION_SUBTRACTION
-	hole.radius = 1.6
-	hole.height = 2.0
-	hole.rotation_degrees = Vector3(90, 0, 0)
-	hole.position = Vector3(0, 2.0, 0)
-	arch.add_child(hole)
-	var cut := CSGBox3D.new()
-	cut.operation = CSGShape3D.OPERATION_SUBTRACTION
-	cut.size = Vector3(3.2, 2.0, 2.0)
-	cut.position = Vector3(0, 1.0, 0)
-	arch.add_child(cut)
+## 鐵架拋擲開始：提示＋倒數；落下時石拱是實體就擋下，否則席菈燒薪火劍。
+func start_frame_throw() -> void:
+	if frame_throw != null:
+		return
+	frame_throw = FrameThrowEvent.new()
+	frame_throw.resolved.connect(_on_frame_throw_resolved)
+	_banner("FRAME_THROW_WARN", FrameThrowEvent.WINDUP_SEC)
+
+
+func _physics_process(delta: float) -> void:
+	if frame_throw != null and not frame_throw.is_resolved():
+		frame_throw.tick(delta, arch_site.is_solid(), Game.session.state)
+
+
+func _on_frame_throw_resolved(outcome: String) -> void:
+	_banner("FRAME_THROW_ARCH" if outcome == "arch" else "FRAME_THROW_KINDLING", 3.5)
+	var p: PlayerController = get_node_or_null("Player") as PlayerController
+	if p != null:
+		p.shake(0.6)
+	Sfx.play_at(self, "blunt_weak", arch_site.global_position + Vector3.UP * 2.0, 6.0, 0.02, 14.0)
+
+
+func _banner(key: String, seconds: float) -> void:
+	var hud: Hud = get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner(key, seconds)
 
 
 ## 暫時的劇情觸發區：讓「新遊戲 → 找到梨販 → 敲鐘」在沙盒裡能手動與自動驗證。
