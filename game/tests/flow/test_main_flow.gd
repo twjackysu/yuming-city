@@ -1,6 +1,48 @@
 extends TestCase
-## 主線流程測試。目前切片尚未建立，只驗證「開機 → 標題畫面 → 可選新遊戲」。
-## 任務／存檔系統完成後，這裡要擴充成從新遊戲自動走到切片結尾。
+## 主線流程測試：
+## - 開機 → 標題畫面 → 可選新遊戲
+## - 新遊戲 → 每個檢查點自動存檔 → 中途存讀檔 → 死亡重試 → 切片結尾（任務／存檔層面，兩條路線）
+## 切片場景完成後，同一條路線要再加上場景層面的驗證。
+
+var _dir: String = ""
+
+
+func before_each() -> void:
+	_dir = "user://test_flow_%d" % Time.get_ticks_usec()
+
+
+func after_each() -> void:
+	if DirAccess.dir_exists_absolute(_dir):
+		for f: String in DirAccess.get_files_at(_dir):
+			DirAccess.remove_absolute(_dir.path_join(f))
+		DirAccess.remove_absolute(_dir)
+
+
+func _auto_checkpoint() -> String:
+	var r: Dictionary = SaveCodec.read_file(_dir.path_join("auto.json"))
+	if int(r["status"]) != SaveCodec.Status.OK:
+		return "<no autosave>"
+	return (r["state"] as GameState).checkpoint
+
+
+## 走到送葬者戰之前。
+func _play_to_undertaker(g: GameSession) -> void:
+	assert_eq(g.state.checkpoint, "start")
+	assert_eq(_auto_checkpoint(), "start", "新遊戲就有自動存檔")
+	g.set_flag("slice.met_pear_seller", true)
+	assert_eq(g.state.checkpoint, "bell_tower")
+	for i: int in 9:
+		g.add_flag("slice.bell_rings")
+	assert_eq(g.state.get_flag("slice.north_street_collapsed"), true, "第九聲 → 北街陷落")
+	assert_eq(_auto_checkpoint(), "rescue")
+	g.add_flag("slice.rescued_count", 4)
+	g.set_flag("slice.rescue_done", true)
+	g.set_flag("slice.told_truth_about_bell", true)
+	g.set_flag("slice.sheila_talked", true)
+	assert_eq(g.quests.stage_of(GameSession.MAIN_QUEST), "meet_sheila", "還沒打倒灰巡者")
+	g.set_flag("slice.ashwalker_defeated", true)
+	assert_eq(g.state.checkpoint, "undertaker")
+	assert_eq(_auto_checkpoint(), "undertaker")
 
 
 func test_boot_to_title() -> void:
@@ -18,3 +60,61 @@ func test_boot_to_title() -> void:
 		assert_eq(new_game.text, "MENU_NEW_GAME", "按鈕使用翻譯 key")
 	boot.queue_free()
 	await tree.process_frame
+
+
+func test_new_game_to_slice_end_with_nine_breaths() -> void:
+	var g := GameSession.new(QuestDB.load_default(), _dir)
+	g.new_game()
+	_play_to_undertaker(g)
+
+	# 手動存檔 → 讀檔 → 任務恢復到同一階段
+	assert_eq(g.save("slot1"), OK)
+	var g2 := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(g2.load_slot("slot1"), SaveCodec.Status.OK)
+	assert_eq(g2.quests.stage_of(GameSession.MAIN_QUEST), "escort_convoy", "讀檔後任務恢復")
+	assert_eq(g2.objective_key(), "Q_SLICE_OBJ_CONVOY")
+	assert_eq(int(g2.state.get_flag("slice.rescued_count")), 4)
+
+	# 九息石拱：付出記憶 → 戰死 → 重試回到檢查點，記憶沒有被扣、也不會重複扣
+	var arch := NineBreath.new("south_arch", "arch_father_last_talk")
+	arch.load_from(g2.state)
+	assert_true(arch.activate(g2.state), "發動九息")
+	assert_true(g2.state.has_paid_memory("arch_father_last_talk"))
+	assert_eq(g2.retry_from_checkpoint(), SaveCodec.Status.OK, "死亡重試")
+	assert_false(g2.state.has_paid_memory("arch_father_last_talk"), "回到檢查點：代價一起回到付出前")
+	var arch2 := NineBreath.new("south_arch", "arch_father_last_talk")
+	arch2.load_from(g2.state)
+	assert_true(arch2.activate(g2.state), "重試後再發動")
+	arch2.tick(9.5, g2.state)
+	assert_eq(arch2.phase, NineBreath.Phase.SPENT, "九息後化灰")
+	assert_eq(g2.state.memories_paid.size(), 1, "只付一次")
+
+	g2.set_flag("slice.convoy_through", true)
+	assert_eq(_auto_checkpoint(), "aftermath")
+	g2.set_flag("slice.cellar_entered", true)
+	assert_true(g2.is_slice_complete(), "切片完成")
+	assert_eq(g2.state.get_flag("slice.complete"), true)
+
+
+func test_new_game_to_slice_end_with_kindling_blade() -> void:
+	# 拒絕九息：席菈提前燒薪火劍；不付記憶也能走完
+	var g := GameSession.new(QuestDB.load_default(), _dir)
+	g.new_game()
+	_play_to_undertaker(g)
+	g.set_flag("sheila.kindling_used_early", true)
+	g.set_flag("slice.convoy_through", true)
+	g.set_flag("slice.cellar_entered", true)
+	assert_true(g.is_slice_complete())
+	assert_eq(g.state.memories_paid.size(), 0, "沒有付記憶")
+	assert_eq(g.state.get_flag("sheila.kindling_used_early"), true)
+	# 完成後的存檔讀回來仍是完成狀態
+	assert_eq(g.save("slot2"), OK)
+	var g2 := GameSession.new(QuestDB.load_default(), _dir)
+	g2.load_slot("slot2")
+	assert_true(g2.is_slice_complete(), "讀檔後仍是完成")
+
+
+func test_missing_save_reports_not_found() -> void:
+	var g := GameSession.new(QuestDB.load_default(), _dir)
+	assert_false(g.has_save())
+	assert_eq(g.load_slot("auto"), SaveCodec.Status.NOT_FOUND)

@@ -1,27 +1,50 @@
 extends TestCase
 ## 在地化規則：
-## - strings.csv 每個 key 都要有非空的 en 與 zh_TW
+## - i18n/*.csv 每個 key 都要有非空的 en 與 zh_TW，key 不可跨檔重複
 ## - 場景檔裡的 text / tooltip_text / placeholder_text 只能是翻譯 key（大寫底線），不准寫死句子
 ## - 場景用到的 key 都要存在於 CSV
 
-const CSV_PATH: String = "res://i18n/strings.csv"
+const CSV_DIR: String = "res://i18n"
 const KEY_PATTERN: String = "^[A-Z][A-Z0-9_]*$"
 
 
 func _load_table() -> Dictionary:
 	var table: Dictionary = {}
-	var f := FileAccess.open(CSV_PATH, FileAccess.READ)
-	if f == null:
-		fail("讀不到 " + CSV_PATH)
-		return table
-	var header: PackedStringArray = f.get_csv_line()
-	assert_eq(header, PackedStringArray(["keys", "en", "zh_TW"]), "CSV 欄位")
-	while not f.eof_reached():
-		var row: PackedStringArray = f.get_csv_line()
-		if row.size() == 1 and row[0] == "":
+	for file: String in DirAccess.get_files_at(CSV_DIR):
+		if not file.ends_with(".csv"):
 			continue
-		table[row[0]] = row
+		var path: String = CSV_DIR.path_join(file)
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			fail("讀不到 " + path)
+			continue
+		var header: PackedStringArray = f.get_csv_line()
+		assert_eq(header, PackedStringArray(["keys", "en", "zh_TW"]), path + " 欄位")
+		while not f.eof_reached():
+			var row: PackedStringArray = f.get_csv_line()
+			if row.size() == 1 and row[0] == "":
+				continue
+			if table.has(row[0]):
+				fail("key 重複：%s（%s）" % [row[0], path])
+			table[row[0]] = row
 	return table
+
+
+func test_csv_files_are_registered() -> void:
+	var registered: PackedStringArray = ProjectSettings.get_setting("internationalization/locale/translations", PackedStringArray())
+	for file: String in DirAccess.get_files_at(CSV_DIR):
+		if not file.ends_with(".csv"):
+			continue
+		var base: String = CSV_DIR.path_join(file.get_basename())
+		for loc: String in ["en", "zh_TW"]:
+			assert_true(registered.has("%s.%s.translation" % [base, loc]), "%s 的 %s 翻譯沒有註冊到 project.godot" % [file, loc])
+
+
+func test_quest_keys_exist() -> void:
+	var table: Dictionary = _load_table()
+	var db := QuestDB.load_default()
+	for key: String in db.translation_keys():
+		assert_true(table.has(key), "任務用到不存在的翻譯 key：" + key)
 
 
 func test_every_key_has_both_languages() -> void:
@@ -61,6 +84,7 @@ func test_scenes_use_translation_keys_only() -> void:
 func test_translations_are_registered() -> void:
 	TranslationServer.set_locale("zh_TW")
 	assert_eq(tr("GAME_TITLE"), "餘命城", "繁中標題")
+	assert_eq(tr("Q_SLICE_MAIN_TITLE"), "第九聲鐘", "切片任務文字（slice.csv）")
 	TranslationServer.set_locale("en")
 	assert_eq(tr("GAME_TITLE"), "Yuming City", "英文標題")
 
