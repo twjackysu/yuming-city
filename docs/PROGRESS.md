@@ -12,7 +12,7 @@
 - 核心邏輯：`GameState`、`SaveCodec`（版本＋遷移＋.bak 回復）、`NineBreath`（九息狀態機）。
 - 自製測試框架；20 個測試（i18n 規則、設定、存檔、九息、字型缺字、開機到標題的流程）。
 - CI：push 到 main 時測試、匯出 Windows／Linux、截圖，更新 prerelease `latest`。
-- 讀完原作四部＋終章，整理成 `docs/design/00-story-digest.md`；`01-adaptation.md` 初稿（切片段落對應、英文名暫定）。
+- 讀完原作四部＋終章，整理成 `docs/design/00-story-digest.md`；`01-adaptation.md` 初稿（切片段落對應、英文名暫定）；`02-gameplay.md` 初稿（喊前兆的協作戰鬥、九息流程、日記、死亡重試）。
 - 建立 PLAN、NEXT、DECISIONS（D-001～D-012）、FOR_JACKY、ART_REQUESTS、CREDITS。
 
 **怎麼驗證**
