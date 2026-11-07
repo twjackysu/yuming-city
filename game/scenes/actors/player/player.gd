@@ -56,6 +56,7 @@ func _ready() -> void:
 	health = Health.new(CombatTuning.num("noen.max_hp", 100.0))
 	health.name = "Health"
 	health.invulnerable_check = is_invulnerable
+	health.died.connect(_on_died)
 	add_child(health)
 	yaw = rotation.y
 	snap_camera()
@@ -107,7 +108,7 @@ func _physics_process(delta: float) -> void:
 		_dodge_dir = _dodge_dir.normalized()
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
-	elif Input.is_action_just_pressed("attack") and _puppet.action == "":
+	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead():
 		start_attack()
 	_update_swing()
 
@@ -136,6 +137,12 @@ func _physics_process(delta: float) -> void:
 	var fov_target: float = FOV_SPRINT if sprinting else FOV_WALK
 	_camera.fov = lerpf(_camera.fov, fov_target, clampf(4.0 * delta, 0.0, 1.0))
 	_follow_rig(delta)
+
+
+func _on_died() -> void:
+	var t := create_tween()
+	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	Game.on_player_died()
 
 
 func is_invulnerable() -> bool:

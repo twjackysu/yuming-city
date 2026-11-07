@@ -12,6 +12,7 @@ const SAVED_SHOW_SEC: float = 2.2
 var _objective: Label
 var _objective_box: VBoxContainer
 var _saved: Label
+var _died: Label
 var _saved_tween: Tween
 var _objective_tween: Tween
 
@@ -24,6 +25,7 @@ func _ready() -> void:
 	s.checkpoint_reached.connect(_on_checkpoint)
 	_set_objective(s.objective_key(), false)
 	_saved.modulate.a = 0.0
+	Game.player_died.connect(_on_player_died)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,6 +65,16 @@ func _build() -> void:
 	_objective.add_theme_constant_override("shadow_offset_y", 2)
 	_objective_box.add_child(_objective)
 
+	_died = Label.new()
+	_died.name = "Died"
+	_died.text = "HUD_DIED"
+	_died.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_died.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_died.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_died.add_theme_font_size_override("font_size", 44)
+	_died.add_theme_color_override("font_color", Color(0.85, 0.78, 0.66))
+	_died.hide()
+	add_child(_died)
 	_saved = Label.new()
 	_saved.name = "Saved"
 	_saved.text = "HUD_SAVED"
@@ -106,6 +118,18 @@ func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
 func _on_checkpoint(_checkpoint_id: String) -> void:
 	# 存檔在訊號之後才寫入，下一幀再看結果
 	_show_saved.call_deferred()
+
+
+func _on_player_died() -> void:
+	if not is_inside_tree():
+		return
+	_died.show()
+	_died.modulate.a = 0.0
+	create_tween().tween_property(_died, "modulate:a", 1.0, 0.8)
+
+
+func is_death_shown() -> bool:
+	return _died.visible
 
 
 func _show_saved() -> void:

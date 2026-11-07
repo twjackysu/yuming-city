@@ -10,6 +10,10 @@ signal dialogue_started(runner: DialogueRunner)
 signal dialogue_ended(dialogue_id: String)
 signal cutscene_started(runner: CutsceneRunner)
 signal cutscene_ended(cutscene_id: String, skipped: bool)
+signal player_died
+
+## 倒下到自動重試的時間（真實時間）
+const RETRY_DELAY_SEC: float = 2.2
 
 ## 關卡 id -> 場景。切片場景完成前，所有檢查點都在 sandbox。
 const LEVELS: Dictionary = {
@@ -135,6 +139,34 @@ func is_in_cutscene() -> bool:
 
 
 var _hit_stop_token: int = 0
+var _player_dead: bool = false
+
+
+## 玩家倒下：發訊號（HUD 顯示「你倒下了」），稍後從最近的檢查點重來。
+func on_player_died() -> void:
+	if _player_dead:
+		return
+	_player_dead = true
+	player_died.emit()
+	await get_tree().create_timer(RETRY_DELAY_SEC, true, false, true).timeout
+	if _player_dead:
+		retry()
+
+
+func is_player_dead() -> bool:
+	return _player_dead
+
+
+## 從最近的自動存檔重來；沒有存檔時重新開始。reload_level=false 給測試用（只重設狀態）。
+func retry(reload_level: bool = true) -> void:
+	_player_dead = false
+	Engine.time_scale = 1.0
+	dialogue = null
+	cutscene = null
+	if session.retry_from_checkpoint() != SaveCodec.Status.OK:
+		session.new_game()
+	if reload_level:
+		go_to_level(level_for_checkpoint(session.state.checkpoint))
 
 
 ## 打擊停頓：短暫把時間放慢，用真實時間計時後恢復（重疊時以最後一次為準）。
@@ -155,7 +187,7 @@ func is_hit_stopped() -> bool:
 
 ## 玩家角色不能移動（對話或過場中）。
 func is_player_locked() -> bool:
-	return is_in_dialogue() or is_in_cutscene()
+	return is_in_dialogue() or is_in_cutscene() or _player_dead
 
 
 func _process(delta: float) -> void:
@@ -179,6 +211,7 @@ func _on_dialogue_finished(dialogue_id: String) -> void:
 
 func back_to_title() -> void:
 	Engine.time_scale = 1.0
+	_player_dead = false
 	dialogue = null
 	cutscene = null
 	get_tree().change_scene_to_file(TITLE_SCENE)

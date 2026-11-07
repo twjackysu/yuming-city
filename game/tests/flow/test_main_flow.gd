@@ -176,6 +176,34 @@ func test_sandbox_triggers_advance_quest() -> void:
 	game.set("session", original)
 
 
+func test_player_death_retries_from_checkpoint() -> void:
+	var game: Node = tree.root.get_node("Game")
+	var original: GameSession = game.get("session") as GameSession
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	game.set("session", s)
+	s.new_game()
+	s.set_flag("slice.met_pear_seller", true)  # 進入 bell_tower 檢查點 → 自動存檔
+	assert_eq(_auto_checkpoint(), "bell_tower")
+	s.set_flag("slice.bought_pears", true)  # 存檔之後才發生的事
+	var level: Node3D = (load("res://scenes/dev/sandbox.tscn") as PackedScene).instantiate() as Node3D
+	tree.root.add_child(level)
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_true(player.health.apply_damage(1000.0), "致命傷")
+	assert_true(game.call("is_player_dead"), "倒下")
+	assert_true(game.call("is_player_locked"), "倒下後不能操作")
+	assert_true(hud.is_death_shown(), "HUD 顯示倒下")
+	game.call("retry", false)
+	assert_false(game.call("is_player_dead"), "重來後恢復")
+	assert_eq(s.state.checkpoint, "bell_tower", "回到檢查點")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "任務階段跟存檔一致")
+	assert_ne(s.state.get_flag("slice.bought_pears", false), true, "存檔後的變化被撤回")
+	level.queue_free()
+	await tree.process_frame
+	game.set("session", original)
+
+
 func _teleport(player: PlayerController, pos: Vector3) -> void:
 	player.global_position = Vector3(pos.x, 0.05, pos.z)
 	for i: int in 4:

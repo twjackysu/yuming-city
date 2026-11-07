@@ -29,6 +29,7 @@ OPT_ON,On,開
 OPT_OFF,Off,關
 HUD_OBJECTIVE,OBJECTIVE,目標
 HUD_SAVED,Saved,已存檔
+HUD_DIED,You fell. Returning to the last checkpoint…,你倒下了。回到上一個檢查點……
 HUD_SAVE_FAILED,Save failed,存檔失敗
 HUD_DLG_HINT,{key} Continue · Hold {key} Skip,{key} 繼續・按住 {key} 跳過
 HUD_CUTSCENE_SKIP,Hold {key} to skip,按住 {key} 跳過
