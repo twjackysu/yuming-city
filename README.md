@@ -2,9 +2,9 @@
 
 以原創小說《餘命城》改編的 PC 單機敘事動作 RPG。第三人稱、章節式，核心是「九息重現」：用九次呼吸的時間讓毀壞之物重新站起，代價是一段記憶。
 
-> 目前狀態：**階段 0：骨架與設計**。Godot 專案、測試與自動建置已就緒，畫面只有標題選單。首個可玩切片《霜橋鎮的第九聲鐘》預計 2026-11-30 完成。
+> 目前狀態：**階段 0：骨架與設計**（設計文件 02～05 定稿）。標題選單可以「新遊戲」進入冬夜街道沙盒自由走動；任務、存檔、效能量測已就緒。首個可玩切片《霜橋鎮的第九聲鐘》預計 2026-11-30 完成。
 
-![標題畫面（原型）](https://github.com/twjackysu/yuming-city/releases/download/latest/title.png)
+![冬夜街道沙盒（原型，程序生成）](https://github.com/twjackysu/yuming-city/releases/download/latest/sandbox.png)
 
 ## 試玩
 
@@ -13,13 +13,23 @@
 
 ## 操作方式
 
-目前只有標題選單：方向鍵／滑鼠選擇，Enter 確認；「語言」切換英文與繁體中文。完整鍵鼠與手把操作會隨切片一起加入。
+| 動作 | 鍵鼠 | 手把 |
+|---|---|---|
+| 移動／鏡頭 | WASD／滑鼠（點一下畫面鎖定滑鼠） | 左／右搖桿 |
+| 衝刺 | Shift | 左搖桿按下 |
+| 閃避 | Space | B |
+| 效能 overlay | F3 | — |
+
+標題選單：方向鍵／滑鼠選擇，Enter 確認；「語言」切換英文與繁體中文。戰鬥、指令、九息等完整操作見 [docs/design/02-gameplay.md](docs/design/02-gameplay.md)，會隨切片陸續加入。
 
 ## 目前完成的範圍
 
 - Godot 4.7.2 專案骨架（`game/`），Forward+ 渲染，Windows 預設 D3D12
 - 繁中＋英文在地化，所有玩家可見文字都走翻譯 key
 - 自動測試（腳本型別檢查、i18n 規則、主線流程）與 GitHub Actions 自動匯出 Windows／Linux
+- 資料驅動任務系統、版本化存檔（自動存檔、死亡重試）、九息狀態機；主線流程測試能從新遊戲走到切片結尾（任務層面）
+- 第三人稱移動與越肩鏡頭、冬夜街道沙盒（體積霧、暖光）
+- 效能 overlay（F3）與 benchmark：`YumingCity.exe ++ --benchmark`，結果寫到 `%APPDATA%\YumingCity\benchmark\`
 
 ## Steam 上架還差什麼
 

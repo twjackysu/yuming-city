@@ -18,7 +18,7 @@ game/
 scripts/                 # get-godot、check、screenshot、gen-assets
 ```
 
-## 現況（11/8）
+## 現況（11/8 第 2 輪結束）
 
 | 模組 | 位置 | 職責 |
 |---|---|---|
@@ -29,7 +29,14 @@ scripts/                 # get-godot、check、screenshot、gen-assets
 | NineBreath | `src/core/nine_breath.gd` | 九息狀態機（D-012） |
 | InputSetup | `src/core/input_setup.gd` | 16 個動作的鍵鼠＋手把預設綁定，程式註冊 |
 | UiFonts | `src/ui/ui_fonts.gd` | Noto CJK 子集；不存在時退回系統字型（D-010） |
-| Boot | `scenes/boot/` | 標題畫面（霧 shader） |
+| Game | `autoload/game.gd` | 持有 GameSession；新遊戲、繼續、依檢查點切關卡；`--level`、`--benchmark` |
+| Perf | `autoload/perf.gd` | 效能 overlay（F3）＋ `snapshot()` 給 benchmark |
+| StoryLogic／QuestDB／QuestRunner | `src/core/` | 條件與效果、任務資料驗證、依旗標推進（D-013） |
+| GameSession | `src/core/game_session.gd` | 一局遊戲：狀態＋任務＋自動存檔＋死亡重試 |
+| FrameStats／BenchmarkRun | `src/core/` | 幀時間統計、benchmark 計時與報告 |
+| PlayerController | `scenes/actors/player/` | 第三人稱移動、閃避、越肩鏡頭 |
+| Sandbox／Benchmark | `scenes/dev/`、`scenes/bench/` | 冬夜街道沙盒；固定鏡頭路徑 benchmark |
+| Boot | `scenes/boot/` | 標題畫面（霧 shader）；新遊戲／繼續接上 Game |
 
 ## 接下來的結構（切片）
 
@@ -56,7 +63,7 @@ App、Settings 保持原樣；音訊用 Godot 的匯流排（Master／Music／SF
 
 ### 資料格式（D-013）
 
-- **結構用 JSON，文字用翻譯 key**。JSON 裡不出現玩家看得到的文字，只出現 `DLG_SLICE_SHEILA_001` 這類 key；文字在 `i18n/*.csv`（切片對話放 `i18n/dialogue_slice.csv`，與介面 `strings.csv` 分開）。
+- **結構用 JSON，文字用翻譯 key**。JSON 裡不出現玩家看得到的文字，只出現 `DLG_SLICE_SHEILA_001` 這類 key；文字在 `i18n/*.csv`（切片的任務與對話放 `i18n/slice.csv`，與介面 `strings.csv` 分開）。
 - 任務（範例）：
 
 ```json

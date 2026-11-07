@@ -2,9 +2,21 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-016　2026-11-08　效能量測：overlay＋benchmark JSON；開發工具文字不翻譯
+
+- 決策：`Perf` autoload（F3／`--perf`）顯示 FPS、1% low、CPU／GPU 渲染時間、draw calls、VRAM、驅動與顯示卡；`--benchmark` 跑固定鏡頭路徑 30 秒（暖機 2 秒不計），寫 `user://benchmark/bench-*.json`。達標判定：平均 ≥ 60 fps 且 1% low ≥ 45 fps。overlay 與 benchmark 是開發／量測工具，文字用英文技術縮寫、不走翻譯 key（不出現在玩家選單）。
+- 理由：session 沒有 GPU，效能只能由 Jacky 實機量測；把量測做成一個指令、一個 JSON，回報成本最低。
+- 影響：benchmark 場景會隨切片內容更新（之後改成霜橋鎮白盒）；JSON 格式改動要保持舊欄位。
+
+## D-015　2026-11-08　使用者資料夾固定為 YumingCity
+
+- 決策：`application/config/use_custom_user_dir=true`、`custom_user_dir_name="YumingCity"`。Windows 為 `%APPDATA%\YumingCity\`（存檔在 `saves/`、benchmark 在 `benchmark/`、設定 `settings.cfg`）。
+- 理由：路徑短、不含空格與 Godot 字樣，方便寫給 Jacky 的量測步驟，之後 Steam 雲端存檔也指向這裡。
+- 影響：改名會讓舊存檔找不到；正式發行前不再更動。
+
 ## D-013　2026-11-08　任務與對話：JSON 結構＋翻譯 key
 
-- 決策：任務、對話、戰鬥數值放 `game/data/**/*.json`；JSON 只放結構與翻譯 key，玩家看得到的文字一律在 `game/i18n/*.csv`（切片對話用 `dialogue_slice.csv`，與介面 `strings.csv` 分開）。條件與效果只能讀寫旗標與記憶，不執行任意程式。
+- 決策：任務、對話、戰鬥數值放 `game/data/**/*.json`；JSON 只放結構與翻譯 key，玩家看得到的文字一律在 `game/i18n/*.csv`（切片的任務與對話文字用 `slice.csv`，與介面 `strings.csv` 分開；每個 CSV 都要在 project.godot 註冊，測試會檢查）。條件與效果只能讀寫旗標與記憶，不執行任意程式。
 - 理由：Godot 內建 JSON 解析、純文字好 diff 與測試；遵守「所有文字走翻譯 key」；字型子集化只需掃 CSV。
 - 影響：測試檢查 JSON 引用的 key 都存在且有 en＋zh_TW；`gen_fonts.py` 掃描 `i18n/*.csv`。詳見 `docs/design/04-architecture.md`。
 
