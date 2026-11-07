@@ -24,7 +24,7 @@ Unreal Engine 5 + C++ + Blueprint，Windows / DirectX 12。
 
 ## 原作
 
-[《餘命城》全篇完結小說](docs/story/yuming-city-complete.zh-TW.txt)：四部、44 個編號章節，另含尾聲與終章。遊戲改編設計需與原作分開管理。
+[《餘命城》全篇完結小說](docs/story/yuming-city-complete.zh-TW.md)：四部、44 個編號章節，另含尾聲與終章。遊戲改編設計需與原作分開管理。
 
 ## 儲存庫約定
 
