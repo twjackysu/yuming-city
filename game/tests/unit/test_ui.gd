@@ -1,0 +1,136 @@
+extends TestCase
+## 暫停選單、設定選單、HUD：文字都走翻譯 key、操作會改到設定與遊戲狀態。
+
+const KEY_PATTERN: String = "^[A-Z][A-Z0-9_]*$"
+
+var _dir: String = ""
+var _saved_session: GameSession
+
+
+func before_each() -> void:
+	_dir = "user://test_ui_%d" % Time.get_ticks_usec()
+
+
+func after_each() -> void:
+	if _saved_session != null:
+		(tree.root.get_node("Game") as Node).set("session", _saved_session)
+		_saved_session = null
+	tree.paused = false
+	if DirAccess.dir_exists_absolute(_dir):
+		for f: String in DirAccess.get_files_at(_dir):
+			DirAccess.remove_absolute(_dir.path_join(f))
+		DirAccess.remove_absolute(_dir)
+
+
+## 換一個存到暫存資料夾的 session，避免動到真的 user://saves。
+func _use_temp_session() -> GameSession:
+	var game: Node = tree.root.get_node("Game")
+	_saved_session = game.get("session") as GameSession
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	game.set("session", s)
+	return s
+
+
+func _assert_texts_are_keys(root: Node, where: String) -> int:
+	var re := RegEx.create_from_string(KEY_PATTERN)
+	var count: int = 0
+	TranslationServer.set_locale("en")
+	for n: Node in root.find_children("*", "", true, false):
+		var text: String = ""
+		if n is Label:
+			text = (n as Label).text
+		elif n is Button:
+			text = (n as Button).text
+		else:
+			continue
+		if text == "":
+			continue
+		count += 1
+		assert_true(re.search(text) != null, "%s 的 %s 寫死了文字：%s" % [where, n.name, text])
+		assert_ne(TranslationServer.translate(text), StringName(text), "%s 用到不存在的 key：%s" % [where, text])
+	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
+	return count
+
+
+func test_settings_menu_texts_and_controls() -> void:
+	var settings: Node = tree.root.get_node("Settings")
+	var menu: SettingsMenu = (load("res://scenes/ui/settings_menu.tscn") as PackedScene).instantiate() as SettingsMenu
+	tree.root.add_child(menu)
+	menu.open()
+	await tree.process_frame
+	assert_true(_assert_texts_are_keys(menu, "設定選單") >= 18, "設定選單每一列都有文字")
+
+	var quality_before: int = int(settings.get("quality"))
+	var q: Button = menu.control_of("Quality") as Button
+	assert_not_null(q, "畫質列")
+	q.pressed.emit()
+	assert_eq(int(settings.get("quality")), (quality_before + 1) % 3, "按一下切到下一級")
+	assert_eq(q.text, QualityPreset.NAME_KEYS[int(settings.get("quality"))], "按鈕顯示目前畫質")
+	settings.call("set_quality", quality_before)
+
+	var vol_before: float = float(settings.call("volume", "Music"))
+	var slider: HSlider = menu.control_of("VolumeMusic") as HSlider
+	assert_not_null(slider, "音樂音量滑桿")
+	slider.value = 0.35
+	assert_eq(float(settings.call("volume", "Music")), 0.35, "滑桿改到設定")
+	var bus: int = AudioServer.get_bus_index("Music")
+	assert_true(absf(AudioServer.get_bus_volume_db(bus) - linear_to_db(0.35)) < 0.01, "套用到 Music 匯流排")
+	settings.call("set_volume", "Music", vol_before)
+
+	var shake: Button = menu.control_of("ReduceShake") as Button
+	var shake_before: bool = bool(settings.get("reduce_camera_shake"))
+	shake.pressed.emit()
+	assert_eq(bool(settings.get("reduce_camera_shake")), not shake_before, "減少鏡頭晃動切換")
+	assert_eq(shake.text, "OPT_ON" if not shake_before else "OPT_OFF")
+	settings.call("set_option", "reduce_camera_shake", shake_before)
+
+	var closed: Array[bool] = [false]
+	menu.closed.connect(func() -> void: closed[0] = true)
+	menu.close()
+	assert_true(closed[0] and not menu.visible, "返回會關閉並發出 closed")
+	menu.queue_free()
+	await tree.process_frame
+
+
+func test_pause_menu_pauses_and_resumes() -> void:
+	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
+	tree.root.add_child(pause)
+	await tree.process_frame
+	assert_false(pause.is_open(), "一開始沒開")
+	var ev := InputEventAction.new()
+	ev.action = "pause"
+	ev.pressed = true
+	pause._unhandled_input(ev)
+	assert_true(pause.is_open(), "按暫停鍵打開")
+	assert_true(tree.paused, "遊戲暫停")
+	assert_eq(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE, "暫停時釋放滑鼠")
+	assert_true(_assert_texts_are_keys(pause, "暫停選單") >= 4)
+	(pause.find_child("Settings", true, false) as Button).pressed.emit()
+	var sm: SettingsMenu = pause.find_child("SettingsMenu", true, false) as SettingsMenu
+	assert_true(sm != null and sm.visible, "暫停中可以開設定")
+	pause._unhandled_input(ev)
+	assert_true(pause.is_open(), "設定開著時暫停鍵交給設定選單處理")
+	sm.close()
+	pause._unhandled_input(ev)
+	assert_false(pause.is_open(), "再按一次繼續")
+	assert_false(tree.paused, "解除暫停")
+	pause.queue_free()
+	await tree.process_frame
+
+
+func test_hud_follows_objective_and_autosave() -> void:
+	var s: GameSession = _use_temp_session()
+	s.new_game()
+	var hud: Hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate() as Hud
+	tree.root.add_child(hud)
+	await tree.process_frame
+	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_TOWN", "顯示目前目標")
+	_assert_texts_are_keys(hud, "HUD")
+	s.set_flag("slice.met_pear_seller", true)
+	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_BELL", "目標跟著任務換")
+	await tree.process_frame
+	await tree.process_frame
+	assert_eq(hud.saved_label().text, "HUD_SAVED", "檢查點存檔成功")
+	assert_true(hud.saved_label().modulate.a > 0.0, "存檔提示開始顯示")
+	hud.queue_free()
+	await tree.process_frame

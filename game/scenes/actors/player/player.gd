@@ -40,7 +40,7 @@ func _ready() -> void:
 	_rig.top_level = true
 	_arm.add_excluded_object(get_rid())
 	yaw = rotation.y
-	_snap_rig()
+	snap_camera()
 	_camera.current = true
 
 
@@ -113,7 +113,8 @@ func _follow_rig(delta: float) -> void:
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 
 
-func _snap_rig() -> void:
+## 傳送玩家後呼叫，鏡頭立即就位（不從舊位置滑過來）。
+func snap_camera() -> void:
 	_rig.global_position = global_position + Vector3(0.0, CAMERA_HEIGHT, 0.0)
 	_rig.rotation = Vector3(0.0, yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)

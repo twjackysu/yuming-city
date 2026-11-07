@@ -21,9 +21,11 @@ func _ready() -> void:
 	_build_arch(Vector3(0.0, 0.0, -9.0))
 	for p: Vector3 in [Vector3(-3.5, 0, -4), Vector3(3.5, 0, -14), Vector3(-3.5, 0, -20)]:
 		_build_lamp_post(p)
+	_build_story_triggers()
 	var spawn: Marker3D = $Spawn
 	var player: Node3D = $Player
 	player.global_transform = spawn.global_transform
+	(player as PlayerController).snap_camera()
 
 
 func _build_environment() -> void:
@@ -192,3 +194,74 @@ func _build_arch(pos: Vector3) -> void:
 	cut.size = Vector3(3.2, 2.0, 2.0)
 	cut.position = Vector3(0, 1.0, 0)
 	arch.add_child(cut)
+
+
+## 暫時的劇情觸發區：讓「新遊戲 → 找到梨販 → 敲鐘」在沙盒裡能手動與自動驗證。
+## 霜橋鎮白盒完成後由正式的互動（對話、敲鐘）取代。
+func _build_story_triggers() -> void:
+	var stall_pos := Vector3(3.0, 0.0, -2.5)
+	_build_pear_stall(stall_pos)
+	_trigger("PearSellerTrigger", stall_pos + Vector3(-0.8, 1.0, 0.0), Vector3(3.0, 2.0, 3.0), _on_pear_seller)
+	_trigger("BellTowerTrigger", Vector3(0.0, 1.0, -22.8), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
+
+
+func _trigger(node_name: String, pos: Vector3, size: Vector3, action: Callable) -> Area3D:
+	var area := Area3D.new()
+	area.name = node_name
+	area.position = pos
+	area.monitorable = false
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	area.add_child(shape)
+	area.body_entered.connect(func(body: Node3D) -> void:
+		if body is PlayerController:
+			action.call())
+	add_child(area)
+	return area
+
+
+func _on_pear_seller() -> void:
+	Game.session.set_flag("slice.met_pear_seller", true)
+
+
+func _on_bell_tower() -> void:
+	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) == "ring_bell":
+		Game.session.set_flag("slice.bell_rings", 9)
+
+
+## 梨販的攤子：木桌、布篷、一盞暖燈、一個披斗篷的人影（之後換成角色）。
+func _build_pear_stall(pos: Vector3) -> void:
+	var wood := Color(0.24, 0.17, 0.12)
+	_box(Vector3(1.6, 0.9, 0.8), pos + Vector3(0, 0.45, 0), wood)
+	_box(Vector3(1.9, 0.06, 1.2), pos + Vector3(0, 2.1, 0.1), Color(0.32, 0.12, 0.1), false)
+	for x: float in [-0.85, 0.85]:
+		_box(Vector3(0.07, 2.1, 0.07), pos + Vector3(x, 1.05, 0.55), wood, false)
+	# 梨：幾顆暖黃色小球
+	var pear := _mat(Color(0.78, 0.66, 0.3), 0.6)
+	for i: int in 6:
+		var p := CSGSphere3D.new()
+		p.radius = 0.09
+		p.material = pear
+		p.position = pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15)
+		add_child(p)
+	var figure := CSGCylinder3D.new()
+	figure.radius = 0.32
+	figure.height = 1.55
+	figure.cone = true
+	figure.material = _mat(Color(0.12, 0.12, 0.14))
+	figure.position = pos + Vector3(0.3, 0.78, -0.75)
+	add_child(figure)
+	var head := CSGSphere3D.new()
+	head.radius = 0.15
+	head.material = _mat(Color(0.12, 0.12, 0.14))
+	head.position = pos + Vector3(0.3, 1.62, -0.75)
+	add_child(head)
+	var l := OmniLight3D.new()
+	l.light_color = LAMP
+	l.light_energy = 1.4
+	l.omni_range = 4.5
+	l.light_volumetric_fog_energy = 1.0
+	l.position = pos + Vector3(0, 1.85, 0.2)
+	add_child(l)

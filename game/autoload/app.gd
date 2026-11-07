@@ -11,6 +11,7 @@ var _frame: int = 0
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS  # 暫停中也要能截圖
 	get_tree().root.theme = UiFonts.build_theme()
 	InputSetup.ensure_actions()
 	var args: Dictionary = parse_user_args(OS.get_cmdline_user_args())

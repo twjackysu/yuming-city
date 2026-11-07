@@ -104,6 +104,49 @@ func test_sandbox_player_walks_forward() -> void:
 	await tree.process_frame
 
 
+## 場景層面：沙盒裡走進梨販與鐘樓的觸發區 → 任務推進、自動存檔、HUD 目標跟著換。
+func test_sandbox_triggers_advance_quest() -> void:
+	var game: Node = tree.root.get_node("Game")
+	var original: GameSession = game.get("session") as GameSession
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	game.set("session", s)
+	s.new_game()
+	var level: Node3D = (load("res://scenes/dev/sandbox.tscn") as PackedScene).instantiate() as Node3D
+	tree.root.add_child(level)
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_TOWN", "新遊戲：找梨販")
+
+	# 還沒找梨販就跑去鐘樓：不會先敲鐘
+	await _teleport(player, (level.get_node("BellTowerTrigger") as Node3D).global_position)
+	assert_eq(int(s.state.get_flag("slice.bell_rings", 0)), 0, "順序不對時鐘樓不觸發")
+
+	await _teleport(player, (level.get_node("PearSellerTrigger") as Node3D).global_position)
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "走到梨販 → 敲鐘")
+	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_BELL", "HUD 目標更新")
+	assert_eq(_auto_checkpoint(), "bell_tower", "進入檢查點自動存檔")
+
+	await _teleport(player, (level.get_node("BellTowerTrigger") as Node3D).global_position)
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "rescue", "敲鐘九聲 → 救援")
+	assert_eq(s.state.get_flag("slice.north_street_collapsed"), true, "北街陷落")
+	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_RESCUE")
+
+	level.queue_free()
+	await tree.process_frame
+	game.set("session", original)
+
+
+func _teleport(player: PlayerController, pos: Vector3) -> void:
+	player.global_position = Vector3(pos.x, 0.05, pos.z)
+	for i: int in 4:
+		await tree.physics_frame
+	# 離開觸發區，讓下一次進入重新觸發
+	player.global_position = Vector3(0.0, 0.05, 2.0)
+	for i: int in 2:
+		await tree.physics_frame
+
+
 func test_new_game_to_slice_end_with_nine_breaths() -> void:
 	var g := GameSession.new(QuestDB.load_default(), _dir)
 	g.new_game()

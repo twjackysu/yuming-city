@@ -1,26 +1,61 @@
 extends Node
-## 玩家設定：語言、音量、畫質。存在 user://settings.cfg，與存檔分開。
+## 玩家設定：語言、音量、字幕、畫質、顯示、鏡頭晃動。存在 user://settings.cfg，與存檔分開。
+## UI 改值後呼叫 apply()（即時生效），關閉選單時 save_settings()。
 
 signal changed
 
 const SETTINGS_PATH: String = "user://settings.cfg"
 const SUPPORTED_LOCALES: PackedStringArray = ["en", "zh_TW"]
 const DEFAULT_LOCALE: String = "en"
+## 音訊匯流排：Music／SFX／Voice 接 Master；UI 接 SFX（跟著音效音量）。
+const BUSES: PackedStringArray = ["Music", "SFX", "Voice", "UI"]
+const BUS_SEND: Dictionary = {"Music": "Master", "SFX": "Master", "Voice": "Master", "UI": "SFX"}
+## 有音量滑桿的匯流排（設定檔的 key 為 <bus 小寫>_volume）
+const VOLUME_BUSES: PackedStringArray = ["Master", "Music", "SFX", "Voice"]
 
 var locale: String = DEFAULT_LOCALE
-var master_volume: float = 1.0
+## 匯流排名 -> 線性音量 0..1
+var volumes: Dictionary = {"Master": 1.0, "Music": 0.8, "SFX": 1.0, "Voice": 1.0}
 var subtitles_enabled: bool = true
+var quality: QualityPreset.Level = QualityPreset.DEFAULT_LEVEL
+var fullscreen: bool = false
+var vsync: bool = true
+var reduce_camera_shake: bool = false
+
+## 舊欄位相容（第 1 輪的測試與程式用 master_volume）
+var master_volume: float:
+	get:
+		return float(volumes.get("Master", 1.0))
+	set(value):
+		volumes["Master"] = clampf(value, 0.0, 1.0)
 
 var _config_path: String = SETTINGS_PATH
 
 
 func _ready() -> void:
+	ensure_buses()
 	load_settings()
-	# 開發／截圖用：`-- --locale=zh_TW` 暫時覆寫語言（不寫入設定檔）
+	# 開發／截圖用：`-- --locale=zh_TW`、`-- --quality=0..2` 暫時覆寫（不寫入設定檔）
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--locale="):
 			locale = normalize_locale(arg.substr("--locale=".length()))
+		elif arg.begins_with("--quality="):
+			quality = QualityPreset.clamp_level(int(arg.substr("--quality=".length())))
 	apply()
+	# 之後載入的場景（WorldEnvironment 進樹時）自動套用目前畫質
+	get_tree().node_added.connect(_on_node_added)
+
+
+## 建立音訊匯流排（已存在就跳過）。
+static func ensure_buses() -> void:
+	for bus_name: String in BUSES:
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		AudioServer.add_bus()
+		var idx: int = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, bus_name)
+	for bus_name: String in BUSES:
+		AudioServer.set_bus_send(AudioServer.get_bus_index(bus_name), StringName(str(BUS_SEND[bus_name])))
 
 
 ## 依 OS 語系選預設語言：繁中（台灣／香港／Hant）用 zh_TW，其餘一律英文（Steam 預設英文）。
@@ -44,11 +79,85 @@ func set_locale(value: String) -> void:
 	changed.emit()
 
 
+func volume(bus_name: String) -> float:
+	return float(volumes.get(bus_name, 1.0))
+
+
+func set_volume(bus_name: String, value: float) -> void:
+	volumes[bus_name] = clampf(value, 0.0, 1.0)
+	_apply_audio()
+	changed.emit()
+
+
+func set_quality(value: int) -> void:
+	quality = QualityPreset.clamp_level(value)
+	_apply_video()
+	changed.emit()
+
+
+func set_option(option: String, value: bool) -> void:
+	match option:
+		"subtitles":
+			subtitles_enabled = value
+		"fullscreen":
+			fullscreen = value
+		"vsync":
+			vsync = value
+		"reduce_camera_shake":
+			reduce_camera_shake = value
+		_:
+			push_error("Settings: 沒有選項 %s" % option)
+			return
+	_apply_video()
+	changed.emit()
+
+
+func get_option(option: String) -> bool:
+	match option:
+		"subtitles":
+			return subtitles_enabled
+		"fullscreen":
+			return fullscreen
+		"vsync":
+			return vsync
+		"reduce_camera_shake":
+			return reduce_camera_shake
+	return false
+
+
 func apply() -> void:
 	TranslationServer.set_locale(locale)
-	var bus: int = AudioServer.get_bus_index("Master")
-	if bus >= 0:
-		AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(master_volume, 0.0001)))
+	_apply_audio()
+	_apply_video()
+
+
+func _apply_audio() -> void:
+	for bus_name: String in VOLUME_BUSES:
+		var bus: int = AudioServer.get_bus_index(bus_name)
+		if bus >= 0:
+			var v: float = volume(bus_name)
+			AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(v, 0.0001)))
+			AudioServer.set_bus_mute(bus, v <= 0.001)
+
+
+func _apply_video() -> void:
+	if not is_inside_tree():
+		return
+	QualityPreset.apply_tree(get_tree().root, quality)
+	if DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+	var want: DisplayServer.WindowMode = DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
+	var current: DisplayServer.WindowMode = DisplayServer.window_get_mode()
+	var is_full: bool = current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if is_full != fullscreen:
+		DisplayServer.window_set_mode(want)
+
+
+func _on_node_added(node: Node) -> void:
+	var we: WorldEnvironment = node as WorldEnvironment
+	if we != null:
+		QualityPreset.apply_environment(we.environment, quality)
 
 
 func load_settings(path: String = _config_path) -> void:
@@ -58,13 +167,24 @@ func load_settings(path: String = _config_path) -> void:
 		locale = pick_default_locale(OS.get_locale())
 		return
 	locale = normalize_locale(str(cfg.get_value("general", "locale", pick_default_locale(OS.get_locale()))))
-	master_volume = clampf(float(cfg.get_value("audio", "master_volume", 1.0)), 0.0, 1.0)
 	subtitles_enabled = bool(cfg.get_value("general", "subtitles", true))
+	reduce_camera_shake = bool(cfg.get_value("general", "reduce_camera_shake", false))
+	for bus_name: String in VOLUME_BUSES:
+		var key: String = bus_name.to_lower() + "_volume"
+		volumes[bus_name] = clampf(float(cfg.get_value("audio", key, volumes.get(bus_name, 1.0))), 0.0, 1.0)
+	quality = QualityPreset.clamp_level(int(cfg.get_value("video", "quality", QualityPreset.DEFAULT_LEVEL)))
+	fullscreen = bool(cfg.get_value("video", "fullscreen", false))
+	vsync = bool(cfg.get_value("video", "vsync", true))
 
 
 func save_settings(path: String = _config_path) -> Error:
 	var cfg := ConfigFile.new()
 	cfg.set_value("general", "locale", locale)
 	cfg.set_value("general", "subtitles", subtitles_enabled)
-	cfg.set_value("audio", "master_volume", master_volume)
+	cfg.set_value("general", "reduce_camera_shake", reduce_camera_shake)
+	for bus_name: String in VOLUME_BUSES:
+		cfg.set_value("audio", bus_name.to_lower() + "_volume", volume(bus_name))
+	cfg.set_value("video", "quality", int(quality))
+	cfg.set_value("video", "fullscreen", fullscreen)
+	cfg.set_value("video", "vsync", vsync)
 	return cfg.save(path)

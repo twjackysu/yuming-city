@@ -9,3 +9,24 @@ MENU_LANGUAGE,Language,語言
 LANG_EN,English,English
 LANG_ZH_TW,繁體中文,繁體中文
 BUILD_PROTOTYPE,Prototype build — not final content,原型版本——非最終內容
+MENU_RESUME,Resume,繼續遊戲
+MENU_BACK_TO_TITLE,Return to Title,回到標題畫面
+MENU_BACK,Back,返回
+PAUSE_TITLE,Paused,暫停
+SET_MASTER_VOLUME,Master Volume,主音量
+SET_MUSIC_VOLUME,Music,音樂
+SET_SFX_VOLUME,Sound Effects,音效
+SET_VOICE_VOLUME,Voice,語音
+SET_SUBTITLES,Subtitles,字幕
+SET_QUALITY,Graphics Quality,畫質
+SET_FULLSCREEN,Fullscreen,全螢幕
+SET_VSYNC,V-Sync,垂直同步
+SET_REDUCE_SHAKE,Reduce Camera Shake,減少鏡頭晃動
+QUALITY_LOW,Low,低
+QUALITY_MEDIUM,Medium,中
+QUALITY_HIGH,High,高
+OPT_ON,On,開
+OPT_OFF,Off,關
+HUD_OBJECTIVE,OBJECTIVE,目標
+HUD_SAVED,Saved,已存檔
+HUD_SAVE_FAILED,Save failed,存檔失敗

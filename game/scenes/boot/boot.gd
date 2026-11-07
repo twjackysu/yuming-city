@@ -4,7 +4,9 @@ extends Control
 @onready var _menu: VBoxContainer = %Menu
 @onready var _new_game: Button = %NewGame
 @onready var _continue: Button = %Continue
-@onready var _language: Button = %Language
+@onready var _settings_button: Button = %Settings
+
+var _settings_menu: SettingsMenu
 @onready var _quit: Button = %Quit
 
 
@@ -16,9 +18,12 @@ func _ready() -> void:
 	_continue.disabled = not Game.has_continue()
 	_new_game.pressed.connect(_on_new_game)
 	_continue.pressed.connect(_on_continue)
-	_language.pressed.connect(_on_language)
+	_settings_button.pressed.connect(_on_settings)
 	_quit.pressed.connect(func() -> void: get_tree().quit())
 	_focus_first.call_deferred()
+	# 截圖用：`-- --open=settings`
+	if str(App.parse_user_args(OS.get_cmdline_user_args()).get("open", "")) == "settings":
+		_on_settings.call_deferred()
 
 
 func _focus_first() -> void:
@@ -36,6 +41,20 @@ func _on_continue() -> void:
 		_continue.disabled = true
 
 
-func _on_language() -> void:
-	var next: String = "zh_TW" if Settings.locale == "en" else "en"
-	Settings.set_locale(next)
+func _on_settings() -> void:
+	if _settings_menu == null:
+		_settings_menu = (load("res://scenes/ui/settings_menu.tscn") as PackedScene).instantiate() as SettingsMenu
+		add_child(_settings_menu)
+		_settings_menu.closed.connect(_on_settings_closed)
+	_menu.hide()
+	_settings_menu.open()
+
+
+func _on_settings_closed() -> void:
+	_menu.show()
+	_settings_button.grab_focus.call_deferred()
+
+
+## 測試與截圖用
+func settings_menu() -> SettingsMenu:
+	return _settings_menu
