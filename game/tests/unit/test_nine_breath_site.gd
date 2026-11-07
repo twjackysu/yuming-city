@@ -150,3 +150,5 @@ func test_frame_throw_outcomes() -> void:
 	e2.tick(4.5, false, st2)
 	assert_eq(e2.outcome, "kindling", "拒絕九息：薪火劍")
 	assert_eq(st2.get_flag("sheila.kindling_used_early"), true)
+	assert_eq(st2.get_flag("sheila.hand_injury"), 1, "提前燒劍：手傷 +1")
+	assert_eq(st.get_flag("sheila.hand_injury", 0), 0, "石拱擋下：手傷不變")

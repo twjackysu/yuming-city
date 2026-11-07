@@ -33,4 +33,6 @@ func resolve(how: String, state: GameState) -> void:
 		state.set_flag("slice.frame_throw_outcome", how)
 		if how == "kindling":
 			state.set_flag("sheila.kindling_used_early", true)
+			# 燃燒劍每燒一次手傷 +1（02-gameplay：影響之後的攻擊動作與對話）
+			state.set_flag("sheila.hand_injury", int(state.get_flag("sheila.hand_injury", 0)) + 1)
 	resolved.emit(how)

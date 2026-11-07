@@ -77,6 +77,8 @@ func finish() -> void:
 	if st != null:
 		st.set_flag("slice.convoy_done", true)
 		st.set_flag("slice.convoy_injured", injured)
+		# 結尾席菈用燃燒劍斬倒送葬者：手傷 +1（提前燒過的話已經是 2）
+		st.set_flag("sheila.hand_injury", int(st.get_flag("sheila.hand_injury", 0)) + 1)
 	if undertaker != null and is_instance_valid(undertaker) and not undertaker.health.is_dead():
 		undertaker.health.apply_damage(undertaker.health.hp, {"kind": "kindling", "stagger": 0.0})
 	banner.emit("CONVOY_THROUGH", 4.0)

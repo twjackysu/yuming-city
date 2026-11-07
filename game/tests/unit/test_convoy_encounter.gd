@@ -89,9 +89,12 @@ func test_convoy_arrival_ends_fight() -> void:
 	assert_eq(ended[0], 1, "傷者 1 人")
 	assert_eq(st.get_flag("slice.convoy_done"), true)
 	assert_eq(st.get_flag("slice.convoy_injured"), 1)
+	assert_true(int(st.get_flag("sheila.hand_injury", 0)) >= 1, "結尾燒劍斬倒送葬者：手傷 +1")
 	assert_true(boss.health.is_dead(), "送葬者被薪火劍斬倒")
+	var injury: int = int(st.get_flag("sheila.hand_injury", 0))
 	enc.finish()
 	assert_eq(ended[0], 1, "只結束一次")
+	assert_eq(int(st.get_flag("sheila.hand_injury", 0)), injury, "手傷不重複加")
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
