@@ -125,6 +125,8 @@ func test_hud_follows_objective_and_autosave() -> void:
 	tree.root.add_child(hud)
 	await tree.process_frame
 	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_TOWN", "顯示目前目標")
+	assert_true(hud.is_objective_shown(), "進關卡時先顯示目標")
+	assert_true(Hud.OBJECTIVE_HOLD_SEC <= 10.0, "探索時 HUD 不常駐：目標幾秒後淡出")
 	_assert_texts_are_keys(hud, "HUD")
 	s.set_flag("slice.met_pear_seller", true)
 	assert_eq(hud.objective_text_key(), "Q_SLICE_OBJ_BELL", "目標跟著任務換")

@@ -34,10 +34,19 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 @onready var _arm: SpringArm3D = $CameraRig/Pitch/SpringArm3D
 @onready var _camera: Camera3D = $CameraRig/Pitch/SpringArm3D/Camera3D
 @onready var _body: Node3D = $Body
+@onready var _lantern: Node3D = $Body/Lantern
+
+var _puppet: Puppet
 
 
 func _ready() -> void:
 	_rig.top_level = true
+	_puppet = Puppet.new()
+	_puppet.name = "Puppet"
+	_body.add_child(_puppet)
+	# 提燈掛在左手
+	_lantern.reparent(_puppet.hand("L"), false)
+	_lantern.position = Vector3(0, -0.12, 0)
 	_arm.add_excluded_object(get_rid())
 	yaw = rotation.y
 	snap_camera()
@@ -60,6 +69,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func puppet() -> Puppet:
+	return _puppet
+
+
 func _add_look(delta_look: Vector2) -> void:
 	yaw = wrapf(yaw + delta_look.x, -PI, PI)
 	pitch = clampf(pitch + delta_look.y, PITCH_MIN, PITCH_MAX)
@@ -79,6 +92,9 @@ func _physics_process(delta: float) -> void:
 		_dodge_dir = dir if dir.length() > 0.1 else -_body.global_basis.z
 		_dodge_dir = _dodge_dir.normalized()
 		_dodge_left = DODGE_TIME
+		_puppet.play_action("dodge")
+	elif Input.is_action_just_pressed("attack") and _puppet.action == "":
+		_puppet.play_action("attack")
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	if _dodge_left > 0.0:
@@ -94,6 +110,7 @@ func _physics_process(delta: float) -> void:
 
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
+	_puppet.set_move_speed(horizontal.length())
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 

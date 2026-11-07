@@ -1,9 +1,12 @@
 class_name Hud
 extends CanvasLayer
 ## 關卡 HUD：左上目前目標，右下存檔提示。只聽 Game.session 的訊號，不輪詢。
-## 目標換了會淡入；進入檢查點（自動存檔）時右下閃一下「已存檔」（失敗則顯示「存檔失敗」）。
+## 目標換了會淡入，停留一陣子後淡出（03：探索時幾乎沒有 HUD）；按「日誌」鍵（Tab／Back）再顯示。
+## 進入檢查點（自動存檔）時右下閃一下「已存檔」（失敗則顯示「存檔失敗」）。
 
 const OBJECTIVE_FADE_SEC: float = 0.6
+const OBJECTIVE_HOLD_SEC: float = 8.0
+const OBJECTIVE_PEEK_SEC: float = 4.0
 const SAVED_SHOW_SEC: float = 2.2
 
 var _objective: Label
@@ -21,6 +24,15 @@ func _ready() -> void:
 	s.checkpoint_reached.connect(_on_checkpoint)
 	_set_objective(s.objective_key(), false)
 	_saved.modulate.a = 0.0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("journal") and _objective.text != "":
+		_show_objective(OBJECTIVE_PEEK_SEC, _objective_box.modulate.a < 0.99)
+
+
+func is_objective_shown() -> bool:
+	return _objective_box.visible and _objective_box.modulate.a > 0.0
 
 
 func objective_text_key() -> String:
@@ -68,14 +80,22 @@ func _build() -> void:
 func _set_objective(key: String, animate: bool) -> void:
 	_objective.text = key
 	_objective_box.visible = key != ""
-	if not animate or not is_inside_tree():
-		_objective_box.modulate.a = 1.0
-		return
+	if key != "":
+		_show_objective(OBJECTIVE_HOLD_SEC, animate)
+
+
+## 顯示目標 hold 秒後淡出；fade_in 為 false 時立即出現。
+func _show_objective(hold: float, fade_in: bool) -> void:
 	if _objective_tween != null:
 		_objective_tween.kill()
-	_objective_box.modulate.a = 0.0
+	_objective_box.modulate.a = 0.0 if fade_in else 1.0
+	if not is_inside_tree():
+		return
 	_objective_tween = create_tween()
-	_objective_tween.tween_property(_objective_box, "modulate:a", 1.0, OBJECTIVE_FADE_SEC)
+	if fade_in:
+		_objective_tween.tween_property(_objective_box, "modulate:a", 1.0, OBJECTIVE_FADE_SEC)
+	_objective_tween.tween_interval(hold)
+	_objective_tween.tween_property(_objective_box, "modulate:a", 0.0, OBJECTIVE_FADE_SEC * 2.0)
 
 
 func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
