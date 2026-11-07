@@ -9,6 +9,10 @@ extends Control
 
 
 func _ready() -> void:
+	var serif: Font = UiFonts.load_font(UiFonts.TITLE_SERIF)
+	if serif != null:
+		(%Title as Label).add_theme_font_override("font", serif)
+		(%Subtitle as Label).add_theme_font_override("font", serif)
 	_continue.disabled = true  # 存檔系統完成前先停用
 	_new_game.pressed.connect(_on_new_game)
 	_language.pressed.connect(_on_language)

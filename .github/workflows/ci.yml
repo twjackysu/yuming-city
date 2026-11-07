@@ -32,6 +32,12 @@ jobs:
             ~/.local/share/godot/export_templates
           key: godot-${{ runner.os }}-${{ hashFiles('scripts/get-godot.sh') }}
 
+      - name: Cache 素材來源（Noto CJK）
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yuming-assets
+          key: assets-${{ hashFiles('scripts/gen_fonts.py') }}
+
       - name: Import、測試、匯出
         run: scripts/check.sh --export
 
