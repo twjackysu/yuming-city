@@ -1,23 +1,23 @@
-# Unreal generated data
-Binaries/
-DerivedDataCache/
-Intermediate/
-Saved/
-.vs/
+# Godot 生成資料
+.godot/
+*.translation
+game/assets/generated/
+# 匯出產物
+build/
+*.pck
+*.zip
+# 編輯器 / IDE
+.vscode/
 .idea/
-*.sln
-*.suo
-*.VC.db
-*.VC.opendb
-# Local secrets and packaging
+.vs/
+# 本機機密與發行憑證
 .env
 .env.*
 !.env.example
 *.pfx
 *.key
+*.keystore
 steam_appid.txt
-StagedBuilds/
-PackagedBuilds/
 # OS
 Thumbs.db
 .DS_Store

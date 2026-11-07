@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.loop/**'
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-main
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 測試與匯出
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot 與 export templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/yuming-godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/get-godot.sh') }}
+
+      - name: 設定 Python（程序生成素材）
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Import、測試、匯出
+        run: scripts/check.sh --export
+
+      - name: 打包
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          cd build
+          python3 -c "import shutil; shutil.make_archive('YumingCity-windows-x64-$SHORT_SHA', 'zip', 'windows')"
+          python3 -c "import shutil; shutil.make_archive('YumingCity-linux-x64-$SHORT_SHA', 'zip', 'linux')"
+          ls -la
+
+      - name: 上傳 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yuming-city-${{ env.SHORT_SHA }}
+          path: build/*.zip
+          retention-days: 14
+
+      - name: 更新 prerelease「latest」
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest build/*.zip \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "最新開發版 / Latest dev build (${SHORT_SHA})" \
+            --notes "main 分支 ${SHORT_SHA} 自動建置。Windows：解壓後執行 YumingCity.exe。原型版本，非最終內容。 / Automated build from main ${SHORT_SHA}. Prototype, not final content."

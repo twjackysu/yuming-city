@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#2b3a55"/>
+      <stop offset="1" stop-color="#07090e"/>
+    </radialGradient>
+  </defs>
+  <rect width="128" height="128" rx="20" fill="url(#g)"/>
+  <!-- 鐘形輪廓與九道刻痕：象徵第九聲鐘與九息 -->
+  <path d="M40 86 Q40 40 64 32 Q88 40 88 86 Z" fill="none" stroke="#d8c48a" stroke-width="5" stroke-linejoin="round"/>
+  <line x1="32" y1="90" x2="96" y2="90" stroke="#d8c48a" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="100" r="5" fill="#d8c48a"/>
+  <g stroke="#7fb3d5" stroke-width="3" stroke-linecap="round">
+    <line x1="20" y1="18" x2="20" y2="26"/><line x1="30" y1="18" x2="30" y2="26"/><line x1="40" y1="18" x2="40" y2="26"/>
+    <line x1="50" y1="18" x2="50" y2="26"/><line x1="60" y1="18" x2="60" y2="26"/><line x1="70" y1="18" x2="70" y2="26"/>
+    <line x1="80" y1="18" x2="80" y2="26"/><line x1="90" y1="18" x2="90" y2="26"/><line x1="100" y1="18" x2="100" y2="26"/>
+  </g>
+</svg>
