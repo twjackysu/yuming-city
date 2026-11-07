@@ -81,8 +81,17 @@ jobs:
           [[ -s build/sandbox.png ]] && FILES+=(build/sandbox.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest "${FILES[@]}" \
-            --prerelease \
-            --target "$GITHUB_SHA" \
-            --title "最新開發版 / Latest dev build (${SHORT_SHA})" \
-            --notes "main 分支 ${SHORT_SHA} 自動建置。Windows：解壓後執行 YumingCity.exe。原型版本，非最終內容。 / Automated build from main ${SHORT_SHA}. Prototype, not final content."
+          # 偶爾會遇到暫時性的 403（11/8 run 42398212944），刪掉舊版後重試建立，避免 latest 消失
+          for attempt in 1 2 3; do
+            if gh release create latest "${FILES[@]}" \
+              --prerelease \
+              --target "$GITHUB_SHA" \
+              --title "最新開發版 / Latest dev build (${SHORT_SHA})" \
+              --notes "main 分支 ${SHORT_SHA} 自動建置。Windows：解壓後執行 YumingCity.exe。原型版本，非最終內容。 / Automated build from main ${SHORT_SHA}. Prototype, not final content."; then
+              exit 0
+            fi
+            echo "建立 release 失敗（第 $attempt 次），20 秒後重試" >&2
+            gh release delete latest --yes --cleanup-tag || true
+            sleep 20
+          done
+          exit 1
