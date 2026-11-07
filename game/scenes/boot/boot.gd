@@ -18,7 +18,13 @@ func _ready() -> void:
 	_continue.pressed.connect(_on_continue)
 	_language.pressed.connect(_on_language)
 	_quit.pressed.connect(func() -> void: get_tree().quit())
-	_new_game.grab_focus.call_deferred()
+	_focus_first.call_deferred()
+
+
+func _focus_first() -> void:
+	# 用 --level 直接進關卡時，標題畫面在這之前就被換掉了
+	if is_inside_tree():
+		_new_game.grab_focus()
 
 
 func _on_new_game() -> void:

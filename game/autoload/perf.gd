@@ -76,7 +76,8 @@ func snapshot() -> Dictionary:
 	d["driver"] = RenderingServer.get_current_rendering_driver_name()
 	d["method"] = RenderingServer.get_current_rendering_method()
 	d["adapter"] = RenderingServer.get_video_adapter_name()
-	d["resolution"] = "%dx%d" % [get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y]
+	var win: Vector2i = DisplayServer.window_get_size()
+	d["resolution"] = "%dx%d" % [win.x, win.y]
 	return d
 
 

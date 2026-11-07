@@ -2,13 +2,15 @@ extends Node
 ## 遊戲流程外殼：持有 GameSession，負責新遊戲／繼續／切換關卡。
 ## 邏輯都在 GameSession（res://src/core/game_session.gd），這裡只做場景切換。
 ##
-## 開發用：`godot --path game -- --level=sandbox` 直接進入關卡（截圖驗證用）。
+## 開發用：`godot --path game -- --level=sandbox` 直接進入關卡（截圖驗證用）；
+## `-- --benchmark` 跑效能測試後結束（結果在 user://benchmark/）。
 
 signal level_loaded(level_id: String)
 
 ## 關卡 id -> 場景。切片場景完成前，所有檢查點都在 sandbox。
 const LEVELS: Dictionary = {
 	"sandbox": "res://scenes/dev/sandbox.tscn",
+	"benchmark": "res://scenes/bench/benchmark.tscn",
 }
 ## 檢查點 -> 關卡 id
 const CHECKPOINT_LEVELS: Dictionary = {}
@@ -22,6 +24,8 @@ func _ready() -> void:
 	session = GameSession.new(QuestDB.load_default())
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	var level: String = str(args.get("level", ""))
+	if args.has("benchmark"):
+		level = "benchmark"
 	if level != "":
 		session.new_game.call_deferred()
 		go_to_level.call_deferred(level)

@@ -12,6 +12,8 @@ config/name_localized={
 }
 config/description="A chapter-based narrative action RPG."
 config/version="0.0.1"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="YumingCity"
 run/main_scene="res://scenes/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
