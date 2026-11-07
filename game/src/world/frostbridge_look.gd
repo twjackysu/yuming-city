@@ -82,3 +82,22 @@ func glow(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission_energy_multiplier = energy
 	_mats[key] = m
 	return m
+
+
+const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
+
+
+## 濕石板路（wet_cobble.gdshader）：石塊大小 stone_size 公尺、水窪比例 puddles（0～1）。
+## 同參數共用同一個材質（StaticBatch 依材質合併）。
+func wet_ground(color: Color, stone_size: float, puddles: float = 0.42) -> ShaderMaterial:
+	var key: String = "wet/%s/%.2f/%.2f" % [color.to_html(), stone_size, puddles]
+	if _mats.has(key):
+		return _mats[key] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(WET_COBBLE_SHADER) as Shader
+	m.set_shader_parameter("stone_color", color)
+	m.set_shader_parameter("stone_size", stone_size)
+	m.set_shader_parameter("puddle_amount", puddles)
+	m.set_shader_parameter("snow_color", SNOW)
+	_mats[key] = m
+	return m

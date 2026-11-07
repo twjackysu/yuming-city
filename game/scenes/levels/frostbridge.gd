@@ -291,11 +291,12 @@ func _build_cutscene_cameras() -> void:
 # ---------------------------------------------------------------- 場景
 
 func _build_ground() -> void:
-	_batch.add_box_at(Vector3(90.0, 1.0, 130.0), Vector3(0.0, -0.5, -5.0), look.mat(FrostbridgeLook.STONE))
+	# 街道與廣場：濕石板路（概念圖的燈光倒影）。地面方塊的側面埋在地下，看不到
+	_batch.add_box_at(Vector3(90.0, 1.0, 130.0), Vector3(0.0, -0.5, -5.0), look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4))
 	# 廣場鋪石（略暗）與中央的圓形石框
-	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), look.mat(FrostbridgeLook.COBBLE), false)
+	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false)
 	_batch.add_cylinder(3.2, 3.2, 0.05, Vector3(0.0, 0.025, 0.0), look.mat(FrostbridgeLook.STONE, 0.7), false, 32)
-	_batch.add_cylinder(2.9, 2.9, 0.06, Vector3(0.0, 0.03, 0.0), look.mat(FrostbridgeLook.COBBLE), false, 32)
+	_batch.add_cylinder(2.9, 2.9, 0.06, Vector3(0.0, 0.03, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false, 32)
 	# 積雪：牆腳的淺色帶
 	var snow := look.mat(FrostbridgeLook.SNOW)
 	for sx: float in [-1.0, 1.0]:
