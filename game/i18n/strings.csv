@@ -136,3 +136,4 @@ HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒�
 CONVOY_START,"The Undertaker blocks South Street. Get the cart through the arch to the crossing.",送葬者擋在南街。護著車隊穿過石拱，送到路口。
 CONVOY_THROUGH,The cart is through the crossing. Sheila's burning blade brings the Undertaker down.,車隊通過了路口。席菈用燃燒的劍把送葬者斬倒。
 HUD_STRUGGLE,Mash {key} to break free ({n}),連按 {key} 掙脫（{n}）
+TUTORIAL_INSIGHT,Hold {insight} to see its weak point · Press {cmd} to have Sheila strike it,按住 {insight} 看穿弱點・按 {cmd} 叫席菈打弱點

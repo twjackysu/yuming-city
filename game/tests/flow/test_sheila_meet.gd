@@ -71,6 +71,7 @@ func _meet(choice: int) -> Dictionary:
 	assert_eq(s.state.get_flag("slice.sheila_talked"), true)
 	var walker: Ashwalker = level.get_node_or_null("Ashwalker") as Ashwalker
 	assert_not_null(walker, "說完話 → 灰巡者從裂縫爬出來")
+	assert_eq(s.state.get_flag("tutorial.insight_shown"), true, "第一次遇到灰巡者：看穿／打弱點教學")
 	if walker != null:
 		walker.set_physics_process(false)  # 別讓諾恩真的倒下
 		assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "meet_sheila", "還沒打倒灰巡者")

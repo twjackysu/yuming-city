@@ -186,6 +186,19 @@ func _spawn_ashwalker() -> void:
 	add_child(ashwalker)
 	ashwalker.health.died.connect(_on_ashwalker_died)
 	_banner("SHEILA_MEET_ASHWALKER", 3.0)
+	# 協作教學：第一次遇到灰巡者時提示看穿與打弱點（每個存檔只一次）
+	if not Game.session.state.get_flag("tutorial.insight_shown", false):
+		Game.session.set_flag("tutorial.insight_shown", true)
+		get_tree().create_timer(3.4).timeout.connect(_show_insight_tutorial)
+
+
+func _show_insight_tutorial() -> void:
+	if not is_inside_tree():
+		return
+	var text: String = TranslationServer.translate("TUTORIAL_INSIGHT").format({
+		"insight": InputGlyphs.label_for_action("insight", App.last_device),
+		"cmd": InputGlyphs.label_for_action("command_weakpoint", App.last_device)})
+	_banner(text, 6.0)
 
 
 func _on_ashwalker_died() -> void:
