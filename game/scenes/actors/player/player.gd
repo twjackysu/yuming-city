@@ -20,6 +20,10 @@ const PITCH_MAX: float = deg_to_rad(40.0)
 const CAMERA_HEIGHT: float = 1.6
 const FOV_WALK: float = 70.0
 const FOV_SPRINT: float = 75.0
+## 鎖定（02-gameplay「鏡頭」）：15 公尺外自動解除；挑鏡頭前方 70° 內最近的敵人
+const LOCK_RANGE: float = 15.0
+const LOCK_CONE_DEG: float = 70.0
+const LOCK_PITCH: float = -0.28
 
 var yaw: float = 0.0
 var pitch: float = -0.18
@@ -28,6 +32,9 @@ var invulnerable: bool = false
 var insight_active: bool = false
 ## 上一次揮擊打中弱點的數量（測試與音效用）
 var last_weak_hits: int = 0
+## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
+var lock_target: Node3D = null
+var _lock_marker: MeshInstance3D
 
 var _dodge_left: float = 0.0
 var _dodge_cooldown: float = 0.0
@@ -67,6 +74,7 @@ func _ready() -> void:
 	yaw = rotation.y
 	snap_camera()
 	_camera.current = true
+	_build_lock_marker()
 
 
 ## 把輸入（x=左右，y=前後，前為負）依鏡頭水平角度轉成世界方向。純函式，方便測試。
@@ -90,6 +98,8 @@ func puppet() -> Puppet:
 
 
 func _add_look(delta_look: Vector2) -> void:
+	if lock_target != null:
+		delta_look.x = 0.0  # 鎖定中水平方向由目標決定
 	yaw = wrapf(yaw + delta_look.x, -PI, PI)
 	pitch = clampf(pitch + delta_look.y, PITCH_MIN, PITCH_MAX)
 
@@ -118,6 +128,9 @@ func _physics_process(delta: float) -> void:
 		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -4.0)
 	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead():
 		start_attack()
+	if not talking and Input.is_action_just_pressed("lock_on"):
+		toggle_lock()
+	_update_lock(delta)
 	_update_swing()
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
@@ -138,7 +151,10 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 
-	if horizontal.length() > 0.3:
+	if lock_target != null and _dodge_left <= 0.0 and not sprinting:
+		var to_t: Vector3 = lock_target.global_position - global_position
+		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(-to_t.x, -to_t.z), clampf(TURN_SPEED * delta, 0.0, 1.0))
+	elif horizontal.length() > 0.3:
 		var face: float = atan2(-horizontal.x, -horizontal.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
 
@@ -151,6 +167,83 @@ func _on_died() -> void:
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Game.on_player_died()
+
+
+## 鎖定／解除。回傳鎖定後的目標（解除或找不到時為 null）。
+func toggle_lock() -> Node3D:
+	if lock_target != null:
+		lock_target = null
+	else:
+		var cam_fwd: Vector3 = Basis(Vector3.UP, yaw) * Vector3.FORWARD
+		lock_target = pick_lock_target(global_position, cam_fwd, get_tree().get_nodes_in_group("enemies"))
+	return lock_target
+
+
+## 挑鎖定目標：鏡頭前方 LOCK_CONE_DEG 內、LOCK_RANGE 內，角度與距離加權最小者；前方沒有就挑最近的。純函式。
+static func pick_lock_target(origin: Vector3, cam_forward: Vector3, candidates: Array) -> Node3D:
+	var best: Node3D = null
+	var best_score: float = INF
+	var nearest: Node3D = null
+	var nearest_d: float = INF
+	for c: Variant in candidates:
+		var n: Node3D = c as Node3D
+		if n == null or not lockable(n):
+			continue
+		var d := Vector3(n.global_position.x - origin.x, 0.0, n.global_position.z - origin.z)
+		var dist: float = d.length()
+		if dist > LOCK_RANGE:
+			continue
+		if dist < nearest_d:
+			nearest_d = dist
+			nearest = n
+		var ang: float = rad_to_deg(Vector3(cam_forward.x, 0.0, cam_forward.z).angle_to(d)) if dist > 0.01 else 0.0
+		if ang <= LOCK_CONE_DEG:
+			var score: float = dist + ang * 0.08
+			if score < best_score:
+				best_score = score
+				best = n
+	return best if best != null else nearest
+
+
+static func lockable(n: Node3D) -> bool:
+	if not is_instance_valid(n) or not n.is_inside_tree():
+		return false
+	var h: Health = n.get_node_or_null("Health") as Health
+	return h == null or not h.is_dead()
+
+
+func _update_lock(delta: float) -> void:
+	if lock_target != null:
+		if not lockable(lock_target) or lock_target.global_position.distance_to(global_position) > LOCK_RANGE:
+			lock_target = null
+	if lock_target == null:
+		_lock_marker.visible = false
+		return
+	var d: Vector3 = lock_target.global_position - global_position
+	if Vector2(d.x, d.z).length() > 0.3:
+		yaw = lerp_angle(yaw, atan2(-d.x, -d.z), clampf(6.0 * delta, 0.0, 1.0))
+	pitch = lerpf(pitch, LOCK_PITCH, clampf(3.0 * delta, 0.0, 1.0))
+	var h: float = float(lock_target.call("lock_height")) if lock_target.has_method("lock_height") else 2.2
+	_lock_marker.global_position = lock_target.global_position + Vector3.UP * h
+	_lock_marker.visible = true
+
+
+func _build_lock_marker() -> void:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.no_depth_test = true
+	m.albedo_color = Color(1.0, 0.86, 0.6)
+	var prism := PrismMesh.new()
+	prism.size = Vector3(0.16, 0.16, 0.02)
+	_lock_marker = MeshInstance3D.new()
+	_lock_marker.name = "LockMarker"
+	_lock_marker.mesh = prism
+	_lock_marker.material_override = m
+	_lock_marker.rotation_degrees = Vector3(0, 0, 180)  # 倒三角指向目標
+	_lock_marker.top_level = true
+	_lock_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_lock_marker.visible = false
+	add_child(_lock_marker)
 
 
 func is_invulnerable() -> bool:

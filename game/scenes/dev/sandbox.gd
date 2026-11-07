@@ -60,6 +60,9 @@ func _ready() -> void:
 	# 截圖用：`--insight` 一開始就按住看穿
 	if dev_args.has("insight"):
 		Input.action_press("insight")
+	# 截圖用：`--lock` 一開始就鎖定最近的敵人
+	if dev_args.has("lock"):
+		($Player as PlayerController).toggle_lock.call_deferred()
 	add_child(CutsceneView.new())
 	Game.cutscene_started.connect(_on_cutscene_started)
 	Game.cutscene_ended.connect(_on_cutscene_ended)

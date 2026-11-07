@@ -88,6 +88,11 @@ func weakpoint_exposed_to(attacker_pos: Vector3) -> String:
 	return ""
 
 
+## 鎖定標記的高度（頭上）。
+func lock_height() -> float:
+	return _insight_height() + 0.25
+
+
 func insight_shown() -> bool:
 	return _insight_shown
 

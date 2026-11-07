@@ -196,7 +196,12 @@ func _dash_to(n: Node3D) -> void:
 	_face(n)
 
 
+## 目標：諾恩鎖定的敵人優先（02-gameplay：打弱點打「目前鎖定」的敵人），否則離她最近的。
 func _pick_target() -> Node3D:
+	if leader is PlayerController:
+		var locked: Node3D = (leader as PlayerController).lock_target
+		if locked != null and is_instance_valid(locked) and _brain_of(locked) != null and _brain_of(locked).state != EnemyBrain.State.DEAD:
+			return locked
 	var best: Node3D = null
 	var best_d: float = INF
 	for n: Node in get_tree().get_nodes_in_group("enemies"):
