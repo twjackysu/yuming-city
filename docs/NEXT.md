@@ -4,7 +4,8 @@
 
 ## 0. 開工先確認
 
-- benchmark commit（`0544afd`）與本輪最後 push 的 CI 是否綠燈；release `latest` 是否有 `sandbox.png`（README 首圖用它）。紅了先修。
+- 上一輪結束時 CI 全綠（最後一次 run 42393121387 驗到 6121a2f）；release `latest`（0544afd）有 Windows zip 與 `sandbox.png`。開工時照常看最近的 CI。
+- **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。
 
 ## 1. 暫停選單＋設定選單（05 計畫 11/11，可提前）
 

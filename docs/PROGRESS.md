@@ -18,12 +18,13 @@
 - `scripts/check.sh`：49 個測試全綠（新增條件／效果、任務驗證與推進、兩條路線的主線流程測試含中途存讀檔與死亡重試、沙盒中按前進會走、幀統計、benchmark）。
 - 畫面：xvfb＋lavapipe（Forward+）截圖，調整一次光色（第一版整體偏暖褐 → 提高月光與霧的冷色自發光，暖色只留在燈）。
 - benchmark 在 xvfb 與 headless 都跑完並寫出 JSON；確認 `++` 分隔符可用。
-- CI：任務系統 run 42391936076、沙盒 run 42392600104、overlay run 42392790363 綠燈；benchmark commit 的 run 見下一輪開頭檢查。
+- CI：任務系統 run 42391936076、沙盒 run 42392600104、overlay run 42392790363、benchmark run 42392980863 綠燈；release `latest`（0544afd）有 Windows／Linux zip、`title.png`、`sandbox.png`。
 
 **遇到的問題**
 
 - 新 session 沒裝 `mesa-vulkan-drivers`，截圖退回 OpenGL（沒有體積霧）→ 安裝後恢復 Vulkan／Forward+。
 - GameSession 用 lambda 轉接 QuestRunner 訊號造成 RefCounted 循環洩漏 → 改用方法 Callable。
+- 一次推了程式 commit（6121a2f，只改註解）＋`[skip ci]` 文件 commit，整個 push 被跳過 CI → 手動 workflow_dispatch（run 42393121387）補驗，綠燈。之後程式與文件 commit 一定分開 push。
 
 ## 2026-11-07 23:26–23:59　第 1 輪：Godot 骨架、CI、存檔與九息核心、讀完原作
 
