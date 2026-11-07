@@ -9,4 +9,5 @@ if ! python3 -c "import fontTools" 2>/dev/null; then
   python3 -m pip install --quiet --user --break-system-packages "fonttools==4.67.0" \
     || python3 -m pip install --quiet --user "fonttools==4.67.0"
 fi
-python3 -I "$ROOT/scripts/gen_fonts.py"
+# -P：不把腳本目錄放進 sys.path（保留 user site，pip --user 裝的 fonttools 才找得到）
+python3 -P "$ROOT/scripts/gen_fonts.py"
