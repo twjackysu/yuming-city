@@ -1,21 +1,21 @@
 keys,en,zh_TW
 Q_SLICE_MAIN_TITLE,The Ninth Bell,第九聲鐘
 Q_SLICE_OBJ_TOWN,Find the pear seller in the square,到廣場找梨販
-Q_SLICE_OBJ_BELL,Climb the bell tower and ring the bell,登上鐘樓，敲響廢鐘
+Q_SLICE_OBJ_BELL,Climb the bell tower and ring the old bell,登上鐘樓，敲響那口舊鐘
 Q_SLICE_OBJ_RESCUE,Pull the trapped out of North Street,把北街被困的人救出來
-Q_SLICE_OBJ_SHEILA,Stand with the border warden,和巡界隊員並肩作戰
+Q_SLICE_OBJ_SHEILA,Find the swordswoman in white on Main Street,去主街找那個白衣劍士
 Q_SLICE_OBJ_CONVOY,Get the wounded cart through the crossing,讓傷者車隊通過路口
 Q_SLICE_OBJ_CELLAR,Go down to the pear seller's cellar,下到梨販家的地窖
 SPK_NOEN,Noen,諾恩
 SPK_PEAR_SELLER,Pear Seller,梨販
 SPK_ADA,Ada,艾妲
 DLG_PEAR_001,"Noen? Out on an eclipse night. Here — the last of this winter's pears.",諾恩？月蝕夜還出門。來，今年最後一批冬梨。
-DLG_PEAR_002,"Father, your scale is leaning your way again.",爹，你的秤又往自己那邊歪了。
+DLG_PEAR_002,"Dad, your scale is leaning your way again.",爸，你的秤又往自己那邊歪了。
 DLG_PEAR_003,"Nonsense. This scale is more honest than the mayor.",胡說，這秤比鎮長還老實。
 DLG_PEAR_C_BUY,"Two, please.",給我兩個。
 DLG_PEAR_C_FATHER,"My father always said your scale was off.",我爸也老說你的秤不準。
 DLG_PEAR_C_LEAVE,"I should go.",我先走了。
-DLG_PEAR_004,"Two for the price of one and a half. Don't tell your father.",兩個算你一個半的錢。別跟你爹說。
+DLG_PEAR_004,Two for the price of one and a half. Don't tell your dad.,兩個算你一個半的錢。別跟你爸說。
 DLG_PEAR_005,"He said it every time. And every time, he bought some anyway.",他每回都這樣說，每回都還是買。
 DLG_PEAR_006,"Because ours are the sweetest in Frostbridge. The scale has nothing to do with it.",因為我們家的梨是霜橋鎮最甜的。跟秤沒關係。
 DLG_PEAR_007,"Stay away from the bell tower tonight. The wind feels wrong.",今晚別往鐘樓那邊去。風不對。
@@ -31,11 +31,11 @@ DLG_AFTER_C_ASK,...Was it really off?,……真的不準？
 DLG_AFTER_002,"...I know. Dad always slipped one back into the bag.",……我知道。我爸每次都偷偷多塞一顆回去。
 DLG_AFTER_003,"(Ada presses a pear into your hand and says nothing.)",（艾妲把一顆梨塞進你手裡，什麼也沒說。）
 DLG_AFTER_004,You don't even remember that.,你連這個都不記得。
-DLG_AFTER_005,"The way down is in our cellar. I'll take you. Not because I forgive you.",下城的入口在我家地窖。我帶你去。不是因為我原諒你。
+DLG_AFTER_005,The way down to the under-city is in our cellar. I'll take you. Not because I forgive you.,通往地底城的入口在我家地窖。我帶你去。不是因為我原諒你。
 SPK_SHEILA,Sheila,席菈
 JOURNAL_TITLE,Journal,日記
 JOURNAL_HINT_CLOSE,{key} Close,{key} 闔上
-JOURNAL_PEEK,The price of Nine Breaths,九息的代價
+JOURNAL_PEEK,The price of restoring,重現的代價
 JOURNAL_CUT,(cut away),（被剪掉了）
 JM_ARCH_FATHER_TITLE,Beneath the South Street Arch,南街石拱下
 JM_ARCH_FATHER_CONTEXT,Father waited for me under that arch every day after school. He'd hide behind a pillar and make me find him.,那座拱門，是父親每天接我放學時等我的地方。他會躲在柱子後，故意讓我找。
@@ -46,7 +46,7 @@ RESCUE_SAVED,Pulled out from under the rubble.,從瓦礫下拉出來了。
 DLG_SHEILA_001,Your right arm is broken.,你右手骨折了。
 DLG_SHEILA_002,I can still carry.,還能搬。
 DLG_SHEILA_003,That doesn't mean it isn't broken.,那不代表沒有骨折。
-DLG_SHEILA_004,"Sheila, Royal Wardens. One question. The blood on the bell tower — is it yours?",席菈，王室巡界隊。現在問你一件事。鐘樓上的血，是你的嗎？
+DLG_SHEILA_004,"Sheila, Royal Wardens. One question. The blood on the bell tower — is it yours?",席菈，王室巡邏隊。現在問你一件事。鐘樓上的血，是你的嗎？
 DLG_SHEILA_005,Yes.,是。
 DLG_SHEILA_006,How many times did you ring it?,你敲了幾下？
 DLG_SHEILA_C_NINE,Nine.,九下。

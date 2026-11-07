@@ -52,8 +52,8 @@ func test_prompt_preview_and_cancel() -> void:
 	await tree.physics_frame
 	await tree.physics_frame
 	assert_true(site.prompt_shown(), "走近顯示可保存")
-	assert_true(site.prompt_text().contains("可保存：南街石拱"), site.prompt_text())
-	assert_true(site.prompt_text().contains("代價：與父親最後一次在石拱下交談的記憶"), site.prompt_text())
+	assert_true(site.prompt_text().contains("可以重現：南街石拱"), site.prompt_text())
+	assert_true(site.prompt_text().contains("代價：永遠忘掉和父親在石拱下的最後一次對話"), site.prompt_text())
 	Input.action_press("nine_breath")
 	for i: int in 20:
 		await tree.physics_frame
