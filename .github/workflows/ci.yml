@@ -48,6 +48,7 @@ jobs:
           sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
           scripts/screenshot.sh build/title.png 30
           scripts/screenshot.sh build/sandbox.png 120 --level=sandbox --perf || true
+          scripts/screenshot.sh build/dialogue.png 150 --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
 
       - name: 打包
         run: |
@@ -66,6 +67,7 @@ jobs:
             build/*.zip
             build/title.png
             build/sandbox.png
+            build/dialogue.png
           if-no-files-found: warn
           retention-days: 14
 
@@ -77,6 +79,7 @@ jobs:
           FILES=(build/*.zip)
           [[ -s build/title.png ]] && FILES+=(build/title.png)
           [[ -s build/sandbox.png ]] && FILES+=(build/sandbox.png)
+          [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest "${FILES[@]}" \
             --prerelease \
