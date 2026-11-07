@@ -53,28 +53,11 @@ func _ready() -> void:
 		sheila.name = "Sheila"
 		sheila.position = Vector3(-1.4, 0.0, 3.2)
 		add_child(sheila)
-	# 開發用：`--boss` 放送葬者（第一階段三招）＋席菈；正式戰鬥在 M1.3 霜橋鎮南街
-	if dev_args.has("boss"):
-		var boss := Undertaker.new()
-		boss.name = "Undertaker"
-		boss.position = Vector3(0.6, 0.0, -1.0) if dev_args.has("insight") else Vector3(0.0, 0.0, -6.0)
-		add_child(boss)
-		if not dev_args.has("enemies"):
-			var ally := Sheila.new()
-			ally.name = "Sheila"
-			ally.position = Vector3(-1.4, 0.0, 3.2)
-			add_child(ally)
-	# 開發用：`--caravan` 放傷者車隊（從廣場穿過南街石拱往鐘樓）；`--phase2` 送葬者直接進第二階段
-	if dev_args.has("caravan"):
-		var caravan := Caravan.new()
-		caravan.name = "Caravan"
-		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
-		add_child(caravan)
-	if has_node("Undertaker"):
-		encounter = ConvoyEncounter.new().setup($Undertaker as Undertaker, get_node_or_null("Caravan") as Caravan, arch_site)
-		encounter.name = "ConvoyEncounter"
-		encounter.banner.connect(_banner)
-		add_child(encounter)
+	# 開發用：`--boss` 放送葬者＋席菈；`--caravan` 加傷者車隊；`--convoy`＝兩個都放（M1.2 驗收：打完送葬者戰）；
+	# `--phase2` 送葬者直接進第二階段。正式戰鬥在 M1.3 霜橋鎮南街
+	if dev_args.has("boss") or dev_args.has("convoy"):
+		spawn_convoy_fight(dev_args.has("caravan") or dev_args.has("convoy"), not dev_args.has("enemies"),
+			Vector3(0.6, 0.0, -1.0) if dev_args.has("insight") else Vector3(0.0, 0.0, -6.0))
 	if dev_args.has("phase2") and has_node("Undertaker"):
 		($Undertaker as Undertaker).enter_phase_two.call_deferred()
 	# 截圖用：`--insight` 一開始就按住看穿
@@ -276,6 +259,30 @@ func _build_bell_tower(pos: Vector3) -> void:
 	m.emission_energy_multiplier = 4.0
 	glow.material = m
 	add_child(glow)
+
+
+## 送葬者戰：送葬者（＋席菈）（＋傷者車隊：從廣場穿過南街石拱往鐘樓）＋ConvoyEncounter。測試也用這個。
+func spawn_convoy_fight(with_caravan: bool, with_sheila: bool = true, boss_pos: Vector3 = Vector3(0.0, 0.0, -6.0)) -> ConvoyEncounter:
+	var boss := Undertaker.new()
+	boss.name = "Undertaker"
+	boss.position = boss_pos
+	add_child(boss)
+	if with_sheila and not has_node("Sheila"):
+		var ally := Sheila.new()
+		ally.name = "Sheila"
+		ally.position = Vector3(-1.4, 0.0, 3.2)
+		add_child(ally)
+	var caravan: Caravan = null
+	if with_caravan:
+		caravan = Caravan.new()
+		caravan.name = "Caravan"
+		caravan.route = PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
+		add_child(caravan)
+	encounter = ConvoyEncounter.new().setup(boss, caravan, arch_site)
+	encounter.name = "ConvoyEncounter"
+	encounter.banner.connect(_banner)
+	add_child(encounter)
+	return encounter
 
 
 func _banner(key: String, seconds: float) -> void:
