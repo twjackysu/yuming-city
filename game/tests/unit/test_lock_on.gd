@@ -87,3 +87,62 @@ func test_sheila_attacks_locked_target() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+func test_switch_target_left_right() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var cur := _walker(root, Vector3(0, 0, -6))
+	var right_near := _walker(root, Vector3(3, 0, -6))
+	var right_far := _walker(root, Vector3(7, 0, -6))
+	var left := _walker(root, Vector3(-3, 0, -6))
+	await tree.process_frame
+	var all: Array = [cur, right_near, right_far, left]
+	assert_eq(PlayerController.pick_switch_target(Vector3.ZERO, cur, 1, all), right_near, "往右：右邊最近的角度")
+	assert_eq(PlayerController.pick_switch_target(Vector3.ZERO, cur, -1, all), left, "往左")
+	assert_eq(PlayerController.pick_switch_target(Vector3.ZERO, left, -1, all), null, "最左邊再往左：沒有")
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_lock_released_when_blocked_by_wall() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	player.global_position = Vector3.ZERO
+	var w := _walker(root, Vector3(0, 0, -8))
+	await tree.physics_frame
+	assert_eq(player.toggle_lock(), w)
+	var wall := CSGBox3D.new()
+	wall.size = Vector3(6, 4, 0.5)
+	wall.position = Vector3(0, 2, -4)
+	wall.use_collision = true
+	root.add_child(wall)
+	for i: int in 60:
+		await tree.physics_frame
+	assert_eq(player.lock_target, w, "被擋 1 秒：還鎖著")
+	assert_true(player.lock_blocked > 0.5, "計時中（%.2f）" % player.lock_blocked)
+	for i: int in 40:
+		await tree.physics_frame
+	assert_eq(player.lock_target, null, "被擋超過 1.5 秒：解除")
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_combat_camera_pulls_back() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	player.global_position = Vector3.ZERO
+	await tree.physics_frame
+	assert_true(absf(player.camera_distance() - 3.2) < 0.01, "探索 3.2 m")
+	var _w := _walker(root, Vector3(0, 0, -12))
+	for i: int in 45:
+		await tree.physics_frame
+	assert_true(absf(player.camera_distance() - 4.2) < 0.01, "戰鬥中拉遠到 4.2 m（%.2f）" % player.camera_distance())
+	player.toggle_lock()
+	for i: int in 45:
+		await tree.physics_frame
+	assert_true(absf(player.camera_distance() - 3.2) < 0.01, "鎖定時回到 3.2 m（%.2f）" % player.camera_distance())
+	root.queue_free()
+	await tree.process_frame

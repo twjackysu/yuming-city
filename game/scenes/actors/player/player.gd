@@ -24,6 +24,15 @@ const FOV_SPRINT: float = 75.0
 const LOCK_RANGE: float = 15.0
 const LOCK_CONE_DEG: float = 70.0
 const LOCK_PITCH: float = -0.28
+## 鎖定目標被牆擋住超過這麼久就解除
+const LOCK_BLOCKED_SEC: float = 1.5
+## 鎖定中右搖桿／滑鼠往左右甩：換目標
+const LOCK_FLICK_PAD: float = 0.75
+const LOCK_FLICK_MOUSE: float = 0.12
+## 鏡頭距離：探索 3.2 m，戰鬥中（20 公尺內有敵人、未鎖定）拉遠到 4.2 m
+const CAMERA_DIST: float = 3.2
+const CAMERA_DIST_COMBAT: float = 4.2
+const COMBAT_RANGE: float = 20.0
 
 var yaw: float = 0.0
 var pitch: float = -0.18
@@ -34,6 +43,9 @@ var insight_active: bool = false
 var last_weak_hits: int = 0
 ## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
 var lock_target: Node3D = null
+var lock_blocked: float = 0.0
+var _flick_acc: float = 0.0
+var _pad_flick_armed: bool = true
 var _lock_marker: MeshInstance3D
 
 var _dodge_left: float = 0.0
@@ -88,7 +100,7 @@ static func move_direction(input: Vector2, camera_yaw: float) -> Vector3:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var motion: InputEventMouseMotion = event as InputEventMouseMotion
-		_add_look(Vector2(-motion.relative.x, -motion.relative.y) * MOUSE_SENS)
+		_add_look(Vector2(-motion.relative.x, -motion.relative.y) * MOUSE_SENS, true)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -97,8 +109,14 @@ func puppet() -> Puppet:
 	return _puppet
 
 
-func _add_look(delta_look: Vector2) -> void:
+func _add_look(delta_look: Vector2, from_mouse: bool = false) -> void:
 	if lock_target != null:
+		if from_mouse:
+			_flick_acc += delta_look.x
+			if absf(_flick_acc) >= LOCK_FLICK_MOUSE:
+				# 滑鼠往右甩＝yaw 變小（delta 為負）
+				switch_lock(1 if _flick_acc < 0.0 else -1)
+				_flick_acc = 0.0
 		delta_look.x = 0.0  # 鎖定中水平方向由目標決定
 	yaw = wrapf(yaw + delta_look.x, -PI, PI)
 	pitch = clampf(pitch + delta_look.y, PITCH_MIN, PITCH_MAX)
@@ -106,8 +124,16 @@ func _add_look(delta_look: Vector2) -> void:
 
 func _physics_process(delta: float) -> void:
 	var pad := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+	if lock_target != null:
+		if _pad_flick_armed and absf(pad.x) >= LOCK_FLICK_PAD:
+			switch_lock(1 if pad.x > 0.0 else -1)
+			_pad_flick_armed = false
+		elif absf(pad.x) < 0.3:
+			_pad_flick_armed = true
+	_flick_acc *= 0.8
 	if pad.length() > PAD_DEADZONE:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
+	_update_camera_distance(delta)
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var talking: bool = Game.is_player_locked()
@@ -205,6 +231,73 @@ static func pick_lock_target(origin: Vector3, cam_forward: Vector3, candidates: 
 	return best if best != null else nearest
 
 
+## 換鎖定目標：dir=+1 往畫面右邊、-1 往左邊，挑同一側角度最小的。沒有就維持原目標。
+func switch_lock(dir: int) -> Node3D:
+	if lock_target == null:
+		return null
+	var nxt: Node3D = pick_switch_target(global_position, lock_target, dir, get_tree().get_nodes_in_group("enemies"))
+	if nxt != null:
+		lock_target = nxt
+		lock_blocked = 0.0
+	return lock_target
+
+
+static func pick_switch_target(origin: Vector3, current: Node3D, dir: int, candidates: Array) -> Node3D:
+	var base := Vector3(current.global_position.x - origin.x, 0.0, current.global_position.z - origin.z)
+	if base.length() < 0.01:
+		return null
+	var best: Node3D = null
+	var best_ang: float = INF
+	for c: Variant in candidates:
+		var n: Node3D = c as Node3D
+		if n == null or n == current or not lockable(n):
+			continue
+		var d := Vector3(n.global_position.x - origin.x, 0.0, n.global_position.z - origin.z)
+		if d.length() > LOCK_RANGE or d.length() < 0.01:
+			continue
+		# signed_angle_to 繞 +Y：正＝往左（逆時針），右邊是負
+		var ang: float = base.signed_angle_to(d, Vector3.UP)
+		var side_ok: bool = ang < -0.01 if dir > 0 else ang > 0.01
+		if side_ok and absf(ang) < best_ang:
+			best_ang = absf(ang)
+			best = n
+	return best
+
+
+## 目標與諾恩之間是否被擋住（胸口高度的射線打到別的東西）。
+func lock_line_blocked(target: Node3D) -> bool:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var from: Vector3 = global_position + Vector3.UP * 1.3
+	var to: Vector3 = target.global_position + Vector3.UP * 1.2
+	var q := PhysicsRayQueryParameters3D.create(from, to)
+	var ex: Array[RID] = [get_rid()]
+	if target is CollisionObject3D:
+		ex.append((target as CollisionObject3D).get_rid())
+	q.exclude = ex
+	var hit: Dictionary = space.intersect_ray(q)
+	if hit.is_empty():
+		return false
+	var who: Node = hit.get("collider") as Node
+	return not (who != null and (who.is_in_group("heartbeat") or who.is_in_group("enemies")))
+
+
+func in_combat() -> bool:
+	for n: Node in get_tree().get_nodes_in_group("enemies"):
+		var e: Node3D = n as Node3D
+		if e != null and lockable(e) and e.global_position.distance_to(global_position) <= COMBAT_RANGE:
+			return true
+	return false
+
+
+func _update_camera_distance(delta: float) -> void:
+	var want: float = CAMERA_DIST_COMBAT if lock_target == null and in_combat() else CAMERA_DIST
+	_arm.spring_length = move_toward(_arm.spring_length, want, 2.0 * delta)
+
+
+func camera_distance() -> float:
+	return _arm.spring_length
+
+
 static func lockable(n: Node3D) -> bool:
 	if not is_instance_valid(n) or not n.is_inside_tree():
 		return false
@@ -216,6 +309,14 @@ func _update_lock(delta: float) -> void:
 	if lock_target != null:
 		if not lockable(lock_target) or lock_target.global_position.distance_to(global_position) > LOCK_RANGE:
 			lock_target = null
+		elif lock_line_blocked(lock_target):
+			lock_blocked += delta
+			if lock_blocked >= LOCK_BLOCKED_SEC:
+				lock_target = null
+		else:
+			lock_blocked = 0.0
+	if lock_target == null:
+		lock_blocked = 0.0
 	if lock_target == null:
 		_lock_marker.visible = false
 		return
