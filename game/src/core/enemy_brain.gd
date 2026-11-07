@@ -1,8 +1,10 @@
 class_name EnemyBrain
 extends RefCounted
-## 一般敵人（灰巡者）的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地。
-## 不碰場景，只吃「離玩家多遠」與時間；出招那一刻回傳 true，由角色節點判定命中。
-## 數值來自 CombatTuning（ashwalker.*、difficulty.*.telegraph）。
+## 敵人的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地。
+## 不碰場景，只吃「離目標多遠」與時間；出招那一刻回傳 true，由角色節點判定命中。
+## 數值來自 CombatTuning（<prefix>.*、difficulty.*.telegraph）。
+## 一般敵人只有一招（attack_range 內就出）；精英敵人在 <prefix>.moves 定義多招，依 <prefix>.pattern 輪流，
+## 每招有自己的距離（min_range～range）、前兆、出招、破綻時間（送葬者：橫掃／下砸／衝撞）。
 
 enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD }
 
@@ -22,17 +24,38 @@ var stagger_kneel_sec: float = 2.0
 ## 前兆中受擊：不打斷出招，失衡打折（硬撐）；破綻中受擊：失衡加倍（教玩家等破綻）
 var telegraph_stagger_mult: float = 0.5
 var recover_stagger_mult: float = 2.0
-## 目前（唯一）的招式 id，看穿顯示「▶ 爪擊」用；精英敵人之後會有多招
+## 目前（或下一個）招式 id；看穿顯示「▶ 爪擊」用
 var move_id: String = "claw"
+## 多招敵人：id → {telegraph, active, recover, min_range, range, ...}；空的＝一般敵人單招
+var moves: Dictionary = {}
+var pattern: PackedStringArray = []
+var _pattern_i: int = 0
+var _telegraph_mult: float = 1.0
+var _base_telegraph: float = 0.8
+var _base_recover: float = 0.6
+## 這次跪地要多久（撞牆等特殊跪地會改）
+var _kneel_sec: float = 2.0
 
 
 func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
-	telegraph_sec = CombatTuning.num(prefix + ".telegraph", 0.8) * CombatTuning.num("difficulty.%s.telegraph" % difficulty, 1.0)
+	_telegraph_mult = CombatTuning.num("difficulty.%s.telegraph" % difficulty, 1.0)
+	_base_telegraph = CombatTuning.num(prefix + ".telegraph", 0.8)
+	telegraph_sec = _base_telegraph * _telegraph_mult
 	stagger_max = CombatTuning.num(prefix + ".stagger_max", 60.0)
-	recover_sec = CombatTuning.num(prefix + ".recover", 0.6)
+	stagger_kneel_sec = CombatTuning.num(prefix + ".stagger_kneel", 2.0)
+	_base_recover = CombatTuning.num(prefix + ".recover", 0.6)
+	recover_sec = _base_recover
 	attack_range = CombatTuning.num(prefix + ".attack_range", 1.8)
 	telegraph_stagger_mult = CombatTuning.num(prefix + ".telegraph_stagger_mult", 0.5)
 	recover_stagger_mult = CombatTuning.num(prefix + ".recover_stagger_mult", 2.0)
+	var mv: Variant = CombatTuning.value(prefix + ".moves", {}) if _has(prefix + ".moves") else {}
+	moves = mv as Dictionary if mv is Dictionary else {}
+	var pat: Variant = CombatTuning.value(prefix + ".pattern", []) if _has(prefix + ".pattern") else []
+	pattern = PackedStringArray(pat as Array) if pat is Array else PackedStringArray()
+	if not moves.is_empty() and pattern.is_empty():
+		pattern = PackedStringArray(moves.keys())
+	if not pattern.is_empty():
+		move_id = pattern[0]
 	return self
 
 
@@ -40,15 +63,23 @@ func state_name() -> String:
 	return STATE_NAMES[state]
 
 
+## 某招的數值（沒有就回傳 fallback）。
+func move_num(id: String, key: String, fallback: float = 0.0) -> float:
+	var m: Variant = moves.get(id, {})
+	if m is Dictionary and (m as Dictionary).has(key):
+		return float((m as Dictionary)[key])
+	return fallback
+
+
 ## 每幀呼叫。回傳 true＝這一幀出招（角色節點去判定命中）。
-func tick(delta: float, dist_to_player: float) -> bool:
+func tick(delta: float, dist_to_target: float) -> bool:
 	time_in_state += delta
 	match state:
 		State.IDLE:
-			if dist_to_player <= aggro_range:
+			if dist_to_target <= aggro_range:
 				_enter(State.CHASE)
 		State.CHASE:
-			if dist_to_player <= attack_range:
+			if _choose_move(dist_to_target):
 				_enter(State.TELEGRAPH)
 		State.TELEGRAPH:
 			if time_in_state >= telegraph_sec:
@@ -61,9 +92,30 @@ func tick(delta: float, dist_to_player: float) -> bool:
 			if time_in_state >= recover_sec:
 				_enter(State.CHASE)
 		State.STAGGERED:
-			if time_in_state >= stagger_kneel_sec:
+			if time_in_state >= _kneel_sec:
 				stagger = 0.0
 				_enter(State.CHASE)
+	return false
+
+
+## 依距離挑下一招；挑到就設定這招的時間並回傳 true。
+func _choose_move(dist: float) -> bool:
+	if moves.is_empty():
+		if dist > attack_range:
+			return false
+		telegraph_sec = _base_telegraph * _telegraph_mult
+		recover_sec = _base_recover
+		return true
+	for k: int in pattern.size():
+		var i: int = (_pattern_i + k) % pattern.size()
+		var id: String = pattern[i]
+		if dist >= move_num(id, "min_range", 0.0) and dist <= move_num(id, "range", attack_range):
+			_pattern_i = (i + 1) % pattern.size()
+			move_id = id
+			telegraph_sec = move_num(id, "telegraph", _base_telegraph) * _telegraph_mult
+			strike_sec = move_num(id, "active", 0.15)
+			recover_sec = move_num(id, "recover", _base_recover)
+			return true
 	return false
 
 
@@ -78,9 +130,18 @@ func add_stagger(amount: float) -> bool:
 		return false
 	stagger += amount * stagger_mult()
 	if stagger >= stagger_max:
+		_kneel_sec = stagger_kneel_sec
 		_enter(State.STAGGERED)
 		return true
 	return false
+
+
+## 衝撞撞牆之類的硬直：直接跪地 seconds 秒（不累積失衡）。
+func force_kneel(seconds: float) -> void:
+	if state == State.DEAD:
+		return
+	_kneel_sec = seconds
+	_enter(State.STAGGERED)
 
 
 ## 目前狀態下受擊的失衡倍率。
@@ -114,3 +175,8 @@ func is_moving() -> bool:
 func _enter(s: State) -> void:
 	state = s
 	time_in_state = 0.0
+
+
+static func _has(path: String) -> bool:
+	var node: Variant = CombatTuning.value(path.get_slice(".", 0), {})
+	return node is Dictionary and (node as Dictionary).has(path.get_slice(".", 1))

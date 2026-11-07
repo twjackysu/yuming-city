@@ -81,6 +81,9 @@ static func is_exposed(enemy_pos: Vector3, enemy_forward: Vector3, attacker_pos:
 	if f.length() < 0.001 or d.length() < 0.001:
 		return false
 	var ang: float = rad_to_deg(f.signed_angle_to(d, Vector3.UP))
+	if exposed_arc.x > exposed_arc.y:
+		# 跨過 ±180°（背後）
+		return ang >= exposed_arc.x or ang <= exposed_arc.y
 	return ang >= exposed_arc.x and ang <= exposed_arc.y
 
 

@@ -112,3 +112,8 @@ SET_DIFFICULTY,Difficulty,難度
 DIFF_STORY,Story,故事
 DIFF_STANDARD,Standard,標準
 DIFF_HARD,Hard,困難
+ENEMY_UNDERTAKER,Undertaker,送葬者
+WEAK_FRAME_JOINT,Frame joint,鐵架關節
+MOVE_SWEEP,Frame sweep,鐵架橫掃
+MOVE_SLAM,Frame slam,鐵架下砸
+MOVE_CHARGE,Heartbeat charge,追心跳衝撞

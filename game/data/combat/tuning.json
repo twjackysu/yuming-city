@@ -17,8 +17,17 @@
     "dodge_cost": 20, "slash_cost": 10, "slash_range": 1.8, "slash_interval": 1.3, "command_cooldown": 1.5,
     "weak_damage": 60, "counter_damage": 27, "counter_stagger": 30, "countered_damage": 14
   },
-  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8, "telegraph_stagger_mult": 0.5, "recover_stagger_mult": 2.0},
-  "undertaker": {"max_hp": 900, "phase2_hp": 450, "stagger_max": 200},
+  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8, "telegraph_stagger_mult": 0.5, "recover_stagger_mult": 2.0, "stagger_kneel": 2.0, "move_speed": 2.6},
+  "undertaker": {
+    "max_hp": 900, "phase2_hp": 450, "stagger_max": 200, "stagger_kneel": 3.0, "attack_range": 3.2, "telegraph": 0.9, "recover": 0.8, "move_speed": 2.3,
+    "telegraph_stagger_mult": 0.3, "recover_stagger_mult": 2.0,
+    "pattern": ["sweep", "slam", "sweep", "charge"],
+    "moves": {
+      "sweep": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.2, "arc_deg": 150, "damage": 28},
+      "slam": {"telegraph": 1.0, "telegraph_phase2": 0.7, "active": 0.15, "recover": 0.6, "range": 3.0, "reach": 1.9, "radius": 2.0, "damage": 40},
+      "charge": {"telegraph": 0.6, "active": 1.0, "recover": 0.9, "min_range": 4.0, "range": 11.0, "speed": 11.0, "hit_radius": 1.1, "damage": 22, "wall_kneel": 2.0}
+    }
+  },
   "dummy": {"max_hp": 60, "reset_after": 3.0},
   "feel": {
     "hit_stop": 0.06,

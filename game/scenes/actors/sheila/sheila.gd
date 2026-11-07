@@ -219,10 +219,9 @@ func _brain_of(n: Node3D) -> EnemyBrain:
 
 
 func _first_weakpoint(n: Node3D) -> String:
-	var id: Variant = n.get("INTEL_ID")
-	if id == null:
+	if not n.has_method("intel_id"):
 		return ""
-	var ws: Array[Dictionary] = EnemyIntel.weakpoints(str(id))
+	var ws: Array[Dictionary] = EnemyIntel.weakpoints(str(n.call("intel_id")))
 	return str(ws[0].get("id", "")) if not ws.is_empty() else ""
 
 

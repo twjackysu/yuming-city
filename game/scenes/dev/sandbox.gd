@@ -46,6 +46,17 @@ func _ready() -> void:
 		sheila.name = "Sheila"
 		sheila.position = Vector3(-1.4, 0.0, 3.2)
 		add_child(sheila)
+	# 開發用：`--boss` 放送葬者（第一階段三招）＋席菈；正式戰鬥在 M1.3 霜橋鎮南街
+	if dev_args.has("boss"):
+		var boss := Undertaker.new()
+		boss.name = "Undertaker"
+		boss.position = Vector3(0.6, 0.0, -1.0) if dev_args.has("insight") else Vector3(0.0, 0.0, -6.0)
+		add_child(boss)
+		if not dev_args.has("enemies"):
+			var ally := Sheila.new()
+			ally.name = "Sheila"
+			ally.position = Vector3(-1.4, 0.0, 3.2)
+			add_child(ally)
 	# 截圖用：`--insight` 一開始就按住看穿
 	if dev_args.has("insight"):
 		Input.action_press("insight")
