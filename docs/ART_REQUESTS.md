@@ -58,3 +58,5 @@
 ## 高品質建模準備（2026-11-08）
 
 已加入四個角色的寫實多視角參考與諾恩獨立正面圖，來源見 `art-inbox/concepts/character_references/`。正式模型仍未交付；Tripo CLI 已準備且 dry-run 通過，但帳號尚未授權，未發出生成請求。完整接續流程與驗證限制見 [ART_PRODUCTION.md](ART_PRODUCTION.md)。
+
+本機免費方案已試跑：TripoSR 能用 RTX 2080 SUPER 生成網格，但視覺、拓撲與材質未達標，仍不計作完成；詳見 [試跑報告](art-trials/triposr/README.md)。

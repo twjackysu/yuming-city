@@ -1,0 +1,48 @@
+{
+  "status": "static_reconstruction_study_not_accepted",
+  "source_repo": "https://github.com/VAST-AI-Research/TripoSR",
+  "source_commit": "107cefdc244c39106fa830359024f6a2f1c78871",
+  "model_repo": "stabilityai/TripoSR",
+  "model_revision": "5b521936b01fbe1890f6f9baed0254ab6351c04a",
+  "checkpoint_sha256": null,
+  "input_sha256": "7201522fc8d66ae0f222dcaad19149f5ea3c6c2f428793e412cf9b218e999a1b",
+  "seed": 81,
+  "grid_resolution": 256,
+  "chunk_size": 2048,
+  "torch": "2.7.1+cu118",
+  "cuda": "11.8",
+  "gpu": "NVIDIA GeForce RTX 2080 SUPER",
+  "peak_allocated_vram_mib": 2506.5,
+  "vertices": 39212,
+  "triangles": 78424,
+  "bounds_model_units": [
+    [
+      -0.09175586700439453,
+      -0.392129123210907,
+      -0.47350558638572693
+    ],
+    [
+      0.2811352014541626,
+      0.3993877172470093,
+      0.4805262088775635
+    ]
+  ],
+  "watertight": true,
+  "timing_seconds": {
+    "download_and_load": 5.89,
+    "image_encoding": 2.0,
+    "mesh_extraction": 10.17
+  },
+  "output_sha256": "8d79243ffe713d86b630c6872f332ad96746682496c3986254d1c1907a5272d1",
+  "limitations": [
+    "Vertex colors only; no PBR textures, UV, skeleton, skin, or animation.",
+    "Back/occluded geometry inferred from one front image.",
+    "No body-height or Godot orientation normalization yet.",
+    "Visual and deformation acceptance has not passed."
+  ],
+  "compatibility_changes": [
+    "CPU skimage marching cubes instead of compiled torchmcubes",
+    "Lazy optional rembg import; no background-removal model used",
+    "Explicit weights_only=True checkpoint loading"
+  ]
+}

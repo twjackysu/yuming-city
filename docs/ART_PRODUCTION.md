@@ -57,3 +57,7 @@ python scripts/check_character_glb.py art-inbox/characters/noen/noen.glb --chara
 - 多視角：https://developers.tripo3d.ai/en/docs/generation-multiview-to-model/standard
 - Meshy 綁定：https://docs.meshy.ai/en/api/rigging
 - Blender MCP 的任意程式執行警告：https://www.blender.org/lab/mcp-server/
+
+## 免費本機方案試跑（2026-11-08）
+
+TripoSR 已在本機 GPU 成功生成諾恩試驗網格並完成多角度渲染，無需服務登入。結果未達角色品質要求，不作正式交付；詳細數據、失敗點、來源版本與重跑步驟見 [試跑報告](art-trials/triposr/README.md)。Tripo 雲端登入只影響選用該服務，不再是所有 3D 嘗試的前置條件。第 1–3 項仍未完成。
