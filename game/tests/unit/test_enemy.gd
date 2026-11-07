@@ -31,9 +31,10 @@ func test_stagger_interrupts_telegraph() -> void:
 	b.tick(0.1, 10.0)
 	b.tick(0.1, 1.0)
 	assert_eq(b.state_name(), "telegraph")
-	assert_false(b.add_stagger(20.0))
-	assert_false(b.add_stagger(20.0))
-	assert_true(b.add_stagger(20.0), "失衡 60 滿了跪地")
+	# 前兆中硬撐（失衡 ×0.5）：要六下 20 才滿 60
+	for i: int in 5:
+		assert_false(b.add_stagger(20.0))
+	assert_true(b.add_stagger(20.0), "失衡 60 滿了打斷前兆、跪地")
 	assert_eq(b.state_name(), "staggered")
 	assert_false(b.tick(1.0, 1.0), "跪地中不出招")
 	b.tick(1.1, 1.0)

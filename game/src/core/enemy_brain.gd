@@ -19,6 +19,11 @@ var strike_sec: float = 0.15
 var recover_sec: float = 0.6
 var stagger_max: float = 60.0
 var stagger_kneel_sec: float = 2.0
+## 前兆中受擊：不打斷出招，失衡打折（硬撐）；破綻中受擊：失衡加倍（教玩家等破綻）
+var telegraph_stagger_mult: float = 0.5
+var recover_stagger_mult: float = 2.0
+## 目前（唯一）的招式 id，看穿顯示「▶ 爪擊」用；精英敵人之後會有多招
+var move_id: String = "claw"
 
 
 func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
@@ -26,6 +31,8 @@ func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
 	stagger_max = CombatTuning.num(prefix + ".stagger_max", 60.0)
 	recover_sec = CombatTuning.num(prefix + ".recover", 0.6)
 	attack_range = CombatTuning.num(prefix + ".attack_range", 1.8)
+	telegraph_stagger_mult = CombatTuning.num(prefix + ".telegraph_stagger_mult", 0.5)
+	recover_stagger_mult = CombatTuning.num(prefix + ".recover_stagger_mult", 2.0)
 	return self
 
 
@@ -65,15 +72,35 @@ func telegraph_progress() -> float:
 	return clampf(time_in_state / telegraph_sec, 0.0, 1.0) if state == State.TELEGRAPH else 0.0
 
 
-## 受到失衡值；滿了打斷前兆並跪地。回傳是否因此跪地。
+## 受到失衡值（依狀態套倍率）；滿了打斷前兆並跪地。回傳是否因此跪地。
 func add_stagger(amount: float) -> bool:
 	if state == State.DEAD or state == State.STAGGERED:
 		return false
-	stagger += amount
+	stagger += amount * stagger_mult()
 	if stagger >= stagger_max:
 		_enter(State.STAGGERED)
 		return true
 	return false
+
+
+## 目前狀態下受擊的失衡倍率。
+func stagger_mult() -> float:
+	match state:
+		State.TELEGRAPH:
+			return telegraph_stagger_mult
+		State.RECOVER:
+			return recover_stagger_mult
+	return 1.0
+
+
+## 正在出的招（前兆／出招中），沒有就回傳空字串。
+func current_move() -> String:
+	return move_id if state in [State.TELEGRAPH, State.STRIKE] else ""
+
+
+## 破綻中（攻擊後或跪地）：席菈「打弱點」的時機。
+func is_open() -> bool:
+	return state == State.RECOVER or state == State.STAGGERED
 
 
 func kill() -> void:

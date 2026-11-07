@@ -24,6 +24,10 @@ const FOV_SPRINT: float = 75.0
 var yaw: float = 0.0
 var pitch: float = -0.18
 var invulnerable: bool = false
+## 按住看穿（insight）中；敵人自己讀這個值決定要不要顯示已知資訊（02-gameplay「看穿」：不放慢時間）
+var insight_active: bool = false
+## 上一次揮擊打中弱點的數量（測試與音效用）
+var last_weak_hits: int = 0
 
 var _dodge_left: float = 0.0
 var _dodge_cooldown: float = 0.0
@@ -47,6 +51,7 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	_rig.top_level = true
 	add_to_group("player")
+	add_to_group("heartbeat")
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
 	_body.add_child(_puppet)
@@ -98,6 +103,7 @@ func _physics_process(delta: float) -> void:
 	var talking: bool = Game.is_player_locked()
 	if talking:
 		input = Vector2.ZERO
+	insight_active = Input.is_action_pressed("insight") and not talking and not health.is_dead()
 	var dir: Vector3 = move_direction(input, yaw)
 	var sprinting: bool = Input.is_action_pressed("sprint") and input.length() > 0.1
 
@@ -177,8 +183,11 @@ func strike() -> int:
 	var arc: float = CombatTuning.num("noen.strike_arc_deg", 110.0)
 	var damage: float = CombatTuning.num("noen.blunt_damage", 6.0)
 	var stagger: float = CombatTuning.num("noen.blunt_stagger", 20.0)
+	var weak_damage: float = CombatTuning.num("noen.weak_damage_mult", 2.0)
+	var weak_stagger: float = CombatTuning.num("noen.weak_stagger_mult", 2.0)
 	var hits: int = 0
 	var killed: bool = false
+	last_weak_hits = 0
 	for n: Node in get_tree().get_nodes_in_group("damageable"):
 		var target: Node3D = n as Node3D
 		if target == null or target == self:
@@ -186,11 +195,21 @@ func strike() -> int:
 		if not in_strike_arc(global_position, forward, target.global_position, reach, arc):
 			continue
 		var h: Health = target.get_node_or_null("Health") as Health
-		if h != null and h.apply_damage(damage, {"source": self, "stagger": stagger, "kind": "blunt"}):
+		if h == null:
+			continue
+		var weak: String = ""
+		if target.has_method("weakpoint_exposed_to"):
+			weak = str(target.call("weakpoint_exposed_to", global_position))
+		var k_dmg: float = weak_damage if weak != "" else 1.0
+		var k_stg: float = weak_stagger if weak != "" else 1.0
+		if h.apply_damage(damage * k_dmg, {"source": self, "stagger": stagger * k_stg, "kind": "blunt", "weak": weak}):
 			hits += 1
+			if weak != "":
+				last_weak_hits += 1
 			killed = killed or h.is_dead()
 	if hits > 0:
-		Game.hit_stop(CombatTuning.num("feel.hit_stop_kill" if killed else "feel.hit_stop", 0.06))
+		var stop_key: String = "feel.hit_stop_kill" if killed else ("feel.hit_stop_weak" if last_weak_hits > 0 else "feel.hit_stop")
+		Game.hit_stop(CombatTuning.num(stop_key, 0.06))
 		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))
 	return hits
 

@@ -88,3 +88,23 @@ GLYPH_PAD_LEFT,D-pad ←,十字鍵 ←
 GLYPH_PAD_RIGHT,D-pad →,十字鍵 →
 GLYPH_PAD_LSTICK,Left Stick,左搖桿
 GLYPH_PAD_RSTICK,Right Stick,右搖桿
+INSIGHT_UNKNOWN,Unknown — nothing in the walkthrough,未知——攻略沒寫
+INSIGHT_WEAK,Weak point: {0},弱點：{0}
+INSIGHT_MOVE,Move: {0},招式：{0}
+INSIGHT_VERIFIED," (confirmed)",（已證實）
+INSIGHT_UNVERIFIED," (unconfirmed?)",（未證實？）
+ENEMY_ASHWALKER,Ashwalker,灰巡者
+WEAK_LEFT_KNEE,Left knee,左膝
+MOVE_CLAW,Claw swipe,爪擊
+INSIGHT_CURRENT,▶ {0},▶ {0}
+SHEILA_ACK_WEAKPOINT,The knee — mine.,膝蓋——交給我。
+SHEILA_ACK_EVADE,Seen it.,看到了。
+SHEILA_ACK_GUARD,I'll hold here.,我守著。
+SHEILA_ACK_UNGUARD,Moving.,我過去。
+SHEILA_MISTIMED_WEAKPOINT,Too soon—!,太早了——！
+SHEILA_MISTIMED_EVADE,It hasn't moved yet!,牠還沒出手！
+SHEILA_REFUSE_NO_TARGET,Hit what?,打誰？
+SHEILA_REFUSE_STAMINA,Let me breathe — one second.,喘口氣……等我一下。
+SHEILA_REFUSE_DOWN,(Sheila is down),（席菈倒下了）
+SHEILA_REFUSE_UNKNOWN,What?,什麼？
+SHEILA_BUSY,I heard you!,聽到了！

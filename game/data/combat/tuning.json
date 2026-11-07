@@ -8,15 +8,22 @@
     "strike_arc_deg": 110,
     "dodge_time": 0.35,
     "dodge_invuln": 0.25,
-    "dodge_cooldown": 0.2
+    "dodge_cooldown": 0.2,
+    "weak_damage_mult": 2.0,
+    "weak_stagger_mult": 2.0
   },
-  "sheila": {"max_hp": 160, "slash_damage": 18, "stamina": 100, "stamina_regen": 25},
-  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8},
+  "sheila": {
+    "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
+    "dodge_cost": 20, "slash_cost": 10, "slash_range": 1.8, "slash_interval": 1.3, "command_cooldown": 1.5,
+    "weak_damage": 60, "counter_damage": 27, "counter_stagger": 30, "countered_damage": 14
+  },
+  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8, "telegraph_stagger_mult": 0.5, "recover_stagger_mult": 2.0},
   "undertaker": {"max_hp": 900, "phase2_hp": 450, "stagger_max": 200},
   "dummy": {"max_hp": 60, "reset_after": 3.0},
   "feel": {
     "hit_stop": 0.06,
     "hit_stop_kill": 0.12,
+    "hit_stop_weak": 0.09,
     "hit_stop_time_scale": 0.05,
     "shake_hit": 0.22,
     "shake_kill": 0.4,

@@ -33,11 +33,22 @@ func _ready() -> void:
 	dummy.position = Vector3(-2.6, 0.0, -4.0)
 	add_child(dummy)
 	# 開發用：`-- --level=sandbox --enemies` 在街上放一隻灰巡者（正式遭遇戰在 M1.3 的霜橋鎮）
-	if App.parse_user_args(OS.get_cmdline_user_args()).has("enemies"):
+	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	if dev_args.has("enemies"):
 		var walker := Ashwalker.new()
 		walker.name = "Ashwalker"
 		walker.position = Vector3(2.0, 0.0, -12.0)
+		if dev_args.has("insight"):
+			walker.position = Vector3(1.6, 0.0, -3.5)
 		add_child(walker)
+		# 戰鬥沙盒帶席菈（正式劇情中她在霜橋鎮會合，M1.3）
+		var sheila := Sheila.new()
+		sheila.name = "Sheila"
+		sheila.position = Vector3(-1.4, 0.0, 3.2)
+		add_child(sheila)
+	# 截圖用：`--insight` 一開始就按住看穿
+	if dev_args.has("insight"):
+		Input.action_press("insight")
 	add_child(CutsceneView.new())
 	Game.cutscene_started.connect(_on_cutscene_started)
 	Game.cutscene_ended.connect(_on_cutscene_ended)
