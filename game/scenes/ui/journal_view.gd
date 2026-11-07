@@ -1,7 +1,7 @@
 class_name JournalView
 extends CanvasLayer
 ## 日記畫面（docs/design/02-gameplay.md「記憶與日記」）：
-## - Tab／View 打開（暫停遊戲），再按一次或 Esc／B 闔上。
+## - Tab／View 打開（暫停遊戲），再按一次或 Esc／B 闔上。最上面是目前目標（Tab 原本的「再看一次目標」）。
 ## - 被付出的記憶：標題與前後文保留，內文變成一塊被整齊剪掉的空白，下面是殘留的一句。
 ## - 九息預覽中（Game.journal.highlighted）：不暫停，在畫面右側只顯示那一張卡（「九息的代價」）。
 
@@ -14,6 +14,7 @@ const CUT: Color = Color(0.13, 0.135, 0.15)
 var _root: Control
 var _list: VBoxContainer
 var _hint: Label
+var _objective: Label
 var _peek: PanelContainer
 var _peek_id: String = ""
 var _mouse_before: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
@@ -100,6 +101,8 @@ func _refresh() -> void:
 	for c: Node in _list.get_children():
 		_list.remove_child(c)
 		c.queue_free()
+	# Tab 原本是「再看一次目前目標」：日記最上面也放目前目標
+	_objective.text = Game.session.objective_key()
 	var j: Journal = Game.journal
 	if j == null:
 		return
@@ -185,6 +188,16 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", 34)
 	title.add_theme_color_override("font_color", INK)
 	col.add_child(title)
+	var obj_head := Label.new()
+	obj_head.text = "HUD_OBJECTIVE"
+	obj_head.add_theme_font_size_override("font_size", 14)
+	obj_head.add_theme_color_override("font_color", WARM)
+	col.add_child(obj_head)
+	_objective = Label.new()
+	_objective.name = "Objective"
+	_objective.add_theme_font_size_override("font_size", 20)
+	_objective.add_theme_color_override("font_color", INK)
+	col.add_child(_objective)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

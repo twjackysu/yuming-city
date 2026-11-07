@@ -92,6 +92,7 @@ func test_journal_view_open_close_and_cut_gap() -> void:
 	assert_true(view.is_open())
 	assert_true(tree.paused, "打開日記會暫停")
 	assert_eq(view.shown_entry_count(), 1)
+	assert_eq((view.find_child("Objective", true, false) as Label).text, _session.objective_key(), "日記最上面是目前目標")
 	assert_true(view.find_child("CutGap", true, false) == null, "還沒付出：沒有剪痕")
 	view.close()
 	assert_false(tree.paused, "闔上恢復")
