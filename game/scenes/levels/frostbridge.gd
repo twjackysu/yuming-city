@@ -54,6 +54,7 @@ func _ready() -> void:
 	_build_bell_tower(Vector3(0.0, 0.0, TOWER_Z))
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
+	_build_cellar_hatch()
 	_batch.build(self, "Town")
 	arch_site = NineBreathSite.new()
 	arch_site.name = "SouthArch"
@@ -155,8 +156,12 @@ func _begin_sheila_meet() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
+	if stage == "aftermath":
+		_update_aftermath()
+		return
 	# 席菈段落：走到她身邊 → 夾板、「你敲了幾下」
-	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "meet_sheila":
+	if stage != "meet_sheila":
 		return
 	if Game.session.state.get_flag("slice.sheila_talked", false) or Game.is_player_locked():
 		return
@@ -185,6 +190,38 @@ func _spawn_ashwalker() -> void:
 
 func _on_ashwalker_died() -> void:
 	Game.session.set_flag("slice.ashwalker_defeated", true)
+
+
+# ---------------------------------------------------------------- 收束（段落 6）
+
+const CELLAR_POS: Vector3 = Vector3(7.6, 0.0, -4.2)
+const ADA_TALK_RANGE: float = 3.0
+
+
+## 收束：回到梨販攤 → 艾妲（死者名單、梨與秤）→ 梨販家的地窖。
+func _update_aftermath() -> void:
+	if Game.session.state.get_flag("slice.ada_talked_aftermath", false) or Game.is_player_locked():
+		return
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null and player.global_position.distance_to(STALL_POS) <= ADA_TALK_RANGE:
+		Game.start_dialogue("slice_ada_aftermath")
+
+
+func _on_cellar() -> void:
+	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "aftermath":
+		return
+	if not Game.session.state.get_flag("slice.ada_talked_aftermath", false):
+		return
+	Game.session.set_flag("slice.cellar_entered", true)
+	_banner("SLICE_COMPLETE", 8.0)
+
+
+func _build_cellar_hatch() -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	_batch.add_box_at(Vector3(1.6, 0.08, 1.2), CELLAR_POS + Vector3(0, 0.04, 0), wood, false)
+	for i: int in 3:
+		_batch.add_box_at(Vector3(1.6, 0.04, 0.06), CELLAR_POS + Vector3(0, 0.1, -0.4 + i * 0.4), look.mat(FrostbridgeLook.ROOF), false)
+	_batch.add_box_at(Vector3(0.2, 0.06, 0.12), CELLAR_POS + Vector3(0.5, 0.12, 0.0), look.mat(Color(0.4, 0.36, 0.3), 0.4), false)
 
 
 # ---------------------------------------------------------------- 送葬者戰
@@ -239,6 +276,7 @@ func _on_convoy_finished(_injured: int) -> void:
 func _build_story_triggers() -> void:
 	_trigger("PearSellerTrigger", STALL_POS + Vector3(-0.8, 1.0, 0.0), Vector3(3.0, 2.0, 3.0), _on_pear_seller)
 	_trigger("BellTowerTrigger", Vector3(0.0, 1.0, TOWER_Z + 3.7), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
+	_trigger("CellarTrigger", CELLAR_POS + Vector3(0.0, 1.0, 0.0), Vector3(1.8, 2.0, 1.6), _on_cellar)
 	_trigger("ConvoyTrigger", Vector3(0.0, 1.0, PLAZA_S + 2.0), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_south_street)
 
 

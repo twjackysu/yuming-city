@@ -109,3 +109,37 @@ func test_sheila_appears_after_third_rescue_in_level() -> void:
 	level.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 段落 6「收束」：車隊通過後回到梨販攤 → 艾妲對話 → 走進地窖 → 切片完成。
+func test_aftermath_ada_then_cellar_completes_slice() -> void:
+	var s := _session(4)
+	s.set_flag("slice.sheila_talked", true)
+	s.set_flag("slice.ashwalker_defeated", true)
+	s.set_flag("slice.convoy_through", true)
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath")
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var cellar: Vector3 = (level.get_node("CellarTrigger") as Node3D).global_position
+	# 還沒跟艾妲說話：地窖不算數
+	player.global_position = Vector3(cellar.x, 0.05, cellar.z)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_ne(s.state.get_flag("slice.cellar_entered", false), true, "先跟艾妲說話")
+	player.global_position = Vector3(3.2, 0.05, 0.6)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(tree.root.get_node("Game").call("is_in_dialogue"), "回到梨販攤 → 艾妲")
+	await _run_dialogue(level, 0)
+	assert_eq(s.state.get_flag("slice.ada_talked_aftermath"), true)
+	player.global_position = Vector3(0.0, 0.05, 2.0)
+	for i: int in 2:
+		await tree.physics_frame
+	player.global_position = Vector3(cellar.x, 0.05, cellar.z)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_eq(s.state.get_flag("slice.cellar_entered"), true, "走進地窖")
+	assert_true(s.is_slice_complete(), "切片完成")
+	level.queue_free()
+	await tree.process_frame
+	await tree.process_frame
