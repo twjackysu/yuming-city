@@ -11,7 +11,7 @@
     "dodge_cooldown": 0.2
   },
   "sheila": {"max_hp": 160, "slash_damage": 18, "stamina": 100, "stamina_regen": 25},
-  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8},
+  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8},
   "undertaker": {"max_hp": 900, "phase2_hp": 450, "stagger_max": 200},
   "dummy": {"max_hp": 60, "reset_after": 3.0},
   "feel": {

@@ -49,6 +49,7 @@ jobs:
           scripts/screenshot.sh build/title.png 30
           scripts/screenshot.sh build/sandbox.png 120 --level=sandbox --perf || true
           scripts/screenshot.sh build/dialogue.png 150 --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
+          scripts/screenshot.sh build/bell.png 120 --level=sandbox --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
 
       - name: 打包
         run: |
@@ -68,6 +69,7 @@ jobs:
             build/title.png
             build/sandbox.png
             build/dialogue.png
+            build/bell.png
           if-no-files-found: warn
           retention-days: 14
 
@@ -80,6 +82,7 @@ jobs:
           [[ -s build/title.png ]] && FILES+=(build/title.png)
           [[ -s build/sandbox.png ]] && FILES+=(build/sandbox.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
+          [[ -s build/bell.png ]] && FILES+=(build/bell.png)
           gh release delete latest --yes --cleanup-tag || true
           # 偶爾會遇到暫時性的 403（11/8 run 42398212944），刪掉舊版後重試建立，避免 latest 消失
           for attempt in 1 2 3; do
