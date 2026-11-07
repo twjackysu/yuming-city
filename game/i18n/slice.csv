@@ -59,3 +59,7 @@ SLICE_COMPLETE,The Ninth Bell — end of the slice. Thank you for playing.,第�
 DLG_ARCH_001,The South Street arch. Dad used to wait for me here after school.,南街的石拱。爸以前每天在這裡等我放學。
 DLG_ARCH_002,"He'd hide behind a pillar, on purpose, so I'd have to find him.",他會躲在柱子後面，故意讓我找。
 JOURNAL_EMPTY,Nothing written down yet.,還沒有記下任何事。
+DLG_AFTER_DEAD_31,Thirty-one people died in Frostbridge tonight.,霜橋鎮今晚死了三十一個人。
+DLG_AFTER_DEAD_30,"Thirty people died in Frostbridge tonight. The four on North Street — you got every one of them out.",霜橋鎮今晚死了三十個人。北街那四個，你都拉出來了。
+DLG_AFTER_DEAD_29,"Twenty-nine people died in Frostbridge tonight. You got all four out of North Street, and everyone on the cart made it.",霜橋鎮今晚死了二十九個人。北街那四個你都拉出來了，車上的人也都到了。
+DLG_AFTER_DEAD_33,Thirty-three people died in Frostbridge tonight. Two on the cart didn't make it to the crossing.,霜橋鎮今晚死了三十三個人。車上有兩個沒撐到路口。

@@ -1,18 +1,92 @@
 {
   "id": "slice_ada_aftermath",
-  "start": "ada_list",
+  "start": "dead",
   "nodes": {
+    "dead": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_DEAD_31",
+      "text_if": [
+        {
+          "if": {
+            "all": [
+              {
+                "flag": "slice.rescued_count",
+                "gte": 4
+              },
+              {
+                "not": {
+                  "flag": "slice.convoy_injured",
+                  "gte": 1
+                }
+              }
+            ]
+          },
+          "text": "DLG_AFTER_DEAD_29"
+        },
+        {
+          "if": {
+            "flag": "slice.convoy_injured",
+            "gte": 3
+          },
+          "text": "DLG_AFTER_DEAD_33"
+        },
+        {
+          "if": {
+            "flag": "slice.rescued_count",
+            "gte": 4
+          },
+          "text": "DLG_AFTER_DEAD_30"
+        }
+      ],
+      "next": "ada_list"
+    },
     "ada_list": {
       "speaker": "SPK_ADA",
       "text": "DLG_AFTER_001",
       "choices": [
-        {"text": "DLG_AFTER_C_REMEMBER", "next": "remember", "if": {"not": {"memory_paid": "arch_father_last_talk"}}},
-        {"text": "DLG_AFTER_C_ASK", "next": "forgot"}
+        {
+          "text": "DLG_AFTER_C_REMEMBER",
+          "next": "remember",
+          "if": {
+            "not": {
+              "memory_paid": "arch_father_last_talk"
+            }
+          }
+        },
+        {
+          "text": "DLG_AFTER_C_ASK",
+          "next": "forgot"
+        }
       ]
     },
-    "remember": {"speaker": "SPK_ADA", "text": "DLG_AFTER_002", "next": "give_pear"},
-    "give_pear": {"speaker": "SPK_ADA", "text": "DLG_AFTER_003", "next": "cellar", "do": {"set": {"slice.ada_gave_pear": true}}},
-    "forgot": {"speaker": "SPK_ADA", "text": "DLG_AFTER_004", "next": "cellar"},
-    "cellar": {"speaker": "SPK_ADA", "text": "DLG_AFTER_005", "do": {"set": {"slice.ada_talked_aftermath": true}}}
+    "remember": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_002",
+      "next": "give_pear"
+    },
+    "give_pear": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_003",
+      "next": "cellar",
+      "do": {
+        "set": {
+          "slice.ada_gave_pear": true
+        }
+      }
+    },
+    "forgot": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_004",
+      "next": "cellar"
+    },
+    "cellar": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_AFTER_005",
+      "do": {
+        "set": {
+          "slice.ada_talked_aftermath": true
+        }
+      }
+    }
   }
 }

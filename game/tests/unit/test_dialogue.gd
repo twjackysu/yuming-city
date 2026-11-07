@@ -86,10 +86,44 @@ func test_ada_aftermath_reflects_paid_memory() -> void:
 	var keep := GameState.new()
 	var r := DialogueRunner.new(db, keep)
 	assert_true(r.start("slice_ada_aftermath"))
+	r.advance()  # 死者名單那句
 	assert_eq(r.visible_choices.size(), 2, "記得父親：可以答，也可以反問")
 	var paid := GameState.new()
 	paid.pay_memory("arch_father_last_talk")
 	var r2 := DialogueRunner.new(db, paid)
 	assert_true(r2.start("slice_ada_aftermath"))
+	r2.advance()
 	assert_eq(r2.visible_choices.size(), 1, "付了石拱的記憶：只剩「……真的不準？」")
 	assert_eq(str(r2.visible_choices[0]["text"]), "DLG_AFTER_C_ASK")
+
+
+## 收束的死者名單：依救出人數與車隊傷者換台詞（text_if，第一個成立的）。
+func test_ada_death_toll_reflects_rescue_and_convoy() -> void:
+	var db: DialogueDB = DialogueDB.load_default()
+	var cases: Array = [
+		[3, 1, "DLG_AFTER_DEAD_31"],
+		[4, 0, "DLG_AFTER_DEAD_29"],
+		[4, 1, "DLG_AFTER_DEAD_30"],
+		[3, 3, "DLG_AFTER_DEAD_33"],
+		[4, 4, "DLG_AFTER_DEAD_33"],
+	]
+	for c: Array in cases:
+		var st := GameState.new()
+		st.set_flag("slice.rescued_count", c[0])
+		st.set_flag("slice.convoy_injured", c[1])
+		var r := DialogueRunner.new(db, st)
+		var seen: Array[String] = []
+		r.line_shown.connect(func(_sp: String, text: String) -> void: seen.append(text))
+		assert_true(r.start("slice_ada_aftermath"))
+		assert_eq(r.current_text(), str(c[2]), "救出 %d、傷者 %d" % [c[0], c[1]])
+		assert_eq(seen, [str(c[2])] as Array[String], "line_shown 也是換過的台詞")
+
+
+func test_text_if_validation() -> void:
+	var bad: PackedStringArray = DialogueDB.validate_dialogue({"id": "x", "start": "a", "nodes": {
+		"a": {"speaker": "S", "text": "T", "text_if": [{"text": "U"}]}}})
+	assert_false(bad.is_empty(), "text_if 缺 if 要報錯")
+	var ok: PackedStringArray = DialogueDB.validate_dialogue({"id": "x", "start": "a", "nodes": {
+		"a": {"speaker": "S", "text": "T", "text_if": [{"if": {"flag": "f"}, "text": "U"}]}}})
+	assert_eq(ok, PackedStringArray())
+

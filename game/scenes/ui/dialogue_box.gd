@@ -54,7 +54,7 @@ func attach(r: DialogueRunner) -> void:
 	r.finished.connect(_on_finished)
 	_panel.show()
 	var n: Dictionary = r.current()
-	_on_line(str(n.get("speaker", "")), str(n.get("text", "")))
+	_on_line(str(n.get("speaker", "")), r.current_text())
 	if not r.visible_choices.is_empty():
 		_on_choices(r.visible_choices)
 

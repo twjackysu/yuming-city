@@ -39,6 +39,19 @@ func current() -> Dictionary:
 	return db.node(dialogue_id, node_id) if is_running() else {}
 
 
+## 目前這句的翻譯 key：text_if 裡第一個條件成立的，否則 text。
+func current_text() -> String:
+	return text_for(current(), state)
+
+
+static func text_for(n: Dictionary, st: GameState) -> String:
+	for v: Variant in (n.get("text_if", []) as Array):
+		var d: Dictionary = v as Dictionary
+		if StoryLogic.check(d["if"] as Dictionary, st):
+			return str(d["text"])
+	return str(n.get("text", ""))
+
+
 ## 台詞看完（沒有選項時）往下走；有選項時要用 choose()。回傳是否還在對話中。
 func advance() -> bool:
 	if not is_running():
@@ -87,7 +100,7 @@ func _enter(p_node_id: String) -> void:
 		index += 1
 		if not ch.has("if") or StoryLogic.check(ch["if"] as Dictionary, state):
 			visible_choices.append(ch)
-	line_shown.emit(str(n["speaker"]), str(n["text"]))
+	line_shown.emit(str(n["speaker"]), text_for(n, state))
 	if not visible_choices.is_empty():
 		choices_shown.emit(visible_choices)
 

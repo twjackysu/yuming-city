@@ -9,6 +9,8 @@ extends RefCounted
 ##     "ask":   {"speaker": "SPK_...", "text": "DLG_...", "choices": [
 ##                {"text": "DLG_...", "next": "buy", "if": {...條件}, "do": {...效果}}]},
 ##     "bye":   {"speaker": "SPK_...", "text": "DLG_..."}          ← 沒有 next／choices＝結束
+##     "dead":  {"speaker": "SPK_...", "text": "DLG_預設", "text_if": [{"if": {...條件}, "text": "DLG_..."}]}
+##              ← 依狀態換台詞（第一個成立的），流程不變
 ##   }
 ## }
 ## next 與 choices 不能同時存在；所有 next 都要指向存在的節點；每個節點都要能從 start 走到。
@@ -77,6 +79,8 @@ func translation_keys() -> PackedStringArray:
 			var n: Dictionary = nodes[nid] as Dictionary
 			out.append(str(n["speaker"]))
 			out.append(str(n["text"]))
+			for v: Variant in (n.get("text_if", []) as Array):
+				out.append(str((v as Dictionary)["text"]))
 			for c: Variant in (n.get("choices", []) as Array):
 				out.append(str((c as Dictionary)["text"]))
 	return out
@@ -103,6 +107,17 @@ static func validate_dialogue(d: Dictionary) -> PackedStringArray:
 		for key: String in ["speaker", "text"]:
 			if str(n.get(key, "")) == "":
 				out.append("節點 %s 缺少 %s" % [nid, key])
+		if n.has("text_if"):
+			if not n["text_if"] is Array:
+				out.append("節點 %s 的 text_if 必須是陣列" % nid)
+			else:
+				for v: Variant in (n["text_if"] as Array):
+					if not v is Dictionary or str((v as Dictionary).get("text", "")) == "" or not (v as Dictionary).has("if"):
+						out.append("節點 %s 的 text_if 每項都要有 if 與 text" % nid)
+						continue
+					var te: String = StoryLogic.validate_condition((v as Dictionary)["if"])
+					if te != "":
+						out.append("節點 %s 的 text_if：%s" % [nid, te])
 		if n.has("next") and n.has("choices"):
 			out.append("節點 %s 不能同時有 next 與 choices" % nid)
 		if n.has("next") and not nodes.has(str(n["next"])):
