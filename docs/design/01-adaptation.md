@@ -11,18 +11,20 @@
 
 ## 名詞與英文名（暫定）
 
+> 玩家畫面上的用詞以 [`06-terminology.md`](06-terminology.md) 為準（D-035）：能力、職業、技能用白話（九息 → 重現、弔鐘人 → 敲鐘人、薪火劍 → 燃燒劍），下表是原作名與設計文件用的稱呼。
+
 | 原作 | 英文 | 說明 |
 |---|---|---|
 | 餘命城 | Yuming City | 作品名 |
 | 霜橋鎮 | Frostbridge | 序章舞台 |
 | 諾恩 | Noen | 主角；前世名「陸行舟」不翻成英文名，以 Lu Xingzhou 保留 |
-| 席菈 | Sheila | 王室巡界隊員，女主角 |
+| 席菈 | Sheila | 王室巡邏隊員（原作：巡界隊），女主角 |
 | 艾妲 | Ada | 梨販的女兒 |
-| 弔鐘人 | Bellmourner | 主角職業 |
-| 九息 | Nine Breaths | 能力名 |
+| 弔鐘人 | Bell-Ringer | 主角職業；畫面上寫「敲鐘人」 |
+| 九息 | Restore | 能力名；畫面上寫「重現」（9 秒） |
 | 灰巡者 | Ashwalker | 一般敵人 |
 | 送葬者 | Undertaker | 精英敵人 |
-| 薪火劍 | Kindling Blade | 席菈的技能 |
+| 薪火劍 | Burning Blade | 席菈的技能；畫面上寫「燃燒劍」 |
 | 《王冠餘燼》 | *Crown Embers* | 諾恩前世玩的遊戲（虛構） |
 
 英文名在 FOR_JACKY 徵求意見，沒回覆就照這張表。
