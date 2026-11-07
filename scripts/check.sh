@@ -25,6 +25,10 @@ if [[ -x scripts/gen-assets.sh ]]; then
 fi
 
 echo "== import"
+# 乾淨 clone 第一次 import 時，翻譯 CSV 產生的 .translation 還不存在，編輯器載入專案設定會先報
+# 「Cannot open file *.translation」。所以第一次只負責產生匯入結果，第二次才檢查錯誤。
+"$GODOT" --headless --path game --import > "$LOG_DIR/import-first.log" 2>&1 || {
+  cat "$LOG_DIR/import-first.log"; echo "import 失敗" >&2; exit 1; }
 "$GODOT" --headless --path game --import > "$LOG_DIR/import.log" 2>&1 || {
   cat "$LOG_DIR/import.log"; echo "import 失敗" >&2; exit 1; }
 if grep -E "^(ERROR|SCRIPT ERROR|USER ERROR)" "$LOG_DIR/import.log"; then

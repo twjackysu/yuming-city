@@ -32,13 +32,15 @@ jobs:
             ~/.local/share/godot/export_templates
           key: godot-${{ runner.os }}-${{ hashFiles('scripts/get-godot.sh') }}
 
-      - name: 設定 Python（程序生成素材）
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Import、測試、匯出
         run: scripts/check.sh --export
+
+      - name: 截圖（軟體 Vulkan）
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
+          scripts/screenshot.sh build/title.png 30
 
       - name: 打包
         run: |
@@ -53,7 +55,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: yuming-city-${{ env.SHORT_SHA }}
-          path: build/*.zip
+          path: |
+            build/*.zip
+            build/title.png
+          if-no-files-found: warn
           retention-days: 14
 
       - name: 更新 prerelease「latest」
@@ -61,8 +66,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          FILES=(build/*.zip)
+          [[ -s build/title.png ]] && FILES+=(build/title.png)
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest build/*.zip \
+          gh release create latest "${FILES[@]}" \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "最新開發版 / Latest dev build (${SHORT_SHA})" \
