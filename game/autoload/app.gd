@@ -5,6 +5,10 @@ extends Node
 ##   godot --path game -- --screenshot=/tmp/shot.png --frames=60
 ##   → 跑 60 幀後把畫面存成 PNG 並結束（給 xvfb-run 畫面驗證用）。
 
+## 最後使用的輸入裝置（InputGlyphs.Device）；切換時發 device_changed，提示文字跟著換鍵名。
+signal device_changed(device: int)
+
+var last_device: int = InputGlyphs.Device.KBM
 var screenshot_path: String = ""
 var screenshot_frames: int = 60
 var _frame: int = 0
@@ -17,7 +21,22 @@ func _ready() -> void:
 	var args: Dictionary = parse_user_args(OS.get_cmdline_user_args())
 	screenshot_path = str(args.get("screenshot", ""))
 	screenshot_frames = int(args.get("frames", 60))
+	if str(args.get("device", "")) == "pad":
+		last_device = InputGlyphs.Device.PAD
 	set_process(screenshot_path != "")
+
+
+func _input(event: InputEvent) -> void:
+	var d: int = InputGlyphs.device_of_event(event)
+	if d >= 0:
+		set_device(d)
+
+
+func set_device(device: int) -> void:
+	if device == last_device:
+		return
+	last_device = device
+	device_changed.emit(device)
 
 
 static func parse_user_args(argv: PackedStringArray) -> Dictionary:

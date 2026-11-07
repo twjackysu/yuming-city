@@ -21,9 +21,12 @@ func _ready() -> void:
 	_settings_button.pressed.connect(_on_settings)
 	_quit.pressed.connect(func() -> void: get_tree().quit())
 	_focus_first.call_deferred()
-	# 截圖用：`-- --open=settings`
-	if str(App.parse_user_args(OS.get_cmdline_user_args()).get("open", "")) == "settings":
+	# 截圖用：`-- --open=settings`、`-- --open=controls`
+	var open_arg: String = str(App.parse_user_args(OS.get_cmdline_user_args()).get("open", ""))
+	if open_arg == "settings" or open_arg == "controls":
 		_on_settings.call_deferred()
+	if open_arg == "controls":
+		_open_controls.call_deferred()
 
 
 func _focus_first() -> void:
@@ -48,6 +51,11 @@ func _on_settings() -> void:
 		_settings_menu.closed.connect(_on_settings_closed)
 	_menu.hide()
 	_settings_menu.open()
+
+
+func _open_controls() -> void:
+	if _settings_menu != null:
+		_settings_menu.open_controls()
 
 
 func _on_settings_closed() -> void:

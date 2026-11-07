@@ -1,5 +1,5 @@
 extends Node
-## 玩家設定：語言、音量、字幕、畫質、顯示、鏡頭晃動。存在 user://settings.cfg，與存檔分開。
+## 玩家設定：語言、音量、字幕、畫質、顯示、鏡頭晃動、按鍵。存在 user://settings.cfg，與存檔分開。
 ## UI 改值後呼叫 apply()（即時生效），關閉選單時 save_settings()。
 
 signal changed
@@ -21,6 +21,8 @@ var quality: QualityPreset.Level = QualityPreset.DEFAULT_LEVEL
 var fullscreen: bool = false
 var vsync: bool = true
 var reduce_camera_shake: bool = false
+## 目前的按鍵綁定（格式見 InputSetup）；存檔時只寫跟預設不同的動作到 [input]
+var input_bindings: Dictionary = InputSetup.defaults()
 
 ## 舊欄位相容（第 1 輪的測試與程式用 master_volume）
 var master_volume: float:
@@ -129,6 +131,28 @@ func apply() -> void:
 	TranslationServer.set_locale(locale)
 	_apply_audio()
 	_apply_video()
+	InputSetup.apply_bindings(input_bindings)
+
+
+## 重新綁定一個動作的一個欄位（衝突時交換）。綁不了回傳 false。
+func set_binding(action: String, slot: int, spec: Vector2i) -> bool:
+	var next: Dictionary = InputSetup.rebind(input_bindings, action, slot, spec)
+	if next == input_bindings:
+		return false
+	input_bindings = next
+	InputSetup.apply_bindings(input_bindings)
+	changed.emit()
+	return true
+
+
+func binding(action: String, slot: int) -> Vector2i:
+	return InputSetup.slot_of(input_bindings, action, slot)
+
+
+func reset_bindings() -> void:
+	input_bindings = InputSetup.defaults()
+	InputSetup.apply_bindings(input_bindings)
+	changed.emit()
 
 
 func _apply_audio() -> void:
@@ -165,6 +189,7 @@ func load_settings(path: String = _config_path) -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
 		locale = pick_default_locale(OS.get_locale())
+		input_bindings = InputSetup.defaults()
 		return
 	locale = normalize_locale(str(cfg.get_value("general", "locale", pick_default_locale(OS.get_locale()))))
 	subtitles_enabled = bool(cfg.get_value("general", "subtitles", true))
@@ -175,6 +200,11 @@ func load_settings(path: String = _config_path) -> void:
 	quality = QualityPreset.clamp_level(int(cfg.get_value("video", "quality", QualityPreset.DEFAULT_LEVEL)))
 	fullscreen = bool(cfg.get_value("video", "fullscreen", false))
 	vsync = bool(cfg.get_value("video", "vsync", true))
+	var saved: Dictionary = {}
+	if cfg.has_section("input"):
+		for action: String in cfg.get_section_keys("input"):
+			saved[action] = cfg.get_value("input", action, [])
+	input_bindings = InputSetup.from_saved(saved)
 
 
 func save_settings(path: String = _config_path) -> Error:
@@ -187,4 +217,7 @@ func save_settings(path: String = _config_path) -> Error:
 	cfg.set_value("video", "quality", int(quality))
 	cfg.set_value("video", "fullscreen", fullscreen)
 	cfg.set_value("video", "vsync", vsync)
+	var diff: Dictionary = InputSetup.diff_from_defaults(input_bindings)
+	for action: String in diff:
+		cfg.set_value("input", action, diff[action])
 	return cfg.save(path)

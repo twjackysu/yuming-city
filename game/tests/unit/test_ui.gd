@@ -44,7 +44,7 @@ func _assert_texts_are_keys(root: Node, where: String) -> int:
 			text = (n as Button).text
 		else:
 			continue
-		if text == "":
+		if text == "" or n.has_meta("glyph"):
 			continue
 		count += 1
 		assert_true(re.search(text) != null, "%s 的 %s 寫死了文字：%s" % [where, n.name, text])
@@ -157,6 +157,17 @@ func test_dialogue_box_reveal_and_choices() -> void:
 	box.press_continue()
 	assert_eq((box.find_child("Text", true, false) as Label).text, "DLG_PEAR_002", "第二次按：下一句")
 	_assert_texts_are_keys(box, "對話框")
+	var app: Node = tree.root.get_node("App")
+	var device_before: int = int(app.get("last_device"))
+	TranslationServer.set_locale("en")
+	app.call("set_device", InputGlyphs.Device.KBM)
+	box.refresh_hint()
+	assert_true(box.hint_text().contains("[F]"), "鍵鼠提示 [F]：" + box.hint_text())
+	app.call("set_device", InputGlyphs.Device.PAD)
+	assert_true(box.hint_text().contains("[A]"), "切到手把自動換成 [A]：" + box.hint_text())
+	assert_false(box.hint_text().contains("{key}"), "沒有未替換的佔位符")
+	app.call("set_device", device_before)
+	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
 	(game.get("dialogue") as DialogueRunner).skip_to_choice()
 	var choices: Node = box.find_child("Choices", true, false)
 	assert_eq(choices.get_child_count(), 3, "選項按鈕")
@@ -172,3 +183,52 @@ func test_dialogue_box_reveal_and_choices() -> void:
 	assert_false(box.is_open())
 	box.queue_free()
 	await tree.process_frame
+
+
+func test_controls_menu_rebind_cancel_reset() -> void:
+	var settings: Node = tree.root.get_node("Settings")
+	var real_path: String = str(settings.get("_config_path"))
+	settings.call("load_settings", _dir + "_controls.cfg")
+	var menu: SettingsMenu = (load("res://scenes/ui/settings_menu.tscn") as PackedScene).instantiate() as SettingsMenu
+	tree.root.add_child(menu)
+	menu.open()
+	(menu.control_of("Controls") as Button).pressed.emit()
+	assert_true(menu.is_controls_open(), "從設定開啟按鍵設定")
+	var controls: ControlsMenu = menu.find_child("ControlsMenu", true, false) as ControlsMenu
+	await tree.process_frame
+	assert_true(_assert_texts_are_keys(controls, "按鍵設定") >= 18, "每個動作都有名稱")
+	TranslationServer.set_locale("en")
+	controls.cancel_capture()
+	var cell: Button = controls.cell("dodge", InputSetup.SLOT_KBM)
+	cell.pressed.emit()
+	assert_true(controls.is_waiting(), "按下格子開始等待")
+	var k := InputEventKey.new()
+	k.physical_keycode = KEY_C
+	k.pressed = true
+	assert_true(controls.feed_capture(k), "同一幀的按鍵被吃掉")
+	assert_eq(settings.call("binding", "dodge", 0), Vector2i(0, KEY_SPACE), "還沒開始收：不改")
+	await tree.process_frame
+	assert_true(controls.feed_capture(k), "收到新鍵")
+	assert_false(controls.is_waiting())
+	assert_eq(settings.call("binding", "dodge", 0), Vector2i(0, KEY_C), "閃避改成 C")
+	assert_eq(cell.text, "C", "格子顯示新鍵名")
+	# Esc 取消
+	controls.cell("interact", InputSetup.SLOT_KBM).pressed.emit()
+	await tree.process_frame
+	var esc := InputEventKey.new()
+	esc.physical_keycode = KEY_ESCAPE
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	assert_true(controls.feed_capture(esc), "Esc 被吃掉")
+	assert_false(controls.is_waiting(), "Esc 取消等待")
+	assert_eq(settings.call("binding", "interact", 0), Vector2i(0, KEY_F), "取消不改")
+	assert_true(controls.cell("pause", InputSetup.SLOT_KBM).disabled, "暫停固定")
+	assert_true(controls.cell("move_left", InputSetup.SLOT_PAD).disabled, "移動搖桿固定")
+	(controls.find_child("Reset", true, false) as Button).pressed.emit()
+	assert_eq(settings.call("binding", "dodge", 0), Vector2i(0, KEY_SPACE), "恢復預設")
+	menu.close()
+	assert_false(menu.is_controls_open(), "關設定一起關按鍵設定")
+	menu.queue_free()
+	await tree.process_frame
+	settings.call("load_settings", real_path)
+	settings.call("apply")

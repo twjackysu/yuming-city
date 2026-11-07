@@ -23,6 +23,28 @@ func _ready() -> void:
 	_build()
 	_panel.hide()
 	Game.dialogue_started.connect(attach)
+	App.device_changed.connect(_on_device_changed)
+	Settings.changed.connect(refresh_hint)
+	refresh_hint()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and _hint != null:
+		refresh_hint()
+
+
+## 提示列顯示目前裝置的互動鍵（[F]／[A]），重新綁定後也跟著換。
+func refresh_hint() -> void:
+	var key: String = InputGlyphs.label_for_action("interact", int(App.last_device))
+	_hint.text = tr("HUD_DLG_HINT").format({"key": key})
+
+
+func _on_device_changed(_device: int) -> void:
+	refresh_hint()
+
+
+func hint_text() -> String:
+	return _hint.text
 
 
 func attach(r: DialogueRunner) -> void:
@@ -115,8 +137,12 @@ func _on_choices(choices: Array[Dictionary]) -> void:
 		b.pressed.connect(func() -> void: _choose(index))
 		_choices.add_child(b)
 		i += 1
-	if _choices.get_child_count() > 0:
-		(_choices.get_child(0) as Button).grab_focus.call_deferred()
+	_focus_first_choice.call_deferred()
+
+
+func _focus_first_choice() -> void:
+	if _choices.get_child_count() > 0 and (_choices.get_child(0) as Control).is_inside_tree():
+		(_choices.get_child(0) as Button).grab_focus()
 
 
 func _choose(index: int) -> void:
@@ -180,7 +206,8 @@ func _build() -> void:
 	box.add_child(_choices)
 	_hint = Label.new()
 	_hint.name = "Hint"
-	_hint.text = "HUD_DLG_HINT"
+	_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_hint.set_meta("glyph", true)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hint.add_theme_font_size_override("font_size", 15)
 	_hint.add_theme_color_override("font_color", Color(0.6, 0.62, 0.66, 0.8))

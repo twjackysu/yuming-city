@@ -30,4 +30,60 @@ OPT_OFF,Off,關
 HUD_OBJECTIVE,OBJECTIVE,目標
 HUD_SAVED,Saved,已存檔
 HUD_SAVE_FAILED,Save failed,存檔失敗
-HUD_DLG_HINT,Interact: continue · Hold: skip,互動鍵：繼續・按住：跳過
+HUD_DLG_HINT,{key} Continue · Hold {key} Skip,{key} 繼續・按住 {key} 跳過
+HUD_CUTSCENE_SKIP,Hold {key} to skip,按住 {key} 跳過
+SET_CONTROLS,Controls,按鍵設定
+SET_CONTROLS_OPEN,Customize ›,自訂 ›
+SET_CONTROLS_KBM,Keyboard / Mouse,鍵盤／滑鼠
+SET_CONTROLS_PAD,Controller,手把
+SET_CONTROLS_RESET,Restore Defaults,恢復預設
+SET_CONTROLS_WAIT,Press a key…,請按下按鍵…
+SET_CONTROLS_FIXED,Fixed,固定
+ACT_MOVE_FORWARD,Move Forward,前進
+ACT_MOVE_BACK,Move Back,後退
+ACT_MOVE_LEFT,Move Left,左移
+ACT_MOVE_RIGHT,Move Right,右移
+ACT_SPRINT,Sprint,奔跑
+ACT_DODGE,Dodge,閃避
+ACT_ATTACK,Attack,攻擊
+ACT_LOCK_ON,Lock On,鎖定
+ACT_INSIGHT,Insight,看穿
+ACT_COMMAND_WEAKPOINT,Command: Strike Weak Point,指令：打弱點
+ACT_COMMAND_EVADE,Command: Evade,指令：閃開
+ACT_COMMAND_GUARD,Command: Hold,指令：守住
+ACT_INTERACT,Interact,互動
+ACT_NINE_BREATH,Nine Breaths,九息
+ACT_JOURNAL,Journal,日記
+ACT_PAUSE,Pause,暫停
+GLYPH_UNKNOWN,Unbound,未設定
+GLYPH_MOUSE_LEFT,LMB,滑鼠左鍵
+GLYPH_MOUSE_RIGHT,RMB,滑鼠右鍵
+GLYPH_MOUSE_MIDDLE,MMB,滑鼠中鍵
+GLYPH_MOUSE_X1,Mouse 4,滑鼠側鍵 1
+GLYPH_MOUSE_X2,Mouse 5,滑鼠側鍵 2
+GLYPH_KEY_SPACE,Space,空白鍵
+GLYPH_KEY_SHIFT,Shift,Shift
+GLYPH_KEY_CTRL,Ctrl,Ctrl
+GLYPH_KEY_ALT,Alt,Alt
+GLYPH_KEY_TAB,Tab,Tab
+GLYPH_KEY_ESC,Esc,Esc
+GLYPH_KEY_ENTER,Enter,Enter
+GLYPH_KEY_BACKSPACE,Backspace,Backspace
+GLYPH_PAD_A,A,A
+GLYPH_PAD_B,B,B
+GLYPH_PAD_X,X,X
+GLYPH_PAD_Y,Y,Y
+GLYPH_PAD_LB,LB,LB
+GLYPH_PAD_RB,RB,RB
+GLYPH_PAD_LT,LT,LT
+GLYPH_PAD_RT,RT,RT
+GLYPH_PAD_LS,L3,L3
+GLYPH_PAD_RS,R3,R3
+GLYPH_PAD_VIEW,View,View
+GLYPH_PAD_MENU,Menu,Menu
+GLYPH_PAD_UP,D-pad ↑,十字鍵 ↑
+GLYPH_PAD_DOWN,D-pad ↓,十字鍵 ↓
+GLYPH_PAD_LEFT,D-pad ←,十字鍵 ←
+GLYPH_PAD_RIGHT,D-pad →,十字鍵 →
+GLYPH_PAD_LSTICK,Left Stick,左搖桿
+GLYPH_PAD_RSTICK,Right Stick,右搖桿

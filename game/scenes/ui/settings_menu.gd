@@ -19,6 +19,7 @@ const LOCALE_KEYS: Dictionary = {"en": "LANG_EN", "zh_TW": "LANG_ZH_TW"}
 var _rows: VBoxContainer
 var _first_focus: Control
 var _back: Button
+var _controls: ControlsMenu
 
 
 func _ready() -> void:
@@ -38,13 +39,15 @@ func open() -> void:
 func close() -> void:
 	if not visible:
 		return
+	if is_controls_open():
+		_controls.close()
 	Settings.save_settings()
 	hide()
 	closed.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not visible:
+	if not visible or is_controls_open():
 		return
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause"):
 		close()
@@ -106,6 +109,7 @@ func _build() -> void:
 	_add_toggle("SET_FULLSCREEN", "Fullscreen", "fullscreen")
 	_add_toggle("SET_VSYNC", "Vsync", "vsync")
 	_add_toggle("SET_REDUCE_SHAKE", "ReduceShake", "reduce_camera_shake")
+	_add_controls_row()
 
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 12)
@@ -118,6 +122,41 @@ func _build() -> void:
 	_back.custom_minimum_size = Vector2(200, 48)
 	_back.pressed.connect(close)
 	box.add_child(_back)
+
+	_controls = ControlsMenu.new()
+	_controls.name = "ControlsMenu"
+	add_child(_controls)
+	_controls.closed.connect(_on_controls_closed)
+
+
+func is_controls_open() -> bool:
+	return _controls != null and _controls.visible
+
+
+func open_controls() -> void:
+	_controls.open()
+
+
+func _on_controls_closed() -> void:
+	_focus_controls_row.call_deferred()
+
+
+func _focus_controls_row() -> void:
+	var b: Control = control_of("Controls")
+	if visible and b != null and b.is_inside_tree():
+		b.grab_focus()
+
+
+func _add_controls_row() -> void:
+	var row: HBoxContainer = _row("SET_CONTROLS", "Controls")
+	var button := Button.new()
+	button.name = "Value"
+	button.text = "SET_CONTROLS_OPEN"
+	button.flat = true
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(CONTROL_WIDTH, 44)
+	button.pressed.connect(open_controls)
+	row.add_child(button)
 
 
 func _row(label_key: String, row_name: String) -> HBoxContainer:
