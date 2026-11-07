@@ -73,6 +73,15 @@ var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
 
+func _on_dialogue_ended_splint(_dialogue_id: String) -> void:
+	_update_splint()
+
+
+func _update_splint() -> void:
+	if Game.session != null and is_instance_valid(_puppet):
+		_puppet.set_splint(bool(Game.session.state.get_flag("slice.sheila_talked", false)))
+
+
 func _ready() -> void:
 	_rig.top_level = true
 	add_to_group("player")
@@ -81,6 +90,10 @@ func _ready() -> void:
 	_puppet.name = "Puppet"
 	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
+	# 席菈幫他上了夾板之後（slice.sheila_talked），右前臂一直綁著
+	_update_splint()
+	# 用方法連線：玩家被釋放時自動斷開（lambda 會留在 autoload 的訊號上）
+	Game.dialogue_ended.connect(_on_dialogue_ended_splint)
 	# 提燈掛在左手
 	_lantern.reparent(_puppet.hand("L"), false)
 	_lantern.position = Vector3(0, -0.12, 0)

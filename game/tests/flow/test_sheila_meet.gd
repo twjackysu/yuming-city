@@ -67,8 +67,11 @@ func _meet(choice: int) -> Dictionary:
 	for i: int in 3:
 		await tree.physics_frame
 	assert_true(tree.root.get_node("Game").call("is_in_dialogue"), "走近席菈 → 對話")
+	var puppet: Puppet = player.find_child("Puppet", true, false) as Puppet
+	assert_false(puppet.has_splint(), "上夾板之前右手沒有夾板")
 	await _run_dialogue(level, choice)
 	assert_eq(s.state.get_flag("slice.sheila_talked"), true)
+	assert_true(puppet.has_splint(), "說完話：右前臂綁上夾板")
 	var walker: Ashwalker = level.get_node_or_null("Ashwalker") as Ashwalker
 	assert_not_null(walker, "說完話 → 灰巡者從裂縫爬出來")
 	assert_eq(s.state.get_flag("tutorial.insight_shown"), true, "第一次遇到灰巡者：看穿／打弱點教學")
