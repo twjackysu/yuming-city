@@ -18,7 +18,7 @@ game/
 scripts/                 # get-godot、check、screenshot、gen-assets
 ```
 
-## 現況（11/8 第 6 輪結束）
+## 現況（11/8 第 7 輪結束）
 
 | 模組 | 位置 | 職責 |
 |---|---|---|
@@ -35,7 +35,11 @@ scripts/                 # get-godot、check、screenshot、gen-assets
 | GameSession | `src/core/game_session.gd` | 一局遊戲：狀態＋任務＋自動存檔＋死亡重試 |
 | FrameStats／BenchmarkRun | `src/core/` | 幀時間統計、benchmark 計時與報告 |
 | PlayerController | `scenes/actors/player/` | 第三人稱移動、閃避、越肩鏡頭 |
-| Sandbox／Benchmark | `scenes/dev/`、`scenes/bench/` | 冬夜街道沙盒；固定鏡頭路徑 benchmark |
+| StoryLevel／Frostbridge／Sandbox | `scenes/levels/`、`scenes/dev/` | 切片關卡共用劇情邏輯（觸發區、敲鐘事件、北街陷落、送葬者戰）；霜橋鎮白盒（正式關卡，所有檢查點，各段落觸發與檢查點出生位置）；沙盒留給開發（D-032） |
+| StaticBatch／FrostbridgeLook | `src/world/` | 靜態幾何依材質合併成少數 MeshInstance＋一個 StaticBody；共用冬夜環境與色盤材質（D-032） |
+| Journal／JournalView | `src/core/journal.gd`、`data/journal/`、`scenes/ui/journal_view.gd` | 記憶條目；付出後內文變剪掉的空白、保留殘留；Tab 打開（暫停）、九息預覽時一角顯示代價卡（D-033） |
+| RescueSite | `scenes/world/rescue_site.gd` | 北街受困者：按住互動鍵搬瓦礫、`slice.rescued_count`、讀檔不重複（D-034） |
+| Benchmark | `scenes/bench/` | 霜橋鎮固定鏡頭路徑（廣場 → 主街 → 北街 → 鐘樓） |
 | Boot | `scenes/boot/` | 標題畫面（霧 shader）；新遊戲／繼續／設定 |
 | QualityPreset | `src/core/quality_preset.gd` | 畫質三級：效果開關、MSAA、體積霧格點（D-019） |
 | DialogueDB／DialogueRunner | `src/core/` | 對話資料驗證、台詞與選項、效果（D-018）；`Game.start_dialogue()` 接任務 |
