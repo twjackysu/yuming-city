@@ -16,6 +16,8 @@ var _died: Label
 var _saved_tween: Tween
 var _objective_tween: Tween
 var _banner: Label
+## 戰鬥 HUD（生命、體力、指令）
+var combat: CombatHud
 var _banner_tween: Tween
 
 
@@ -101,6 +103,8 @@ func _build() -> void:
 	anchor.add_child(_banner)
 	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 110)
 	_banner.modulate.a = 0.0
+	combat = CombatHud.new()
+	add_child(combat)
 
 
 func _set_objective(key: String, animate: bool) -> void:

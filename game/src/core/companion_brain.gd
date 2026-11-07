@@ -19,6 +19,9 @@ const ACT_COUNTER: String = "counter"
 
 var mode: Mode = Mode.FOLLOW
 var stamina: float = 100.0
+## 倒下後經過的秒數；revive_window 內諾恩走近按互動鍵可以拉起，超過就等戰鬥結束
+var down_elapsed: float = 0.0
+var revive_window: float = 8.0
 var max_stamina: float = 100.0
 var stamina_regen: float = 25.0
 var dodge_cost: float = 20.0
@@ -46,6 +49,7 @@ func configure(difficulty: String = "standard") -> CompanionBrain:
 	max_stamina = CombatTuning.num("sheila.stamina", 100.0)
 	stamina = max_stamina
 	stamina_regen = CombatTuning.num("sheila.stamina_regen", 25.0)
+	revive_window = CombatTuning.num("sheila.revive_window", 8.0)
 	dodge_cost = CombatTuning.num("sheila.dodge_cost", 20.0)
 	slash_cost = CombatTuning.num("sheila.slash_cost", 10.0)
 	slash_range = CombatTuning.num("sheila.slash_range", 1.8)
@@ -67,8 +71,19 @@ func cooldown_left(cmd: String) -> float:
 	return float(_cooldowns.get(cmd, 0.0))
 
 
+## 倒下而且還在可拉起的時間內。
+func can_be_revived() -> bool:
+	return mode == Mode.DOWN and down_elapsed <= revive_window
+
+
+## 拉起剩下的秒數（倒下中；超過時間＝0）。
+func revive_time_left() -> float:
+	return maxf(revive_window - down_elapsed, 0.0) if mode == Mode.DOWN else 0.0
+
+
 func set_down(down: bool) -> void:
 	mode = Mode.DOWN if down else Mode.FOLLOW
+	down_elapsed = 0.0
 	if down:
 		guard_active = false
 		_counter_ready = false
@@ -135,6 +150,7 @@ func tick(delta: float, leader_dist: float, target: EnemyBrain, target_dist: flo
 	var out: PackedStringArray = _queued
 	_queued = []
 	if mode == Mode.DOWN:
+		down_elapsed += delta
 		return out
 	var alive: bool = target != null and target.state != EnemyBrain.State.DEAD
 	if guard_active:

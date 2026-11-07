@@ -53,6 +53,8 @@ func _physics_process(delta: float) -> void:
 	if leader == null or not is_instance_valid(leader):
 		leader = _first_in_group("player")
 	target = _pick_target()
+	if brain.mode == CompanionBrain.Mode.DOWN:
+		_down_tick()
 	if not Game.is_player_locked():
 		for action: String in COMMAND_ACTIONS:
 			if Input.is_action_just_pressed(action):
@@ -241,6 +243,48 @@ func _first_in_group(group: String) -> Node3D:
 	for n: Node in get_tree().get_nodes_in_group(group):
 		return n as Node3D
 	return null
+
+
+## 倒下中：時間內諾恩走近按互動鍵拉起；超過時間，等附近沒有敵人（戰鬥結束）自己爬起來。
+func _down_tick() -> void:
+	var near: bool = leader != null and _flat_dist(leader) <= CombatTuning.num("sheila.revive_range", 1.8)
+	if brain.can_be_revived():
+		if near and not Game.is_player_locked():
+			_line.text = TranslationServer.translate("SHEILA_REVIVE_HINT").format({"key": InputGlyphs.label_for_action("interact", App.last_device)})
+			_line.visible = true
+			_line_left = 0.1
+			if Input.is_action_just_pressed("interact"):
+				revive()
+	elif not _enemies_near(20.0):
+		revive(CombatTuning.num("sheila.after_combat_hp", 0.25))
+
+
+## 拉起來（生命回到 hp_ratio）。回傳是否真的拉起（沒倒下就不算）。
+func revive(hp_ratio: float = -1.0) -> bool:
+	if brain.mode != CompanionBrain.Mode.DOWN:
+		return false
+	if hp_ratio < 0.0:
+		hp_ratio = CombatTuning.num("sheila.revive_hp", 0.4)
+	health.reset()
+	health.hp = health.max_hp * hp_ratio
+	brain.set_down(false)
+	var t := create_tween()
+	t.tween_property(_body, "rotation_degrees:z", 0.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	say("SHEILA_REVIVED")
+	return true
+
+
+## 諾恩是否在拉得到她的距離內、而且還來得及（HUD／提示用）。
+func revive_prompt_shown() -> bool:
+	return brain.can_be_revived() and leader != null and _flat_dist(leader) <= CombatTuning.num("sheila.revive_range", 1.8)
+
+
+func _enemies_near(radius: float) -> bool:
+	for n: Node in get_tree().get_nodes_in_group("enemies"):
+		var e: EnemyActor = n as EnemyActor
+		if e != null and e.brain.state != EnemyBrain.State.DEAD and e.global_position.distance_to(global_position) <= radius:
+			return true
+	return false
 
 
 func _on_died() -> void:

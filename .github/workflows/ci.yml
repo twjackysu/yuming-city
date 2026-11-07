@@ -51,6 +51,7 @@ jobs:
           scripts/screenshot.sh build/dialogue.png 150 --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
           scripts/screenshot.sh build/bell.png 120 --level=sandbox --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
           scripts/screenshot.sh build/combat.png 14 --level=sandbox --boss --insight --locale=zh_TW || true
+          scripts/screenshot.sh build/ninebreath.png 24 --level=sandbox --arch=restored --locale=zh_TW || true
 
       - name: 打包
         run: |
@@ -72,6 +73,7 @@ jobs:
             build/dialogue.png
             build/bell.png
             build/combat.png
+            build/ninebreath.png
           if-no-files-found: warn
           retention-days: 14
 
@@ -86,6 +88,7 @@ jobs:
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
           [[ -s build/bell.png ]] && FILES+=(build/bell.png)
           [[ -s build/combat.png ]] && FILES+=(build/combat.png)
+          [[ -s build/ninebreath.png ]] && FILES+=(build/ninebreath.png)
           # main 上已經有更新的程式 commit 時跳過（下一個 run 會發布），不刪舊版。
           # 這種情況下用 GITHUB_TOKEN 在舊 commit 建 tag，若 workflow 檔已改過會被 403 擋（run 42398212944、42402903825）。
           git fetch --quiet origin main

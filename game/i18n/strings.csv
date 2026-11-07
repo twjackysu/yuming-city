@@ -126,3 +126,10 @@ NB_BREATHS_LEFT,{0} / 9,九息　{0}
 FRAME_THROW_WARN,The Undertaker raises the iron frame — toward the cart!,送葬者舉起了鐵架——對準車隊！
 FRAME_THROW_ARCH,The arch takes the frame. It holds.,鐵架砸在石拱上。石拱撐住了。
 FRAME_THROW_KINDLING,Sheila's sword catches fire — she cuts the frame in two.,席菈的劍燒了起來——她把鐵架斬成兩截。
+SHEILA_REVIVE_HINT,{key} Pull Sheila up,{key} 拉起席菈
+SHEILA_REVIVED,Still breathing. Thanks.,還有氣。謝了。
+HUD_CMD_WEAKPOINT,Weak point,打弱點
+HUD_CMD_EVADE,Evade,閃開
+HUD_CMD_GUARD,Hold,守住
+HUD_SHEILA_DOWN,Sheila is down — {0}s to pull her up,席菈倒下——{0} 秒內拉起
+HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒下——戰鬥結束後會起來
