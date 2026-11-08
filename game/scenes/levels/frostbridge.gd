@@ -667,6 +667,7 @@ func _door_lantern(batch: StaticBatch, holder: Node3D, wall_pos: Vector3, face: 
 	batch.add_box_at(Vector3(0.02, 0.18, 0.02), out + Vector3(0, 2.5, 0), iron, false)
 	batch.add_box_at(Vector3(0.3, 0.05, 0.3), out + Vector3(0, 2.4, 0), iron, false)
 	batch.add_box_at(Vector3(0.2, 0.28, 0.2), out + Vector3(0, 2.23, 0), look.glow(FrostbridgeLook.LAMP, 3.2), false)
+	_cage_bars(batch, out + Vector3(0, 2.23, 0), 0.105, 0.3, iron)
 	batch.add_box_at(Vector3(0.24, 0.04, 0.24), out + Vector3(0, 2.07, 0), iron, false)
 	if light_count < 22:
 		var l := OmniLight3D.new()
@@ -724,6 +725,9 @@ func _build_well(pos: Vector3) -> void:
 	well_light.position = lamp_pos + Vector3(0, -0.05, 0.05)
 	add_child(well_light)
 	light_count += 1
+
+
+var street_lanterns: int = 0
 
 
 func _build_lamps() -> void:
@@ -804,10 +808,25 @@ func _probe(probe_name: String, y: float, z_from: float, z_to: float, half: floa
 	add_child(p)
 
 
+## 燈罩的鐵框：四個角各一根細鐵條（燈罩不再是一顆發光的方塊／球，D-080）。
+func _cage_bars(batch: StaticBatch, center: Vector3, half: float, height: float, iron: Material) -> void:
+	for c: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+		batch.add_box_at(Vector3(0.025, height, 0.025), center + Vector3(c.x * half, 0, c.y * half), iron, false)
+
+
+## 路燈：柱子頂上一盞方形燈籠（鐵底座、發光玻璃、四角鐵條、八角形尖頂＋一小片雪），D-080。
 func _lamp_post(pos: Vector3, shadows: bool) -> void:
-	_batch.add_box_at(Vector3(0.14, 3.2, 0.14), pos + Vector3(0, 1.6, 0), look.mat(FrostbridgeLook.ROOF))
-	_batch.add_box_at(Vector3(0.5, 0.08, 0.5), pos + Vector3(0, 3.45, 0), look.mat(FrostbridgeLook.ROOF), false)
-	_batch.add_sphere(0.16, pos + Vector3(0, 3.25, 0), look.glow(FrostbridgeLook.LAMP, 6.0))
+	var roof := look.mat(FrostbridgeLook.ROOF)
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)  # 跟門邊掛燈的鐵件同一個材質
+	_batch.add_box_at(Vector3(0.14, 3.2, 0.14), pos + Vector3(0, 1.6, 0), roof)
+	var c: Vector3 = pos + Vector3(0, 3.4, 0)
+	_batch.add_box_at(Vector3(0.3, 0.05, 0.3), c + Vector3(0, -0.2, 0), iron, false)
+	_batch.add_box_at(Vector3(0.24, 0.34, 0.24), c, look.glow(FrostbridgeLook.LAMP, 6.0), false)
+	_cage_bars(_batch, c, 0.125, 0.36, iron)
+	_batch.add_box_at(Vector3(0.32, 0.04, 0.32), c + Vector3(0, 0.19, 0), iron, false)
+	_batch.add_cylinder(0.02, 0.26, 0.2, c + Vector3(0, 0.31, 0), roof, false, 8)
+	_batch.add_cylinder(0.01, 0.2, 0.06, c + Vector3(0, 0.36, 0), look.snow(), false, 8)
+	street_lanterns += 1
 	var l := OmniLight3D.new()
 	l.light_color = FrostbridgeLook.LAMP
 	l.light_energy = 2.2

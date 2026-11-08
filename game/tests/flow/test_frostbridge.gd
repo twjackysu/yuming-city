@@ -131,6 +131,7 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true(int(level.get("door_count")) > 15, "每棟房子都有門（%d）" % int(level.get("door_count")))
 	# D-077：攤桌＋三個木箱用門的 shader（木箱模式），跟門合併在同一個 mesh；廣場中央石框＋鐘紋；井有燈
 	assert_eq(int(level.get("stall_crates")), 4, "攤桌＋三個疊著的木箱")
+	assert_eq(int(level.get("street_lanterns")), 10, "十盞路燈都是方形燈籠（D-080）")
 	assert_eq(int(level.get("plaza_ring_parts")), 7, "廣場石框：石縫、石緣、內圈鋪石、鐘紋四層")
 	var well_light: OmniLight3D = level.get("well_light") as OmniLight3D
 	assert_not_null(well_light, "井的木架上掛一盞小燈")
