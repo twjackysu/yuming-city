@@ -98,23 +98,28 @@ func _build() -> void:
 		handle.position = Vector3(x, 0.75, -1.5)
 		handle.material = wood
 		_cart.add_child(handle)
-	# 兩名傷者：躺著、蓋著布
+	# 兩名傷者：程序人偶仰躺（頭朝車把）、腿和身體蓋著布
 	var cloth: StandardMaterial3D = _mat(CLOTH)
-	var skin: StandardMaterial3D = _mat(Color(0.6, 0.5, 0.44))
 	for i: int in 2:
 		var x: float = -0.3 + 0.6 * float(i)
-		var body := CSGCylinder3D.new()
-		body.radius = 0.16
-		body.height = 1.4
-		body.rotation_degrees = Vector3(90, 0, 0)
-		body.position = Vector3(x, 0.82, 0.15)
-		body.material = cloth
-		_cart.add_child(body)
-		var head := CSGSphere3D.new()
-		head.radius = 0.13
-		head.position = Vector3(x, 0.84, -0.66)
-		head.material = skin
-		_cart.add_child(head)
+		var hurt := Puppet.new()
+		hurt.name = "Wounded%d" % i
+		hurt.lying = "back"
+		hurt.coat_color = Color(0.24, 0.22, 0.2) if i == 0 else Color(0.2, 0.21, 0.24)
+		hurt.trim_color = Color(0.3, 0.26, 0.2)
+		hurt.position = Vector3(x, 0.68, 0.1)
+		hurt.rotation.y = PI
+		hurt.scale = Vector3.ONE * 0.92
+		_cart.add_child(hurt)
+		var blanket := CSGBox3D.new()
+		blanket.size = Vector3(0.46, 0.08, 1.15)
+		blanket.position = Vector3(x, 0.9, 0.42)
+		blanket.material = cloth
+		_cart.add_child(blanket)
+		# 拿掉手上的鐘錘（程序人偶預設拿著）
+		var hammer: Node = hurt.hand("R").get_node_or_null("BellHammer") if hurt.hand("R") != null else null
+		if hammer != null:
+			hammer.queue_free()
 	# 推車的人掛的提燈：暗處也看得到車隊在哪
 	_lantern = OmniLight3D.new()
 	_lantern.light_color = Color(0.95, 0.72, 0.42)

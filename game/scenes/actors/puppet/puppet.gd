@@ -26,6 +26,8 @@ const FOREARM_LEN: float = 0.28
 @export var trim_color: Color = Color(0.3, 0.24, 0.18)
 @export var skin_color: Color = Color(0.62, 0.52, 0.45)
 
+## 躺姿：""＝站著、"back"＝仰躺（車上的傷者）。只在程序人偶上；中心在骨盆，頭朝 +Z。
+@export var lying: String = ""
 ## 正式模型 id（CharacterModels.path_for）；空字串＝程序人偶
 @export var character_id: String = ""
 ## 直接指定模型場景（測試、工具）；優先於 character_id
@@ -260,11 +262,35 @@ func _pose(speed_t: float) -> void:
 		_roll.rotation.x = 0.0
 		_roll.position = Vector3.ZERO
 
+	if lying != "":
+		_pose_lying()
+		return
 	match action:
 		"dodge":
 			_pose_dodge(action_time / float(ACTION_TIME["dodge"]))
 		"attack":
 			_pose_attack(action_time / float(ACTION_TIME["attack"]))
+
+
+## 仰躺（車上的傷者）：整個人繞骨盆轉成水平、臉朝上、頭朝 +Z，胸口慢慢起伏。
+func _pose_lying() -> void:
+	var breathe: float = sin(breath * TAU * 0.3)
+	_roll.basis = Basis(Vector3.RIGHT, PI * 0.5)
+	# 骨盆移到原點、背貼地（身體厚度約 0.17）
+	_roll.position = Vector3(0, 0.17, 0) - _roll.basis * Vector3(0, HIP_HEIGHT, 0)
+	_rot("thigh_L", Vector3(0.05, 0, 0.04))
+	_rot("thigh_R", Vector3(0.12, 0, -0.04))
+	_rot("knee_L", Vector3(-0.1, 0, 0))
+	_rot("knee_R", Vector3(-0.25, 0, 0))
+	_rot("spine", Vector3.ZERO)
+	_rot("chest", Vector3(0.03 * breathe, 0, 0))
+	_rot("neck", Vector3(-0.15, 0, 0))
+	_rot("shoulder_L", Vector3(0.05, 0, -0.12))
+	_rot("shoulder_R", Vector3(0.05, 0, 0.12))
+	_rot("elbow_L", Vector3(0.15, 0, 0))
+	_rot("elbow_R", Vector3(0.4, 0, 0))
+	if _coat != null:
+		_coat.rotation.x = 0.0
 
 
 ## 前滾：整個人繞腰部高度轉一圈，膝與手臂收起。

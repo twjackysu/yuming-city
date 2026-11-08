@@ -149,32 +149,21 @@ func _build() -> void:
 	plank.position = Vector3(0.1, 0.45, 0.05)
 	plank.rotation_degrees = Vector3(0, rng.randf_range(-30, 30), 12)
 	_rubble.add_child(plank)
-	# 受困的人：躺著、只露出上半身和一隻手（之後換成程序人偶的躺姿）
+	# 受困的人：側倒在瓦礫下
 	_person = Node3D.new()
 	_person.name = "Person"
 	_person.position = Vector3(0.0, 0.25, 0.0)
 	_person.rotation_degrees = Vector3(0, 0, 90)
 	add_child(_person)
-	var cloth := StandardMaterial3D.new()
-	cloth.albedo_color = Color(0.3, 0.26, 0.22)
-	var body := MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = 0.22
-	cap.height = 1.5
-	body.mesh = cap
-	body.material_override = cloth
-	body.position = Vector3(0, 0.75, 0)
-	_person.add_child(body)
-	var skin := StandardMaterial3D.new()
-	skin.albedo_color = Color(0.62, 0.5, 0.42)
-	var head := MeshInstance3D.new()
-	var hm := SphereMesh.new()
-	hm.radius = 0.13
-	hm.height = 0.26
-	head.mesh = hm
-	head.material_override = skin
-	head.position = Vector3(0, 1.62, 0)
-	_person.add_child(head)
+	# 程序人偶整個人側倒（_person 轉 90°），救出來時跟著 _person 轉正、站起來
+	var who := Puppet.new()
+	who.name = "Puppet"
+	who.coat_color = Color(0.3, 0.26, 0.22)
+	who.trim_color = Color(0.24, 0.2, 0.16)
+	_person.add_child(who)
+	var hammer: Node = who.hand("R").get_node_or_null("BellHammer") if who.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
 	# 掉在一旁的提燈：在黑暗的廢墟裡指出有人
 	var lamp_mat := StandardMaterial3D.new()
 	lamp_mat.albedo_color = Color(0.95, 0.72, 0.42)

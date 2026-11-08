@@ -68,3 +68,35 @@ func test_player_drives_puppet() -> void:
 	assert_not_null(player.puppet().hand("L").get_node_or_null("Lantern"), "提燈在左手")
 	player.queue_free()
 	await tree.process_frame
+
+
+## 仰躺（車上的傷者）：整個人貼地、頭朝 +Z、比骨盆遠；站著的人偶頭在高處。
+func test_lying_on_back() -> void:
+	var p: Puppet = _make()
+	p.lying = "back"
+	p.advance(0.1)
+	var hips: Vector3 = p.joint("hips").global_position
+	var neck: Vector3 = p.joint("neck").global_position
+	assert_true(hips.length() < 0.25, "骨盆在原點附近（%s）" % hips)
+	assert_true(neck.y < 0.45, "脖子貼地（%.2f）" % neck.y)
+	assert_true(neck.z > 0.4, "頭朝 +Z（%.2f）" % neck.z)
+	var feet: Vector3 = p.joint("knee_L").global_position
+	assert_true(feet.z < 0.0 and feet.y < 0.45, "腿往 -Z 平放")
+	p.free()
+
+
+func test_wounded_and_trapped_use_puppets() -> void:
+	var c := Caravan.new()
+	c.route = PackedVector3Array([Vector3.ZERO, Vector3(0, 0, 5)])
+	tree.root.add_child(c)
+	var lying: int = 0
+	for n: Node in c.find_children("*", "Puppet", true, false):
+		if (n as Puppet).lying == "back":
+			lying += 1
+	assert_eq(lying, 2, "車上兩名傷者仰躺")
+	c.free()
+	var r := RescueSite.new()
+	r.site_id = "test_trapped"
+	tree.root.add_child(r)
+	assert_not_null(r.find_child("Puppet", true, false), "受困者是程序人偶")
+	r.free()
