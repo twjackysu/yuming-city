@@ -438,3 +438,110 @@ func test_gamepad_undertaker_lock_dodge_struggle_restore() -> void:
 		scene.queue_free()
 	for i: int in 3:
 		await tree.process_frame
+
+
+## 十字鍵把焦點移到 target（最多 max_taps 下）；回傳是否移到了。
+func _focus_with_dpad(target: Control, button: JoyButton, max_taps: int = 20) -> bool:
+	for i: int in max_taps:
+		if target.has_focus():
+			return true
+		await _tap(button)
+	return target.has_focus()
+
+
+## 按鍵設定頁只用手把（M1.4）：Start → 設定 → 按鍵設定 → 十字鍵移到「閃避」的手把格 → A →
+## 按 RB → 閃避換成 RB；再換成 Y（重現用掉的鍵）→ 兩者交換；移到「還原預設」按 A → 全部回預設；
+## B 一路退回遊戲。設定檔寫到暫存路徑，不碰真的 settings.cfg。
+func test_gamepad_rebind_in_controls_menu() -> void:
+	var settings: Node = tree.root.get_node("Settings")
+	var real_path: String = str(settings.get("_config_path"))
+	var path: String = "user://test_gamepad_rebind_%d.cfg" % Time.get_ticks_usec()
+	settings.call("load_settings", path)
+	settings.call("reset_bindings")
+	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
+	tree.root.add_child(pause)
+	await tree.process_frame
+	await _tap(JOY_BUTTON_START)
+	await tree.process_frame
+	var settings_button: Button = pause.find_child("Settings", true, false) as Button
+	assert_true(await _focus_with_dpad(settings_button, JOY_BUTTON_DPAD_DOWN, 6), "十字鍵移到「設定」")
+	await _tap(JOY_BUTTON_A)
+	var sm: SettingsMenu = pause.find_child("SettingsMenu", true, false) as SettingsMenu
+	assert_true(sm != null and sm.visible, "A 進設定")
+	await tree.process_frame
+	var open_controls: Control = sm.control_of("Controls")
+	assert_true(await _focus_with_dpad(open_controls, JOY_BUTTON_DPAD_DOWN, 15), "十字鍵移到「按鍵設定」")
+	await _tap(JOY_BUTTON_A)
+	assert_true(sm.is_controls_open(), "A 打開按鍵設定")
+	await tree.process_frame
+	var cm: ControlsMenu = sm.find_child("ControlsMenu", true, false) as ControlsMenu
+	var dodge_kbm: Button = cm.cell("dodge", InputSetup.SLOT_KBM)
+	var dodge_pad: Button = cm.cell("dodge", InputSetup.SLOT_PAD)
+	assert_true(await _focus_with_dpad(dodge_kbm, JOY_BUTTON_DPAD_DOWN, 10), "十字鍵往下移到「閃避」那一列")
+	assert_true(await _focus_with_dpad(dodge_pad, JOY_BUTTON_DPAD_RIGHT, 2), "十字鍵右移到手把格")
+	assert_eq(dodge_pad.text, "B", "手把格顯示目前的鍵")
+
+	# 換成 RB（沒有人用的鍵）
+	await _tap(JOY_BUTTON_A)
+	assert_true(cm.is_waiting(), "A 開始等新鍵")
+	await _tap(JOY_BUTTON_RIGHT_SHOULDER)
+	assert_false(cm.is_waiting(), "按了新鍵就結束等待")
+	assert_eq(settings.call("binding", "dodge", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_RIGHT_SHOULDER), "閃避換成 RB")
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	assert_true(InputMap.action_has_event("dodge", rb), "InputMap 套用 RB")
+	assert_eq(dodge_pad.text, "RB", "格子顯示 RB")
+	assert_true(dodge_pad.has_focus(), "焦點留在同一格")
+	assert_true(sm.is_controls_open(), "按鍵設定還開著（A／RB 沒有被選單吃掉）")
+
+	# 換成 Y（重現用掉的鍵）→ 交換
+	await _tap(JOY_BUTTON_A)
+	assert_true(cm.is_waiting(), "再按 A 等新鍵")
+	await _tap(JOY_BUTTON_Y)
+	assert_eq(settings.call("binding", "dodge", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_Y), "閃避換成 Y")
+	assert_eq(settings.call("binding", "nine_breath", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_RIGHT_SHOULDER), "重現拿到閃避原本的 RB（交換）")
+	assert_eq(cm.cell("nine_breath", InputSetup.SLOT_PAD).text, "RB", "重現那一格也更新")
+
+	# 等新鍵時按 Start 取消，不會改到
+	await _tap(JOY_BUTTON_A)
+	assert_true(cm.is_waiting())
+	await _tap(JOY_BUTTON_START)
+	assert_false(cm.is_waiting(), "Start 取消等待")
+	assert_true(sm.is_controls_open(), "取消等待不會關掉按鍵設定")
+	assert_true(pause.is_open(), "也不會關掉暫停選單")
+	assert_eq(settings.call("binding", "dodge", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_Y), "取消後不變")
+
+	# 還原預設
+	var reset: Button = cm.find_child("Reset", true, false) as Button
+	var back: Button = cm.find_child("Back", true, false) as Button
+	# 往下到最底下那排按鈕（從手把欄下來會落在「返回」；固定的「暫停」那列跳過），再往左到「還原預設」
+	for i: int in 20:
+		if reset.has_focus() or back.has_focus():
+			break
+		await _tap(JOY_BUTTON_DPAD_DOWN)
+		assert_true(cm.is_ancestor_of(cm.get_viewport().gui_get_focus_owner()), "焦點沒有跑到後面的設定選單")
+	assert_true(reset.has_focus() or back.has_focus(), "十字鍵往下移到最底下那排按鈕")
+	assert_true(await _focus_with_dpad(reset, JOY_BUTTON_DPAD_LEFT, 2), "十字鍵左移到「還原預設」")
+	await _tap(JOY_BUTTON_A)
+	assert_eq(settings.call("binding", "dodge", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_B), "閃避回到 B")
+	assert_eq(settings.call("binding", "nine_breath", InputSetup.SLOT_PAD), Vector2i(2, JOY_BUTTON_Y), "重現回到 Y")
+	assert_eq(dodge_pad.text, "B")
+
+	# B 一路退回
+	await _tap(JOY_BUTTON_B)
+	assert_false(sm.is_controls_open(), "B 關掉按鍵設定")
+	assert_true(sm.visible, "回到設定")
+	assert_true(FileAccess.file_exists(path), "關掉按鍵設定時存檔")
+	await tree.process_frame
+	assert_true(open_controls.has_focus(), "焦點回到「按鍵設定」")
+	await _tap(JOY_BUTTON_B)
+	assert_false(sm.visible, "B 關掉設定")
+	await tree.process_frame
+	await _tap(JOY_BUTTON_B)
+	assert_false(pause.is_open(), "B 繼續遊戲")
+	pause.queue_free()
+	await tree.process_frame
+	DirAccess.remove_absolute(path)
+	settings.call("load_settings", real_path)
+	settings.call("apply")

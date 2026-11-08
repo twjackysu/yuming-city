@@ -4,6 +4,8 @@ extends Control
 ## 按下格子後等待下一個鍵（鍵鼠格只收鍵盤／滑鼠，手把格只收手把）；Esc／Start 取消，6 秒沒按也取消。
 ## 新鍵已被別的動作用掉時兩者交換（InputSetup.rebind）。暫停鍵與移動搖桿固定。關閉時存到 settings.cfg。
 ## 鍵名格子不是翻譯 key（印在鍵帽上的字），標記 meta "glyph"，由 InputGlyphs 產生。
+## 十字鍵焦點（D-057）：固定的格子不能聚焦（直接跳過）；最後一列往下是「還原預設／返回」；
+## 焦點不會跑到後面的設定選單（Godot 走到邊緣時會往整個畫面找最近的按鈕，跑出去就拉回來）。
 
 signal closed
 
@@ -18,6 +20,7 @@ var _waiting_action: String = ""
 var _waiting_slot: int = -1
 var _armed: bool = false
 var _wait_left: float = 0.0
+var _last_focus: Control
 
 
 func _ready() -> void:
@@ -26,6 +29,18 @@ func _ready() -> void:
 	_build()
 	hide()
 	set_process(false)
+	get_viewport().gui_focus_changed.connect(_on_focus_changed)
+
+
+## 開著的時候焦點只能在這頁裡；跑到後面的選單就拉回上一個格子。
+func _on_focus_changed(c: Control) -> void:
+	if not visible:
+		return
+	if is_ancestor_of(c):
+		_last_focus = c
+		return
+	if _last_focus != null and is_instance_valid(_last_focus) and _last_focus.is_inside_tree():
+		_last_focus.grab_focus()
 
 
 func open() -> void:
@@ -150,6 +165,39 @@ func _refresh() -> void:
 			b.text = InputGlyphs.label_for_spec(Settings.binding(action, slot))
 			b.disabled = not InputSetup.is_rebindable(action, slot)
 			b.tooltip_text = tr("SET_CONTROLS_FIXED") if b.disabled else ""
+			# 固定的格子十字鍵直接跳過（滑鼠移上去仍看得到「固定」提示）
+			b.focus_mode = Control.FOCUS_NONE if b.disabled else Control.FOCUS_ALL
+	_link_edges()
+
+
+## 邊緣的焦點鄰居：第一列往上不動、最後一列往下到底下的按鈕、按鈕往上回最後一列。
+func _link_edges() -> void:
+	var rows: Array[String] = []
+	for action: String in InputSetup.ACTION_KEYS:
+		var k: Button = cell(action, InputSetup.SLOT_KBM)
+		var p: Button = cell(action, InputSetup.SLOT_PAD)
+		if (k != null and not k.disabled) or (p != null and not p.disabled):
+			rows.append(action)
+	if rows.is_empty() or _reset == null or _back == null:
+		return
+	var first: String = rows[0]
+	var last: String = rows[rows.size() - 1]
+	var last_kbm: Button = cell(last, InputSetup.SLOT_KBM)
+	var last_pad: Button = cell(last, InputSetup.SLOT_PAD)
+	for slot: int in [InputSetup.SLOT_KBM, InputSetup.SLOT_PAD]:
+		var top: Button = cell(first, slot)
+		top.focus_neighbor_top = top.get_path_to(top)
+		var bottom: Button = cell(last, slot)
+		var below: Button = _reset if slot == InputSetup.SLOT_KBM else _back
+		bottom.focus_neighbor_bottom = bottom.get_path_to(below)
+	_reset.focus_neighbor_top = _reset.get_path_to(last_kbm if not last_kbm.disabled else last_pad)
+	_back.focus_neighbor_top = _back.get_path_to(last_pad if not last_pad.disabled else last_kbm)
+	for b: Button in [_reset, _back]:
+		b.focus_neighbor_bottom = b.get_path_to(b)
+	_reset.focus_neighbor_left = _reset.get_path_to(_reset)
+	_reset.focus_neighbor_right = _reset.get_path_to(_back)
+	_back.focus_neighbor_left = _back.get_path_to(_reset)
+	_back.focus_neighbor_right = _back.get_path_to(_back)
 
 
 func _build() -> void:
