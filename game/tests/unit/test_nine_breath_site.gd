@@ -152,3 +152,23 @@ func test_frame_throw_outcomes() -> void:
 	assert_eq(st2.get_flag("sheila.kindling_used_early"), true)
 	assert_eq(st2.get_flag("sheila.hand_injury"), 1, "提前燒劍：手傷 +1")
 	assert_eq(st.get_flag("sheila.hand_injury", 0), 0, "石拱擋下：手傷不變")
+
+
+## 重現的石拱（D-043）：跟石牆同一個 shader、石縫發冷光；心跳時亮一下再退回。房子外牆不發光。
+func test_restored_arch_is_glowing_stone() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	await tree.physics_frame
+	assert_true(site.activate(), "發動")
+	var arch: CSGCombiner3D = site.get_node("Arch") as CSGCombiner3D
+	var mat: ShaderMaterial = arch.material_override as ShaderMaterial
+	assert_not_null(mat, "石拱用 ShaderMaterial")
+	assert_eq(mat.shader.resource_path, FrostbridgeLook.HALF_TIMBER_SHADER, "跟鎮上石牆同一個 shader")
+	assert_true(float(mat.get_shader_parameter("glow_energy")) > 0.0, "石縫發光")
+	var wall: ShaderMaterial = FrostbridgeLook.new().stone_wall()
+	assert_eq(wall.get_shader_parameter("glow_energy"), null, "石牆沒設發光（用 shader 預設 0）")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame

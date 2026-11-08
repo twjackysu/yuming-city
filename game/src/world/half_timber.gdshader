@@ -17,6 +17,9 @@ uniform float post_spacing = 1.5;
 uniform float beam_width = 0.2;
 uniform float brace_chance : hint_range(0.0, 1.0) = 0.45;
 uniform float block_scale = 1.0;
+// 發光（重現的石拱 D-043）：石縫透出冷光＋邊緣光。0＝不發光（房子、城牆）
+uniform vec3 glow_color : source_color = vec3(0.62, 0.86, 1.0);
+uniform float glow_energy = 0.0;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -64,6 +67,7 @@ void fragment() {
 	vec3 albedo;
 	float rough;
 	vec2 tilt = vec2(0.0);
+	float seam = 0.0;
 
 	if (y < stone_height) {
 		// 石塊：每排高度略不同、錯開，灰縫帶一點抖動
@@ -81,6 +85,7 @@ void fragment() {
 		vec3 stone = stone_color * mix(0.7, 1.18, tint) * mix(0.82, 1.06, fbm(wp * 2.6));
 		albedo = mix(mortar_color, stone, gap);
 		rough = mix(0.95, 0.82, gap);
+		seam = 1.0 - gap;
 		// 石塊邊緣往外倒一點（只有近處）
 		tilt = (f - 0.5) * smoothstep(0.3, 0.48, abs(f - 0.5)) * 0.5 * detail;
 		// 石牆頂端一條薄雪（窗台般的突出）
@@ -132,6 +137,10 @@ void fragment() {
 
 	ALBEDO = albedo;
 	ROUGHNESS = rough;
+	if (glow_energy > 0.0) {
+		float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 3.0);
+		EMISSION = glow_color * glow_energy * (0.05 + 0.75 * seam * detail + 0.9 * fres);
+	}
 	if (top < 0.5 && abs(n.y) < 0.5) {
 		vec3 t_world = side_x ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
 		vec3 n_world = normalize(n + t_world * tilt.x + vec3(0.0, 1.0, 0.0) * tilt.y);

@@ -17,6 +17,8 @@ const FROST: Color = Color(0.62, 0.86, 1.0)
 const STONE: Color = Color(0.34, 0.33, 0.33)
 ## 九息期間的畫面飽和度
 const DESAT: float = 0.12
+## 重現的石拱平常的發光強度（心跳時亮到三倍再退回）
+const ARCH_GLOW: float = 0.85
 
 @export var object_id: String = "south_arch"
 @export var memory_id: String = "arch_father_last_talk"
@@ -33,7 +35,7 @@ var debug_preview: bool = false
 var _player: PlayerController
 var _ruin: Node3D
 var _arch: CSGCombiner3D
-var _arch_mat: StandardMaterial3D
+var _arch_mat: ShaderMaterial
 var _ghost_mat: StandardMaterial3D
 var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
@@ -142,8 +144,8 @@ func _on_breath(i: int) -> void:
 	Sfx.play_flat(self, "heartbeat", -4.0 + float(i) * 0.4)
 	_label.text = tr("NB_BREATHS_LEFT").format([NineBreath.BREATHS - i])
 	var t := create_tween()
-	t.tween_property(_arch_mat, "emission_energy_multiplier", 1.1, 0.06)
-	t.tween_property(_arch_mat, "emission_energy_multiplier", 0.35, 0.6)
+	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW * 3.0, 0.06)
+	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW, 0.6)
 	breath.emit(i)
 
 
@@ -271,13 +273,15 @@ func _build() -> void:
 	cut.size = Vector3(3.2, 2.0, 2.0)
 	cut.position = Vector3(0, 1.0, 0)
 	_arch.add_child(cut)
-	_arch_mat = _mat(Color(0.36, 0.38, 0.42))
-	_arch_mat.emission_enabled = true
-	_arch_mat.emission = FROST
-	_arch_mat.emission_energy_multiplier = 0.35
-	_arch_mat.rim_enabled = true
-	_arch_mat.rim = 0.8
-	_arch_mat.rim_tint = 0.2
+	# 重現的石拱（D-043）：跟鎮上石牆同一個 shader（看得出是石頭），石縫透出冷光、邊緣亮，
+	# 心跳時整體亮一下。不再是整塊發白的板子。
+	_arch_mat = ShaderMaterial.new()
+	_arch_mat.shader = load(FrostbridgeLook.HALF_TIMBER_SHADER) as Shader
+	_arch_mat.set_shader_parameter("stone_height", 99.0)
+	_arch_mat.set_shader_parameter("block_scale", 1.25)
+	_arch_mat.set_shader_parameter("stone_color", Color(0.34, 0.36, 0.4))
+	_arch_mat.set_shader_parameter("glow_color", FROST)
+	_arch_mat.set_shader_parameter("glow_energy", ARCH_GLOW)
 	_ghost_mat = StandardMaterial3D.new()
 	_ghost_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
