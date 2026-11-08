@@ -15,6 +15,8 @@ var arch_site: NineBreathSite
 ## 測試可以指定；空的就用 Game.session.state
 var state: GameState
 var frame_throw: FrameThrowEvent
+## 飛出去的鐵架（演出；擲出後到碎片消失前）
+var thrown_frame: ThrownFrame
 var done: bool = false
 
 
@@ -57,14 +59,59 @@ func _physics_process(delta: float) -> void:
 
 func _on_frame_throw_resolved(outcome: String) -> void:
 	banner.emit("FRAME_THROW_ARCH" if outcome == "arch" else "FRAME_THROW_KINDLING", 3.5)
+	var from: Vector3 = Vector3.ZERO
 	if undertaker != null and is_instance_valid(undertaker):
+		from = undertaker.frame_launch_point()
 		undertaker.end_throw(outcome)
+	# 鐵架真的飛出去（D-042）：石拱擋下 → 撞在石拱上碎掉；燃燒劍 → 席菈在車隊前面把它斬成兩截
+	var to: Vector3 = _impact_point(outcome, from)
+	var ally: Sheila = _sheila()
+	if outcome == "kindling" and ally != null:
+		ally.burn_strike(to, 1.6)
+	if is_inside_tree():
+		thrown_frame = ThrownFrame.create(from, to, outcome, _ground_y())
+		thrown_frame.impacted.connect(_on_frame_impact)
+		add_child(thrown_frame)
+
+
+## 鐵架落點：石拱的拱心；燃燒劍路線是席菈身前（沒有席菈就是車隊上方）。
+func _impact_point(outcome: String, from: Vector3) -> Vector3:
+	if outcome == "arch" and arch_site != null:
+		return arch_site.global_position + Vector3.UP * 3.0
+	var ally: Sheila = _sheila()
+	if ally != null:
+		var d: Vector3 = from - ally.global_position
+		d.y = 0.0
+		var ahead: Vector3 = d.normalized() * 1.2 if d.length() > 0.01 else Vector3.ZERO
+		return ally.global_position + ahead + Vector3.UP * 1.7
+	if caravan != null:
+		return caravan.global_position + Vector3.UP * 2.0
+	return from + Vector3(0, -1.0, 4.0)
+
+
+func _ground_y() -> float:
+	if caravan != null:
+		return caravan.global_position.y
+	return arch_site.global_position.y if arch_site != null else 0.0
+
+
+func _on_frame_impact(outcome: String) -> void:
+	if undertaker != null and is_instance_valid(undertaker):
 		var p: PlayerController = undertaker._player
 		if p != null:
-			p.shake(0.6)
-	var at: Vector3 = arch_site.global_position if arch_site != null else (caravan.global_position if caravan != null else Vector3.ZERO)
-	if is_inside_tree():
-		Sfx.play_at(self, "blunt_weak", at + Vector3.UP * 2.0, 6.0, 0.02, 14.0)
+			p.shake(0.6 if outcome == "arch" else 0.35)
+	if thrown_frame != null and is_instance_valid(thrown_frame):
+		var at: Vector3 = thrown_frame.to
+		Sfx.play_at(self, "iron_clang" if outcome == "arch" else "blunt_weak", at, 6.0, 0.02, 14.0)
+
+
+func _sheila() -> Sheila:
+	if not is_inside_tree():
+		return null
+	for n: Node in get_tree().get_nodes_in_group("companion"):
+		if n is Sheila and not (n as Sheila).health.is_dead():
+			return n as Sheila
+	return null
 
 
 ## 車隊通過路口：戰鬥結束，送葬者被斬倒。
@@ -80,6 +127,9 @@ func finish() -> void:
 		# 結尾席菈用燃燒劍斬倒送葬者：手傷 +1（提前燒過的話已經是 2）
 		st.set_flag("sheila.hand_injury", int(st.get_flag("sheila.hand_injury", 0)) + 1)
 	if undertaker != null and is_instance_valid(undertaker) and not undertaker.health.is_dead():
+		var ally: Sheila = _sheila()
+		if ally != null:
+			ally.burn_strike(undertaker.global_position + Vector3.UP * 1.6, 2.4)
 		undertaker.health.apply_damage(undertaker.health.hp, {"kind": "kindling", "stagger": 0.0})
 	banner.emit("CONVOY_THROUGH", 4.0)
 	finished.emit(injured)

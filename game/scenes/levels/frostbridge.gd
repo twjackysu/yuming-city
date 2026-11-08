@@ -9,7 +9,8 @@ extends StoryLevel
 ## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；會動的（北街房子、鐘）各自一個節點。
 ##
 ## 開發用旗標（`++ --level=frostbridge ...`）：`--rescue` 跳到救援段落、`--convoy` 直接開打送葬者戰、`--phase2`、
-## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|north|south|cross`（出生位置）。
+## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|north|south|cross`（出生位置）、
+## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）。
 
 const PLAZA_HALF: float = 11.0
 const MAIN_HALF: float = 4.0
@@ -96,6 +97,8 @@ func _ready() -> void:
 		start_convoy()
 		if dev_args.has("phase2") and has_node("Undertaker"):
 			($Undertaker as Undertaker).enter_phase_two.call_deferred()
+		if dev_args.has("throw"):
+			_debug_throw.call_deferred(str(dev_args["throw"]), float(str(dev_args.get("throw-t", "0.3"))))
 	if dev_args.has("arch"):
 		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
 		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
@@ -110,6 +113,31 @@ func _ready() -> void:
 				arch_site.activate()
 				arch_site.nb.tick(9.5, Game.session.state)
 	player.snap_camera()
+
+
+## 截圖用：鐵架立刻擲出（arch：石拱先重現），飛行／碎片停在擲出後第 t 秒；燃燒劍不熄。
+func _debug_throw(how: String, t: float) -> void:
+	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
+	if boss == null or encounter == null:
+		return
+	boss.enter_phase_two()
+	boss.trigger_frame_throw()
+	if how == "arch":
+		arch_site.activate()
+	if encounter.frame_throw == null:
+		return
+	encounter.frame_throw.resolve(how, Game.session.state)
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	if ally != null and how == "kindling":
+		ally.ignite_sword(999.0)
+	var f: ThrownFrame = encounter.thrown_frame
+	if f == null:
+		return
+	f.set_physics_process(false)
+	var left: float = t
+	while left > 0.0:
+		f.advance(minf(left, 1.0 / 60.0))
+		left -= 1.0 / 60.0
 
 
 # ---------------------------------------------------------------- 救援（段落 3）

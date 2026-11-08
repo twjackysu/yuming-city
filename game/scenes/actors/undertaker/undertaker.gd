@@ -185,10 +185,28 @@ func begin_throw_windup(seconds: float) -> void:
 	Sfx.play_at(self, "whoosh", global_position + Vector3.UP * 3.0, 2.0, 0.0, 10.0)
 
 
-## 鐵架擲出去了（被石拱擋下或被薪火劍斬斷）：鐵架離身，之後是空手（之後換模型時拿掉背上的鐵架）。
+## 鐵架擲出去了（被石拱擋下或被燃燒劍斬斷）：背上的鐵架藏起來，之後是空手；飛出去的那一副由 ThrownFrame 演。
 func end_throw(_outcome: String) -> void:
 	throw_windup = 0.0
 	brain.force_kneel(1.2)
+	var frame: Node3D = _frame_node()
+	if frame != null:
+		frame.visible = false
+
+
+## 背上的鐵架還在不在（擲出去之後就不在了）。
+func has_frame() -> bool:
+	var frame: Node3D = _frame_node()
+	return frame != null and frame.visible
+
+
+## 鐵架擲出的位置（背上鐵架的中心，世界座標）。
+func frame_launch_point() -> Vector3:
+	return global_position + Vector3.UP * 3.1
+
+
+func _frame_node() -> Node3D:
+	return _body.get_node_or_null("Torso/Frame") as Node3D if _body != null else null
 
 
 func _held(delta: float) -> bool:
@@ -338,19 +356,22 @@ func _build_body() -> void:
 	hood.position = Vector3(0, 1.45, -0.32)
 	hood.material = robe
 	torso.add_child(hood)
-	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）
+	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）；擲出去之後整組藏起來（ThrownFrame 接手）
+	var frame := Node3D.new()
+	frame.name = "Frame"
+	torso.add_child(frame)
 	for x: float in [-0.45, 0.45]:
 		var post := CSGBox3D.new()
 		post.size = Vector3(0.08, 2.2, 0.08)
 		post.position = Vector3(x, 1.1, 0.5)
 		post.material = iron
-		torso.add_child(post)
+		frame.add_child(post)
 	for y: float in [0.4, 1.1, 1.9]:
 		var bar := CSGBox3D.new()
 		bar.size = Vector3(1.1, 0.07, 0.07)
 		bar.position = Vector3(0, y, 0.52)
 		bar.material = iron
-		torso.add_child(bar)
+		frame.add_child(bar)
 	for side: float in [-1.0, 1.0]:
 		var arm := CSGCylinder3D.new()
 		arm.radius = 0.12

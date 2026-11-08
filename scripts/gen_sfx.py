@@ -149,6 +149,42 @@ def scrape(seconds=0.42, seed=9):
     return out
 
 
+def clang(seconds=1.1, seed=11):
+    """鐵架撞上石拱：不和諧的金屬泛音（快速衰減）＋一下沉重的撞擊。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    partials = [(410, 1.0, 5.0), (1130, 0.6, 7.0), (1870, 0.45, 9.0), (2930, 0.3, 12.0), (4410, 0.18, 16.0)]
+    out = [0.0] * n
+    for f, a, d in partials:
+        f *= rng.uniform(0.98, 1.02)
+        for i in range(n):
+            t = i / RATE
+            out[i] += a * math.exp(-t * d) * math.sin(2 * math.pi * f * t)
+    hit = thump(0.35, 120, 45, crack=1.0, seed=seed + 1)
+    for i, v in enumerate(hit):
+        out[i] = 0.35 * out[i] + 0.9 * v
+    return out
+
+
+def ignite(seconds=0.9, seed=13):
+    """燃燒劍點火：低頻「轟」一聲往上衝，接著火星的劈啪聲。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    roar = onepole_lp(hp(noise(n, rng), 90), 1400)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = min(t / 0.06, 1.0) * math.exp(-max(t - 0.1, 0.0) * 4.5)
+        out.append(roar[i] * env * 1.3)
+    for k in range(14):
+        start = int(rng.uniform(0.04, seconds - 0.05) * RATE)
+        amp = rng.uniform(0.2, 0.55)
+        for j in range(int(0.006 * RATE)):
+            if start + j < n:
+                out[start + j] += amp * rng.uniform(-1, 1) * math.exp(-j / RATE * 900)
+    return out
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -160,6 +196,8 @@ def main():
         write("whoosh", swish(0.35, 200, 1600, seed=6, rise=0.45)),
         write("heartbeat", heartbeat()),
         write("rubble_scrape", scrape()),
+        write("iron_clang", clang()),
+        write("ignite", ignite()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

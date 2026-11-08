@@ -9,6 +9,8 @@ const RUN_SPEED: float = 5.6
 const TURN_SPEED: float = 10.0
 const DODGE_SPEED: float = 6.5
 const LINE_SEC: float = 1.6
+## 燃燒劍的火色
+const FIRE: Color = Color(1.0, 0.5, 0.16)
 const COMMAND_ACTIONS: Dictionary = {
 	"command_weakpoint": "weakpoint",
 	"command_evade": "evade",
@@ -32,6 +34,10 @@ var _line: Label3D
 var _line_left: float = 0.0
 var _dodge_left: float = 0.0
 var _dodge_dir: Vector3 = Vector3.ZERO
+var _blade_mat: StandardMaterial3D
+var _fire_light: OmniLight3D
+var _fire_sparks: CPUParticles3D
+var _fire_left: float = 0.0
 
 
 func _ready() -> void:
@@ -67,6 +73,7 @@ func _physics_process(delta: float) -> void:
 	_move(delta, leader_dist, target_dist)
 	_line_left = maxf(_line_left - delta, 0.0)
 	_line.visible = _line_left > 0.0
+	_fire_tick(delta)
 
 
 ## 下指令（玩家輸入或測試呼叫）。回傳 CompanionBrain.command 的結果，並在頭上顯示回話。
@@ -374,9 +381,95 @@ func _build_sword() -> Node3D:
 	var blade_mesh := PrismMesh.new()
 	blade_mesh.left_to_right = 0.0
 	blade_mesh.size = Vector3(0.11, 0.62, 0.02)
-	blade_mesh.material = steel
+	# 劍身自己一份材質（燃燒劍只讓劍身燒紅，護手不亮）
+	blade_mesh.material = steel.duplicate()
 	blade.mesh = blade_mesh
 	blade.position = Vector3(0, -0.43, 0)
 	blade.rotation_degrees = Vector3(0, 0, 180)
 	sword.add_child(blade)
+	# 燃燒劍（平常熄著）：劍身燒紅、橘色火光、沿劍身往上飄的火星
+	_blade_mat = blade_mesh.material as StandardMaterial3D
+	_fire_light = OmniLight3D.new()
+	_fire_light.name = "FireLight"
+	_fire_light.light_color = FIRE
+	_fire_light.light_energy = 0.0
+	_fire_light.omni_range = 5.0
+	_fire_light.position = Vector3(0, -0.45, 0)
+	_fire_light.visible = false
+	sword.add_child(_fire_light)
+	_fire_sparks = CPUParticles3D.new()
+	_fire_sparks.name = "FireSparks"
+	_fire_sparks.emitting = false
+	_fire_sparks.amount = 36
+	_fire_sparks.lifetime = 0.7
+	_fire_sparks.position = Vector3(0, -0.45, 0)
+	_fire_sparks.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	_fire_sparks.emission_box_extents = Vector3(0.04, 0.3, 0.01)
+	_fire_sparks.direction = Vector3.UP
+	_fire_sparks.spread = 25.0
+	_fire_sparks.gravity = Vector3(0, 2.5, 0)
+	_fire_sparks.initial_velocity_min = 0.3
+	_fire_sparks.initial_velocity_max = 1.2
+	_fire_sparks.local_coords = false
+	var spark := QuadMesh.new()
+	spark.size = Vector2(0.035, 0.035)
+	var spark_mat := StandardMaterial3D.new()
+	spark_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	spark_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	spark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	spark_mat.vertex_color_use_as_albedo = true
+	spark_mat.albedo_color = Color(1.0, 0.62, 0.25)
+	spark.material = spark_mat
+	_fire_sparks.mesh = spark
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 0.3, 0.1, 0))
+	_fire_sparks.color_ramp = ramp
+	sword.add_child(_fire_sparks)
 	return sword
+
+
+## 燃燒劍（D-042）：劍身燒紅、劍上有火光與火星，seconds 秒後熄掉（再點一次就延長）。
+## 只是畫面與音效；手傷由 FrameThrowEvent／ConvoyEncounter 記。
+func ignite_sword(seconds: float = 1.8) -> void:
+	if _fire_left <= 0.0 and is_inside_tree():
+		Sfx.play_at(self, "ignite", global_position + Vector3.UP * 1.2, -2.0, 0.03, 8.0)
+	_fire_left = maxf(_fire_left, seconds)
+	_set_fire(true)
+
+
+func is_sword_lit() -> bool:
+	return _fire_left > 0.0
+
+
+## 燃燒劍斬向某一點（鐵架、送葬者）：轉過去、出劍、劍燒起來。
+func burn_strike(at: Vector3, seconds: float = 1.8) -> void:
+	var d: Vector3 = at - global_position
+	if Vector2(d.x, d.z).length() > 0.01:
+		_body.rotation.y = atan2(-d.x, -d.z)
+	_puppet.play_action("attack")
+	ignite_sword(seconds)
+	if is_inside_tree():
+		Sfx.play_at(self, "slash", global_position + Vector3.UP, 0.0)
+
+
+func _fire_tick(delta: float) -> void:
+	if _fire_left <= 0.0:
+		return
+	_fire_left = maxf(_fire_left - delta, 0.0)
+	# 火光閃爍；最後 0.4 秒慢慢熄
+	var fade: float = clampf(_fire_left / 0.4, 0.0, 1.0)
+	_fire_light.light_energy = (2.2 + 0.5 * sin(Time.get_ticks_msec() * 0.031)) * fade
+	if _fire_left <= 0.0:
+		_set_fire(false)
+
+
+func _set_fire(on: bool) -> void:
+	if _blade_mat == null:
+		return
+	_blade_mat.emission_enabled = on
+	_blade_mat.emission = FIRE
+	_blade_mat.emission_energy_multiplier = 2.5 if on else 0.0
+	_fire_light.visible = on
+	_fire_light.light_energy = 2.2 if on else 0.0
+	_fire_sparks.emitting = on
