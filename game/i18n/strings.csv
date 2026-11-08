@@ -13,6 +13,7 @@ MENU_RESUME,Resume,繼續遊戲
 MENU_BACK_TO_TITLE,Return to Title,回到標題畫面
 MENU_BACK,Back,返回
 PAUSE_TITLE,Paused,暫停
+PAUSE_HINT_RESUME,{key}  Resume,{key}　繼續遊戲
 SET_MASTER_VOLUME,Master Volume,主音量
 SET_MUSIC_VOLUME,Music,音樂
 SET_SFX_VOLUME,Sound Effects,音效

@@ -193,7 +193,14 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	var g: Gradient = (band.texture as GradientTexture2D).gradient
 	assert_true(g.sample(0.0).a > 0.7 and g.sample(1.0).a < 0.05, "暗帶由深到透明")
 	var menu: VBoxContainer = pause.find_child("Menu", true, false) as VBoxContainer
-	assert_eq(menu.get_child(1).name, &"Rule", "標題下面一條細線")
+	var title_i: int = menu.get_node("Title").get_index()
+	assert_eq(menu.get_child(title_i + 1).name, &"Rule", "標題下面一條細線")
+	assert_eq(menu.get_child(0).name, &"Chapter", "標題上面一行章節名（D-093）")
+	assert_eq((menu.get_child(0) as Label).text, "GAME_SUBTITLE")
+	assert_true(pause.hint_text().length() > 3 and not pause.hint_text().contains("{key}"), "左下角有按鍵提示（%s）" % pause.hint_text())
+	if Game.session != null and Game.session.objective_key() != "":
+		assert_eq(pause.objective_text(), Game.session.objective_key(), "左下角寫著目前目標")
+	assert_eq(pause.get_node("Root/Hint").get_class(), "HBoxContainer", "提示用 GlyphLine")
 	(pause.find_child("Settings", true, false) as Button).pressed.emit()
 	var sm: SettingsMenu = pause.find_child("SettingsMenu", true, false) as SettingsMenu
 	assert_true(sm != null and sm.visible, "暫停中可以開設定")

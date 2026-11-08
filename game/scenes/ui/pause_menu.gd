@@ -11,6 +11,10 @@ var _root: Control
 var _menu: VBoxContainer
 var _resume: Button
 var _settings: SettingsMenu
+## 左下：目前目標（暫停時 HUD 被暗幕蓋住，這裡再寫一次）＋按鍵提示（D-093）
+var _objective_box: VBoxContainer
+var _objective: Label
+var _hint: GlyphLine
 var _mouse_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -44,7 +48,29 @@ func open() -> void:
 	_root.show()
 	_menu.show()
 	_settings.hide()
+	_refresh_info()
 	_resume.grab_focus.call_deferred()
+
+
+## 目前目標與按鍵提示（每次打開時更新；裝置換了也更新提示）。
+func _refresh_info() -> void:
+	var key: String = Game.session.objective_key() if Game.session != null else ""
+	_objective.text = key
+	_objective_box.visible = key != ""
+	_hint.set_line(tr("PAUSE_HINT_RESUME"), "pause", int(App.last_device))
+
+
+func objective_text() -> String:
+	return _objective.text if _objective_box.visible else ""
+
+
+func hint_text() -> String:
+	return _hint.plain_text()
+
+
+func _on_device_changed(_device: int) -> void:
+	if is_open():
+		_refresh_info()
 
 
 func resume() -> void:
@@ -110,6 +136,13 @@ func _build() -> void:
 	_menu.add_theme_constant_override("separation", 10)
 	_root.add_child(_menu)
 
+	# 標題上方一行小字：章節名（霜橋鎮的第九聲鐘），淡藍灰、字距拉開
+	var chapter := Label.new()
+	chapter.name = "Chapter"
+	chapter.text = "GAME_SUBTITLE"
+	chapter.add_theme_font_size_override("font_size", 18)
+	chapter.add_theme_color_override("font_color", Color(0.62, 0.68, 0.78, 0.85))
+	_menu.add_child(chapter)
 	var title := Label.new()
 	title.name = "Title"
 	title.text = "PAUSE_TITLE"
@@ -144,10 +177,51 @@ func _build() -> void:
 	_button("Settings", "MENU_SETTINGS", _open_settings)
 	_button("BackToTitle", "MENU_BACK_TO_TITLE", _back_to_title)
 
+	_build_info()
+
 	_settings = SETTINGS_SCENE.instantiate() as SettingsMenu
 	_root.add_child(_settings)
 	_settings.hide()
 	_settings.closed.connect(_on_settings_closed)
+
+
+## 左下角：「目標」小標題（暖金色）＋目前目標一行，最底下一行「[Esc] 繼續遊戲」。
+func _build_info() -> void:
+	_objective_box = VBoxContainer.new()
+	_objective_box.name = "Objective"
+	_objective_box.add_theme_constant_override("separation", 6)
+	_objective_box.anchor_top = 1.0
+	_objective_box.anchor_bottom = 1.0
+	_objective_box.offset_left = 164.0
+	_objective_box.offset_top = -230.0
+	_objective_box.offset_right = 164.0 + 520.0
+	_objective_box.offset_bottom = -110.0
+	_objective_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_objective_box)
+	var head := Label.new()
+	head.name = "Head"
+	head.text = "HUD_OBJECTIVE"
+	head.add_theme_font_size_override("font_size", 15)
+	head.add_theme_color_override("font_color", Color(0.95, 0.78, 0.5, 0.9))
+	_objective_box.add_child(head)
+	_objective = Label.new()
+	_objective.name = "Text"
+	_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective.custom_minimum_size = Vector2(520, 0)
+	_objective.add_theme_font_size_override("font_size", 24)
+	_objective.add_theme_color_override("font_color", Color(0.9, 0.89, 0.86))
+	_objective_box.add_child(_objective)
+
+	_hint = GlyphLine.new().configure(18, Color(0.62, 0.64, 0.68, 0.85))
+	_hint.name = "Hint"
+	_hint.anchor_top = 1.0
+	_hint.anchor_bottom = 1.0
+	_hint.offset_left = 164.0
+	_hint.offset_top = -78.0
+	_hint.offset_bottom = -46.0
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_hint)
+	App.device_changed.connect(_on_device_changed)
 
 
 func _button(node_name: String, key: String, action: Callable) -> Button:
