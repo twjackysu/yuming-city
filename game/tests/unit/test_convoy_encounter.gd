@@ -113,7 +113,7 @@ func test_kindling_cuts_frame_in_front_of_sheila() -> void:
 	var root: Node3D = w[0]
 	var boss: Undertaker = w[4]
 	var enc: ConvoyEncounter = w[5]
-	var ally: Sheila = _add_sheila(root, Vector3(4, 0, -6))
+	var ally: Sheila = _add_sheila(root, Vector3(5, 0, -2))  # 在車隊旁（不用先衝過去）
 	await tree.physics_frame
 	assert_false(ally.is_sword_lit(), "平常劍是熄的")
 	boss.trigger_frame_throw()
@@ -134,6 +134,41 @@ func test_kindling_cuts_frame_in_front_of_sheila() -> void:
 	assert_true(ally.is_sword_lit(), "結尾斬倒送葬者：劍又燒起來")
 	assert_true(boss.health.is_dead())
 	assert_eq(int(st.get_flag("sheila.hand_injury", 0)), 2, "提前燒一次＋結尾一次")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
+## 燃燒劍路線、席菈離車隊很遠（D-053）：先一步衝到車隊與送葬者之間，鐵架在她新的位置身前被斬斷。
+func test_kindling_sheila_dashes_to_convoy_first() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var caravan: Caravan = w[3]
+	var boss: Undertaker = w[4]
+	var enc: ConvoyEncounter = w[5]
+	var ally: Sheila = _add_sheila(root, Vector3(-4, 0, 6))
+	await tree.physics_frame
+	var far: float = Vector2(ally.global_position.x - caravan.global_position.x, ally.global_position.z - caravan.global_position.z).length()
+	assert_true(far > ConvoyEncounter.DASH_FROM, "前提：席菈離車隊 %.1f m" % far)
+	boss.trigger_frame_throw()
+	enc.frame_throw.tick(5.0, false, st)
+	assert_eq(st.get_flag("slice.frame_throw_outcome"), "kindling")
+	var f: ThrownFrame = enc.thrown_frame
+	assert_not_null(f)
+	f.set_physics_process(false)
+	for i: int in 60:
+		await tree.process_frame
+		if ally.global_position.distance_to(ally.dash_target) < 0.05:
+			break
+	var near: float = Vector2(ally.global_position.x - caravan.global_position.x, ally.global_position.z - caravan.global_position.z).length()
+	assert_true(near < 2.0, "衝到車隊旁（%.2f m）" % near)
+	var to_boss: Vector3 = boss.global_position - caravan.global_position
+	var to_ally: Vector3 = ally.global_position - caravan.global_position
+	assert_true(Vector2(to_boss.x, to_boss.z).dot(Vector2(to_ally.x, to_ally.z)) > 0.0, "站在車隊與送葬者之間")
+	var flat := Vector2(f.to.x - ally.global_position.x, f.to.z - ally.global_position.z)
+	assert_true(flat.length() < 1.5, "鐵架落在她新位置的身前（%.2f）" % flat.length())
+	assert_true(ally.is_sword_lit(), "燃燒劍點起來")
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame

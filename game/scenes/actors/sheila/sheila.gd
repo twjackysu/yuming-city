@@ -443,6 +443,24 @@ func is_sword_lit() -> bool:
 	return _fire_left > 0.0
 
 
+## 短距離衝刺到某一點（送葬者擲鐵架時她離車隊太遠，先一步衝到車隊前，D-053）。
+const DASH_SEC: float = 0.18
+var dash_target: Vector3 = Vector3.INF
+
+
+func dash_to_point(p: Vector3) -> void:
+	var d: Vector3 = p - global_position
+	d.y = 0.0
+	if d.length() < 0.2:
+		return
+	dash_target = Vector3(p.x, global_position.y, p.z)
+	_body.rotation.y = atan2(-d.x, -d.z)
+	if is_inside_tree():
+		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -3.0)
+	var t := create_tween()
+	t.tween_property(self, "global_position", dash_target, DASH_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 ## 燃燒劍斬向某一點（鐵架、送葬者）：轉過去、出劍、劍燒起來。
 func burn_strike(at: Vector3, seconds: float = 1.8) -> void:
 	var d: Vector3 = at - global_position

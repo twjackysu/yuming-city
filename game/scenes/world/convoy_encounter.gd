@@ -64,8 +64,14 @@ func _on_frame_throw_resolved(outcome: String) -> void:
 		from = undertaker.frame_launch_point()
 		undertaker.end_throw(outcome)
 	# 鐵架真的飛出去（D-042）：石拱擋下 → 撞在石拱上碎掉；燃燒劍 → 席菈在車隊前面把它斬成兩截
-	var to: Vector3 = _impact_point(outcome, from)
 	var ally: Sheila = _sheila()
+	var ally_at: Vector3 = ally.global_position if ally != null else Vector3.INF
+	if outcome == "kindling" and ally != null and caravan != null \
+			and _flat(ally.global_position, caravan.global_position) > DASH_FROM:
+		# 她離車隊太遠：先一步衝到車隊與送葬者之間，再斬鐵架
+		ally_at = guard_spot(from)
+		ally.dash_to_point(ally_at)
+	var to: Vector3 = _impact_point(outcome, from, ally_at)
 	if outcome == "kindling" and ally != null:
 		ally.burn_strike(to, 1.6)
 	if is_inside_tree():
@@ -74,16 +80,33 @@ func _on_frame_throw_resolved(outcome: String) -> void:
 		add_child(thrown_frame)
 
 
-## 鐵架落點：石拱的拱心；燃燒劍路線是席菈身前（沒有席菈就是車隊上方）。
-func _impact_point(outcome: String, from: Vector3) -> Vector3:
+## 席菈離車隊超過這個距離（公尺）就先衝過去
+const DASH_FROM: float = 3.0
+const GUARD_OFFSET: float = 1.4
+
+
+## 車隊與送葬者之間、離車隊 GUARD_OFFSET 公尺的位置（燃燒劍路線席菈站的地方）。
+func guard_spot(from: Vector3) -> Vector3:
+	var c: Vector3 = caravan.global_position
+	var d: Vector3 = from - c
+	d.y = 0.0
+	var dir: Vector3 = d.normalized() if d.length() > 0.01 else Vector3.FORWARD
+	return c + dir * GUARD_OFFSET
+
+
+static func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## 鐵架落點：石拱的拱心；燃燒劍路線是席菈身前（ally_at：她斬的時候站的位置；沒有席菈就是車隊上方）。
+func _impact_point(outcome: String, from: Vector3, ally_at: Vector3 = Vector3.INF) -> Vector3:
 	if outcome == "arch" and arch_site != null:
 		return arch_site.global_position + Vector3.UP * 3.0
-	var ally: Sheila = _sheila()
-	if ally != null:
-		var d: Vector3 = from - ally.global_position
+	if ally_at != Vector3.INF:
+		var d: Vector3 = from - ally_at
 		d.y = 0.0
 		var ahead: Vector3 = d.normalized() * 1.2 if d.length() > 0.01 else Vector3.ZERO
-		return ally.global_position + ahead + Vector3.UP * 1.7
+		return ally_at + ahead + Vector3.UP * 1.7
 	if caravan != null:
 		return caravan.global_position + Vector3.UP * 2.0
 	return from + Vector3(0, -1.0, 4.0)
