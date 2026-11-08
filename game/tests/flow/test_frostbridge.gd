@@ -106,6 +106,21 @@ func test_layout_nodes_and_batching() -> void:
 				if col.b > 0.1:
 					curtains += 1
 		assert_true(lit_verts > 0 and curtains > 0 and curtains < lit_verts, "部分亮窗拉了窗簾（%d／%d 頂點）" % [curtains, lit_verts])
+	# D-068：雪（街邊雪帶、屋頂、井沿）用積雪 shader，不再是平的淺色
+	var snow_meshes: int = 0
+	var plain_snow: int = 0
+	for c: Node in town.get_children():
+		var sm2: MeshInstance3D = c as MeshInstance3D
+		if sm2 == null:
+			continue
+		var ssm: ShaderMaterial = sm2.material_override as ShaderMaterial
+		if ssm != null and ssm.shader.resource_path == FrostbridgeLook.SNOW_SHADER:
+			snow_meshes += 1
+		var std: StandardMaterial3D = sm2.material_override as StandardMaterial3D
+		if std != null and std.albedo_color.is_equal_approx(FrostbridgeLook.SNOW):
+			plain_snow += 1
+	assert_eq(snow_meshes, 1, "雪共用一個積雪材質")
+	assert_eq(plain_snow, 0, "沒有平的淺色雪")
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
 	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")

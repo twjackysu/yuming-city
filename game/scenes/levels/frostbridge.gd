@@ -422,7 +422,7 @@ func _build_ground() -> void:
 	_batch.add_cylinder(3.2, 3.2, 0.05, Vector3(0.0, 0.025, 0.0), look.mat(FrostbridgeLook.STONE, 0.7), false, 32)
 	_batch.add_cylinder(2.9, 2.9, 0.06, Vector3(0.0, 0.03, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false, 32)
 	# 積雪：牆腳的淺色帶
-	var snow := look.mat(FrostbridgeLook.SNOW)
+	var snow := look.snow()
 	for sx: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(1.4, 0.04, PLAZA_S - PLAZA_N), Vector3(sx * (PLAZA_HALF - 0.7), 0.02, 0.0), snow, false)
 		_batch.add_box_at(Vector3(1.2, 0.04, PLAZA_N - STEPS_S), Vector3(sx * (MAIN_HALF - 0.6), 0.02, (PLAZA_N + STEPS_S) * 0.5), snow, false)
@@ -443,7 +443,7 @@ func _build_rise() -> void:
 	var step_h: float = RISE / float(STEP_COUNT)
 	var stone := look.stone_wall(1.0)  # 跟後牆同一個材質（不多一個 draw call）
 	var tread := look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4)  # 踏面跟台地上的濕石板同一個材質
-	var snow := look.mat(FrostbridgeLook.SNOW)
+	var snow := look.snow()
 	for i: int in STEP_COUNT - 1:
 		var top: float = step_h * float(i + 1)
 		var front: float = STEPS_S - run * float(i)
@@ -500,7 +500,7 @@ func _build_streets() -> void:
 	# 北城牆
 	_batch.add_box_at(Vector3(44.0, 9.0, 1.6), Vector3(0.0, RISE + 4.5, TOWER_Z - 5.5), look.stone_wall(1.6))
 	_batch.add_box_at(Vector3(44.6, 0.5, 2.0), Vector3(0.0, RISE + 9.2, TOWER_Z - 5.5), look.mat(FrostbridgeLook.ROOF))
-	_batch.add_box_at(Vector3(44.6, 0.14, 2.0), Vector3(0.0, RISE + 9.5, TOWER_Z - 5.5), look.mat(FrostbridgeLook.SNOW), false)
+	_batch.add_box_at(Vector3(44.6, 0.14, 2.0), Vector3(0.0, RISE + 9.5, TOWER_Z - 5.5), look.snow(), false)
 	# 南街
 	_row(Vector3(-SOUTH_HALF, 0, CROSS_N - 0.3), Vector3(-SOUTH_HALF, 0, PLAZA_S + 0.3), Vector3.RIGHT)
 	_row(Vector3(SOUTH_HALF, 0, PLAZA_S + 0.3), Vector3(SOUTH_HALF, 0, CROSS_N - 0.3), Vector3.LEFT)
@@ -559,7 +559,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	batch.add_mesh(roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.5, 0)), look.mat(FrostbridgeLook.ROOF))
 	var snow_roof := PrismMesh.new()
 	snow_roof.size = Vector3((depth + 0.7) * 0.82, roof_h * 0.82, w + 0.56)
-	batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.18 + roof_h * 0.82 * 0.5 + 0.06, 0)), look.mat(FrostbridgeLook.SNOW))
+	batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.18 + roof_h * 0.82 * 0.5 + 0.06, 0)), look.snow())
 	if _rng.randf() < 0.35:
 		var c: Vector3 = origin + dir * _rng.randf_range(-w * 0.3, w * 0.3) - face * depth * 0.2
 		batch.add_box_at(Vector3(0.6, 1.6, 0.6), c + Vector3(0, h + roof_h * 0.6, 0), look.stone_wall(), false)
@@ -628,7 +628,7 @@ func _build_well(pos: Vector3) -> void:
 	var stone := look.mat(FrostbridgeLook.STONE, 0.8)
 	_batch.add_cylinder(1.1, 1.2, 0.8, pos + Vector3(0, 0.4, 0), stone, true, 20)
 	_batch.add_cylinder(0.85, 0.85, 0.05, pos + Vector3(0, 0.81, 0), look.mat(Color(0.05, 0.06, 0.08), 0.2), false, 20)
-	_batch.add_cylinder(1.15, 1.2, 0.08, pos + Vector3(0, 0.84, 0), look.mat(FrostbridgeLook.SNOW), false, 20)
+	_batch.add_cylinder(1.15, 1.2, 0.08, pos + Vector3(0, 0.84, 0), look.snow(), false, 20)
 	var wood := look.mat(FrostbridgeLook.WOOD)
 	for sx: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(0.14, 2.2, 0.14), pos + Vector3(sx * 1.0, 1.1, 0), wood, false)
@@ -742,7 +742,7 @@ func _build_bell_tower(pos: Vector3) -> void:
 	var spire := PrismMesh.new()
 	spire.size = Vector3(5.6, 3.2, 5.6)
 	_batch.add_mesh(spire, Transform3D(Basis.IDENTITY, pos + Vector3(0, 19.6, 0)), roof)
-	_batch.add_box_at(Vector3(0.08, 3.2, 5.0), pos + Vector3(0, 19.65, 0), look.mat(FrostbridgeLook.SNOW), false)
+	_batch.add_box_at(Vector3(0.08, 3.2, 5.0), pos + Vector3(0, 19.65, 0), look.snow(), false)
 	# 塔門與塔窗的暖光
 	_batch.add_box_at(Vector3(1.4, 2.4, 0.1), pos + Vector3(0, 1.2, 2.52), look.glow(FrostbridgeLook.LAMP, 2.5), false)
 	var tower_window: Vector3 = pos + Vector3(0, 9.5, 2.52)

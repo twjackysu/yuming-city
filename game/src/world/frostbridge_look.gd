@@ -87,6 +87,7 @@ func glow(color: Color, energy: float) -> StandardMaterial3D:
 const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
 const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
 const WINDOW_SHADER: String = "res://src/world/window_glass.gdshader"
+const SNOW_SHADER: String = "res://src/world/snow.gdshader"
 ## 灰泥色（月光下偏冷／偏暖兩種），石牆的石頭色
 const PLASTER: Color = Color(0.4, 0.4, 0.41)
 const PLASTER_WARM: Color = Color(0.45, 0.4, 0.34)
@@ -126,6 +127,17 @@ func window() -> ShaderMaterial:
 	m.shader = load(WINDOW_SHADER) as Shader
 	m.set_shader_parameter("glow_color", LAMP)
 	_mats["window"] = m
+	return m
+
+
+## 積雪（snow.gdshader，D-068）：雪堆起伏、低處偏藍、街邊幾塊髒雪、雪粒閃點。全部的雪共用一個材質。
+func snow() -> ShaderMaterial:
+	if _mats.has("snow"):
+		return _mats["snow"] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(SNOW_SHADER) as Shader
+	m.set_shader_parameter("snow_color", SNOW)
+	_mats["snow"] = m
 	return m
 
 
