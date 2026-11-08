@@ -776,6 +776,37 @@ func test_ground_snow_and_ruts() -> void:
 	await _free(level)
 
 
+## 第五輪盤點第 2 項（D-120）：廣場的石板繞中央石框弧形鋪、石框裡不蓋殘雪；街道是直排（微微起伏）。
+## 石框裡的內圈鋪石跟廣場同一個材質（合併 mesh 數不變），兩者都還拿得到殘雪設定。
+func test_plaza_arc_paving() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var plaza: ShaderMaterial = level.call("plaza_ground")
+	assert_true(plaza.get_shader_parameter("arc_paving") == true, "廣場弧形鋪")
+	assert_eq(plaza.get_shader_parameter("arc_center"), Vector2.ZERO, "繞廣場中央（石框的圓心）")
+	var disc: Vector3 = plaza.get_shader_parameter("clear_disc")
+	var ring_r: float = level.get("PLAZA_RING_R")
+	assert_true(disc.z > 2.0 and disc.z < ring_r, "石框裡不蓋殘雪，範圍在石緣以內（%.2f）" % disc.z)
+	assert_true(plaza == level.call("plaza_ground"), "同一個材質（快取）")
+	var arc: int = 0
+	var straight: int = 0
+	for mi: Node in level.get_node("Town").find_children("*", "MeshInstance3D", true, false):
+		var m: ShaderMaterial = (mi as MeshInstance3D).material_override as ShaderMaterial
+		if m == null or m.shader == null or not m.shader.resource_path.ends_with("wet_cobble.gdshader"):
+			continue
+		if m.get_shader_parameter("arc_paving") == true:
+			arc += 1
+			assert_true(m == plaza, "弧形鋪的只有廣場這一個材質")
+		else:
+			straight += 1
+			var c: Variant = m.get_shader_parameter("clear_disc")
+			assert_true(c == null or (c as Vector3).z == 0.0, "街道沒有排除圓")
+		assert_true(int(m.get_shader_parameter("lane_count")) > 0, "殘雪設定都有套上")
+	assert_eq(arc, 1, "廣場與石框內圈合併成一個 mesh")
+	assert_true(straight >= 1, "街道還是直排")
+	await _free(level)
+
+
 func _polyline_dist(pts: PackedVector2Array, p: Vector2) -> float:
 	var best: float = INF
 	for i: int in pts.size() - 1:

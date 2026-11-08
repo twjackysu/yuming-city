@@ -486,8 +486,8 @@ func _build_ground() -> void:
 	look.set_ground_marks(ground_lanes(), TRODDEN, RUT_PATH)
 	# 街道與廣場：濕石板路（概念圖的燈光倒影）。地面方塊的側面埋在地下，看不到
 	_batch.add_box_at(Vector3(90.0, 1.0, 130.0), Vector3(0.0, -0.5, -5.0), look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4))
-	# 廣場鋪石（略暗）與中央的圓形石框
-	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false)
+	# 廣場鋪石（略暗，繞中央石框一圈圈弧形鋪，D-120）與中央的圓形石框
+	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), plaza_ground(), false)
 	_build_plaza_ring()
 	# 積雪：牆腳的雪帶（D-105：靠牆堆高、靠街邊緣不規則的一串雪堆，取代平的淺色帶）
 	for sx: float in [-1.0, 1.0]:
@@ -614,10 +614,15 @@ const PLAZA_RING_R: float = 3.2
 var plaza_ring_parts: int = 0
 
 
+## 廣場的濕石板（D-120）：繞中央石框弧形鋪；石框裡（內圈鋪石的範圍）不蓋殘雪與薄雪
+func plaza_ground() -> ShaderMaterial:
+	return look.wet_ground_arc(FrostbridgeLook.COBBLE, 0.34, 0.5, Vector2.ZERO, PLAZA_RING_R - 0.4)
+
+
 func _build_plaza_ring() -> void:
 	var curb := look.mat(FrostbridgeLook.STONE.lightened(0.28), 0.55)
 	var groove := look.mat(Color(0.05, 0.055, 0.065), 0.35)
-	var inner := look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5)
+	var inner := plaza_ground()  # 石框裡跟廣場同一個材質，但不蓋殘雪（D-120）
 	# 石緣外側的一圈深色石縫，讓石緣跟鋪石分開
 	_batch.add_cylinder(PLAZA_RING_R + 0.12, PLAZA_RING_R + 0.12, 0.03, Vector3(0.0, 0.02, 0.0), groove, false, 48)
 	_batch.add_cylinder(PLAZA_RING_R - 0.05, PLAZA_RING_R + 0.08, 0.07, Vector3(0.0, 0.035, 0.0), curb, false, 48)

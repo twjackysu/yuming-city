@@ -25,8 +25,15 @@ uniform float bevel_width = 0.09;
 uniform float bevel_strength = 0.8;
 // 每塊石板自己的小傾斜（濕路上有的石板反光、有的暗）
 uniform float stone_lean = 0.2;
-// 石板長寬比（沿 x 較長）
+// 石板長寬比（沿排的方向較長）；每排的石板長度再乘 0.8～1.25（D-120）
 const float STONE_LEN = 1.35;
+// D-120 排的方向：arc_paving＝true 時繞 arc_center 一圈圈弧形鋪（廣場繞中央石框），
+// 否則是直排、但排會隨低頻雜訊微微起伏（row_wave：起伏幅度，單位 stone_size）
+uniform bool arc_paving = false;
+uniform vec2 arc_center = vec2(0.0);
+uniform float row_wave = 1.1;
+// D-120 這個圓（中心 xz、半徑）裡不蓋殘雪與薄雪（廣場石框裡）；半徑 0＝沒有
+uniform vec3 clear_disc = vec3(0.0);
 
 // D-114 殘雪：街道範圍（中心 xz、半寬 xz）。離邊（牆）越近，石縫裡卡的雪越多、石板上也有一片片薄雪；
 // 兩個方向都靠邊（角落）更多。點在好幾個範圍裡時取離牆最遠的那個（街口不會被當成牆）；不在任何範圍裡當成靠牆
@@ -158,7 +165,23 @@ void fragment() {
 	// D-095：石板不再是一顆顆一樣大、整片鼓起的圓角方塊（遠看像氣泡紙）。
 	// - 每排隨機錯開；約一半的格子再切成兩塊長短不一的石板（長度不一，像概念圖的鋪法）
 	// - 石板是平的：只在最邊緣一圈倒角，每塊自己有一點傾斜（濕路上有的石板反光、有的暗）
-	vec2 p = world_pos.xz / stone_size;
+	// D-120：排不再全是 X 軸直線（廣場繞中央弧形鋪、街道的排微微起伏），每排石板長度不同，
+	// 每塊石板的圓角、四邊縮進、邊緣起伏都不同（不像磁磚）
+	vec2 xz = world_pos.xz;
+	vec2 rd = xz - arc_center;
+	float r_m = max(length(rd), 1e-3);
+	vec2 p;  // x：沿排（之後換成格數），y：跨排（單位 stone_size）
+	// 石板自己的座標軸在世界上的方向（倒角的法線要轉回世界）
+	vec2 across_dir = vec2(0.0, 1.0);
+	vec2 along_dir = vec2(1.0, 0.0);
+	if (arc_paving) {
+		across_dir = rd / r_m;
+		along_dir = vec2(-across_dir.y, across_dir.x);
+		p = vec2(atan(rd.y, rd.x) / TAU + 0.5, r_m / stone_size);
+	} else {
+		p = xz / stone_size;
+		p.y += (noise(xz * 0.11 + vec2(2.3, 8.1)) - 0.5) * row_wave * 2.0;
+	}
 	// 排的寬度不一：每兩排一組，組內在 38%～62% 處分開（排寬 0.76～1.24 塊）
 	float pair = floor(p.y * 0.5);
 	float fy = fract(p.y * 0.5);
@@ -167,8 +190,24 @@ void fragment() {
 	float row = pair * 2.0 + (second ? 1.0 : 0.0);
 	float row_h = second ? (1.0 - split_y) * 2.0 : split_y * 2.0;
 	float row_f = second ? (fy - split_y) / (1.0 - split_y) : fy / split_y;
-	p.x = p.x / STONE_LEN + hash(vec2(row, 7.0)) + mod(row, 2.0) * 0.37;
+	// 這一排的石板長度（單位 stone_size）、沿排方向的縮放（弧形鋪時外側比內側寬）
+	float len_row = STONE_LEN * mix(0.8, 1.25, hash(vec2(row, 13.0)));
+	float stretch = 1.0;
+	float n_row = 0.0;
+	if (arc_paving) {
+		// 一圈剛好整數塊：接縫處不會切出半塊
+		float r_c = pair * 2.0 + (second ? split_y * 2.0 : 0.0) + row_h * 0.5;
+		n_row = max(floor(TAU * r_c / len_row + 0.5), 3.0);
+		len_row = TAU * r_c / n_row;
+		stretch = p.y / max(r_c, 1e-3);
+		p.x = p.x * n_row + hash(vec2(row, 7.0));
+	} else {
+		p.x = p.x / len_row + hash(vec2(row, 7.0)) + mod(row, 2.0) * 0.37;
+	}
 	vec2 cell = vec2(floor(p.x), row);
+	if (arc_paving) {
+		cell.x = mod(cell.x, n_row);
+	}
 	vec2 f = vec2(fract(p.x), row_f);
 	float x0 = 0.0;
 	float x1 = 1.0;
@@ -178,17 +217,23 @@ void fragment() {
 	}
 	vec2 sid = vec2(cell.x + x0, cell.y);
 	// 石板內的座標（單位：stone_size），原點在石板中心
-	vec2 half_size = vec2((x1 - x0) * STONE_LEN, row_h) * 0.5;
-	vec2 lp = vec2(f.x * STONE_LEN, f.y * row_h) - vec2((x0 + x1) * 0.5 * STONE_LEN, row_h * 0.5);
-	// 圓角矩形距離場：石板裡面是負的，邊緣是 0
-	float corner = 0.1;
+	vec2 half_size = vec2((x1 - x0) * len_row * stretch, row_h) * 0.5;
+	vec2 lp = vec2((f.x - (x0 + x1) * 0.5) * len_row * stretch, (f.y - 0.5) * row_h);
+	// 每塊石板四邊縮進不同（石縫寬窄不一）、中心偏一點
+	vec2 shrink = vec2(hash(sid + vec2(6.6, 3.3)), hash(sid + vec2(2.4, 9.7))) * 0.045;
+	lp -= (vec2(hash(sid + vec2(8.2, 5.1)), hash(sid + vec2(4.8, 7.6))) - 0.5) * shrink;
+	half_size -= shrink;
+	// 圓角每塊不同（0.06～0.24，不超過短邊的 0.8 倍）：有的方正、有的圓
+	float corner = min(mix(0.06, 0.24, hash(sid + vec2(4.1, 2.7))), min(half_size.x, half_size.y) * 0.8);
 	vec2 q = abs(lp) - (half_size - corner);
 	float sdf = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - corner;
-	float jag = (noise(world_pos.xz * 11.0) - 0.5) * 0.05;
+	// 邊緣起伏：細的鋸齒＋石板大小的鼓出、凹進
+	float jag = (noise(xz * 11.0) - 0.5) * 0.05 + (noise(xz * 3.6 + sid * 1.7) - 0.5) * 0.08;
 	float gap_half = 0.045;
 	float stone = 1.0 - smoothstep(-gap_half - 0.03, -gap_half + 0.005, sdf + jag);
 	// 遠處石塊比像素還小：淡成平均值，避免閃爍（沒有 mipmap 的程序紋理）
-	float aa = clamp(length(fwidth(p)) * 1.2 - 0.15, 0.0, 1.0);
+	// （用連續的世界座標量：弧形鋪的 p.x 在排與排之間、接縫處不連續）
+	float aa = clamp(length(fwidth(xz) / stone_size * vec2(0.8, 1.0)) * 1.2 - 0.15, 0.0, 1.0);
 	stone = mix(stone, 0.8, aa);
 
 	float tint = hash(sid);
@@ -217,8 +262,12 @@ void fragment() {
 	float in_gap = (1.0 - stone) * lodge * mix(smoothstep(0.35, 0.6, noise(world_pos.xz * 2.7 + 5.0)), 1.0, near);
 	float on_stone = smoothstep(0.45, 0.8, near * 0.85 + (patchy - 0.47) * 1.2) * stone;
 	float dust = smoothstep(0.5, 0.6, fbm(world_pos.xz * 0.5 + 7.0)) * smoothstep(0.25, 0.6, noise(world_pos.xz * 4.5 + 13.0));
-	float rest = max(max(in_gap, on_stone * 0.9), dust * 0.6 * stone) * (1.0 - puddle) * step(0.5, float(lane_count));
+	float rest = max(max(in_gap * 0.75, on_stone * 0.9), dust * 0.6 * stone) * (1.0 - puddle) * step(0.5, float(lane_count));
 	snow = max(snow, rest);
+	// D-120 石框裡不蓋殘雪與薄雪
+	if (clear_disc.z > 0.0) {
+		snow *= smoothstep(clear_disc.z - 0.3, clear_disc.z + 0.1, length(xz - clear_disc.xy));
+	}
 
 	// 踩實的髒雪：灰褐、斑駁（有的地方踩到露出石頭），石縫裡最髒
 	float tm = trodden_mask(world_pos.xz);
@@ -231,7 +280,8 @@ void fragment() {
 	snow = max(snow, rut.y * 0.95 * (1.0 - puddle));
 	snow *= 1.0 - rut.x;
 
-	albedo = mix(albedo, snow_color, snow * 0.85);
+	// 石縫裡的雪在陰影裡、比石板上的雪暗（近處不會像一張白格子，D-120）
+	albedo = mix(albedo, snow_color * mix(1.0, 0.7, 1.0 - stone), snow * 0.85);
 	albedo = mix(albedo, grime_color * mix(0.8, 1.15, noise(world_pos.xz * 4.0)), grime * 0.85);
 	albedo = mix(albedo, gap_color * 1.4, rut.x * 0.7);
 
@@ -253,6 +303,7 @@ void fragment() {
 			outward = q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
 		}
 		outward *= sign(lp);
+		outward = outward.x * along_dir + outward.y * across_dir;
 		float bevel = 1.0 - smoothstep(0.0, bevel_width, -sdf - gap_half);
 		vec2 lean = vec2(hash(sid + vec2(1.9, 6.1)), hash(sid + vec2(7.3, 2.9))) - 0.5;
 		vec2 bump = vec2(noise(world_pos.xz * 6.0 + 31.0), noise(world_pos.xz * 6.0 + 57.0)) - 0.5;

@@ -226,6 +226,20 @@ func wet_ground(color: Color, stone_size: float, puddles: float = 0.42) -> Shade
 	return m
 
 
+## 弧形鋪的濕石板（D-120）：石板一圈圈繞 center（xz）鋪，clear_radius 以內不蓋殘雪與薄雪
+## （廣場繞中央石框，石框裡乾淨）。其他參數同 wet_ground；key 也是 "wet/" 開頭，殘雪設定一樣會套上。
+func wet_ground_arc(color: Color, stone_size: float, puddles: float, center: Vector2, clear_radius: float) -> ShaderMaterial:
+	var key: String = "wet/%s/%.2f/%.2f/arc/%.2f,%.2f/%.2f" % [color.to_html(), stone_size, puddles, center.x, center.y, clear_radius]
+	if _mats.has(key):
+		return _mats[key] as ShaderMaterial
+	var m := wet_ground(color, stone_size, puddles).duplicate() as ShaderMaterial
+	m.set_shader_parameter("arc_paving", true)
+	m.set_shader_parameter("arc_center", center)
+	m.set_shader_parameter("clear_disc", Vector3(center.x, center.y, clear_radius))
+	_mats[key] = m
+	return m
+
+
 ## 地上的殘雪與髒雪（D-114）：wet_cobble.gdshader 的 lanes／trodden／rut_pts。
 ## lanes：街道範圍（中心 x、z，半寬 x、z）；trodden：踩實的髒雪（圓心 x、z，內半徑、外半徑）；
 ## rut：車轍中心線（xz 折線）。已經建立的濕石板材質立刻更新，之後建立的也會套上。
