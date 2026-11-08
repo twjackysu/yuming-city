@@ -29,6 +29,14 @@ func _update_look() -> void:
 	_body.position.y = -0.35 if brain.state == EnemyBrain.State.STAGGERED else 0.0
 
 
+## 撲倒在地：胸口鐘盤與爪上的霜光慢慢熄掉（D-054）。
+func _on_fall_impact() -> void:
+	super._on_fall_impact()
+	if _claw_mat != null and is_inside_tree():
+		var t := create_tween()
+		t.tween_property(_claw_mat, "emission_energy_multiplier", 0.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
 func _build_body() -> void:
 	super._build_body()
 	var shape := CollisionShape3D.new()

@@ -197,13 +197,99 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 	brain.add_stagger(float(info.get("stagger", 0.0)))
 
 
+# ---------------------------------------------------------------- 倒下（D-052、D-054）
+## 一般敵人：跪下 → 向前撲倒（頭朝 forward()）→ 落地揚起灰粉、胸口的光熄掉 → 躺一會兒 → 沉進雪裡。
+## 不再「往後倒＋壓扁成一片」。送葬者覆寫成更長、更重的版本。
+## FALL_FORWARD：繞 X 軸轉負角度是往前倒（頭在 -Z）；寫新的姿勢照這個常數，別再寫反。
+const FALL_FORWARD: float = -1.0
+const DIE_KNEEL_SEC: float = 0.22
+const DIE_DROP_SEC: float = 0.38
+const DIE_LIE_SEC: float = 1.3
+const DIE_SINK_SEC: float = 1.1
+## 倒地那一刻（測試用）
+var has_fallen: bool = false
+## 截圖用：停在倒地那一刻，不沉進雪裡
+var debug_hold_fallen: bool = false
+var _fall_tween: Tween
+
+
+func die_total_sec() -> float:
+	return DIE_KNEEL_SEC + DIE_DROP_SEC + DIE_LIE_SEC + DIE_SINK_SEC
+
+
 func _on_died() -> void:
+	_begin_death()
+	var t := create_tween()
+	_fall_tween = t
+	t.tween_property(_body, "position:y", -0.3, DIE_KNEEL_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(_body, "rotation_degrees:x", FALL_FORWARD * 82.0, DIE_DROP_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(_body, "position:y", 0.18, DIE_DROP_SEC)
+	t.tween_callback(_on_fall_impact)
+	t.tween_interval(DIE_LIE_SEC)
+	t.tween_property(_body, "position:y", -1.0, DIE_SINK_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_callback(queue_free)
+
+
+## 倒下共用：不再追、不再吃傷害、不再擋路，藏起看穿與弱點標記。
+## 停掉 _physics_process（_update_look 每幀會蓋掉倒地動作）。
+func _begin_death() -> void:
 	brain.kill()
 	remove_from_group("damageable")
-	var t := create_tween()
-	t.tween_property(_body, "rotation_degrees:x", 80.0, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	t.tween_property(_body, "scale", Vector3(1.0, 0.05, 1.0), 1.2)
-	t.tween_callback(queue_free)
+	set_physics_process(false)
+	collision_layer = 0
+	if _insight_label != null:
+		_insight_label.visible = false
+	if _weak_marker != null:
+		_weak_marker.visible = false
+
+
+## 身體撞到地面那一刻；子類別可以加料（記得呼叫 super）。
+func _on_fall_impact() -> void:
+	has_fallen = true
+	var at: Vector3 = global_position + forward() * 0.8
+	if is_inside_tree():
+		Sfx.play_at(get_parent(), "blunt", at, -4.0, 0.03)
+	_ground_puff(at, Vector3(0.3, 0.05, 0.7), 16, Color(0.55, 0.56, 0.6, 0.5))
+	if debug_hold_fallen and _fall_tween != null:
+		_fall_tween.pause()
+
+
+## 倒地揚起的粉（雪或灰）：一次性的小粒子，節點名 FallPuff。
+func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> void:
+	var ps := CPUParticles3D.new()
+	ps.name = "FallPuff"
+	ps.one_shot = true
+	ps.explosiveness = 0.9
+	ps.amount = amount
+	ps.lifetime = 1.3
+	ps.direction = Vector3.UP
+	ps.spread = 75.0
+	ps.initial_velocity_min = 0.8
+	ps.initial_velocity_max = 2.4
+	ps.gravity = Vector3(0, -1.5, 0)
+	ps.damping_min = 1.5
+	ps.damping_max = 3.0
+	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	ps.emission_box_extents = extents
+	ps.scale_amount_min = 0.7
+	ps.scale_amount_max = 1.6
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.35, 0.35)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = color
+	quad.material = mat
+	ps.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	ps.color_ramp = ramp
+	add_child(ps)
+	ps.global_position = at
+	ps.emitting = true
 
 
 func _update_insight() -> void:

@@ -79,3 +79,53 @@ func test_ashwalker_claws_player_and_dodge_avoids() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 灰巡者倒下（D-054）：跪下 → 向前撲倒（頭在原本面向的前方、貼地）→ 灰粉、胸口的光熄掉 → 沉進雪裡移除；不再壓扁。
+func test_ashwalker_dies_falling_forward_not_squashed() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var walker := Ashwalker.new()
+	walker.position = Vector3(0, 0, -3)
+	root.add_child(walker)
+	walker.set_physics_process(false)
+	walker._body.rotation.y = deg_to_rad(-40.0)
+	await tree.process_frame
+	var fwd: Vector3 = walker.forward()
+	var origin: Vector3 = walker.global_position
+	var prev: float = Engine.time_scale
+	Engine.time_scale = 4.0
+	walker.health.apply_damage(walker.health.hp, {"stagger": 0.0})
+	assert_false(walker.is_in_group("damageable"), "倒下後不再吃傷害")
+	assert_eq(walker.collision_layer, 0, "倒下後不再擋路")
+	for i: int in 300:
+		if walker.has_fallen:
+			break
+		await tree.process_frame
+	assert_true(walker.has_fallen, "撲倒在地")
+	var head: Node3D = null
+	for c: Node in walker._body.get_children():
+		if c is CSGSphere3D:
+			head = c as Node3D
+	assert_not_null(head, "找得到頭")
+	if head != null:
+		var rel: Vector3 = head.global_position - origin
+		assert_true(rel.dot(fwd) > 0.9, "向前倒：頭在原本面向的前方（%.2f m）" % rel.dot(fwd))
+		assert_true(head.global_position.y < 0.6, "貼地（頭離地 %.2f m）" % head.global_position.y)
+	assert_true(absf(walker._body.scale.y - 1.0) < 0.001, "不再壓扁")
+	assert_true(walker.has_node("FallPuff"), "落地揚起灰粉")
+	var glow: StandardMaterial3D = walker._claw_mat
+	for i: int in 600:
+		if glow.emission_energy_multiplier < 0.05 or not is_instance_valid(walker):
+			break
+		await tree.process_frame
+	assert_true(glow.emission_energy_multiplier < 0.05, "胸口與爪上的光熄掉（%.2f）" % glow.emission_energy_multiplier)
+	assert_true(is_instance_valid(walker), "光熄掉時還躺在地上")
+	for i: int in 600:
+		if not is_instance_valid(walker):
+			break
+		await tree.process_frame
+	Engine.time_scale = prev
+	assert_false(is_instance_valid(walker), "躺一會兒後沉進雪裡、移除")
+	root.queue_free()
+	await tree.process_frame

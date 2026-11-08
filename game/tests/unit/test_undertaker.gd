@@ -402,6 +402,8 @@ func test_cut_down_falls_forward_then_sinks() -> void:
 		var up: float = (frame.global_basis * Vector3(0, 0, 1)).y
 		assert_true(up > 0.8, "背上的鐵架朝天（%.2f）" % up)
 	assert_true(boss.has_node("FallPuff"), "落地揚起雪粉")
+	assert_true(boss.has_node("FrostExhale"), "倒地後身上的霜氣散出一盞冷光（暗色大衣在夜裡有輪廓）")
+	assert_eq(boss.collision_layer, 0, "倒下後不再擋路")
 	for i: int in 900:
 		if not is_instance_valid(boss):
 			break

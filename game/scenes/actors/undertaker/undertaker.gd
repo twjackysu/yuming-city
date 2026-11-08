@@ -295,18 +295,12 @@ func _shake_player(amount: float) -> void:
 # ---------------------------------------------------------------- 被斬倒（D-052）
 
 ## 跪下 → 停一下 → 向前倒（背上的鐵架朝天）→ 落地那一刻鐵與身體撞地聲、雪粉、鏡頭小震 →
-## 躺一會兒 → 沉進雪裡消失。FALL_FORWARD：繞 X 軸轉負角度，頭朝 forward()（-Z）倒下。
-const FALL_FORWARD: float = -1.0
+## 躺一會兒 → 沉進雪裡消失。FALL_FORWARD（EnemyActor）：繞 X 軸轉負角度，頭朝 forward()（-Z）倒下。
 const FALL_KNEEL_SEC: float = 0.45
 const FALL_HOLD_SEC: float = 0.5
 const FALL_DROP_SEC: float = 0.55
 const FALL_LIE_SEC: float = 2.5
 const FALL_SINK_SEC: float = 1.4
-## 倒地那一刻（測試用）
-var has_fallen: bool = false
-## 截圖用（--convoy --felled）：停在倒地那一刻，不沉進雪裡
-var debug_hold_fallen: bool = false
-var _fall_tween: Tween
 
 
 func fall_total_sec() -> float:
@@ -314,16 +308,10 @@ func fall_total_sec() -> float:
 
 
 func _on_died() -> void:
-	brain.kill()
-	remove_from_group("damageable")
-	# 不再追、不再更新前兆姿勢（_update_look 每幀會蓋掉倒地動作）
-	set_physics_process(false)
+	# 不再追、不再更新前兆姿勢、不再擋路（EnemyActor._begin_death）
+	_begin_death()
 	for id: String in _decals:
 		(_decals[id] as MeshInstance3D).visible = false
-	if _insight_label != null:
-		_insight_label.visible = false
-	if _weak_marker != null:
-		_weak_marker.visible = false
 	var torso: Node3D = _body.get_node("Torso") as Node3D
 	var t := create_tween()
 	_fall_tween = t
@@ -348,47 +336,32 @@ func _on_fall_impact() -> void:
 	Sfx.play_at(parent, "iron_clang", at, 1.0, 0.03)
 	Sfx.play_at(parent, "blunt", at, 2.0, 0.03)
 	_shake_player(0.35)
-	_snow_puff(at)
+	_ground_puff(at, Vector3(0.6, 0.05, 1.2), 28, Color(0.75, 0.8, 0.88, 0.55))
+	_frost_exhale(global_position + forward() * 1.1 + Vector3.UP * 1.4)
 	fell.emit()
 	if debug_hold_fallen and _fall_tween != null:
 		_fall_tween.pause()
 
 
-func _snow_puff(at: Vector3) -> void:
-	var ps := CPUParticles3D.new()
-	ps.name = "FallPuff"
-	ps.one_shot = true
-	ps.explosiveness = 0.9
-	ps.amount = 28
-	ps.lifetime = 1.3
-	ps.direction = Vector3.UP
-	ps.spread = 75.0
-	ps.initial_velocity_min = 0.8
-	ps.initial_velocity_max = 2.4
-	ps.gravity = Vector3(0, -1.5, 0)
-	ps.damping_min = 1.5
-	ps.damping_max = 3.0
-	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	ps.emission_box_extents = Vector3(0.6, 0.05, 1.2)
-	ps.scale_amount_min = 0.7
-	ps.scale_amount_max = 1.6
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.35, 0.35)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = Color(0.75, 0.8, 0.88, 0.55)
-	quad.material = mat
-	ps.mesh = quad
-	var ramp := Gradient.new()
-	ramp.set_color(0, Color(1, 1, 1, 1))
-	ramp.set_color(1, Color(1, 1, 1, 0))
-	ps.color_ramp = ramp
-	add_child(ps)
-	ps.global_position = at
-	ps.emitting = true
+## 倒地後身上的霜氣散出來：一盞冷光從大衣上方慢慢熄掉，讓暗色大衣在夜裡有輪廓（D-054）。
+const EXHALE_ENERGY: float = 2.0
+const EXHALE_SEC: float = 2.6
+
+
+func _frost_exhale(at: Vector3) -> void:
+	var light := OmniLight3D.new()
+	light.name = "FrostExhale"
+	light.light_color = FROST
+	light.light_energy = EXHALE_ENERGY
+	light.omni_range = 4.0
+	light.omni_attenuation = 1.4
+	light.shadow_enabled = false
+	add_child(light)
+	light.global_position = at
+	if debug_hold_fallen:
+		return
+	var t := create_tween()
+	t.tween_property(light, "light_energy", 0.0, EXHALE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
 func _update_look() -> void:
@@ -437,6 +410,10 @@ func _build_body() -> void:
 	var robe := StandardMaterial3D.new()
 	robe.albedo_color = Color(0.11, 0.11, 0.12)
 	robe.roughness = 1.0
+	# 邊緣光：暗色大衣在燈下有一圈輪廓（D-054）
+	robe.rim_enabled = true
+	robe.rim = 0.7
+	robe.rim_tint = 0.35
 	var iron := StandardMaterial3D.new()
 	iron.albedo_color = Color(0.3, 0.24, 0.2)
 	iron.metallic = 0.7
