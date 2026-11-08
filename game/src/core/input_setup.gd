@@ -65,6 +65,14 @@ const _AXIS_SIGN: Dictionary = {
 }
 
 
+## Godot 內建的 ui_accept／ui_cancel 只有鍵盤（Enter、Space／Esc）：手把能用十字鍵移動焦點，
+## 卻按不下對話選項、選單按鈕，也關不掉選單。補上 A 確認、B 返回（固定，不進按鍵設定）。
+const UI_PAD: Dictionary = {
+	"ui_accept": JOY_BUTTON_A,
+	"ui_cancel": JOY_BUTTON_B,
+}
+
+
 static func ensure_actions() -> void:
 	for action: String in BINDINGS:
 		if InputMap.has_action(action):
@@ -72,6 +80,17 @@ static func ensure_actions() -> void:
 		InputMap.add_action(action, DEADZONE)
 		for spec: Vector2i in (BINDINGS[action] as Array):
 			InputMap.action_add_event(action, _make_event(action, spec))
+	ensure_ui_pad()
+
+
+static func ensure_ui_pad() -> void:
+	for action: String in UI_PAD:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var b := InputEventJoypadButton.new()
+		b.button_index = UI_PAD[action] as JoyButton
+		if not InputMap.action_has_event(action, b):
+			InputMap.action_add_event(action, b)
 
 
 static func _make_event(action: String, spec: Vector2i) -> InputEvent:

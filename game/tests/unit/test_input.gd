@@ -31,6 +31,31 @@ func test_ensure_is_idempotent() -> void:
 	assert_eq(InputMap.action_get_events("dodge").size(), n, "重複呼叫不會重複加事件")
 
 
+## 內建 ui_accept／ui_cancel 只有鍵盤：手把要能用 A 按下對話選項與選單按鈕、B 關掉選單。
+func test_ui_actions_have_pad_buttons() -> void:
+	InputSetup.ensure_actions()
+	InputSetup.ensure_actions()
+	for action: String in InputSetup.UI_PAD:
+		var pads: int = 0
+		for ev: InputEvent in InputMap.action_get_events(action):
+			var b: InputEventJoypadButton = ev as InputEventJoypadButton
+			if b != null and b.button_index == (InputSetup.UI_PAD[action] as JoyButton):
+				pads += 1
+		assert_eq(pads, 1, "%s 有一個手把按鈕（重複呼叫不重複加）" % action)
+	var a := InputEventJoypadButton.new()
+	a.button_index = JOY_BUTTON_A
+	a.pressed = true
+	assert_true(a.is_action_pressed("ui_accept"), "A = 確認")
+	assert_true(a.is_action_pressed("interact"), "A 也還是互動")
+	var b := InputEventJoypadButton.new()
+	b.button_index = JOY_BUTTON_B
+	b.pressed = true
+	assert_true(b.is_action_pressed("ui_cancel"), "B = 返回")
+	# 套用按鍵設定（會清掉遊戲動作的事件）不影響 UI 的手把按鈕
+	InputSetup.apply_bindings(InputSetup.defaults())
+	assert_true(a.is_action_pressed("ui_accept"), "套用按鍵設定後 A 仍是確認")
+
+
 func _axis_value(action: String) -> float:
 	for ev: InputEvent in InputMap.action_get_events(action):
 		if ev is InputEventJoypadMotion:

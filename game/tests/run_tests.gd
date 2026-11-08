@@ -2,7 +2,7 @@ extends SceneTree
 ## 測試入口：
 ##   godot --headless --path game -s res://tests/run_tests.gd
 ## 依序：1) 所有 GDScript 都能載入（警告視為錯誤的設定會讓未加型別的腳本失敗）
-##       2) 執行 res://tests/unit/ 與 res://tests/flow/ 下所有 test_*.gd
+##       2) 執行 res://tests/unit/ 與 res://tests/flow/ 下所有 test_*.gd（環境變數 TEST_FILTER 可只跑部分檔案）
 ## 任何失敗都以非 0 結束碼離開，CI 據此判定。
 
 const TEST_DIRS: PackedStringArray = ["res://tests/unit", "res://tests/flow"]
@@ -30,8 +30,12 @@ func _run() -> void:
 	var test_files: PackedStringArray = []
 	for dir: String in TEST_DIRS:
 		_collect(dir, ".gd", test_files)
+	# 開發用：TEST_FILTER=gamepad 只跑檔名含這段字的測試檔（CI 不設，全部跑）
+	var only: String = OS.get_environment("TEST_FILTER")
 	for path: String in test_files:
 		if not path.get_file().begins_with("test_"):
+			continue
+		if only != "" and not path.get_file().contains(only):
 			continue
 		var script: GDScript = load(path) as GDScript
 		if script == null:
