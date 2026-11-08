@@ -86,6 +86,7 @@ func glow(color: Color, energy: float) -> StandardMaterial3D:
 
 const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
 const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
+const WINDOW_SHADER: String = "res://src/world/window_glass.gdshader"
 ## 灰泥色（月光下偏冷／偏暖兩種），石牆的石頭色
 const PLASTER: Color = Color(0.4, 0.4, 0.41)
 const PLASTER_WARM: Color = Color(0.45, 0.4, 0.34)
@@ -114,6 +115,30 @@ func _wall_material(key: String, plaster: Color, stone_height: float, block_scal
 	m.set_shader_parameter("snow_color", SNOW)
 	_mats[key] = m
 	return m
+
+
+## 窗（window_glass.gdshader，D-066）：木窗框＋十字窗櫺＋亮／暗玻璃，全部的窗共用一個材質。
+## 每扇窗用 StaticBatch.add_box_tinted 加，頂點色用 window_tint()。
+func window() -> ShaderMaterial:
+	if _mats.has("window"):
+		return _mats["window"] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(WINDOW_SHADER) as Shader
+	m.set_shader_parameter("glow_color", LAMP)
+	_mats["window"] = m
+	return m
+
+
+## 一扇窗的頂點色：lit 亮或暗、energy 發光強度（0～4）。色溫、窗簾、亮度起伏用位置雜湊決定
+## （不動關卡的 _rng，房子配置不變）；約四成的亮窗拉了半邊窗簾。
+static func window_tint(lit: bool, pos: Vector3, energy: float) -> Color:
+	var h1: float = fposmod(sin(pos.x * 41.17 + pos.y * 13.31 + pos.z * 97.73) * 43758.5453, 1.0)
+	var h2: float = fposmod(sin(pos.x * 7.91 + pos.y * 59.03 + pos.z * 23.57) * 24634.6345, 1.0)
+	var curtain: float = 0.0
+	if h2 < 0.42:
+		curtain = 0.22 + h2 * 0.55
+	var scale: float = lerpf(0.75, 1.2, fposmod(h1 * 7.31, 1.0))
+	return Color(1.0 if lit else 0.0, h1, curtain, clampf(energy * scale / 4.0, 0.0, 1.0))
 
 
 ## 濕石板路（wet_cobble.gdshader）：石塊大小 stone_size 公尺、水窪比例 puddles（0～1）。

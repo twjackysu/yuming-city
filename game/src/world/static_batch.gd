@@ -28,6 +28,21 @@ func add_box_at(size: Vector3, pos: Vector3, mat: Material, collide: bool = true
 	add_box(size, Transform3D(Basis.IDENTITY, pos), mat, collide)
 
 
+## 帶頂點色的方塊（不加碰撞）：每個方塊的資料放在頂點色，shader 用 COLOR 讀（例如窗，D-066）。
+## 同一個材質的方塊要全部用這個方法加（合併後的頂點格式才一致）。
+func add_box_tinted(size: Vector3, pos: Vector3, mat: Material, tint: Color) -> void:
+	var box := BoxMesh.new()
+	box.size = size
+	var arrays: Array = box.get_mesh_arrays()
+	var colors := PackedColorArray()
+	colors.resize((arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size())
+	colors.fill(tint)
+	arrays[Mesh.ARRAY_COLOR] = colors
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	add_mesh(mesh, Transform3D(Basis.IDENTITY, pos), mat)
+
+
 ## 圓柱（top_radius=0 是圓錐）；碰撞用圓柱形狀（取較大半徑）。
 func add_cylinder(top_radius: float, bottom_radius: float, height: float, pos: Vector3, mat: Material,
 		collide: bool = true, segments: int = 16) -> void:

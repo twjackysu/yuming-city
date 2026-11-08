@@ -80,6 +80,32 @@ func test_layout_nodes_and_batching() -> void:
 			wet += 1
 		if sm != null and sm.shader.resource_path == FrostbridgeLook.HALF_TIMBER_SHADER:
 			timber += 1
+	# D-066：全部的窗（房子＋塔窗）合併成一個 mesh、用窗框＋窗櫺的 shader，每扇窗的資料在頂點色
+	var windows: Array[MeshInstance3D] = []
+	for c: Node in town.get_children():
+		var wm: MeshInstance3D = c as MeshInstance3D
+		if wm == null:
+			continue
+		var wsm: ShaderMaterial = wm.material_override as ShaderMaterial
+		if wsm != null and wsm.shader.resource_path == FrostbridgeLook.WINDOW_SHADER:
+			windows.append(wm)
+	assert_eq(windows.size(), 1, "窗共用一個材質、合併成一個 mesh")
+	var win_count: int = int(level.get("window_count"))
+	var lit_count: int = int(level.get("lit_window_count"))
+	assert_true(win_count > 30, "小鎮有不少窗（%d）" % win_count)
+	assert_true(lit_count > win_count / 5 and lit_count < win_count * 3 / 4, "有亮有暗（%d／%d 亮）" % [lit_count, win_count])
+	if windows.size() == 1:
+		var arrays: Array = windows[0].mesh.surface_get_arrays(0)
+		var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+		assert_eq(colors.size(), (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size(), "每個頂點都有窗的資料")
+		var curtains: int = 0
+		var lit_verts: int = 0
+		for col: Color in colors:
+			if col.r > 0.5:
+				lit_verts += 1
+				if col.b > 0.1:
+					curtains += 1
+		assert_true(lit_verts > 0 and curtains > 0 and curtains < lit_verts, "部分亮窗拉了窗簾（%d／%d 頂點）" % [curtains, lit_verts])
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
 	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")

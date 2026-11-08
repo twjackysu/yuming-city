@@ -52,6 +52,10 @@ var _batch := StaticBatch.new()
 ## 統計（測試、benchmark 用）
 var light_count: int = 0
 var lantern_count: int = 0
+var window_count: int = 0
+var lit_window_count: int = 0
+## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
+const WINDOW_ENERGY: float = 1.5
 
 
 func _ready() -> void:
@@ -563,8 +567,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	var front: Vector3 = origin + face * (depth * 0.5)
 	var door_off: float = _rng.randf_range(-w * 0.25, w * 0.25)
 	batch.add_box_at(_axis_size(dir, face, 1.0, 0.12, 2.1), front + dir * door_off + Vector3(0, 1.05, 0), look.mat(FrostbridgeLook.WOOD), false)
-	var lit_mat := look.glow(FrostbridgeLook.LAMP, 1.4)
-	var dark_mat := look.mat(Color(0.06, 0.07, 0.09), 0.3)
+	var window_mat: ShaderMaterial = look.window()
 	# 門邊的掛燈（概念圖：每幾戶門口一盞）。用位置算的雜湊決定，不動 _rng（房子配置保持不變）。
 	# 有掛燈的房子，窗戶只發光不另外打燈（燈數上限見 test_frostbridge）。
 	var lantern: bool = fposmod(sin(center.x * 12.9898 + center.z * 78.233) * 43758.5453, 1.0) < 0.45
@@ -579,7 +582,11 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 				continue
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4, 0)
 			var lit: bool = _rng.randf() < 0.4
-			batch.add_box_at(_axis_size(dir, face, 0.7, 0.08, 0.9), pos, lit_mat if lit else dark_mat, false)
+			batch.add_box_tinted(_axis_size(dir, face, 0.7, 0.08, 0.9), pos, window_mat,
+				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
+			window_count += 1
+			if lit:
+				lit_window_count += 1
 			if lit and not lantern and light_count < 22:
 				var l := OmniLight3D.new()
 				l.light_color = FrostbridgeLook.LAMP
@@ -738,7 +745,12 @@ func _build_bell_tower(pos: Vector3) -> void:
 	_batch.add_box_at(Vector3(0.08, 3.2, 5.0), pos + Vector3(0, 19.65, 0), look.mat(FrostbridgeLook.SNOW), false)
 	# 塔門與塔窗的暖光
 	_batch.add_box_at(Vector3(1.4, 2.4, 0.1), pos + Vector3(0, 1.2, 2.52), look.glow(FrostbridgeLook.LAMP, 2.5), false)
-	_batch.add_box_at(Vector3(1.0, 1.6, 0.1), pos + Vector3(0, 9.5, 2.52), look.glow(FrostbridgeLook.LAMP, 4.0), false)
+	var tower_window: Vector3 = pos + Vector3(0, 9.5, 2.52)
+	var tower_tint: Color = FrostbridgeLook.window_tint(true, tower_window, 4.0)
+	tower_tint.b = 0.0  # 塔窗不拉窗簾
+	_batch.add_box_tinted(Vector3(1.0, 1.6, 0.1), tower_window, look.window(), tower_tint)
+	window_count += 1
+	lit_window_count += 1
 	var l := OmniLight3D.new()
 	l.name = "BellLight"
 	l.light_color = FrostbridgeLook.LAMP
