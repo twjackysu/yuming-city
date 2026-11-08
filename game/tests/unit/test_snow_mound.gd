@@ -167,7 +167,7 @@ func test_on_tiles_marks_slope_meters() -> void:
 		assert_true(absf(uv2s[n].y - SnowMound.TILES_MARK - verts[n].x) < 0.001, "UV2.y－TILES_MARK＝模型 X（%.3f vs %.3f）" % [uv2s[n].y, verts[n].x])
 
 
-## 街邊雪帶的腳印座標（D-133）：UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)。
+## 街邊雪帶的腳印座標（D-134）：UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)。
 ## 沿著牆的座標跟世界一致（重疊的兩段算出來一樣，腳印接得起來）；離牆越遠 UV.y 越大；UV2 照舊。
 func test_bank_uv_is_wall_meters() -> void:
 	# 牆在 -Z（toward_wall＝-1）：越往 +Z 離牆越遠

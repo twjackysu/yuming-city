@@ -19,13 +19,13 @@ uniform float edge_start = 0.5;
 // 雪面不是光滑的白枕頭（D-126）：
 // - 風吹的紋：順著風向的細波（波長約 22 cm，一邊緩一邊陡），一片一片的、有的地方平；只動法線與一點亮暗
 // - 街邊雪帶（UV2.y＝往牆那側多遠，-1＝靠街、+1＝靠牆；其他雪＝0）：靠牆的角落照不到天光、暗一點偏藍，
-//   靠街那側才有腳印（一串，D-133：踩實、偏灰）與髒雪
+//   靠街那側才有腳印（一串，D-134：踩實、偏灰）與髒雪
 uniform vec2 wind_dir = vec2(0.8, 0.6);
 uniform float ripple_freq = 4.5;
 uniform float ripple_strength = 0.45;
 uniform float wall_shade = 0.55;
 uniform float footprint_density = 0.4;
-// 腳印排成一串（D-133）：街邊雪帶的 UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)；
+// 腳印排成一串（D-134）：街邊雪帶的 UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)；
 // 有人沿著雪帶靠街那側走過——左右交錯、每步 step_len、一串 8 步，有 footprint_density 的機率出現
 uniform float trail_from_wall = 0.5;
 uniform float step_len = 0.36;
@@ -100,7 +100,7 @@ void fragment() {
 	// 波面的斜率（往風向）：d/du sin(arg)；乘上 ripple_strength 才是法線傾斜的量
 	vec2 ripple_grad = wd * cos(arg) * (1.0 + 0.55 * cos(ph)) * ripple_amp;
 
-	// 腳印（D-126 → D-133）：不再是散落的單一凹痕，而是街邊雪帶靠街那側一串左右交錯的腳印
+	// 腳印（D-126 → D-134）：不再是散落的單一凹痕，而是街邊雪帶靠街那側一串左右交錯的腳印
 	float street = 1.0 - smoothstep(-0.55, -0.15, bank_lean);
 	float is_bank = step(500.0, bank_uv.x);
 	float bs = bank_uv.x - 1000.0;  // 沿著牆的公尺數
@@ -144,7 +144,7 @@ void fragment() {
 	// 腳印裡踩實的雪：偏灰、暗一點
 	dirt = max(dirt, dent * print_lod * 0.45);
 	col = mix(col, dirt_color, dirt * 0.55);
-	// 一串腳印比散落的一個個多，凹痕淡一點（D-133；原本 0.3，看起來像一排黑洞）
+	// 一串腳印比散落的一個個多，凹痕淡一點（D-134；原本 0.3，看起來像一排黑洞）
 	col *= 1.0 - 0.22 * dent * print_lod;
 	// 靠牆的角落照不到天光：暗、偏藍
 	float wall_k = smoothstep(0.1, 0.6, bank_lean);

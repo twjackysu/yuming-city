@@ -22,7 +22,7 @@ const RAGGED: float = 0.22
 const PEAK_LIMIT: float = 0.55
 ## on_tiles 的雪堆 UV2.y 從這個值起跳（街邊雪帶的 -1～1 不會碰到；shader 用 > 5 分辨）
 const TILES_MARK: float = 10.0
-## 街邊雪帶的 UV.x 從這個值起跳（D-133）：其他雪的 UV 在 0～1，shader 用 > 500 分辨
+## 街邊雪帶的 UV.x 從這個值起跳（D-134）：其他雪的 UV 在 0～1，shader 用 > 500 分辨
 const BANK_MARK: float = 1000.0
 
 
@@ -101,7 +101,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	return st.commit()
 
 
-## 街邊雪帶（D-133）：跟 build(..., street_bank=true) 一樣，另外把 UV 換成雪帶自己的公尺座標，
+## 街邊雪帶（D-134）：跟 build(..., street_bank=true) 一樣，另外把 UV 換成雪帶自己的公尺座標，
 ## 讓 shader 沿著雪帶畫一串腳印：UV.x＝BANK_MARK＋沿著牆的公尺數（along0＝這段中心的位置，
 ## 同一條雪帶前後重疊的幾段算出來一樣，腳印接得起來）、UV.y＝離牆腳線多遠（往街那側為正；
 ## from_wall0＝這段中心離牆多遠）。toward_wall：模型 +Z 是不是朝牆（±1）。
