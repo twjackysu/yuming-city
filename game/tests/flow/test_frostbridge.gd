@@ -120,6 +120,15 @@ func test_layout_nodes_and_batching() -> void:
 		if std != null and std.albedo_color.is_equal_approx(FrostbridgeLook.SNOW):
 			plain_snow += 1
 	assert_eq(snow_meshes, 1, "雪共用一個積雪材質")
+	# D-070：門是木板＋鐵條的 shader，全部共用一個材質
+	var door_meshes: int = 0
+	for c: Node in town.get_children():
+		var dm: MeshInstance3D = c as MeshInstance3D
+		if dm != null and dm.material_override is ShaderMaterial \
+				and (dm.material_override as ShaderMaterial).shader.resource_path == FrostbridgeLook.DOOR_SHADER:
+			door_meshes += 1
+	assert_eq(door_meshes, 1, "門共用一個材質、合併成一個 mesh")
+	assert_true(int(level.get("door_count")) > 15, "每棟房子都有門（%d）" % int(level.get("door_count")))
 	assert_eq(plain_snow, 0, "沒有平的淺色雪")
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
 	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)

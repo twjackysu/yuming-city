@@ -88,6 +88,7 @@ const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
 const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
 const WINDOW_SHADER: String = "res://src/world/window_glass.gdshader"
 const SNOW_SHADER: String = "res://src/world/snow.gdshader"
+const DOOR_SHADER: String = "res://src/world/door.gdshader"
 ## 灰泥色（月光下偏冷／偏暖兩種），石牆的石頭色
 const PLASTER: Color = Color(0.4, 0.4, 0.41)
 const PLASTER_WARM: Color = Color(0.45, 0.4, 0.34)
@@ -139,6 +140,24 @@ func snow() -> ShaderMaterial:
 	m.set_shader_parameter("snow_color", SNOW)
 	_mats["snow"] = m
 	return m
+
+
+## 門（door.gdshader，D-070）：木板＋板縫、門框、鐵條鉚釘、門把鐵環。全部的門共用一個材質。
+func door() -> ShaderMaterial:
+	if _mats.has("door"):
+		return _mats["door"] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(DOOR_SHADER) as Shader
+	m.set_shader_parameter("wood_color", WOOD)
+	_mats["door"] = m
+	return m
+
+
+## 一扇門的頂點色：g 木色深淺與門把在哪邊、b 舊不舊（位置雜湊）。
+static func door_tint(pos: Vector3) -> Color:
+	var h1: float = fposmod(sin(pos.x * 17.13 + pos.z * 61.71) * 43758.5453, 1.0)
+	var h2: float = fposmod(sin(pos.x * 83.07 + pos.z * 9.37) * 24634.6345, 1.0)
+	return Color(1.0, h1, h2, 1.0)
 
 
 ## 一扇窗的頂點色：lit 亮或暗、energy 發光強度（0～4）。色溫、窗簾、亮度起伏用位置雜湊決定

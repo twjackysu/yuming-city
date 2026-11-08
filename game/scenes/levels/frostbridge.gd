@@ -53,6 +53,7 @@ var _batch := StaticBatch.new()
 var light_count: int = 0
 var lantern_count: int = 0
 var window_count: int = 0
+var door_count: int = 0
 var lit_window_count: int = 0
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
@@ -566,7 +567,9 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	# 正面：門＋窗（部分亮燈）
 	var front: Vector3 = origin + face * (depth * 0.5)
 	var door_off: float = _rng.randf_range(-w * 0.25, w * 0.25)
-	batch.add_box_at(_axis_size(dir, face, 1.0, 0.12, 2.1), front + dir * door_off + Vector3(0, 1.05, 0), look.mat(FrostbridgeLook.WOOD), false)
+	var door_pos: Vector3 = front + dir * door_off + Vector3(0, 1.05, 0)
+	batch.add_box_tinted(_axis_size(dir, face, 1.0, 0.12, 2.1), door_pos, look.door(), FrostbridgeLook.door_tint(door_pos))
+	door_count += 1
 	var window_mat: ShaderMaterial = look.window()
 	# 門邊的掛燈（概念圖：每幾戶門口一盞）。用位置算的雜湊決定，不動 _rng（房子配置保持不變）。
 	# 有掛燈的房子，窗戶只發光不另外打燈（燈數上限見 test_frostbridge）。
