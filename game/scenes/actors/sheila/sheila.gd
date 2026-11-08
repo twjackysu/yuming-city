@@ -328,6 +328,7 @@ func _build() -> void:
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
+	ContactShadow.attach(self, 0.55, 0.5)  # D-108
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
 	_puppet.character_id = "sheila"

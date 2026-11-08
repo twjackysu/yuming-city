@@ -100,6 +100,7 @@ func _ready() -> void:
 	_puppet.name = "Puppet"
 	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
+	ContactShadow.attach(self, 0.55, 0.5)  # D-108
 	# 席菈幫他上了夾板之後（slice.sheila_talked），右前臂一直綁著
 	_update_splint()
 	# 用方法連線：玩家被釋放時自動斷開（lambda 會留在 autoload 的訊號上）

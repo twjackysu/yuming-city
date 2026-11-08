@@ -46,6 +46,7 @@ func _build_body() -> void:
 	shape.shape = cap
 	shape.position = Vector3(0, 0.85, 0)
 	add_child(shape)
+	ContactShadow.attach(self, 0.65, 0.5)  # D-108
 	var ash := StandardMaterial3D.new()
 	ash.albedo_color = Color(0.36, 0.36, 0.38)
 	ash.roughness = 1.0
