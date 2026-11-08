@@ -12,3 +12,5 @@ Prompt summaries (not verbatim transcripts):
 The underlying body/hair reference comes from MakeHuman CC0 assets. Coat geometry in the render derives from punkduck's CC BY 3.0 winter coat; retain the attribution in ../SOURCE.txt. Project-created modifications and image generation do not remove that attribution requirement.
 
 The generated images have alignment and baked-lighting limitations. Review their projections in 3D; do not treat the image-generator preview as evidence that the model meets the quality bar.
+
+V2 inputs: `boot_front.png` is an original single weathered leather boot reconstruction reference (AI-generated, no brand); `boot_rear.png` is a material-only edit of the locked rear render, matching the front leather grain and seams. They are texture references, not final 3D previews.

@@ -1,5 +1,6 @@
 import os
 import bpy,math,json
+from io_scene_gltf2.blender.com.material_helpers import create_settings_group
 from pathlib import Path
 root=Path(os.environ.get('YUMING_NOEN_WORK', str(Path.home()/'Documents'/'noen-tailored')))
 bpy.ops.wm.open_mainfile(filepath=str(root/'tailored_projected.blend'))
@@ -64,7 +65,7 @@ for obj in meshes:
  tex=n.new('ShaderNodeTexImage');tex.image=normal;nm=n.new('ShaderNodeNormalMap');l.new(tex.outputs['Color'],nm.inputs['Color']);l.new(nm.outputs[0],p.inputs['Normal'])
  tex=n.new('ShaderNodeTexImage');tex.image=orm;sep=n.new('ShaderNodeSeparateColor');l.new(tex.outputs[0],sep.inputs[0]);l.new(sep.outputs['Green'],p.inputs['Roughness']);l.new(sep.outputs['Blue'],p.inputs['Metallic'])
  group=bpy.data.node_groups.get('glTF Material Output')
- if not group:group=bpy.data.node_groups.new('glTF Material Output','ShaderNodeTree');group.interface.new_socket(name='Occlusion',in_out='INPUT',socket_type='NodeSocketFloat')
+ if not group:group=create_settings_group('glTF Material Output')
  node=n.new('ShaderNodeGroup');node.node_tree=group;l.new(sep.outputs['Red'],node.inputs['Occlusion'])
  obj.data.materials.clear();obj.data.materials.append(mat)
  for polygon in obj.data.polygons:polygon.material_index=0

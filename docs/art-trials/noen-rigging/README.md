@@ -49,3 +49,15 @@ Blender 呼叫格式：`blender -b --offline-mode --python-exit-code 1 --python 
 `godot_review/` 是獨立檢視場景；將 `noen_walk_preview.glb` 與 `walk_trial.fbx` 複製到該資料夾，再用 Godot 4.7.2 匯入及執行。生成的快照只用於人工檢查。
 
 `inputs/` 全是 AI 輔助的材質／生成參考，**不是 3D 實機截圖**。正面與背面參考圖的畫布對齊不同；投射腳本包含對這一批固定輸入的 UV 校正，不宜直接套用任意新圖。提示內容摘要見 `inputs/README.md`。
+
+## V2 可開啟檢查的候選檔
+
+見 [諾恩工作版本](../../../art-inbox/studies/noen/README.md)：含 GLB、獨立 FBX、Godot Forward+ 播放影片與逐檔 SHA-256，仍未通過正式美術驗收。V1 的數據與 manifest 保留作為歷史記錄。
+
+V2 單獨以 `inputs/boot_front.png` 執行 TripoSG，網格由 2,059,936 三角面減到每隻 1,913 面，烘焙高解析法線並搭配前後材質投射。`bake_boot_trial.py` 使用 `YUMING_BOOT_WORK`（TripoSG 輸出資料夾）、`YUMING_BOOT_FRONT_IMAGE` 與 `YUMING_BOOT_REAR_IMAGE`。再依序使用 `fit_noen_boots_v2.py`（`YUMING_BOOT_MODEL` 指向烘焙的 GLB）、`add_noen_inner_wool.py`、`bake_noen_inner_wool.py`。輸出 `noen_candidate_v2.glb` 與 `.blend`。
+
+動畫重測使用獨立工作資料夾，將新版 `.blend` 複製為 `tailored_noen.blend`、GLB 複製為 `tailored_candidate.glb`，設定 `YUMING_NOEN_WORK` 指向此資料夾，再執行前述動畫流程。重定向腳本支援左右獨立靴子，逐格用實際蒙皮後的鞋底校正垂直位置。
+
+V2 修正：烘焙前清除低面數靴子的舊自訂法線，減少配合小腿形狀後的三角形明暗；使用 Blender 官方 `create_settings_group` 建立完整 glTF 材質設定群組，避免將另一個 GLB 匯入現有場景時缺少擴充插槽。
+
+`godot_review_v2/` 保存本次 Forward+ 檢視腳本，需放入 `noen_walk_preview.glb`；擷取 34 張標有 WORK IN PROGRESS 的畫面。這不是遊戲角色整合或正式動畫品質驗收。

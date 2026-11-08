@@ -1,5 +1,5 @@
 import os
-import bpy,math,re,json
+import bpy,math,re,json,os
 from pathlib import Path
 from mathutils import Vector,Matrix
 root=Path(os.environ.get('YUMING_NOEN_WORK', str(Path.home()/'Documents'/'noen-tailored')));bpy.ops.wm.open_mainfile(filepath=str(root/'tailored_noen.blend'))
@@ -35,6 +35,11 @@ mapping={'Spine':('ToSpine','Spine'),'Spine1':('Spine','Spine1'),'Spine2':('Spin
 for side in ['Left','Right']:
  for name,child in [('Shoulder','Arm'),('Arm','ForeArm'),('ForeArm','Hand'),('Hand','Hand_End'),('UpLeg','Leg'),('Leg','Foot'),('Foot','ToeBase')]:
   if side+child in nodes:mapping[side+name]=(side+name,side+child)
+
+def minimum_boot_height():
+ graph=bpy.context.evaluated_depsgraph_get();boots=[o.evaluated_get(graph) for o in scene.objects if o.type=='MESH' and o.name.startswith('Noen_Boot')]
+ return min((boot.matrix_world@v.co).z for boot in boots for v in boot.data.vertices)
+
 rig.animation_data_clear();scene.render.fps=30;scene.frame_start=1;scene.frame_end=35;resthip=rig.data.bones['mixamorig:Hips'].head_local.copy()
 for f in range(1,scene.frame_end+1):
  scene.frame_set(f)
@@ -50,7 +55,7 @@ for f in range(1,scene.frame_end+1):
   for panel in ['Front','Back']:
    upper=rig.pose.bones['Coat_'+panel+'_'+letter+'_Upper'];rest=rig.data.bones[upper.name]
    turn=angle*1.15+(-.10 if panel=='Front' else .10);m=Matrix.Rotation(turn,4,'X')@rest.matrix_local;m.translation=upper.head;upper.matrix=m;bpy.context.view_layer.update()
- boots=bpy.data.objects['Noen_Boots'].evaluated_get(bpy.context.evaluated_depsgraph_get());lowest=min((boots.matrix_world@v.co).z for v in boots.data.vertices);hm=hips.matrix.copy();hm.translation.z-=lowest;hips.matrix=hm;bpy.context.view_layer.update()
+ lowest=minimum_boot_height();hm=hips.matrix.copy();hm.translation.z-=lowest;hips.matrix=hm;bpy.context.view_layer.update()
  for bone in rig.pose.bones:
   bone.rotation_mode='QUATERNION';bone.keyframe_insert('rotation_quaternion',frame=f)
  hips.keyframe_insert('location',frame=f)
@@ -65,7 +70,7 @@ for frame in range(1,scene.frame_end+1):
   correction=endq[bone.name].rotation_difference(startq[bone.name]);bone.rotation_quaternion=bone.rotation_quaternion@Quaternion().slerp(correction,blend);bone.keyframe_insert('rotation_quaternion',frame=frame)
  hips.location+=(startloc-endloc)*blend;hips.keyframe_insert('location',frame=frame)
 for frame in range(1,scene.frame_end+1):
- scene.frame_set(frame);bpy.context.view_layer.update();boots=bpy.data.objects['Noen_Boots'].evaluated_get(bpy.context.evaluated_depsgraph_get());lowest=min((boots.matrix_world@v.co).z for v in boots.data.vertices);hm=hips.matrix.copy();hm.translation.z-=lowest;hips.matrix=hm;hips.keyframe_insert('location',frame=frame)
+ scene.frame_set(frame);bpy.context.view_layer.update();lowest=minimum_boot_height();hm=hips.matrix.copy();hm.translation.z-=lowest;hips.matrix=hm;hips.keyframe_insert('location',frame=frame)
 scene.frame_set(18);cam=scene.camera;cam.location=(0,-4,1);cam.rotation_euler=(Vector((0,0,.88))-cam.location).to_track_quat('-Z','Y').to_euler();scene.render.filepath=str(root/'mocap_walk_trial.png');bpy.ops.render.render(write_still=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(root/'mocap_walk_trial.blend'))
 print('MOCAP_FRAMES',scene.frame_end,'SOURCE',len(frames),dt)

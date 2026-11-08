@@ -1,5 +1,15 @@
 [
   {
+    "file": "boot_front.png",
+    "bytes": 1616237,
+    "sha256": "b9478beaadf28ead519a9afe962dd01f13552d2c81b84318a32d2b86697a52b3"
+  },
+  {
+    "file": "boot_rear.png",
+    "bytes": 1714026,
+    "sha256": "7ac2aeb01e8306b9e747ae11b3c204f135ad47f63c4d9384c18f7051fe9869d0"
+  },
+  {
     "file": "face.png",
     "bytes": 1674690,
     "sha256": "770600154cde62307a9b4a3083e71082615e6b04b3c02cc3a12f7f8a94815415"
