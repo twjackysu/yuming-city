@@ -37,6 +37,10 @@ func _ready() -> void:
 		if dev_args.has("insight"):
 			walker.position = Vector3(1.6, 0.0, -3.5)
 		add_child(walker)
+		# 截圖用：`--enemies --felled` 灰巡者面向諾恩被打倒，停在撲倒那一刻（D-054）
+		if dev_args.has("felled"):
+			walker.position = Vector3(0.8, 0.0, -4.0)
+			_debug_felled_walker.call_deferred(walker)
 		# 戰鬥沙盒帶席菈（正式劇情中她在霜橋鎮會合，M1.3）
 		var sheila := Sheila.new()
 		sheila.name = "Sheila"
@@ -262,3 +266,12 @@ func _build_pear_stall(pos: Vector3) -> void:
 	l.light_volumetric_fog_energy = 1.0
 	l.position = pos + Vector3(0, 1.85, 0.2)
 	add_child(l)
+
+
+## 截圖用：灰巡者轉向諾恩、被打倒並停在撲倒那一刻；藏起諾恩（鏡頭在他正後方）。
+func _debug_felled_walker(walker: Ashwalker) -> void:
+	walker._body.rotation.y = PI
+	walker.debug_hold_fallen = true
+	walker.health.apply_damage(walker.health.hp, {"stagger": 0.0})
+	for v: Node in ($Player as Node).find_children("*", "GeometryInstance3D", true, false):
+		(v as GeometryInstance3D).visible = false
