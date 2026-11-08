@@ -133,3 +133,88 @@ jobs:
             sleep 20
           done
           exit 1
+
+  # 盤點截圖（D-082）：跟「測試與匯出」平行跑，把 Jacky 與 loop 想看的每個主要畫面各拍一張，
+  # 發布到 prerelease「screens」（loop 的雲端 session 不一定能在本機跑 Godot 截圖，也連不到
+  # artifact 的儲存空間，release 下載是唯一看得到畫面的地方）。失敗不影響 CI 結果。
+  screens:
+    name: 盤點截圖
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下載角色模型（Git LFS）
+        run: git lfs pull --include="art-inbox/characters/**" || echo "沒有角色模型或 LFS 下載失敗，用程序人偶"
+
+      - name: Cache Godot 與 export templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/yuming-godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/get-godot.sh') }}
+
+      - name: Cache 素材來源（Noto CJK）
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yuming-assets
+          key: assets-${{ hashFiles('scripts/gen_fonts.py') }}
+
+      - name: 產生素材與 import
+        run: |
+          GODOT="$(scripts/get-godot.sh)"
+          scripts/gen-assets.sh
+          "$GODOT" --headless --path game --import > /dev/null 2>&1 || true
+          "$GODOT" --headless --path game --import > /dev/null 2>&1
+
+      - name: 截圖（軟體 Vulkan）
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
+          mkdir -p build/screens
+          shot() {
+            local name="$1" frames="$2"
+            shift 2
+            scripts/screenshot.sh "build/screens/$name.png" "$frames" "$@" > /dev/null 2>&1 || echo "截圖 $name 失敗"
+          }
+          shot 01-settings 30 --open=settings --locale=zh_TW
+          shot 02-pause 40 --level=frostbridge --open=pause --locale=zh_TW
+          shot 03-plaza 40 --level=frostbridge --at=plaza --locale=zh_TW
+          shot 04-stall 40 --level=frostbridge --pos=3.0,3.2 --locale=zh_TW
+          shot 05-steps 40 --level=frostbridge --at=steps --locale=zh_TW
+          shot 06-rescue 40 --level=frostbridge --rescue --locale=zh_TW
+          shot 07-convoy-fight 40 --level=frostbridge --convoy --phase2 --face=undertaker --locale=zh_TW
+          shot 08-arch-preview 40 --level=frostbridge --convoy --arch=preview --locale=zh_TW
+          shot 09-journal 40 --level=frostbridge --open=journal --locale=zh_TW
+          shot 10-plaza-en 40 --level=frostbridge --at=plaza --locale=en
+          ls -la build/screens
+          test -n "$(ls build/screens/*.png 2>/dev/null)"
+          cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"
+
+      - name: 上傳 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens-${{ github.sha }}
+          path: build/screens/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: 更新 prerelease「screens」
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          git fetch --quiet origin main
+          if ! git diff --quiet "$GITHUB_SHA" FETCH_HEAD -- . ':!docs' ':!.loop' ':!*.md'; then
+            echo "main 已有更新的程式 commit，跳過發布 screens"
+            exit 0
+          fi
+          gh release delete screens --yes --cleanup-tag || true
+          gh release create screens build/screens.zip build/screens/*.png \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "盤點截圖 / Screen check (${SHORT_SHA})" \
+            --notes "開發用：每次 main 建置自動拍的主要畫面（設定、暫停、廣場、攤子、石階、救援、送葬者戰、石拱預覽、日記、英文版廣場）。試玩請下載 latest。 / Dev-only screenshots of key screens from main ${SHORT_SHA}. Download the game from the 'latest' release."
