@@ -4,6 +4,7 @@ extends Control
 ## 按下格子後等待下一個鍵（鍵鼠格只收鍵盤／滑鼠，手把格只收手把）；Esc／Start 取消，6 秒沒按也取消。
 ## 新鍵已被別的動作用掉時兩者交換（InputSetup.rebind）。暫停鍵與移動搖桿固定。關閉時存到 settings.cfg。
 ## 鍵名格子不是翻譯 key（印在鍵帽上的字），標記 meta "glyph"，由 InputGlyphs 產生。
+## 手把格畫成按鈕圖示（PadGlyph，D-060）：文字還在（給測試與讀屏），只是透明；等新鍵時圖示藏起來、顯示提示字。
 ## 十字鍵焦點（D-057）：固定的格子不能聚焦（直接跳過）；最後一列往下是「還原預設／返回」；
 ## 焦點不會跑到後面的設定選單（Godot 走到邊緣時會往整個畫面找最近的按鈕，跑出去就拉回來）。
 
@@ -12,6 +13,8 @@ signal closed
 const WAIT_TIMEOUT_SEC: float = 6.0
 const LABEL_WIDTH: float = 360.0
 const CELL_WIDTH: float = 250.0
+const CELL_TEXT: Color = Color(0.9, 0.84, 0.68)
+const CELL_TEXT_DISABLED: Color = Color(0.5, 0.52, 0.55)
 
 var _list: VBoxContainer
 var _reset: Button
@@ -76,6 +79,7 @@ func begin_capture(action: String, slot: int) -> void:
 	var b: Button = cell(action, slot)
 	if b != null:
 		b.text = tr("SET_CONTROLS_WAIT")
+		_show_glyph(b, false)
 	set_process(true)
 	get_tree().process_frame.connect(func() -> void: _armed = true, CONNECT_ONE_SHOT)
 
@@ -162,12 +166,40 @@ func _refresh() -> void:
 			var b: Button = cell(action, slot)
 			if b == null:
 				continue
-			b.text = InputGlyphs.label_for_spec(Settings.binding(action, slot))
+			var spec: Vector2i = Settings.binding(action, slot)
+			b.text = InputGlyphs.label_for_spec(spec)
 			b.disabled = not InputSetup.is_rebindable(action, slot)
+			var g: PadGlyph = glyph(action, slot)
+			if g != null:
+				g.spec = spec
+				g.dim = b.disabled
+				_show_glyph(b, g.has_shape())
 			b.tooltip_text = tr("SET_CONTROLS_FIXED") if b.disabled else ""
 			# 固定的格子十字鍵直接跳過（滑鼠移上去仍看得到「固定」提示）
 			b.focus_mode = Control.FOCUS_NONE if b.disabled else Control.FOCUS_ALL
 	_link_edges()
+
+
+## 測試用：手把格的按鈕圖示（鍵鼠格沒有）。
+func glyph(action: String, slot: int) -> PadGlyph:
+	var b: Button = cell(action, slot)
+	return b.get_node_or_null("Glyph") as PadGlyph if b != null else null
+
+
+## 圖示顯示時把按鈕文字變透明（文字留著）；藏起來時恢復文字顏色。
+func _show_glyph(b: Button, on: bool) -> void:
+	var g: PadGlyph = b.get_node_or_null("Glyph") as PadGlyph
+	if g == null:
+		return
+	g.visible = on
+	for c: String in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color", "font_disabled_color"]:
+		if on:
+			b.add_theme_color_override(c, Color(0, 0, 0, 0))
+		else:
+			b.remove_theme_color_override(c)
+	if not on:
+		b.add_theme_color_override("font_color", CELL_TEXT)
+		b.add_theme_color_override("font_disabled_color", CELL_TEXT_DISABLED)
 
 
 ## 邊緣的焦點鄰居：第一列往上不動、最後一列往下到底下的按鈕、按鈕往上回最後一列。
@@ -259,8 +291,13 @@ func _build() -> void:
 			b.custom_minimum_size = Vector2(CELL_WIDTH, 40)
 			b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 			b.set_meta("glyph", true)
-			b.add_theme_color_override("font_color", Color(0.9, 0.84, 0.68))
-			b.add_theme_color_override("font_disabled_color", Color(0.5, 0.52, 0.55))
+			b.add_theme_color_override("font_color", CELL_TEXT)
+			b.add_theme_color_override("font_disabled_color", CELL_TEXT_DISABLED)
+			if slot == InputSetup.SLOT_PAD:
+				var g := PadGlyph.new()
+				g.name = "Glyph"
+				g.position = Vector2(12, 4)
+				b.add_child(g)
 			var a: String = action
 			var s: int = slot
 			b.pressed.connect(func() -> void: begin_capture(a, s))
