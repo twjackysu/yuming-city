@@ -178,6 +178,9 @@ void fragment() {
 		across_dir = rd / r_m;
 		along_dir = vec2(-across_dir.y, across_dir.x);
 		p = vec2(atan(rd.y, rd.x) / TAU + 0.5, r_m / stone_size);
+		// D-128：一圈圈不是正圓（遠看不像靶心）——離石框幾公尺外，圈的半徑隨低頻雜訊起伏約 ±0.7 塊；
+		// 石框旁邊還是正圓（跟圓的石框貼齊）
+		p.y += (noise(xz * 0.11 + vec2(5.7, 1.9)) - 0.5) * row_wave * 1.3 * smoothstep(clear_disc.z + 0.5, clear_disc.z + 4.0, r_m);
 	} else {
 		p = xz / stone_size;
 		p.y += (noise(xz * 0.11 + vec2(2.3, 8.1)) - 0.5) * row_wave * 2.0;
