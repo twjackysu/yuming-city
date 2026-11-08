@@ -2,6 +2,36 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-046　2026-11-08　重現的預覽：從地面往上長出來的冷光輪廓
+
+- 決策：按住 V 時石拱的預覽用 `src/world/restore_ghost.gdshader`（加法混合、不受光、不寫深度）：邊緣（fresnel）亮、石縫隱約可見，`fill`＝按住進度，從物件底部往上長、上緣一道亮線；按滿 1 秒就重現（D-043 的實體石拱接手）。
+- 理由：之前是平的半透明塊，看不出形狀，也看不出「還要按多久」。讓輪廓長出來就是世界裡的進度條，不用再加 UI。
+- 影響：其他可重現物件共用這個 shader（設 `height`）。
+
+## D-045　2026-11-08　「字幕」設定的範圍：戰鬥中的喊話
+
+- 決策：設定裡的「字幕」控制**席菈頭上的戰鬥喊話**（Label3D）；關掉時台詞照樣記著（`line_text()`），只是不顯示。對話框與過場的字永遠顯示。
+- 理由：之前這個開關只存檔、沒有任何地方用到（M1.4 對照時發現）。遊戲沒有配音，對話框與過場文字就是內容本身，不能關；戰鬥喊話是「說出口的話」，最接近一般遊戲的字幕。
+- 影響：之後如果有配音或環境人聲（NPC 閒聊），也走這個開關；對話框照舊。
+
+## D-044　2026-11-08　打包驗證：匯出後讀嵌入的 PCK 目錄
+
+- 決策：`scripts/check.sh --export` 匯出後跑 `scripts/verify_package.py`，讀 Windows／Linux 執行檔尾端嵌入的 PCK（`embed_pck=true`；格式 v3／v4 的目錄）並檢查必要檔案：專案設定、主選單與霜橋鎮場景、繁中與英文翻譯、任務／對話／日記／戰鬥數值、字型子集、`Sfx.NAMES` 裡的每個音效（原路徑或 `.import`／`.remap` 都算）。讀不懂目錄時退回字串搜尋。
+- 理由：程序生成的字型與音效不進 git，最容易在匯出時漏掉而本機測試看不出來；Jacky 下載的是 zip，不是編輯器。
+- 影響：CI 每次匯出都會擋。新增必要資源時把路徑加進 `REQUIRED`；音效清單自動跟 `src/core/sfx.gd`。
+
+## D-043　2026-11-08　重現的石拱：石牆 shader＋石縫冷光
+
+- 決策：石拱重現後用鎮上石牆同一個 `half_timber.gdshader`（石塊放大 1.25），shader 新增 `glow_color`／`glow_energy`（預設 0）：石縫透出冷藍光、邊緣（fresnel）亮；心跳時亮到三倍再退回。
+- 理由：之前是 StandardMaterial 的發光＋邊緣光，在霧與去飽和下變成一整塊發白的板子，看不出是石頭（截圖對照）。重現的東西應該「是原本那座石拱、被冷光撐起來」。
+- 影響：房子、城牆不設 glow，不受影響。之後其他可重現物件（第一部的橋、門）照用。
+
+## D-042　2026-11-08　送葬者戰演出：鐵架真的飛出去、燃燒劍有火
+
+- 決策：鐵架拋擲的結局仍在擲出那一刻由 `FrameThrowEvent` 決定；之後 `ThrownFrame` 演出：背上的鐵架藏起來，飛出去的那副沿拋物線（0.55 秒、拱高 2.2 m）邊翻邊飛。石拱路線撞在拱心碎成十截往回彈＋石粉＋`iron_clang`；燃燒劍路線席菈轉身出劍（`burn_strike`），鐵架在她身前 1.2 m 被斬成兩截、斷口燒紅＋火星＋橘光。席菈的劍平常熄著，`ignite_sword(秒)` 讓劍身燒紅、加 OmniLight 與火星；提前斬鐵架與結尾斬倒送葬者都會燒。車上的傷者改成程序人偶仰躺（`Puppet.lying = "back"`）、受困者是側倒的人偶（救出時轉正）。
+- 理由：這是切片最重要的一場，之前只有橫幅文字和一下震動，看不到「石拱擋下了什麼」「席菈付出了什麼」。燃燒劍的火光在冷色的鎮上很搶眼，正好是代價的視覺。
+- 影響：震動與撞擊音效移到撞上那一刻。碎片數固定、2.6 秒後消失，不影響效能。之後換正式模型時，鐵架與劍的掛點跟手骨走。
+
 ## D-041　2026-11-08　角色模型接入點：art-inbox → 收件檢查 → game/assets/characters → Puppet
 
 - 決策：Jacky 把正式模型放在 `art-inbox/characters/<id>/<id>.glb`（LFS）。`scripts/gen-assets.sh` 呼叫 `scripts/import_characters.py`，用 Jacky 的 `scripts/check_character_glb.py` 收件檢查；通過才複製到 `game/assets/characters/<id>/<id>.glb`（不進 git，CI 只 `git lfs pull` 這個資料夾）。遊戲端 `Puppet` 加 `character_id`：找得到模型（有 Skeleton3D）就用模型＋AnimationPlayer，狀態對應動作表（idle／walk／run／dodge_roll／light_attack_01，容許 glTF 前綴），手掛點用 BoneAttachment3D（Mixamo 骨骼名在 Godot 匯入後是 `mixamorig_LeftHand`）；缺的閃避動作退回整個人前滾、其他退回 idle；找不到或沒有骨架就用程序人偶。

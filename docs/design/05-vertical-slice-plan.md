@@ -56,6 +56,33 @@
 | 實機效能 | benchmark JSON（Jacky 實機） |
 | 代表最終方向的一小段場景 | 段落 1 的鎮區黃昏＋段落 5 的九息瞬間，截圖放 README |
 
+## M1.4「必須驗證」對照（2026-11-08 第 10 輪）
+
+✅＝自動測試或 CI 擋住　👤＝要 Jacky 實機／手把確認　⬜＝還沒有
+
+| 必須驗證 | 狀態 | 證據（測試名在 `game/tests/`） |
+|---|---|---|
+| 普通敵人（灰巡者）：前兆、讀招、失衡、弱點 | ✅ | `test_enemy::test_brain_cycle`、`test_ashwalker_claws_player_and_dodge_avoids`、`test_insight::*`、`test_sheila_meet` |
+| 精英敵人（送葬者）：兩階段、讀招、鐵架拋擲 | ✅ | `test_undertaker::*`（13 項）、`test_convoy_encounter::*`、`test_convoy_flow::*` |
+| 可協作同伴（席菈）：三指令、時機窗、拒絕、倒下拉起 | ✅ | `test_companion::*`、`test_combat_hud::test_pull_sheila_up_and_after_combat`、`test_lock_on::test_sheila_attacks_locked_target` |
+| 九秒能力：預覽、代價、視聽回饋、結束狀態 | ✅ | `test_nine_breath_site::*`、`test_journal::test_arch_preview_highlights_memory`、`test_restored_arch_is_glowing_stone` |
+| 讀檔不重複付費、不卡死 | ✅ | `test_nine_breath::test_save_mid_restoration_loads_as_spent_without_double_charge`、`test_save::test_memory_cost_is_paid_once` |
+| 鍵鼠與手把都能完成 | ✅／👤 | 每個動作兩種綁定 `test_input::test_every_action_has_keyboard_and_gamepad`；改鍵 `test_controls_menu_rebind_cancel_reset`；整段手把要 Jacky 試玩 |
+| 字幕 | ✅ | 開關存檔 `test_settings::test_settings_round_trip`；作用範圍（D-045）`test_companion::test_sheila_barks_follow_subtitle_setting` |
+| 音量 | ✅ | `test_settings::test_audio_buses`、`test_sfx::test_play_uses_sfx_bus_and_missing_is_silent` |
+| 基本畫質 | ✅ | `test_quality::*`（三級切換套到已載入場景） |
+| 暫停 | ✅ | `test_ui::test_pause_menu_pauses_and_resumes`（暫停中開設定、再按繼續）、`test_nine_breath_site::test_pause_freezes_restoration_and_caravan`（暫停中倒數與車隊不動） |
+| 存檔／讀檔 | ✅ | `test_save::*`（版本、遷移、壞檔、備份）、`test_quests::test_runner_resumes_from_saved_state` |
+| 死亡重試 | ✅ | `test_main_flow::test_player_death_retries_from_checkpoint` |
+| 過場跳過 | ✅ | `test_cutscene::test_skip_applies_remaining_effects_once`、`test_game_skip_from_view_input` |
+| 任務恢復（每個檢查點重來） | ✅ | `test_slice_playthrough::*`（真的換場景，兩條路線） |
+| 從頭玩到尾 | ✅／👤 | 同上（場景層面）；20～30 分鐘的實際體感要 Jacky 試玩 |
+| 打包版有全部資源 | ✅ | CI `scripts/verify_package.py`（D-044） |
+| 實機效能（打包版） | 👤 | `--benchmark` JSON（FOR_JACKY 第 1 項） |
+| 代表最終方向的一小段場景 | 🔨 | 霜橋鎮廣場＋送葬者戰燃燒劍／石拱瞬間；正式角色模型到了再定 |
+
+還沒有自動測試、之後補：手把整段的流程測試（用 `Input.parse_input_event` 模擬搖桿）。
+
 ## 風險與備案
 
 | 風險 | 備案 |
