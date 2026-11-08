@@ -8,6 +8,8 @@ extends RefCounted
 ## bias：最高點往哪邊偏（以半長／半寬為 1；街邊雪帶用 (0, ±0.5) 讓靠牆那側高而陡、靠街那側低而緩，D-105）。
 ## street_bank：街邊雪帶才設 true（D-126）：UV2.y 放「往 bias 那側多遠」（-1＝靠街的邊、+1＝靠牆的邊），
 ## 雪 shader 用來讓靠牆的角落暗一點、靠街那側才有腳印與髒雪。其他雪堆 UV2.y＝0（都不做）。
+## on_tiles：鋪在屋瓦上的薄雪（破屋頂，D-127）：UV2.y＝TILES_MARK＋沿著模型 X 的公尺數，
+## 雪 shader 用來畫出底下一排排屋瓦撐起的橫紋、薄的地方露出屋瓦。
 
 const RINGS: int = 4
 ## 20 段（D-110；原本 14 段近看看得出多邊形）
@@ -18,9 +20,11 @@ const SQUARENESS: float = 3.2
 const RAGGED: float = 0.22
 ## 最高點最多偏到哪裡（以半長／半寬為 1；要留在輪廓裡面，網格才不會翻面）
 const PEAK_LIMIT: float = 0.55
+## on_tiles 的雪堆 UV2.y 從這個值起跳（街邊雪帶的 -1～1 不會碰到；shader 用 > 5 分辨）
+const TILES_MARK: float = 10.0
 
 
-static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO, street_bank: bool = false) -> ArrayMesh:
+static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO, street_bank: bool = false, on_tiles: bool = false) -> ArrayMesh:
 	var a: float = length * 0.5
 	var b: float = width * 0.5
 	var edge: PackedFloat32Array = PackedFloat32Array()
@@ -46,7 +50,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	verts.append(Vector3(peak.x * a, height, peak.y * b))
 	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
 	rings.append(0.0)
-	leans.append(clampf(peak.dot(lean_dir), -1.0, 1.0))
+	leans.append(TILES_MARK + peak.x * a if on_tiles else clampf(peak.dot(lean_dir), -1.0, 1.0))
 	for r: int in range(1, RINGS + 1):
 		var k: float = float(r) / float(RINGS)
 		for i: int in SEGMENTS:
@@ -65,7 +69,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 			verts.append(Vector3(x, hgt, z))
 			uvs.append(Vector2(x / length + 0.5, z / width + 0.5))
 			rings.append(k)
-			leans.append(clampf(Vector2(x / a, z / b).dot(lean_dir), -1.0, 1.0))
+			leans.append(TILES_MARK + x if on_tiles else clampf(Vector2(x / a, z / b).dot(lean_dir), -1.0, 1.0))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var idx := PackedInt32Array()

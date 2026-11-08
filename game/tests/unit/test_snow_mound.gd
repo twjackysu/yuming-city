@@ -154,3 +154,14 @@ func test_street_bank_lean_in_uv2() -> void:
 	for uv: Vector2 in plain:
 		most = maxf(most, absf(uv.y))
 	assert_true(most < 0.001, "沒標 street_bank 的雪堆 UV2.y＝0（%.3f）" % most)
+
+
+## 屋瓦上的薄雪（D-127）：UV2.y＝TILES_MARK＋沿模型 X 的公尺數（shader 用來畫屋瓦的橫紋、露出屋瓦），
+## 跟街邊雪帶的 -1～1 分得開。
+func test_on_tiles_marks_slope_meters() -> void:
+	var arrays: Array = SnowMound.build(1.6, 1.0, 0.07, 3.0, Vector2.ZERO, false, true).surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+	for n: int in verts.size():
+		assert_true(uv2s[n].y > 5.0, "屋瓦上的雪 UV2.y 都大於 5（%.3f）" % uv2s[n].y)
+		assert_true(absf(uv2s[n].y - SnowMound.TILES_MARK - verts[n].x) < 0.001, "UV2.y－TILES_MARK＝模型 X（%.3f vs %.3f）" % [uv2s[n].y, verts[n].x])

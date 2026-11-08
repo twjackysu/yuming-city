@@ -14,7 +14,7 @@ uniform float sparkle_density = 0.012;
 uniform float sparkle_energy = 1.6;
 // 雪堆的邊緣（D-119）：SnowMound 的 UV2.x 是圈數（0＝最高點、1＝外圈；其他雪沒有 UV2，合併時補 0＝不變薄），
 // 外圈的雪薄，漸漸透出底下的暗色（屋瓦、石板），雪堆不再是一塊發亮的白板。
-uniform vec3 under_color : source_color = vec3(0.13, 0.14, 0.17);
+uniform vec3 under_color : source_color = vec3(0.1, 0.105, 0.125);  // D-127：再暗一點，接近屋瓦與濕石板
 uniform float edge_start = 0.5;
 // 雪面不是光滑的白枕頭（D-126）：
 // - 風吹的紋：順著風向的細波（波長約 22 cm，一邊緩一邊陡），一片一片的、有的地方平；只動法線與一點亮暗
@@ -25,6 +25,9 @@ uniform float ripple_freq = 4.5;
 uniform float ripple_strength = 0.45;
 uniform float wall_shade = 0.55;
 uniform float footprint_density = 0.4;
+// 鋪在屋瓦上的薄雪（D-127；SnowMound on_tiles：UV2.y＝10＋沿斜面的公尺數）：
+// 每排屋瓦的下緣把雪撐出一道橫紋（暗線），雪薄的地方一塊塊露出屋瓦
+uniform float tile_row = 0.26;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -67,6 +70,10 @@ void fragment() {
 	// 依法線選投影面：朝上（屋頂、雪帶頂面）用 xz，側面用 xy／zy
 	vec3 an = abs(world_normal);
 	vec2 p = an.y > 0.5 ? world_pos.xz : (an.x > an.z ? world_pos.zy : world_pos.xy);
+	// UV2.y：街邊雪帶是 -1～1（lean），屋瓦上的雪是 10 起跳（沿斜面的公尺數），其他雪是 0
+	float on_tiles = step(5.0, lean);
+	float bank_lean = lean * (1.0 - on_tiles);
+	float slope_m = lean - 10.0;
 	float h = fbm(p * drift_scale);
 	float e = 0.06;
 	float hx = fbm((p + vec2(e, 0.0)) * drift_scale);
@@ -88,7 +95,7 @@ void fragment() {
 	vec2 ripple_grad = wd * cos(arg) * (1.0 + 0.55 * cos(ph)) * ripple_amp;
 
 	// 腳印（D-126）：靠街那側（lean < 0）50 cm 的格子裡偶爾一個橢圓凹痕，方向大致順著格子雜湊
-	float street = 1.0 - smoothstep(-0.55, -0.15, lean);
+	float street = 1.0 - smoothstep(-0.55, -0.15, bank_lean);
 	vec2 fcell = floor(p * 2.0);
 	vec2 fl = fract(p * 2.0) - 0.5 - (vec2(hash(fcell + 2.3), hash(fcell + 8.9)) - 0.5) * 0.35;
 	float fa = hash(fcell + 4.1) * 3.1416;
@@ -116,10 +123,17 @@ void fragment() {
 	col = mix(col, dirt_color, dirt * 0.55);
 	col *= 1.0 - 0.3 * dent * print_lod;
 	// 靠牆的角落照不到天光：暗、偏藍
-	float wall_k = smoothstep(0.1, 0.6, lean);
+	float wall_k = smoothstep(0.1, 0.6, bank_lean);
 	col = mix(col, col * shadow_tint * 0.75, wall_k * wall_shade);
 	// 雪堆外圈變薄：邊界跟著雪的起伏（h）不規則，最外一點點幾乎是底下的顏色
 	float thin = smoothstep(edge_start, 1.0, mound_k + (h - 0.47) * 0.35);
+	// 屋瓦上的薄雪：雪薄的地方（外圈、雜訊低處）一塊塊露出屋瓦；每排屋瓦下緣一道暗線（遠處淡掉）
+	float bare = 1.0 - smoothstep(0.36, 0.42, fbm(p * 1.6 + 9.0) + 0.21 - mound_k * 0.3);
+	thin = max(thin, bare * on_tiles);
+	float rr = fract(slope_m / tile_row);
+	float row_lod = 1.0 - smoothstep(0.15, 0.4, fwidth(slope_m / tile_row));
+	float lip_line = (smoothstep(0.72, 0.9, rr) - smoothstep(0.93, 1.0, rr)) * on_tiles * row_lod;
+	col = mix(col, col * shadow_tint * 0.8, lip_line * 0.6);
 	col = mix(col, under_color, thin * 0.85);
 	ALBEDO = col;
 
