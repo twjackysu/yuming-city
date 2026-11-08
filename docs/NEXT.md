@@ -5,7 +5,8 @@
 ## 0. 開工先確認
 
 - 上一輪（第 18 輪）最後一次程式 push 是 7b423d6（送葬者兜帽霜光），run 42465190105——**先確認它整個綠燈**（PROGRESS 第 18 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `undertaker.gd` 的 `_build_body`／`_on_died` 與一個測試，必要時 `git revert 7b423d6`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
-- **`docs/PROGRESS.md` 快 300 行了**：下一輪收尾時把 11/7 的幾則合併成一則每日摘要。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
+- `docs/PROGRESS.md` 第 18 輪把第 8～13 輪合併成摘要了；超過約 300 行時再把第 14～18 輪合併。
+- CI 有「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
 - **本機截圖會在真的 `user://saves`（`/root/.local/share/YumingCity/saves`）留下自動存檔**，之後標題畫面的「繼續」會變成可按；要拍新玩家的標題畫面先把 saves 移開。只有 2 核，150 幀的對話截圖要單獨跑（同時跑會超過 120 秒逾時）。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
