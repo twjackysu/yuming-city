@@ -85,3 +85,48 @@ func test_peak_bias_leans_toward_wall() -> void:
 	assert_eq(front_up, idx.size() / 3, "偏一邊也不會翻面（%d/%d）" % [front_up, idx.size() / 3])
 	var far: Vector3 = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, 3.0)).get_aabb().end
 	assert_true(far.z <= 0.8 + 0.001, "bias 太大也不會跑出輪廓（%s）" % far)
+
+
+
+## 雪堆外圈變薄（D-119）：UV2.x 是圈數（最高點 0、外圈 1）。
+func test_ring_in_uv2() -> void:
+	var mesh: ArrayMesh = SnowMound.build(1.4, 0.8, 0.12, 5.0)
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+	assert_eq(uv2s.size(), verts.size(), "每個頂點都有 UV2")
+	var top_k: float = 1.0
+	var low_k: float = 0.0
+	for n: int in verts.size():
+		if verts[n].y > 0.115:
+			top_k = minf(top_k, uv2s[n].x)
+		if verts[n].y < 0.0:
+			low_k = maxf(low_k, uv2s[n].x)
+	assert_true(top_k < 0.01, "最高點 UV2.x＝0（%.3f）" % top_k)
+	assert_true(low_k > 0.99, "外圈（貼進斜面那圈）UV2.x＝1（%.3f）" % low_k)
+
+
+## 雪堆跟方塊的雪（沒有 UV2）合併成同一個 mesh：方塊的 UV2 補 0（不變薄），雪堆的圈數保留。
+func test_batch_with_plain_snow_keeps_rings() -> void:
+	var look := FrostbridgeLook.new()
+	var batch := StaticBatch.new()
+	batch.add_box_at(Vector3(1, 0.1, 1), Vector3(0, 5, 0), look.snow(), false)
+	batch.add_mesh(SnowMound.build(1.0, 1.0, 0.1, 2.0), Transform3D.IDENTITY, look.snow())
+	batch.add_box_at(Vector3(1, 0.1, 1), Vector3(0, 6, 0), look.snow(), false)
+	var root := Node3D.new()
+	batch.build(root, "T")
+	var mi: MeshInstance3D = root.get_node("T").get_child(0) as MeshInstance3D
+	var arrays: Array = mi.mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+	assert_eq(uv2s.size(), verts.size(), "合併後每個頂點都有 UV2")
+	var box_max: float = 0.0
+	var mound_max: float = 0.0
+	for n: int in verts.size():
+		if verts[n].y > 4.0:
+			box_max = maxf(box_max, uv2s[n].x)
+		else:
+			mound_max = maxf(mound_max, uv2s[n].x)
+	assert_true(box_max < 0.001, "方塊的雪 UV2＝0：不變薄（%.3f）" % box_max)
+	assert_true(mound_max > 0.99, "雪堆外圈的圈數保留（%.3f）" % mound_max)
+	root.free()

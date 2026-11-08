@@ -12,9 +12,14 @@ uniform float drift_scale = 0.55;
 uniform float bump_strength = 0.35;
 uniform float sparkle_density = 0.012;
 uniform float sparkle_energy = 1.6;
+// 雪堆的邊緣（D-119）：SnowMound 的 UV2.x 是圈數（0＝最高點、1＝外圈；其他雪沒有 UV2，合併時補 0＝不變薄），
+// 外圈的雪薄，漸漸透出底下的暗色（屋瓦、石板），雪堆不再是一塊發亮的白板。
+uniform vec3 under_color : source_color = vec3(0.13, 0.14, 0.17);
+uniform float edge_start = 0.5;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
+varying float mound_k;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -44,6 +49,7 @@ float fbm(vec2 p) {
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	mound_k = UV2.x;
 }
 
 void fragment() {
@@ -63,6 +69,9 @@ void fragment() {
 	float ground = 1.0 - smoothstep(0.25, 0.6, world_pos.y);
 	float dirt = smoothstep(0.62, 0.78, fbm(p * 1.7 + 31.0)) * ground * step(0.5, an.y);
 	col = mix(col, dirt_color, dirt * 0.55);
+	// 雪堆外圈變薄：邊界跟著雪的起伏（h）不規則，最外一點點幾乎是底下的顏色
+	float thin = smoothstep(edge_start, 1.0, mound_k + (h - 0.47) * 0.35);
+	col = mix(col, under_color, thin * 0.85);
 	ALBEDO = col;
 
 	// 法線：把世界空間的傾斜轉到 view space 疊上去（只在朝上的面）
@@ -81,5 +90,5 @@ void fragment() {
 	vec2 local = fract(p * 25.0) - 0.5;
 	float dot_shape = 1.0 - smoothstep(0.08, 0.22, length(local));
 	float far = 1.0 - smoothstep(0.012, 0.03, max(fwidth(p.x), fwidth(p.y)));
-	EMISSION = vec3(0.9, 0.95, 1.0) * lit * glint * dot_shape * far * sparkle_energy * (1.0 - dirt);
+	EMISSION = vec3(0.9, 0.95, 1.0) * lit * glint * dot_shape * far * sparkle_energy * (1.0 - dirt) * (1.0 - thin);
 }

@@ -32,11 +32,15 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 		edge[i] = 1.0 - RAGGED * (0.5 + 0.5 * wave)
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
+	# UV2.x＝圈數（0＝最高點、1＝外圈）：雪 shader 用來讓外圈變薄（D-119）。
+	# 跟其他雪（方塊、稜柱，沒有 UV2）合併時，SurfaceTool 會補 0＝不變薄。
+	var rings := PackedFloat32Array()
 	# 中心（最高點稍微偏一點，雪堆不是正中間鼓起）
 	var peak := Vector2((_hash(seed, 40.0) - 0.5) * 0.3, (_hash(seed, 41.0) - 0.5) * 0.3) + bias
 	peak = peak.clamp(Vector2(-PEAK_LIMIT, -PEAK_LIMIT), Vector2(PEAK_LIMIT, PEAK_LIMIT))
 	verts.append(Vector3(peak.x * a, height, peak.y * b))
 	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
+	rings.append(0.0)
 	for r: int in range(1, RINGS + 1):
 		var k: float = float(r) / float(RINGS)
 		for i: int in SEGMENTS:
@@ -54,6 +58,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 				hgt = -0.012
 			verts.append(Vector3(x, hgt, z))
 			uvs.append(Vector2(x / length + 0.5, z / width + 0.5))
+			rings.append(k)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var idx := PackedInt32Array()
@@ -76,6 +81,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	for n: int in idx.size():
 		var v: int = idx[n]
 		st.set_uv(uvs[v])
+		st.set_uv2(Vector2(rings[v], 0.0))
 		st.add_vertex(verts[v])
 	st.index()
 	st.generate_normals()
