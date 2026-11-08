@@ -10,13 +10,13 @@
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
 - **玩家看得到的字一律白話**：新名詞先寫進 `docs/design/06-terminology.md` 再用；`test_i18n::test_no_obscure_terms` 會擋舊詞（九息、弔鐘、薪火、巡界、下城、爹…）。程式識別碼照舊（`nine_breath`、`kindling`）。
 - Jacky 的概念圖在 `art-inbox/concepts/`（LFS）：`git lfs pull --include="art-inbox/concepts/frostbridge_winter/**"` 這樣指定資料夾下載（推 LFS 還是不行）。看圖前先用 PIL 縮到 900 寬。
-- 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
+- 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
 ## 1. 戰鬥收尾的小細節（第 13 輪做了灰巡者撲倒、送葬者冷光＋邊緣光、席菈守車隊）
 
-- 灰巡者倒地沒有截圖旗標：在沙盒加 `--felled`（`--level=sandbox --enemies --felled`：第一隻灰巡者 `debug_hold_fallen = true` 後打死，截圖時藏起諾恩），截圖確認撲倒的姿勢與灰粉在燈下看得到。共用流程在 `EnemyActor._on_died`／`_begin_death`／`_on_fall_impact`（D-054）。
-- 席菈守車隊（`hold_guard`）時 HUD 的指令列會顯示「守住」中嗎？看 `combat_hud.gd` 的指令標籤讀不讀 `guard_active`；若會顯示，5 秒後自動解除時要跟著變回來（應該是自動的，確認一下）。
+- **其他粒子是不是也是硬邊方塊**：第 13 輪發現倒地的雪粉／灰粉是硬邊方形面片（沒有貼圖），改成 `EnemyActor.soft_dot_texture()` 柔邊圓點。同樣寫法還有：席菈燃燒劍的火星（`sheila.gd` 約 415 行）、鐵架碎掉的石粉與火星（`thrown_frame.gd` 約 229 行）、重現石拱的粒子（`nine_breath_site.gd` 約 360 行）。截圖 `--convoy --throw=arch --throw-t=0.5`、`--throw=kindling --throw-t=0.6`、`--arch=restored` 看是不是方塊；是的話共用 `soft_dot_texture()`（火星很小可以不用，石粉一定要）。
+- 灰巡者倒地截圖：`--level=sandbox --enemies --felled 14 幀`（幀數少一點才拍得到灰粉；30 幀時灰粉已經散了）。
 - 送葬者倒地冷光在高畫質（`--quality=2`）有 SSR 時會不會太亮（`--convoy --felled --quality=2`）。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
