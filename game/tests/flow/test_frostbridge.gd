@@ -629,6 +629,24 @@ func test_plaza_woodpile() -> void:
 	await _free(level)
 
 
+## 手推車（D-103）：西側牆邊、不擋井與木桶，會擋人（車斗高度）。
+func test_plaza_handcart() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	assert_true(bool(level.get("handcart_built")), "廣場邊停著一輛手推車")
+	var pos: Vector3 = level.get("HANDCART_POS")
+	assert_true(absf(pos.x) > 8.5 and absf(pos.x) < 11.0 - 0.8, "靠牆（x=%.1f）" % pos.x)
+	assert_true(pos.distance_to(Vector3(-6.0, 0.0, -3.5)) > 3.5, "離井夠遠")
+	assert_true(pos.distance_to(level.get("STALL_POS")) > 6.0, "離攤子夠遠")
+	for spot: Vector3 in level.get("BARREL_SPOTS"):
+		assert_true(pos.distance_to(spot) > 2.5, "不跟木桶疊在一起")
+	await tree.physics_frame
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(pos + Vector3(0, 3.0, 0), pos + Vector3(0, -1.0, 0)))
+	assert_true(not hit.is_empty() and (hit["position"] as Vector3).y > 0.5, "手推車會擋人")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

@@ -573,6 +573,7 @@ func _build_plaza() -> void:
 	_build_well(Vector3(-6.0, 0.0, -3.5))
 	_build_plaza_barrels()
 	_build_woodpile(WOODPILE_POS)
+	_build_handcart(HANDCART_POS)
 
 
 ## 廣場東側牆邊的柴堆（D-103，第三輪盤點第 7 項）：地窖北邊、靠牆，一落橫放的圓木，
@@ -631,6 +632,87 @@ func _build_woodpile(base: Vector3) -> void:
 	var col := BoxShape3D.new()
 	col.size = Vector3(LOG_LEN, top_y, WOODPILE_LEN)
 	_batch.add_shape(Transform3D(Basis.IDENTITY, base + Vector3(0, top_y * 0.5, 0)), col)
+
+
+## 廣場西側牆邊停著一輛兩輪手推車（D-103，第三輪盤點第 7 項）：木頭車斗＋低車欄、兩個木輪（六根輻條、
+## 鐵輪框）、兩根把手朝廣場、把手那端一根撐腳；車斗裡一層雪堆、一個木箱。整台一個方塊碰撞。
+const HANDCART_POS: Vector3 = Vector3(-9.3, 0.0, 0.9)
+const CART_WHEEL_R: float = 0.36
+var handcart_built: bool = false
+
+
+func _build_handcart(base: Vector3) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)  # 跟木桶的鐵箍同一個材質
+	var yaw: float = deg_to_rad(lerpf(-14.0, 6.0, _house_hash(base, 300.0)))
+	var xf := Transform3D(Basis(Vector3.UP, yaw), base)
+	var bed_y: float = CART_WHEEL_R + 0.16
+	var bed := Vector3(0.82, 0.06, 1.25)
+	_cart_box(xf, bed, Vector3(0, bed_y, 0), wood)
+	# 低車欄：兩側＋前後
+	for sx: float in [-1.0, 1.0]:
+		_cart_box(xf, Vector3(0.04, 0.2, bed.z), Vector3(sx * (bed.x * 0.5 - 0.02), bed_y + 0.13, 0), wood)
+	for sz: float in [-1.0, 1.0]:
+		_cart_box(xf, Vector3(bed.x, 0.2, 0.04), Vector3(0, bed_y + 0.13, sz * (bed.z * 0.5 - 0.02)), wood)
+	# 把手（往 +X，朝廣場）與撐腳
+	for sz: float in [-1.0, 1.0]:
+		_cart_box(xf, Vector3(0.95, 0.05, 0.05), Vector3(bed.x * 0.5 + 0.42, bed_y - 0.02, sz * 0.32), wood)
+	_cart_box(xf, Vector3(0.05, bed_y - 0.02, 0.05), Vector3(bed.x * 0.5 + 0.55, (bed_y - 0.02) * 0.5, 0.32), wood)
+	_cart_box(xf, Vector3(0.05, bed_y - 0.02, 0.05), Vector3(bed.x * 0.5 + 0.55, (bed_y - 0.02) * 0.5, -0.32), wood)
+	# 輪子：輪軸沿 Z（車的兩側），木輪框＋鐵輪框＋輪轂＋六根輻條
+	var axle := Basis(Vector3.RIGHT, PI * 0.5)  # 圓柱／圓環的軸（Y）轉成 Z
+	for sz: float in [-1.0, 1.0]:
+		var hub := Vector3(-0.08, CART_WHEEL_R, sz * (bed.z * 0.5 + 0.06))
+		var tire := TorusMesh.new()
+		tire.inner_radius = CART_WHEEL_R - 0.05
+		tire.outer_radius = CART_WHEEL_R
+		tire.rings = 20
+		tire.ring_segments = 6
+		_batch.add_mesh(tire, xf * Transform3D(axle, hub), iron)
+		var felloe := TorusMesh.new()
+		felloe.inner_radius = CART_WHEEL_R - 0.1
+		felloe.outer_radius = CART_WHEEL_R - 0.04
+		felloe.rings = 20
+		felloe.ring_segments = 5
+		_batch.add_mesh(felloe, xf * Transform3D(axle, hub), wood)
+		var nave := CylinderMesh.new()
+		nave.top_radius = 0.07
+		nave.bottom_radius = 0.07
+		nave.height = 0.14
+		nave.radial_segments = 8
+		nave.rings = 1
+		_batch.add_mesh(nave, xf * Transform3D(axle, hub), wood)
+		for k: int in 3:
+			var spoke := Basis(Vector3.BACK, PI / 3.0 * float(k) + _house_hash(base, 310.0 + sz))
+			_batch.add_mesh(_box_mesh(Vector3(0.035, (CART_WHEEL_R - 0.06) * 2.0, 0.03)), xf * Transform3D(spoke, hub), wood)
+	# 車軸
+	var axle_mesh := CylinderMesh.new()
+	axle_mesh.top_radius = 0.03
+	axle_mesh.bottom_radius = 0.03
+	axle_mesh.height = bed.z + 0.2
+	axle_mesh.radial_segments = 6
+	axle_mesh.rings = 1
+	_batch.add_mesh(axle_mesh, xf * Transform3D(axle, Vector3(-0.08, CART_WHEEL_R, 0)), iron)
+	# 車斗裡：一個木箱（木箱模式）＋一層雪
+	var crate_c: Vector3 = xf * Vector3(-0.12, bed_y + 0.03 + 0.2, -0.28)
+	_batch.add_box_tinted(Vector3(0.42, 0.4, 0.42), crate_c, look.door(), FrostbridgeLook.crate_tint(crate_c), false)
+	_batch.add_mesh(SnowMound.build(0.36, 0.36, 0.06, base.z * 5.3), Transform3D(Basis.IDENTITY, crate_c + Vector3(0, 0.2, 0)), look.snow())
+	_batch.add_mesh(SnowMound.build(bed.x * 0.85, 0.6, 0.07, base.z * 7.1),
+		xf * Transform3D(Basis.IDENTITY, Vector3(0.02, bed_y + 0.03, 0.3)), look.snow())
+	var col := BoxShape3D.new()
+	col.size = Vector3(bed.x + 0.9, bed_y + 0.25, bed.z + 0.2)
+	_batch.add_shape(xf * Transform3D(Basis.IDENTITY, Vector3(0.4, (bed_y + 0.25) * 0.5, 0)), col)
+	handcart_built = true
+
+
+func _cart_box(xf: Transform3D, size: Vector3, local: Vector3, mat: Material) -> void:
+	_batch.add_box(size, xf * Transform3D(Basis.IDENTITY, local), mat, false)
+
+
+func _box_mesh(size: Vector3) -> BoxMesh:
+	var m := BoxMesh.new()
+	m.size = size
+	return m
 
 
 ## 廣場邊的木桶（D-100，第三輪盤點第 7 項的第一步）：廣場中間大片空地、沒有生活痕跡。
