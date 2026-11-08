@@ -128,13 +128,18 @@ void fragment() {
 	// 雪堆外圈變薄：邊界跟著雪的起伏（h）不規則，最外一點點幾乎是底下的顏色
 	float thin = smoothstep(edge_start, 1.0, mound_k + (h - 0.47) * 0.35);
 	// 屋瓦上的薄雪：雪薄的地方（外圈、雜訊低處）一塊塊露出屋瓦；每排屋瓦下緣一道暗線（遠處淡掉）
-	float bare = 1.0 - smoothstep(0.36, 0.42, fbm(p * 1.6 + 9.0) + 0.21 - mound_k * 0.3);
+	// D-131：露出的地方一排一排對齊屋瓦（每排自己的雜訊位移，邊界是屋瓦的橫線），不再是一團團像髒污的斑
+	float row_i = floor(slope_m / tile_row);
+	float bare_n = fbm(p * 1.1 + vec2(row_i * 1.37, row_i * 0.61) + 9.0);
+	float bare = 1.0 - smoothstep(0.37, 0.41, bare_n + 0.19 - mound_k * 0.3);
 	thin = max(thin, bare * on_tiles);
 	float rr = fract(slope_m / tile_row);
 	float row_lod = 1.0 - smoothstep(0.15, 0.4, fwidth(slope_m / tile_row));
 	float lip_line = (smoothstep(0.72, 0.9, rr) - smoothstep(0.93, 1.0, rr)) * on_tiles * row_lod;
 	col = mix(col, col * shadow_tint * 0.8, lip_line * 0.6);
 	col = mix(col, under_color, thin * 0.85);
+	// 露出的屋瓦也看得到每排下緣的暗線（像屋瓦，不像一塊平的暗色）
+	col *= 1.0 - 0.45 * lip_line * bare;
 	ALBEDO = col;
 
 	// 法線：把世界空間的傾斜轉到 view space 疊上去（只在朝上的面）
