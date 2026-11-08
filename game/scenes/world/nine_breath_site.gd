@@ -17,6 +17,7 @@ const FROST: Color = Color(0.62, 0.86, 1.0)
 const STONE: Color = Color(0.34, 0.33, 0.33)
 ## 九息期間的畫面飽和度
 const DESAT: float = 0.12
+const GHOST_SHADER: String = "res://src/world/restore_ghost.gdshader"
 ## 重現的石拱平常的發光強度（心跳時亮到三倍再退回）
 const ARCH_GLOW: float = 0.85
 
@@ -36,7 +37,7 @@ var _player: PlayerController
 var _ruin: Node3D
 var _arch: CSGCombiner3D
 var _arch_mat: ShaderMaterial
-var _ghost_mat: StandardMaterial3D
+var _ghost_mat: ShaderMaterial
 var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
 var _label: Label3D
@@ -111,7 +112,9 @@ func update_hold(delta: float, pressed: bool) -> bool:
 	_arch.material_override = _ghost_mat
 	_set_journal_highlight(hold > 0.0)
 	if hold > 0.0:
-		_ghost_mat.albedo_color.a = 0.05 + 0.15 * clampf(hold / HOLD_SEC, 0.0, 1.0)
+		# 預覽輪廓隨按住的進度從地面往上長出來（D-046）
+		_ghost_mat.set_shader_parameter("fill", clampf(hold / HOLD_SEC, 0.0, 1.0))
+		_ghost_mat.set_shader_parameter("base_y", global_position.y)
 	if hold >= HOLD_SEC:
 		return activate()
 	return false
@@ -282,11 +285,11 @@ func _build() -> void:
 	_arch_mat.set_shader_parameter("stone_color", Color(0.34, 0.36, 0.4))
 	_arch_mat.set_shader_parameter("glow_color", FROST)
 	_arch_mat.set_shader_parameter("glow_energy", ARCH_GLOW)
-	_ghost_mat = StandardMaterial3D.new()
-	_ghost_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_ghost_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	_ghost_mat.albedo_color = Color(FROST, 0.15)
+	_ghost_mat = ShaderMaterial.new()
+	_ghost_mat.shader = load(GHOST_SHADER) as Shader
+	_ghost_mat.set_shader_parameter("color", FROST)
+	_ghost_mat.set_shader_parameter("height", 4.6)
+	_ghost_mat.set_shader_parameter("block_scale", 1.25)
 	_arch.material_override = _ghost_mat
 	_arch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# 地上的鐘紋：一圈淡淡的環

@@ -172,3 +172,25 @@ func test_restored_arch_is_glowing_stone() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 預覽輪廓（D-046）：按住時用 restore_ghost shader，fill 跟著按住的進度從 0 往上長；放開就藏起來。
+func test_preview_ghost_grows_with_hold() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	await tree.physics_frame
+	site.update_hold(0.25, true)
+	var arch: CSGCombiner3D = site.get_node("Arch") as CSGCombiner3D
+	var ghost: ShaderMaterial = arch.material_override as ShaderMaterial
+	assert_not_null(ghost, "預覽用 ShaderMaterial")
+	assert_eq(ghost.shader.resource_path, NineBreathSite.GHOST_SHADER)
+	assert_true(is_equal_approx(float(ghost.get_shader_parameter("fill")), 0.25 / NineBreathSite.HOLD_SEC), "長到 1/4")
+	site.update_hold(0.25, true)
+	assert_true(is_equal_approx(float(ghost.get_shader_parameter("fill")), 0.5 / NineBreathSite.HOLD_SEC), "長到一半")
+	site.update_hold(0.1, false)
+	assert_false(arch.visible, "放開：預覽消失")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
