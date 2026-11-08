@@ -85,6 +85,13 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")
 	assert_true(level._north_houses.size() >= 4, "北街至少四棟可以陷落的房子")
 	assert_true(int(level.get("light_count")) <= 40, "燈的數量有上限（%d）" % int(level.get("light_count")))
+	# 石階兩側的矮石燈柱（D-062）：底下一對、台地邊一對，都在街道兩側、不擋中間的路
+	var lanterns: Array = level.get("step_lanterns")
+	assert_eq(lanterns.size(), 4, "石階兩側四盞矮燈")
+	for l: OmniLight3D in lanterns:
+		assert_true(absf(l.position.x) > 3.0 and absf(l.position.x) < 4.0, "燈柱貼著街邊（x=%.2f）" % l.position.x)
+		assert_true(l.position.z > -30.0 and l.position.z < -24.5, "燈柱在石階頭尾（z=%.2f）" % l.position.z)
+		assert_false(l.shadow_enabled, "矮燈不投影")
 	assert_true(int(level.get("lantern_count")) >= 6, "不少房子門口有掛燈（%d）" % int(level.get("lantern_count")))
 	assert_false(level.has_node("Sheila"), "新遊戲時席菈還沒登場")
 	assert_false(level.has_node("Undertaker"), "送葬者還沒出現")

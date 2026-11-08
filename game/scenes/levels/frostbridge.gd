@@ -595,6 +595,38 @@ func _build_lamps() -> void:
 		_lamp_post(p, true)
 	for p: Vector3 in plain:
 		_lamp_post(p, false)
+	_build_step_lanterns()
+
+
+## 石階兩側的矮石燈柱（D-062）：石階底下與台地邊各一對，小燈籠照亮踏面的前緣，
+## 往鐘樓爬的那一段不再是霧裡的一片暗。不投影、範圍小（燈的數量上限見 test_frostbridge）。
+const STEP_LANTERN_X: float = MAIN_HALF - 0.38
+var step_lanterns: Array[OmniLight3D] = []
+
+
+func _build_step_lanterns() -> void:
+	var stone := look.stone_wall(1.0)
+	var roof := look.mat(FrostbridgeLook.ROOF)
+	var glow := look.glow(FrostbridgeLook.LAMP, 6.0)  # 跟路燈同一個材質（不多一個 draw call）
+	for z_y: Vector2 in [Vector2(STEPS_S + 0.45, 0.0), Vector2(STEPS_N - 0.45, RISE)]:
+		for sx: float in [-1.0, 1.0]:
+			var base := Vector3(sx * STEP_LANTERN_X, z_y.y, z_y.x)
+			_batch.add_box_at(Vector3(0.34, 0.8, 0.34), base + Vector3(0, 0.4, 0), stone)
+			_batch.add_box_at(Vector3(0.42, 0.07, 0.42), base + Vector3(0, 0.835, 0), roof, false)
+			_batch.add_box_at(Vector3(0.17, 0.2, 0.17), base + Vector3(0, 0.97, 0), glow, false)
+			_batch.add_box_at(Vector3(0.27, 0.05, 0.27), base + Vector3(0, 1.095, 0), roof, false)
+			var l := OmniLight3D.new()
+			l.name = "StepLantern%d" % step_lanterns.size()
+			l.light_color = FrostbridgeLook.LAMP
+			l.light_energy = 1.1
+			l.omni_range = 3.8
+			l.shadow_enabled = false
+			l.light_specular = LAMP_SPECULAR
+			l.light_volumetric_fog_energy = 0.8
+			l.position = base + Vector3(0, 0.97, 0)
+			add_child(l)
+			step_lanterns.append(l)
+			light_count += 1
 
 
 ## 水窪倒影（D-051）：廣場、主街、南街各一個 ReflectionProbe（載入時拍一次、盒狀投影）。
