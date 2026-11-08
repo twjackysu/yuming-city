@@ -655,6 +655,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	if _rng.randf() < 0.35:
 		var c: Vector3 = origin + dir * _rng.randf_range(-w * 0.3, w * 0.3) - face * depth * 0.2
 		batch.add_box_at(Vector3(0.6, 1.6, 0.6), c + Vector3(0, h + roof_h * 0.6, 0), look.stone_wall(), false)
+		_chimney_top(batch, holder, c + Vector3(0, h + roof_h * 0.6 + 0.8, 0), center, collapsible)
 	# 正面：門＋窗（部分亮燈）
 	var front: Vector3 = origin + face * (depth * 0.5)
 	var door_off: float = _rng.randf_range(-w * 0.25, w * 0.25)
@@ -750,6 +751,55 @@ func _shop_sign(batch: StaticBatch, wall_pos: Vector3, face: Vector3) -> void:
 	# 招牌頂上一小條雪
 	batch.add_box_at(out * 0.72 + across * 0.08 + Vector3(0, 0.035, 0), board_c + Vector3(0, 0.27, 0), look.snow(), false)
 	shop_sign_count += 1
+
+
+## 煙囪頂（D-097，第三輪盤點第 3 項）：原本煙囪是一根素面方柱，夜空下的屋頂剪影每棟都一樣。
+## 頂上加一圈較寬的石帽；約一半（北街以外、最多 MAX_SMOKE 根）冒著慢慢往上飄、被風吹斜的煙
+## （概念圖的屋頂炊煙），其他的石帽上積一小塊雪（有煙的不積雪）。位置雜湊決定，不動 _rng。
+const MAX_SMOKE: int = 8
+var smoke_count: int = 0
+
+
+func _chimney_top(batch: StaticBatch, holder: Node3D, top: Vector3, house_center: Vector3, collapsible: bool) -> void:
+	batch.add_box_at(Vector3(0.76, 0.12, 0.76), top + Vector3(0, 0.04, 0), look.stone_wall(), false)
+	var smoky: bool = not collapsible and smoke_count < MAX_SMOKE and _house_hash(house_center, 5.1) < 0.6
+	if not smoky:
+		batch.add_box_at(Vector3(0.66, 0.07, 0.66), top + Vector3(0, 0.13, 0), look.snow(), false)
+		return
+	var smoke := CPUParticles3D.new()
+	smoke.name = "ChimneySmoke%d" % smoke_count
+	smoke.position = top + Vector3(0, 0.2, 0) - holder.position
+	smoke.amount = 14
+	smoke.lifetime = 7.0
+	smoke.preprocess = 7.0
+	smoke.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	smoke.emission_sphere_radius = 0.15
+	smoke.direction = Vector3(0, 1, 0)
+	smoke.spread = 8.0
+	smoke.initial_velocity_min = 0.3
+	smoke.initial_velocity_max = 0.45
+	smoke.gravity = Vector3(0.12, 0.02, 0.05)  # 微風往東吹
+	smoke.damping_min = 0.02
+	smoke.damping_max = 0.05
+	smoke.scale_amount_min = 0.8
+	smoke.scale_amount_max = 1.2
+	var grow := Curve.new()
+	grow.add_point(Vector2(0.0, 0.35))
+	grow.add_point(Vector2(1.0, 1.0))
+	smoke.scale_amount_curve = grow
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.6, 1.6)
+	# 月光下的煙：偏藍的灰、很淡；不受光（粒子材質一律 unshaded，D-056）
+	quad.material = ParticleLook.material(Color(0.42, 0.46, 0.55, 1.0), false, BaseMaterial3D.BILLBOARD_PARTICLES)
+	smoke.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1.0, 1.0, 1.0, 0.0))
+	ramp.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	ramp.add_point(0.12, Color(0.9, 0.92, 0.95, 0.26))
+	ramp.add_point(0.55, Color(0.8, 0.83, 0.9, 0.13))
+	smoke.color_ramp = ramp
+	holder.add_child(smoke)
+	smoke_count += 1
 
 
 ## 房子裝飾用的位置雜湊（0～1，不動 _rng）。

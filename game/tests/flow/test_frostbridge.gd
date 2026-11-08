@@ -570,6 +570,22 @@ func test_upper_floors_have_windows_and_signs() -> void:
 	await _free(level)
 
 
+## D-097（第三輪盤點第 3 項）：煙囪頂有石帽，一部分冒煙（北街不冒、最多 MAX_SMOKE 根），煙是柔邊粒子。
+func test_chimney_smoke() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var smokes: Array[Node] = level.find_children("ChimneySmoke*", "CPUParticles3D", true, false)
+	var max_smoke: int = int(level.get("MAX_SMOKE"))
+	assert_true(smokes.size() >= 3 and smokes.size() <= max_smoke, "有幾根煙囪在冒煙（%d 根）" % smokes.size())
+	for n: Node in smokes:
+		var p: CPUParticles3D = n as CPUParticles3D
+		assert_true(p.global_position.y > 5.0, "煙從屋頂上冒出來（y=%.1f）" % p.global_position.y)
+		assert_true(p.amount <= 16, "每根煙的粒子數很少（%d）" % p.amount)
+		assert_false(String(p.get_path()).contains("NorthHouse"), "北街（會陷落）的煙囪不冒煙")
+	assert_eq(ParticleLook.untextured(level).size(), 0, "煙也是柔邊圓點，不是方塊")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()
