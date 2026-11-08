@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode specular_occlusion_disabled;
 // 濕石板路（參考 art-inbox/concepts 的冬夜概念圖：燈光在濕石頭上拉出倒影）。
 // 全部程序生成、用世界座標 XZ（合併後的幾何沒有可靠的 UV），不依賴貼圖。
-// - 石塊：錯位排列的圓角方石，每塊顏色略有差異
+// - 石塊：每排錯開、長短不一的平石板（邊緣一圈倒角），每塊顏色、傾斜、磨損不同（D-095）
 // - 石縫：較暗、濕（粗糙度低）
 // - 水窪：低頻雜訊，平的暗水面＋細波紋（倒影拉成直條；中畫質靠 ReflectionProbe，高畫質再加 SSR）
 // - 積雪：靠牆／低頻雜訊的淺色薄層（粗糙度高）
@@ -18,6 +18,13 @@ uniform float stone_roughness = 0.46;
 uniform float ripple_strength : hint_range(0.0, 0.5) = 0.14;
 // 水窪本身比濕石頭更暗（水面是黑的，倒影才跳得出來）
 uniform float puddle_darken : hint_range(0.0, 1.0) = 0.25;
+// 石板倒角（D-095）：只在邊緣這一圈（單位 stone_size）往外倒，石板本身是平的
+uniform float bevel_width = 0.09;
+uniform float bevel_strength = 0.8;
+// 每塊石板自己的小傾斜（濕路上有的石板反光、有的暗）
+uniform float stone_lean = 0.2;
+// 石板長寬比（沿 x 較長）
+const float STONE_LEN = 1.35;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -53,23 +60,46 @@ void vertex() {
 }
 
 void fragment() {
+	// D-095：石板不再是一顆顆一樣大、整片鼓起的圓角方塊（遠看像氣泡紙）。
+	// - 每排隨機錯開；約一半的格子再切成兩塊長短不一的石板（長度不一，像概念圖的鋪法）
+	// - 石板是平的：只在最邊緣一圈倒角，每塊自己有一點傾斜（濕路上有的石板反光、有的暗）
 	vec2 p = world_pos.xz / stone_size;
-	// 每排錯開半塊；石塊略長
-	float row = floor(p.y);
-	p.x += mod(row, 2.0) * 0.5 + hash(vec2(row, 7.0)) * 0.3;
-	vec2 cell = floor(p);
-	vec2 f = fract(p) - 0.5;
-	// 圓角方形的距離場：0 在石塊中央，越接近 1 越靠縫
-	vec2 d = abs(f) * 2.0;
-	float edge = pow(pow(d.x, 6.0) + pow(d.y, 6.0), 1.0 / 6.0);
-	float jag = (noise(world_pos.xz * 9.0) - 0.5) * 0.08;
-	float stone = 1.0 - smoothstep(0.82, 0.95, edge + jag);
+	// 排的寬度不一：每兩排一組，組內在 38%～62% 處分開（排寬 0.76～1.24 塊）
+	float pair = floor(p.y * 0.5);
+	float fy = fract(p.y * 0.5);
+	float split_y = mix(0.38, 0.62, hash(vec2(pair, 21.0)));
+	bool second = fy >= split_y;
+	float row = pair * 2.0 + (second ? 1.0 : 0.0);
+	float row_h = second ? (1.0 - split_y) * 2.0 : split_y * 2.0;
+	float row_f = second ? (fy - split_y) / (1.0 - split_y) : fy / split_y;
+	p.x = p.x / STONE_LEN + hash(vec2(row, 7.0)) + mod(row, 2.0) * 0.37;
+	vec2 cell = vec2(floor(p.x), row);
+	vec2 f = vec2(fract(p.x), row_f);
+	float x0 = 0.0;
+	float x1 = 1.0;
+	if (hash(cell + vec2(3.7, 1.3)) > 0.5) {
+		float s = mix(0.36, 0.64, hash(cell + vec2(9.1, 4.2)));
+		if (f.x < s) { x1 = s; } else { x0 = s; }
+	}
+	vec2 sid = vec2(cell.x + x0, cell.y);
+	// 石板內的座標（單位：stone_size），原點在石板中心
+	vec2 half_size = vec2((x1 - x0) * STONE_LEN, row_h) * 0.5;
+	vec2 lp = vec2(f.x * STONE_LEN, f.y * row_h) - vec2((x0 + x1) * 0.5 * STONE_LEN, row_h * 0.5);
+	// 圓角矩形距離場：石板裡面是負的，邊緣是 0
+	float corner = 0.1;
+	vec2 q = abs(lp) - (half_size - corner);
+	float sdf = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - corner;
+	float jag = (noise(world_pos.xz * 11.0) - 0.5) * 0.05;
+	float gap_half = 0.045;
+	float stone = 1.0 - smoothstep(-gap_half - 0.03, -gap_half + 0.005, sdf + jag);
 	// 遠處石塊比像素還小：淡成平均值，避免閃爍（沒有 mipmap 的程序紋理）
 	float aa = clamp(length(fwidth(p)) * 1.2 - 0.15, 0.0, 1.0);
 	stone = mix(stone, 0.8, aa);
 
-	float tint = hash(cell);
-	vec3 albedo = stone_color * mix(0.82, 1.1, tint);
+	float tint = hash(sid);
+	vec3 albedo = stone_color * mix(0.74, 1.14, tint);
+	// 少數石板偏暖或偏冷（不同批的石頭）
+	albedo *= mix(vec3(1.0), mix(vec3(1.06, 1.0, 0.92), vec3(0.93, 0.98, 1.06), hash(sid + vec2(2.2, 8.8))), 0.6);
 	albedo *= mix(0.85, 1.05, fbm(world_pos.xz * 3.0));
 	albedo = mix(gap_color, albedo, stone);
 
@@ -85,13 +115,24 @@ void fragment() {
 
 	ALBEDO = albedo;
 	// 石縫濕而不平（0.22）；水窪是平的水面（0.04），映得出燈與亮窗（中畫質靠 ReflectionProbe，高畫質再加 SSR）
-	float rough = mix(stone_roughness, 0.22, 1.0 - stone);
+	// 每塊石板的磨損程度不同：粗糙度 ±0.08
+	float rough = mix(stone_roughness + (hash(sid + vec2(5.5, 0.7)) - 0.5) * 0.16, 0.22, 1.0 - stone);
 	rough = mix(rough, 0.04, puddle);
 	ROUGHNESS = mix(rough, 0.85, snow);
 	SPECULAR = mix(mix(0.5, 0.75, wet), 1.0, puddle);
-	// 石塊微微隆起（只在朝上的面）：越靠石縫法線越往外倒；水窪與雪是平的
+	// 石板是平的：只有最邊緣一圈倒角往外倒，加上每塊自己的小傾斜與表面的細微起伏；水窪與雪是平的
 	if (world_normal.y > 0.9) {
-		vec2 tilt = f * smoothstep(0.45, 0.92, edge) * 1.1 * (1.0 - puddle) * (1.0 - snow) * (1.0 - aa);
+		vec2 outward = vec2(0.0);
+		if (q.x > 0.0 || q.y > 0.0) {
+			outward = normalize(max(q, vec2(0.0)));
+		} else {
+			outward = q.x > q.y ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+		}
+		outward *= sign(lp);
+		float bevel = 1.0 - smoothstep(0.0, bevel_width, -sdf - gap_half);
+		vec2 lean = vec2(hash(sid + vec2(1.9, 6.1)), hash(sid + vec2(7.3, 2.9))) - 0.5;
+		vec2 bump = vec2(noise(world_pos.xz * 6.0 + 31.0), noise(world_pos.xz * 6.0 + 57.0)) - 0.5;
+		vec2 tilt = (outward * bevel * bevel_strength + lean * stone_lean + bump * 0.06) * stone * (1.0 - puddle) * (1.0 - snow) * (1.0 - aa);
 		// 水窪波紋：沿 z 起伏（看向南北時）與沿 x 起伏（看向東西時）依視線方向混合；
 		// 波紋固定在世界座標上，轉鏡頭時只換權重，不會跟著鏡頭滑動。遠處波紋比像素細時淡掉（避免閃爍）
 		vec3 v_w = (INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz;

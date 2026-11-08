@@ -205,7 +205,21 @@ func test_puddle_reflection_probes() -> void:
 	assert_true(bright >= 8, "路燈與掛燈都加強了高光（%d 盞）" % bright)
 	var cobble: Shader = load(FrostbridgeLook.WET_COBBLE_SHADER) as Shader
 	assert_true(cobble.code.contains("ripple_strength"), "水窪有細波紋（倒影拉成直條）")
+	# D-095：石板是平的（只在邊緣一圈倒角）、長短不一、每塊有自己的傾斜，不是整片鼓起的一樣大方塊
+	var bevel: float = _uniform_default(cobble.code, "bevel_width")
+	var lean: float = _uniform_default(cobble.code, "stone_lean")
+	assert_true(bevel > 0.0 and bevel <= 0.15, "石板倒角只在邊緣一圈（%.2f 塊寬）" % bevel)
+	assert_true(lean > 0.0, "每塊石板有自己的小傾斜（濕路上有的反光、有的暗）")
+	assert_true(cobble.code.contains("split_y") and cobble.code.contains("STONE_LEN"), "排寬不一、石板長短不一")
 	await _free(level)
+
+
+## 從 shader 原始碼讀 uniform 的預設值（headless 的 RenderingServer 讀不到預設值）
+func _uniform_default(code: String, uniform_name: String) -> float:
+	var re := RegEx.new()
+	re.compile("uniform\\s+float\\s+" + uniform_name + "\\s*(?::[^=]*)?=\\s*([0-9.]+)")
+	var m: RegExMatch = re.search(code)
+	return float(m.get_string(1)) if m != null else -1.0
 
 
 func test_objective_guide_points_to_current_target() -> void:
