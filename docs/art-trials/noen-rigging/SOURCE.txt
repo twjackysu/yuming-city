@@ -1,0 +1,37 @@
+Noen character production study — NOT ACCEPTED FINAL ART
+
+Body, eyes, eyebrows, hair and underlying trousers: MakeHuman / MPFB core assets, CC0.
+MPFB source: https://github.com/makehumancommunity/mpfb2
+Source revision: 6ff1eb358f6c1959ced77e79e6dd2406d9a71f49
+MPFB code is GPL; core asset licensing is separately CC0.
+Asset pack: https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
+
+Winter coat geometry: punkduck, CC BY 3.0.
+Asset identifier: punkduck_winter_coat / 36f5ecf8-6b3c-49bb-9a84-2aefee6225d7
+Source pack: https://static.makehumancommunity.org/assets/assetpacks/dress03.html
+License: https://creativecommons.org/licenses/by/3.0/
+Modified: fitted to male body, opened front/rear skirt, adjusted fit, added skirt bones,
+replaced materials, added sewn repairs. No endorsement by the original author is implied.
+
+Boot geometry: AI generated locally using VAST-AI TripoSG (MIT), from an original
+AI-generated Noen reference; isolated, simplified, fitted and reweighted in Blender.
+Code: https://github.com/VAST-AI-Research/TripoSG
+Code revision: fc5c40990181e2a756c4e0b1c2f4d6b5202faf8c
+Weights: VAST-AI/TripoSG revision 2c1c516d22d58db486a058d98d31bb6177344e06
+
+Face and garment texture references: AI generated with OpenAI image generation.
+Projected onto mesh and baked with Blender. Not photographs of real people.
+Splint boards, linen wraps, stitches and repair geometry: created for this project.
+
+walk_trial.fbx: derived from Male1_B3_Walk.bvh, ACCAD Open Motion Project,
+The Ohio State University, CC BY 3.0.
+Source: https://accad.ohio-state.edu/research/motion-lab/mocap-system-and-data
+Download: https://accad.ohio-state.edu/sites/accad.osu.edu/files/Male1_bvh.zip
+Archive SHA256: 1cd26aeac2ee7f20e3c0fe5082e633201bb136a714ae8f684a4f34c4421f4627
+Modified: retargeted, removed horizontal root travel, added garment motion,
+corrected vertical placement and loop seam, exported at 30 fps without skin.
+This is an unapproved animation study, not a completed animation set.
+
+Known pending acceptance: texture seams, hair detail, garment collision across
+all poses, foot contact/slide, gameplay import and complete animation coverage.
+Static GLB validation alone does not certify visual quality or AAA readiness.

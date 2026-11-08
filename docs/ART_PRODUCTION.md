@@ -61,3 +61,7 @@ python scripts/check_character_glb.py art-inbox/characters/noen/noen.glb --chara
 ## 免費本機方案試跑（2026-11-08）
 
 TripoSR 已在本機 GPU 成功生成諾恩試驗網格並完成多角度渲染，無需服務登入。結果未達角色品質要求，不作正式交付；詳細數據、失敗點、來源版本與重跑步驟見 [試跑報告](art-trials/triposr/README.md)。Tripo 雲端登入只影響選用該服務，不再是所有 3D 嘗試的前置條件。第 1–3 項仍未完成。
+
+## 本機分件角色與動作試作（2026-11-08）
+
+已執行 TripoSG → MPFB 分件角色 → PBR 烘焙 → ACCAD 動作重定向 → Blender／Godot 4.7.2 重新匯入。製作腳本、固定版本、素材歸屬與技術驗證見 [諾恩製作試作](art-trials/noen-rigging/README.md)。此版本仍有髮絲、靴子形體、貼圖接縫、衣物碰撞及動作自然度待改善；不是正式角色交件，未達 3A 驗收，也未完成整份需求。未更換遊戲內角色。

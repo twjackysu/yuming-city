@@ -1,0 +1,144 @@
+{
+  "file": "tailored_candidate.glb",
+  "bytes": 29213060,
+  "sha256": "87b0f4e7c43c5c524fbf0a074b4dacb2ee58df1386d60a60cd1796ef5b8cc284",
+  "embedded_images": [
+    {
+      "name": "noen_anatomy_normal",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_anatomy_orm",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_anatomy_basecolor",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "Noen_Anatomy",
+      "width": 4,
+      "height": 4
+    },
+    {
+      "name": "Noen_Anatomy",
+      "width": 4,
+      "height": 4
+    },
+    {
+      "name": "eyebrow001",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "name": "Noen_Anatomy",
+      "width": 4,
+      "height": 4
+    },
+    {
+      "name": "brown_eye",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "short02_diffuse",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_boots_normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_boots_orm",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_boots_basecolor",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_coat_normal",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_coat_orm",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_coat_basecolor",
+      "width": 2048,
+      "height": 2048
+    },
+    {
+      "name": "noen_linen_wrap_normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_linen_wrap_orm",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_linen_wrap_basecolor",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_sewn_repairs_normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_sewn_repairs_orm",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_sewn_repairs_basecolor",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_trousers_shirt_normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_trousers_shirt_orm",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_trousers_shirt_basecolor",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_wood_splint_normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_wood_splint_orm",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "noen_wood_splint_basecolor",
+      "width": 1024,
+      "height": 1024
+    }
+  ],
+  "all_images_within_2048": true,
+  "status": "technical_candidate_not_visual_acceptance"
+}

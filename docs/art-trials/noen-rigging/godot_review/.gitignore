@@ -1,0 +1,5 @@
+.godot/
+*.glb
+*.fbx
+*.import
+godot_walk_*.png
