@@ -91,6 +91,39 @@ func test_layout_nodes_and_batching() -> void:
 	await _free(level)
 
 
+## 水窪倒影（D-051）：廣場、主街、南街各一個只拍一次的 ReflectionProbe，只拍小鎮的靜態幾何。
+func test_puddle_reflection_probes() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var layer: int = int(level.get("REFLECT_LAYER"))
+	var spots: Dictionary = {"ProbePlaza": Vector3(3.0, 0.0, 2.0), "ProbeMain": Vector3(0.0, 0.0, -16.0),
+		"ProbeSouth": Vector3(0.0, 0.0, 22.0)}
+	for n: String in spots:
+		assert_true(level.has_node(n), "有 %s" % n)
+		var p: ReflectionProbe = level.get_node(n) as ReflectionProbe
+		assert_eq(p.update_mode, ReflectionProbe.UPDATE_ONCE, "%s 只在載入時拍一次" % n)
+		assert_true(p.box_projection, "%s 用盒狀投影（街道兩側的房子對得上）" % n)
+		assert_eq(p.cull_mask, layer, "%s 只拍倒影層" % n)
+		var local: Vector3 = (spots[n] as Vector3) - p.position
+		var half: Vector3 = p.size * 0.5
+		assert_true(absf(local.x) < half.x and absf(local.y) < half.y and absf(local.z) < half.z,
+			"%s 的盒子包住地面（%s）" % [n, spots[n]])
+		var eye: Vector3 = p.origin_offset
+		assert_true(absf(eye.y) < half.y, "%s 的拍攝點在盒子裡" % n)
+	var town_ok: bool = true
+	for c: Node in level.get_node("Town").get_children():
+		var mi: MeshInstance3D = c as MeshInstance3D
+		if mi != null and (mi.layers & layer) == 0:
+			town_ok = false
+	assert_true(town_ok, "小鎮合併後的 mesh 都在倒影層（路燈、掛燈、亮窗都映得出來）")
+	var actor_in_layer: bool = false
+	for c: Node in level.get_node("Player").find_children("*", "VisualInstance3D", true, false):
+		if ((c as VisualInstance3D).layers & layer) != 0:
+			actor_in_layer = true
+	assert_false(actor_in_layer, "諾恩不在倒影層（不會被凍在載入那一刻的倒影裡）")
+	await _free(level)
+
+
 func test_objective_guide_points_to_current_target() -> void:
 	var s: GameSession = _session()
 	var level: StoryLevel = await _load()

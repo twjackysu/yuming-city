@@ -5,6 +5,7 @@ extends RefCounted
 ## - 低：關體積霧（改用便宜的深度霧保住氛圍）、SSAO、Glow；MSAA 關。
 ## - 中：預設（體積霧、SSAO、Glow；MSAA 2x）。
 ## - 高：再加 SSR、SSIL；MSAA 4x；體積霧較細。
+## - 水窪倒影的 ReflectionProbe（D-051）：中、高開；低關。
 
 enum Level { LOW, MEDIUM, HIGH }
 
@@ -34,6 +35,13 @@ static func apply_environment(env: Environment, level: Level) -> void:
 		env.fog_sky_affect = 1.0
 
 
+## ReflectionProbe（只在載入時拍一次）：低畫質關掉，省下每個像素取樣反射的成本。
+static func apply_probe(probe: ReflectionProbe, level: Level) -> void:
+	if probe == null:
+		return
+	probe.visible = level != Level.LOW
+
+
 static func msaa_for(level: Level) -> Viewport.MSAA:
 	match level:
 		Level.LOW:
@@ -59,3 +67,5 @@ static func apply_tree(root: Node, level: Level) -> void:
 	RenderingServer.environment_set_volumetric_fog_volume_size(volumetric_fog_size(level), 64)
 	for n: Node in root.find_children("*", "WorldEnvironment", true, false):
 		apply_environment((n as WorldEnvironment).environment, level)
+	for n: Node in root.find_children("*", "ReflectionProbe", true, false):
+		apply_probe(n as ReflectionProbe, level)

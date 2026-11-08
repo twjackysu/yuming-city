@@ -64,7 +64,7 @@ func _ready() -> void:
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
 	_build_cellar_hatch()
-	_batch.build(self, "Town")
+	_build_reflection_probes(_batch.build(self, "Town"))
 	arch_site = NineBreathSite.new()
 	arch_site.name = "SouthArch"
 	arch_site.position = Vector3(0.0, 0.0, ARCH_Z)
@@ -578,6 +578,39 @@ func _build_lamps() -> void:
 		_lamp_post(p, true)
 	for p: Vector3 in plain:
 		_lamp_post(p, false)
+
+
+## 水窪倒影（D-051）：廣場、主街、南街各一個 ReflectionProbe（載入時拍一次、盒狀投影）。
+## 中畫質沒有 SSR，濕石板路的水窪靠它映出路燈、掛燈、亮著的窗和兩側的房子。
+## 只拍「倒影層」：小鎮合併後的靜態幾何，所以角色、敵人、車隊不會被凍在倒影裡。
+const REFLECT_LAYER: int = 1 << 10
+const PROBE_HEIGHT: float = 9.0
+const PROBE_EYE: float = 1.5  # 從離地 1.5 m 拍（大約是鏡頭高度）
+
+
+func _build_reflection_probes(town: Node3D) -> void:
+	for c: Node in town.get_children():
+		var mi: MeshInstance3D = c as MeshInstance3D
+		if mi != null:
+			mi.layers |= REFLECT_LAYER
+	_probe("ProbePlaza", 0.0, PLAZA_N, PLAZA_S, PLAZA_HALF)
+	_probe("ProbeMain", 0.0, STEPS_S, PLAZA_N, MAIN_HALF)
+	_probe("ProbeSouth", 0.0, PLAZA_S, CROSS_N, SOUTH_HALF)
+
+
+func _probe(probe_name: String, y: float, z_from: float, z_to: float, half: float) -> void:
+	var p := ReflectionProbe.new()
+	p.name = probe_name
+	p.update_mode = ReflectionProbe.UPDATE_ONCE
+	p.box_projection = true
+	p.cull_mask = REFLECT_LAYER
+	p.size = Vector3(half * 2.0, PROBE_HEIGHT, z_to - z_from)
+	# 盒子從地面下 0.5 m 開始（地面要在盒子裡才會取樣到倒影）
+	p.position = Vector3(0.0, y - 0.5 + PROBE_HEIGHT * 0.5, (z_from + z_to) * 0.5)
+	p.origin_offset = Vector3(0.0, PROBE_EYE + 0.5 - PROBE_HEIGHT * 0.5, 0.0)
+	p.blend_distance = 1.5
+	p.intensity = 3.0
+	add_child(p)
 
 
 func _lamp_post(pos: Vector3, shadows: bool) -> void:

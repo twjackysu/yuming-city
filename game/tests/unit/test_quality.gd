@@ -32,6 +32,18 @@ func test_levels_toggle_effects() -> void:
 	QualityPreset.apply_environment(null, QualityPreset.Level.HIGH)  # 不應當機
 
 
+func test_reflection_probe_off_on_low() -> void:
+	var probe := ReflectionProbe.new()
+	QualityPreset.apply_probe(probe, QualityPreset.Level.LOW)
+	assert_false(probe.visible, "低：水窪倒影的 ReflectionProbe 關掉")
+	QualityPreset.apply_probe(probe, QualityPreset.Level.MEDIUM)
+	assert_true(probe.visible, "中：開")
+	QualityPreset.apply_probe(probe, QualityPreset.Level.HIGH)
+	assert_true(probe.visible, "高：開")
+	QualityPreset.apply_probe(null, QualityPreset.Level.LOW)  # 不應當機
+	probe.free()
+
+
 func test_msaa_and_clamp() -> void:
 	assert_eq(QualityPreset.msaa_for(QualityPreset.Level.LOW), Viewport.MSAA_DISABLED)
 	assert_eq(QualityPreset.msaa_for(QualityPreset.Level.MEDIUM), Viewport.MSAA_2X)
@@ -49,9 +61,14 @@ func test_settings_apply_to_loaded_scene() -> void:
 	we.environment = _env()
 	tree.root.add_child(we)
 	assert_false(we.environment.volumetric_fog_enabled, "新進樹的 WorldEnvironment 自動套用低畫質")
+	var probe := ReflectionProbe.new()
+	tree.root.add_child(probe)
+	assert_false(probe.visible, "新進樹的 ReflectionProbe 也套用低畫質")
 	settings.call("set_quality", QualityPreset.Level.HIGH)
 	assert_true(we.environment.ssr_enabled, "改畫質時套用到目前場景")
+	assert_true(probe.visible, "改畫質時 ReflectionProbe 跟著打開")
 	assert_eq(tree.root.msaa_3d, Viewport.MSAA_4X, "MSAA 跟著畫質")
 	settings.call("set_quality", before)
 	we.queue_free()
+	probe.queue_free()
 	await tree.process_frame

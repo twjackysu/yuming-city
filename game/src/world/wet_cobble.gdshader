@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode specular_occlusion_disabled;
 // 濕石板路（參考 art-inbox/concepts 的冬夜概念圖：燈光在濕石頭上拉出倒影）。
 // 全部程序生成、用世界座標 XZ（合併後的幾何沒有可靠的 UV），不依賴貼圖。
 // - 石塊：錯位排列的圓角方石，每塊顏色略有差異
@@ -78,8 +79,11 @@ void fragment() {
 	albedo = mix(albedo, snow_color, snow * 0.85);
 
 	ALBEDO = albedo;
-	ROUGHNESS = mix(mix(stone_roughness, 0.18, wet), 0.85, snow);
-	SPECULAR = mix(0.5, 0.75, wet);
+	// 石縫濕而不平（0.22）；水窪是平的水面（0.04），映得出燈與亮窗（中畫質靠 ReflectionProbe，高畫質再加 SSR）
+	float rough = mix(stone_roughness, 0.22, 1.0 - stone);
+	rough = mix(rough, 0.04, puddle);
+	ROUGHNESS = mix(rough, 0.85, snow);
+	SPECULAR = mix(mix(0.5, 0.75, wet), 1.0, puddle);
 	// 石塊微微隆起（只在朝上的面）：越靠石縫法線越往外倒；水窪與雪是平的
 	if (world_normal.y > 0.9) {
 		vec2 tilt = f * smoothstep(0.45, 0.92, edge) * 1.1 * (1.0 - puddle) * (1.0 - snow) * (1.0 - aa);

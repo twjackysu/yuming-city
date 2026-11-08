@@ -204,6 +204,9 @@ func _on_node_added(node: Node) -> void:
 	var we: WorldEnvironment = node as WorldEnvironment
 	if we != null:
 		QualityPreset.apply_environment(we.environment, quality)
+	var probe: ReflectionProbe = node as ReflectionProbe
+	if probe != null:
+		QualityPreset.apply_probe(probe, quality)
 
 
 func load_settings(path: String = _config_path) -> void:
