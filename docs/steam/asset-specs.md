@@ -44,7 +44,7 @@ CI 每次 push 到 main 都會用遊戲內截圖＋標題字產生 Header／Smal
 | 2 | 親手敲九下（敲鐘鏡頭） | `--cutscene=slice_bell_nine --cutscene-steps=3` |
 | 3 | 陷落的北街救援 | `--rescue` |
 | 4 | 看穿灰巡者、席菈在旁 | （沙盒）`--level=sandbox --enemies --insight` |
-| 5 | 送葬者舉起鐵架、石拱重現 | `--convoy --throw=arch --throw-t=0.5` |
+| 5 | 送葬者舉起鐵架、石拱重現 | `--convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14`（D-094，跟 README 的 ninebreath.png 同一組） |
 | 6 | 燃燒劍斬斷鐵架 | `--convoy --throw=kindling --throw-t=0.6 --face=sheila --pos=2.6,6.5 --face-off=16`（從廣場側面拍、席菈在畫面右側；不加 `--pos` 時送葬者站在諾恩正後方、鏡頭會卡進他身體裡，D-074） |
 | 7 | 日記：被剪掉的記憶 | `--open=journal` |
 
