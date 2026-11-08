@@ -2,6 +2,24 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-131　2026-11-09　破屋頂露出屋瓦的地方一排排對齊屋瓦
+
+- 決策：`snow.gdshader` 的 `bare`（D-127）雜訊每排屋瓦（`floor(slope_m / tile_row)`）各自位移一次，露出的地方變成沿著屋瓦的一段段橫條、邊界是屋瓦的橫線；露出的屋瓦上也畫每排下緣的暗線（`lip_line × bare`）。門檻 0.37～0.41。
+- 理由：第七輪盤點第 3 項。CI 的 `06-rescue` 破屋頂的雪上一團團不規則的暗斑，像迷彩或髒污，不像「雪薄、透出屋瓦」。斜屋面上的雪是一排一排滑落的。
+- 影響：純外觀（截圖對照 `--rescue`）。CI 的渲染對比比本機強，下一輪看 screens 的 `06` 再調門檻或 `0.45` 這個暗線強度。
+
+## D-130　2026-11-09　廣場中央的鐘紋：石盤＋鐘的剪影，不是四圈
+
+- 決策：`_build_plaza_ring` 的鐘紋從「淺色外圈、深色溝、淺色內圈、深色圓點」四個圓柱，改成一塊偏暖的淺色圓石盤（沿用地窖門把的 `look.mat(Color(0.4, 0.36, 0.3), 0.4)`，小鎮合併 mesh 已經 24 個、不能開新材質）＋嵌在上面的深色鐘剪影（`bell_inlay_mesh`：`Lathe.bell_profiles` 的外輪廓左右鏡射＋鐘冠，三角化成平面，鐘頂朝北邊的鐘樓）。`plaza_ring_parts` 7 → 5。
+- 理由：第七輪盤點第 2 項。`03`、`04`、`02`、`10` 的廣場中央是淺／深／淺／深同心圓，加上外面的淺色石緣，整個看起來像靶心（D-128 只解決了石板的圈）。鐘的剪影一眼看得出是「敲鐘的鎮」，也不再是同心圓。
+- 影響：`test_frostbridge::test_plaza_bell_inlay_faces_up`。**踩到的坑**：①`StaticBatch` 的 SurfaceTool 先接了有索引的 CylinderMesh，沒有索引的三角形接上去不會被畫出來——自己做的 mesh 要先 `st.index()`；②Godot 的正面是順時針（CylinderMesh 頂蓋的右手定則法線朝下），測試照這個檢查。
+
+## D-129　2026-11-09　重現的石拱是圓拱：48 邊拱洞＋一圈拱石
+
+- 決策：`NineBreathSite._build` 的拱洞 `CSGCylinder3D.sides` 從預設 8 改成 48；新增 `_build_arch_trim()`：11 塊楔形拱石（`CSGPolygon3D`，正中拱心石外緣高 0.16 m、多凸 0.05 m）、兩側拱腳線腳（impost）、柱腳（plinth）、頂上壓頂（coping），都凸出牆面 0.07 m。形狀常數 `ARCH_SPRING`、`ARCH_INNER`、`ARCH_OUTER`、`VOUSSOIRS` 等。
+- 理由：第七輪盤點第 1 項。`08-arch-preview`（重現的關鍵一刻、README 與商店截圖）的預覽輪廓拱頂是尖的多邊形，看起來像五角形的屋子，不像石拱；原因是 CSG 圓柱預設只有 8 邊。凸出的拱石與線腳讓預覽的 fresnel 輪廓和重現後的石頭都讀得出「拱」。
+- 影響：`test_nine_breath_site::test_arch_has_round_vault_and_voussoirs`（CSGPolygon3D 從 z=0 往 -Z 擠出，所以位置設在 `depth / 2`；測試檢查前後對稱）。拱石上的石縫還是 shader 的水平錯縫（世界座標），沒有沿拱圈放射——列在第七張表第 4 項。
+
 ## D-128　2026-11-09　廣場的一圈圈石板不是正圓
 
 - 決策：`wet_cobble.gdshader` 弧形鋪（D-120）的跨排座標 `p.y` 加上 `noise(xz × 0.11)` 的起伏（`row_wave × 1.3`，約 ±0.7 塊），從石框外 0.5 m 到 4 m 漸漸加上；貼著石框的幾圈還是正圓。
