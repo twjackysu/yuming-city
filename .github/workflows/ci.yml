@@ -55,7 +55,7 @@ jobs:
           scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
           scripts/screenshot.sh build/bell.png 120 --level=frostbridge --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
           scripts/screenshot.sh build/combat.png 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW || true
-          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --convoy --arch=restored --locale=zh_TW || true
+          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14 --locale=zh_TW || true
           scripts/screenshot.sh build/street.png 40 --level=frostbridge --at=main --quality=2 --nohud --locale=zh_TW || true
 
       # Steam 膠囊圖替代版（D-064）：主街夜景＋標題字，正式主視覺做好前先給商店頁用
