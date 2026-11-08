@@ -164,6 +164,10 @@ func test_cart_is_built_like_a_cart() -> void:
 	if tire != null:
 		assert_true(absf(tire.global_transform.basis.y.normalized().dot(caravan.global_transform.basis.x.normalized())) > 0.99, "輪軸沿車身左右")
 		assert_true(absf(tire.position.y - Caravan.WHEEL_R) < 0.001, "輪子著地")
+	# D-113：傷者包著頭巾（頭不是一顆光滑的球），其中一人纏著繃帶
+	var wraps: int = cart.find_children("HeadWrap", "MeshInstance3D", true, false).size()
+	assert_eq(wraps, 2, "兩名傷者都包著頭巾")
+	assert_eq(cart.find_children("Bandage", "MeshInstance3D", true, false).size(), 1, "一人額頭纏著繃帶")
 	var pole: Node3D = cart.find_child("LanternPole", false, false) as Node3D
 	assert_not_null(pole, "提燈掛在燈柱上")
 	if pole != null:

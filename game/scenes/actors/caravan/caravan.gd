@@ -21,6 +21,9 @@ const WHEEL_X: float = 0.74
 const WHEEL_Z: float = 0.3
 ## 輻條：每根橫過輪轂的木條算兩根（3 條＝六根輻條）
 const SPOKE_BARS: int = 3
+## 傷者的頭巾與繃帶（D-113）
+const HEAD_WRAP: Color = Color(0.16, 0.14, 0.13)
+const BANDAGE: Color = Color(0.6, 0.56, 0.48)
 ## 提燈掛在前右角燈柱的橫桿下
 const LANTERN_POS: Vector3 = Vector3(0.69, 1.3, -1.25)
 const CLOTH: Color = Color(0.32, 0.29, 0.26)
@@ -98,6 +101,39 @@ func _part(part_name: String, mesh: Mesh, xform: Transform3D, mat: Material) -> 
 	mi.material_override = mat
 	_cart.add_child(mi, true)
 	return mi
+
+
+## 傷者的頭（第四輪盤點第 5 項，D-113）：推車經過鏡頭底下時，畫面最清楚的是兩顆光滑的球形頭（程序人偶）。
+## 包一條深色毛布頭巾（只露出一小塊臉），其中一人額頭再纏一圈淺色繃帶。只改傷者，不動 Puppet 本體。
+func _wrap_head(hurt: Puppet, bandage: bool) -> void:
+	var neck: Node3D = hurt.joint("neck")
+	if neck == null:
+		return
+	var head_wrap := MeshInstance3D.new()
+	head_wrap.name = "HeadWrap"
+	var wrap_mesh := SphereMesh.new()
+	wrap_mesh.radius = 0.148
+	wrap_mesh.height = 0.31
+	wrap_mesh.radial_segments = 16
+	wrap_mesh.rings = 8
+	head_wrap.mesh = wrap_mesh
+	head_wrap.material_override = _mat(HEAD_WRAP)
+	# 往後腦偏一點：臉（-Z）中間露出一小塊
+	head_wrap.position = Vector3(0.0, 0.155, 0.035)
+	neck.add_child(head_wrap)
+	if bandage:
+		var band := MeshInstance3D.new()
+		band.name = "Bandage"
+		var band_mesh := TorusMesh.new()
+		band_mesh.inner_radius = 0.128
+		band_mesh.outer_radius = 0.152
+		band_mesh.rings = 16
+		band_mesh.ring_segments = 5
+		band.mesh = band_mesh
+		band.material_override = _mat(BANDAGE)
+		band.position = Vector3(0.0, 0.2, 0.0)
+		band.rotation = Vector3(deg_to_rad(-14.0), 0.0, deg_to_rad(5.0))
+		neck.add_child(band)
 
 
 func _mat(c: Color) -> StandardMaterial3D:
@@ -196,6 +232,7 @@ func _build() -> void:
 		_cart.add_child(hurt)
 		_box("Blanket%d" % i, Vector3(0.46, 0.08, 1.15), Vector3(x, 0.9, 0.42), cloth,
 			Basis(Vector3.FORWARD, deg_to_rad(4.0 if i == 0 else -3.0)))
+		_wrap_head(hurt, i == 0)
 		# 拿掉手上的鐘錘（程序人偶預設拿著）
 		var hammer: Node = hurt.hand("R").get_node_or_null("BellHammer") if hurt.hand("R") != null else null
 		if hammer != null:
