@@ -57,6 +57,12 @@ jobs:
           scripts/screenshot.sh build/combat.png 14 --level=sandbox --boss --insight --locale=zh_TW || true
           scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --arch=restored --locale=zh_TW || true
 
+      # 匯出版本身（不是編輯器）能開到霜橋鎮、畫出東西、沒有 SCRIPT ERROR（M1.4）
+      - name: 匯出版 smoke test
+        run: |
+          command -v xvfb-run > /dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null; }
+          scripts/smoke_export.sh build/linux/YumingCity.x86_64 build/smoke-export.png
+
       - name: 打包
         run: |
           SHORT_SHA="${GITHUB_SHA::7}"
@@ -78,6 +84,8 @@ jobs:
             build/bell.png
             build/combat.png
             build/ninebreath.png
+            build/smoke-export.png
+            build/smoke-export.log
           if-no-files-found: warn
           retention-days: 14
 
