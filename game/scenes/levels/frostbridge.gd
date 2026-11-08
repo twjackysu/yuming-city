@@ -58,6 +58,10 @@ var lit_window_count: int = 0
 ## D-096：樓上補開的窗、門邊的店招（測試用）
 var upper_window_count: int = 0
 var shop_sign_count: int = 0
+## 用屋瓦材質的完整屋頂數（D-107）
+var roof_count: int = 0
+## 屋頂的雪蓋住上面多少（以屋頂高度的比例；原本 0.82，D-107 改成露出最下面三四排瓦）
+const ROOF_SNOW: float = 0.7
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
 
@@ -930,12 +934,13 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	var basis := Basis.IDENTITY if absf(dir.z) > 0.5 else Basis(Vector3.UP, PI * 0.5)
 	# 北街的房子：完整屋頂放在自己的 batch（陷落時藏起來），另外先蓋好一份破屋頂（D-091）
 	var roof_batch: StaticBatch = StaticBatch.new() if collapsible else batch
-	var roof := PrismMesh.new()
-	roof.size = Vector3(depth + 0.7, roof_h, w + 0.5)
-	roof_batch.add_mesh(roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.5, 0)), look.mat(FrostbridgeLook.ROOF))
+	# 屋瓦（D-107）：斜面 UV 是公尺，roof_tiles.gdshader 排一排排的瓦；雪的下緣露出最下面幾排
+	var roof: ArrayMesh = RoofMesh.build(depth + 0.7, roof_h, w + 0.5)
+	roof_batch.add_mesh(roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.5, 0)), look.roof_tiles())
+	roof_count += 1
 	var snow_roof := PrismMesh.new()
-	snow_roof.size = Vector3((depth + 0.7) * 0.82, roof_h * 0.82, w + 0.56)
-	roof_batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.18 + roof_h * 0.82 * 0.5 + 0.06, 0)), look.snow())
+	snow_roof.size = Vector3((depth + 0.7) * ROOF_SNOW, roof_h * ROOF_SNOW, w + 0.56)
+	roof_batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * (1.0 - ROOF_SNOW) + roof_h * ROOF_SNOW * 0.5 + 0.06, 0)), look.snow())
 	if collapsible:
 		roof_batch.build(holder, "Roof")
 		var ruin := StaticBatch.new()

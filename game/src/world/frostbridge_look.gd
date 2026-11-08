@@ -89,6 +89,7 @@ const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
 const WINDOW_SHADER: String = "res://src/world/window_glass.gdshader"
 const SNOW_SHADER: String = "res://src/world/snow.gdshader"
 const DOOR_SHADER: String = "res://src/world/door.gdshader"
+const ROOF_TILES_SHADER: String = "res://src/world/roof_tiles.gdshader"
 ## 灰泥色（月光下偏冷／偏暖兩種），石牆的石頭色
 const PLASTER: Color = Color(0.4, 0.4, 0.41)
 const PLASTER_WARM: Color = Color(0.45, 0.4, 0.34)
@@ -139,6 +140,17 @@ func snow() -> ShaderMaterial:
 	m.shader = load(SNOW_SHADER) as Shader
 	m.set_shader_parameter("snow_color", SNOW)
 	_mats["snow"] = m
+	return m
+
+
+## 屋瓦（roof_tiles.gdshader，D-107）：只給 RoofMesh 的斜面（UV 是公尺）。全部的屋頂共用一個材質。
+func roof_tiles() -> ShaderMaterial:
+	if _mats.has("roof_tiles"):
+		return _mats["roof_tiles"] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(ROOF_TILES_SHADER) as Shader
+	m.set_shader_parameter("base_color", ROOF)
+	_mats["roof_tiles"] = m
 	return m
 
 

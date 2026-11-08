@@ -700,6 +700,22 @@ func test_street_snow_banks() -> void:
 	await _free(level)
 
 
+## 屋瓦（D-107）：完整的屋頂都用屋瓦材質，雪只蓋住上面一部分（露出最下面幾排瓦）。
+func test_roofs_use_tiles() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	assert_true(int(level.get("roof_count")) >= 20, "每棟房子一個屋瓦屋頂（%d）" % int(level.get("roof_count")))
+	var snow_cover: float = float(level.get("ROOF_SNOW"))
+	assert_true(snow_cover > 0.55 and snow_cover < 0.8, "雪蓋住屋頂的上 %.0f%%，下緣露出幾排瓦" % (snow_cover * 100.0))
+	var found: bool = false
+	for mi: Node in level.get_node("Town").find_children("*", "MeshInstance3D", true, false):
+		var m: ShaderMaterial = (mi as MeshInstance3D).material_override as ShaderMaterial
+		if m != null and m.shader != null and m.shader.resource_path.ends_with("roof_tiles.gdshader"):
+			found = true
+	assert_true(found, "小鎮合併的 mesh 裡有屋瓦材質")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()
