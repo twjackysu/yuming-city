@@ -67,7 +67,7 @@
 | 可協作同伴（席菈）：三指令、時機窗、拒絕、倒下拉起 | ✅ | `test_companion::*`、`test_combat_hud::test_pull_sheila_up_and_after_combat`、`test_lock_on::test_sheila_attacks_locked_target` |
 | 九秒能力：預覽、代價、視聽回饋、結束狀態 | ✅ | `test_nine_breath_site::*`、`test_journal::test_arch_preview_highlights_memory`、`test_restored_arch_is_glowing_stone` |
 | 讀檔不重複付費、不卡死 | ✅ | `test_nine_breath::test_save_mid_restoration_loads_as_spent_without_double_charge`、`test_save::test_memory_cost_is_paid_once` |
-| 鍵鼠與手把都能完成 | ✅／👤 | 每個動作兩種綁定 `test_input::test_every_action_has_keyboard_and_gamepad`；改鍵 `test_controls_menu_rebind_cancel_reset`；**只用手把事件**走梨販 → 敲九下、救援（按住 A）、灰巡者（LT 看穿、X 揮擊、十字鍵上指令）、暫停選單 → 設定 → 返回 `test_gamepad_route`（這個測試抓到 A 按不下選項的 bug，D-047）；A／B 確認返回 `test_input::test_ui_actions_have_pad_buttons`；手感要 Jacky 試玩 |
+| 鍵鼠與手把都能完成 | ✅／👤 | 每個動作兩種綁定 `test_input::test_every_action_has_keyboard_and_gamepad`；改鍵 `test_controls_menu_rebind_cancel_reset`；**只用手把事件**走梨販 → 敲九下、救援（按住 A）、灰巡者（LT 看穿、X 揮擊、十字鍵上指令）、送葬者戰（右搖桿鎖定、B 翻滾、被抓連按 B 掙脫、按住 Y 重現石拱）、暫停選單 → 設定 → 返回 `test_gamepad_route`（這個測試抓到 A 按不下選項的 bug，D-047）；A／B 確認返回 `test_input::test_ui_actions_have_pad_buttons`；手感要 Jacky 試玩 |
 | 字幕 | ✅ | 開關存檔 `test_settings::test_settings_round_trip`；作用範圍（D-045）`test_companion::test_sheila_barks_follow_subtitle_setting` |
 | 音量 | ✅ | `test_settings::test_audio_buses`、`test_sfx::test_play_uses_sfx_bus_and_missing_is_silent` |
 | 基本畫質 | ✅ | `test_quality::*`（三級切換套到已載入場景） |
@@ -82,7 +82,7 @@
 | 實機效能（打包版） | 👤 | `--benchmark` JSON（FOR_JACKY 第 1 項） |
 | 代表最終方向的一小段場景 | 🔨 | 霜橋鎮廣場＋送葬者戰燃燒劍／石拱瞬間；正式角色模型到了再定 |
 
-手把整段（第 11～12 輪）：`test_gamepad_route` 分段——梨販 → 敲完九下、救援三人（按住 A）、灰巡者（LT 看穿、X 揮擊打中、十字鍵上叫席菈打弱點）、暫停選單；還沒涵蓋：送葬者戰（RB 鎖定、B 閃避、Y 重現）、按鍵設定頁用手把改鍵。
+手把整段（第 11～13 輪）：`test_gamepad_route` 分段——梨販 → 敲完九下、救援三人（按住 A）、灰巡者（LT 看穿、X 揮擊打中、十字鍵上叫席菈打弱點）、送葬者戰（右搖桿鎖定／解除、B 翻滾無敵、被抓住連按 B 掙脫、左搖桿走到石拱按住 Y 重現）、暫停選單；還沒涵蓋：按鍵設定頁用手把改鍵。
 
 ## 主街往鐘樓爬坡（第 11 輪，D-048）
 

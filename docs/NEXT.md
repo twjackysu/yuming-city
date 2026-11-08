@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成（含倒影、送葬者倒地）；M1.4 只剩 Jacky 實機項目；接下來是送葬者戰收尾與階段 2 的打磨準備）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成（含倒影、送葬者倒地、席菈守車隊）；M1.4 只剩 Jacky 實機項目；接下來是霜橋鎮第一眼（倒影再強）、手把改鍵測試與階段 2 的打磨準備）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 12 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
+- 上一輪（第 13 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
@@ -13,11 +13,11 @@
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 送葬者戰收尾的份量（第 12 輪做了倒地、閃光、衝刺）
+## 1. 戰鬥收尾的小細節（第 13 輪做了灰巡者撲倒、送葬者冷光＋邊緣光、席菈守車隊）
 
-- 倒地的送葬者是暗色大衣，夜裡不顯眼（`--convoy --felled`）：倒地那一刻燃燒劍的火光多留 1～2 秒、或給大衣加一點邊緣光（`rim`）讓輪廓出來。
-- 斬完鐵架後席菈「留在車隊旁守著」：現在衝到車隊前斬完就回到一般跟隨。可以在 `ConvoyEncounter` 斬完後設 `ally.guard_point = guard_spot` 並把 `brain.mode` 切成守護幾秒（看 `CompanionBrain` 的 guard 怎麼進出，別經過 `command()` 的冷卻與台詞）。
-- 灰巡者（一般敵人）死亡仍是「往後倒＋壓扁」（`EnemyActor._on_died`，繞 X 軸 +80° 其實是往後倒）：可照送葬者的做法改成往前撲倒，或保留往後倒但不要壓扁。
+- 灰巡者倒地沒有截圖旗標：在沙盒加 `--felled`（`--level=sandbox --enemies --felled`：第一隻灰巡者 `debug_hold_fallen = true` 後打死，截圖時藏起諾恩），截圖確認撲倒的姿勢與灰粉在燈下看得到。共用流程在 `EnemyActor._on_died`／`_begin_death`／`_on_fall_impact`（D-054）。
+- 席菈守車隊（`hold_guard`）時 HUD 的指令列會顯示「守住」中嗎？看 `combat_hud.gd` 的指令標籤讀不讀 `guard_active`；若會顯示，5 秒後自動解除時要跟著變回來（應該是自動的，確認一下）。
+- 送葬者倒地冷光在高畫質（`--quality=2`）有 SSR 時會不會太亮（`--convoy --felled --quality=2`）。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
@@ -29,12 +29,13 @@
 
 ## 3. 手把與 M1.4 延伸
 
-- `test_gamepad_route` 已有：梨販 → 敲九下、救援三人、灰巡者（LT／X／十字鍵上）、暫停選單。還沒涵蓋：送葬者戰（RB 鎖定、B 閃避、被抓時連按 B 掙脫、按住 Y 重現石拱）、按鍵設定頁用手把改鍵。每段一個測試函式（共用 `_walk_to`、`_tap`、`_trigger_left`）；敵人不出手時用 `set_physics_process(false)`，席菈會把不動的敵人先打倒，需要時也先停住她。
+- `test_gamepad_route` 已有：梨販 → 敲九下、救援三人、灰巡者（LT／X／十字鍵上）、送葬者戰（右搖桿鎖定、B 翻滾、被抓連按 B、按住 Y 重現）、暫停選單。還沒涵蓋：**按鍵設定頁用手把改鍵**（設定 → 按鍵設定 → 十字鍵移到某一列 → A → 按新的手把鍵 → 確認綁定換了 → 「還原預設」）。共用 `_walk_to`、`_tap`、`_tap_physics`（戰鬥輸入在物理幀讀 just_pressed，用這個）、`_trigger_left`；敵人不出手時用 `set_physics_process(false)`，席菈會把不動的敵人先打倒，需要時也先停住她。
+- 注意：鎖定是**右搖桿按下**（R3），不是 RB（README 的操作表是對的）。送葬者活著時會擋路，走到石拱要從南邊繞（測試裡從石拱南 8 m 走回來）。
 
 ## 4. 階段 2 準備（12/1 起，可以提前）
 
 - 「第一眼就有質感」盤點：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（標題畫面霧層幾乎看不出來、按鍵設定頁的手把圖示是文字、重現提示文字壓到石拱輪廓），排出 12/1–12/8 的打磨順序寫進 PLAN。
-- Steam 準備：`docs/steam/` 商店文案中英版草稿與素材規格（膠囊圖尺寸、截圖數量）先寫，不用等 Jacky 的帳號。
+- Steam 準備：草稿已寫（D-055）：`docs/steam/store-page.md`、`docs/steam/asset-specs.md`。下一步：用截圖清單的旗標產生 7 張替代版截圖（1600×900 軟體渲染，只當版位示意，正式要 Windows 實機），做一張 Header Capsule 替代版（截圖＋標題字，920×430，PIL 合成，放 `docs/steam/mock/`，不進遊戲）；之後 GodotSteam（等存檔與輸入穩定）。
 
 ## 5. 角色模型（等 Jacky 交件）
 
