@@ -82,6 +82,15 @@
     "cellar": {
       "speaker": "SPK_ADA",
       "text": "DLG_AFTER_005",
+      "text_if": [
+        {
+          "if": {
+            "flag": "sheila.hand_injury",
+            "gte": 2
+          },
+          "text": "DLG_AFTER_005_HAND"
+        }
+      ],
       "do": {
         "set": {
           "slice.ada_talked_aftermath": true

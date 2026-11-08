@@ -32,6 +32,7 @@ DLG_AFTER_002,"...I know. Dad always slipped one back into the bag.",……我�
 DLG_AFTER_003,"(Ada presses a pear into your hand and says nothing.)",（艾妲把一顆梨塞進你手裡，什麼也沒說。）
 DLG_AFTER_004,You don't even remember that.,你連這個都不記得。
 DLG_AFTER_005,The way down to the under-city is in our cellar. I'll take you. Not because I forgive you.,通往地底城的入口在我家地窖。我帶你去。不是因為我原諒你。
+DLG_AFTER_005_HAND,"The way down to the under-city is in our cellar. I'll take you. Not because I forgive you. ...And wrap your friend's hand first. She burned it twice tonight.",通往地底城的入口在我家地窖。我帶你去。不是因為我原諒你。……先把你同伴的手包起來。她今晚燒了兩次。
 SPK_SHEILA,Sheila,席菈
 JOURNAL_TITLE,Journal,日記
 JOURNAL_HINT_CLOSE,{key} Close,{key} 闔上

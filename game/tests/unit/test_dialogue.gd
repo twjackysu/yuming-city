@@ -127,3 +127,18 @@ func test_text_if_validation() -> void:
 		"a": {"speaker": "S", "text": "T", "text_if": [{"if": {"flag": "f"}, "text": "U"}]}}})
 	assert_eq(ok, PackedStringArray())
 
+
+
+## 收束：席菈提前燒過燃燒劍（手傷 2）→ 艾妲最後一句多叮嚀包手；只燒一次（石拱路線）就是原句。
+func test_ada_notices_sheila_hand_after_two_burns() -> void:
+	var db: DialogueDB = DialogueDB.load_default()
+	for c: Array in [[1, "DLG_AFTER_005"], [2, "DLG_AFTER_005_HAND"]]:
+		var st := GameState.new()
+		st.set_flag("sheila.hand_injury", c[0])
+		var r := DialogueRunner.new(db, st)
+		assert_true(r.start("slice_ada_aftermath"))
+		r.advance()
+		assert_true(r.choose(r.visible_choices.size() - 1), "選「……真的不準？」")
+		assert_eq(r.current_text(), "DLG_AFTER_004")
+		r.advance()
+		assert_eq(r.current_text(), str(c[1]), "手傷 %d" % c[0])
