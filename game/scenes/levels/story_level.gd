@@ -29,6 +29,19 @@ func _init_story() -> void:
 		collapse_north_street(false)
 
 
+## 截圖用（`--convoy`）：把主線推進到送葬者戰（跟正式流程一樣設旗標：梨販、敲九下、救完、席菈、灰巡者），
+## HUD 的目標與席菈在場才跟正式流程一致。已經在送葬者戰或之後就不動。回傳是否推進了。
+static func dev_advance_to_convoy(s: GameSession) -> bool:
+	if s.quests.stage_of(GameSession.MAIN_QUEST) in ["escort_convoy", "aftermath"]:
+		return false
+	s.set_flag("slice.met_pear_seller", true)
+	s.set_flag("slice.bell_rings", 9)
+	s.set_flag("slice.rescue_done", true)
+	s.set_flag("slice.sheila_talked", true)
+	s.set_flag("slice.ashwalker_defeated", true)
+	return s.quests.stage_of(GameSession.MAIN_QUEST) == "escort_convoy"
+
+
 ## 子類別覆寫：傷者車隊路線、席菈與送葬者出現的位置。
 func _caravan_route() -> PackedVector3Array:
 	return PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])

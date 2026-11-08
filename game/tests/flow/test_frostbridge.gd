@@ -204,6 +204,20 @@ func test_north_street_collapses() -> void:
 	await _free(level)
 
 
+## 截圖旗標 `--convoy` 把主線推進到送葬者戰：HUD 目標是護送車隊（之前停在「到廣場找梨販」）。
+func test_dev_advance_to_convoy() -> void:
+	var s := _session()
+	assert_true(StoryLevel.dev_advance_to_convoy(s), "新遊戲 → 推進到送葬者戰")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "escort_convoy")
+	assert_eq(s.objective_key(), "Q_SLICE_OBJ_CONVOY", "HUD 目標是護送車隊")
+	assert_true(bool(s.state.get_flag("slice.north_street_collapsed", false)), "北街照正式流程陷落")
+	assert_false(StoryLevel.dev_advance_to_convoy(s), "已經在送葬者戰：不動")
+	s.set_flag("slice.convoy_through", true)
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath")
+	assert_false(StoryLevel.dev_advance_to_convoy(s), "之後的段落：不倒退")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath")
+
+
 func test_convoy_checkpoint_spawn_and_fight() -> void:
 	var s := _session()
 	_to_convoy(s)

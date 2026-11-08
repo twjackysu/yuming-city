@@ -74,8 +74,11 @@ func _ready() -> void:
 	_build_cutscene_cameras()
 	_init_story()
 
-	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	# 截圖用：`--convoy` 先把任務推進到送葬者戰（在連接 stage_changed 之前，不會觸發席菈登場段落）
+	if dev_args.has("convoy") and StoryLevel.dev_advance_to_convoy(Game.session) and not _north_collapsed:
+		collapse_north_street(false)
+	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	var player: PlayerController = $Player as PlayerController
 	var spawn: Marker3D = $Spawn
 	player.global_transform = spawn.global_transform
