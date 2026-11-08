@@ -2,7 +2,7 @@
 
 新的放最上面。時間為台北時間。
 
-## 2026-11-08 14:26–15:05　第 16 輪：HUD 的手把按鈕圖示（含救援與拉起席菈的提示搬進 HUD）、Steam 膠囊圖替代版、燃燒劍斬鐵架拍得到了、標題鐘樓細節
+## 2026-11-08 14:26–15:08　第 16 輪：HUD 的手把按鈕圖示（含救援與拉起席菈的提示搬進 HUD）、Steam 膠囊圖替代版、燃燒劍斬鐵架拍得到了、標題鐘樓細節
 
 **做了什麼**
 
@@ -17,7 +17,7 @@
 
 - 測試 221 → 229 全綠：`test_glyph_line`（鍵鼠文字／手把圖示、圖示兩側字段、兩個 `{key}`、沒有手把綁定退回文字、戰鬥 HUD 三格與十字鍵形狀、掙扎提示、重現提示仍水平置中且跟場景文字一致、對話框與過場聽 `device_changed` 切換）、`test_glyph_line::test_interact_prompt_reads_sources`（下方置中、按住進度、手把圖示、疊在重現提示上方、來源收起就消失）、`test_frostbridge::test_dev_face_turns_player_to_target`；`test_combat_hud` 的守住染色改讀 `GlyphLine.text_color()`、拉起提示改看 HUD（頭上不再有提示）。
 - 畫面（xvfb＋lavapipe）：`--convoy --arch=preview --device=pad`（「按住 (Y)　重現 9 秒」黃色 Y 圓鈕）、沙盒 `--boss --insight --device=pad`（三個十字鍵圖示、亮起的那一臂各不同）、`--convoy --arch=restored` 改前後、`--face=sheila` 燃燒劍、`--rescue --device=pad`（「按住 (A)　搬開瓦礫」＋進度條）、膠囊圖四張（第一版 Header 左上有 HUD 目標字 → 加 `--nohud`；Library 第一版裁到標題畫面自己的「City」字 → 改成以鐘樓為中心、切掉底部原型小字）、標題鐘樓改前後。
-- CI：HUD 圖示 run 42455412833、`--arch` 構圖 run 42455586170 綠燈；最後一次程式 commit（59d744f 互動提示）的 run 寫在下面。
+- CI：HUD 圖示 run 42455412833、`--arch` 構圖 run 42455586170 綠燈；Steam 膠囊圖 run 42456012958（四張膠囊圖都有產生、進 artifact）、標題鐘樓 run 42456073289 綠燈；最後一次程式 commit（59d744f 互動提示）run 42456450655：測試、匯出、截圖、Steam 膠囊圖、匯出版 smoke test、發布 latest（含 `header_capsule.png`）全部綠燈。
 
 **遇到的問題**
 
