@@ -8,12 +8,13 @@
 
 - **廣場地上的殘雪、髒雪與車轍**（D-114，第 4 項）：`wet_cobble.gdshader` 加三組 uniform——街道範圍（石縫裡卡雪、靠牆與角落連成線、靠牆的石板上一層薄雪、空地偶爾一片吹散的薄雪；街口不當成牆）、踩實的灰褐髒雪（井邊一圈、梨販攤前一片）、一道車轍（西側手推車往東出來、繞過井與石框進主街：濕亮的輪溝＋兩側推開的雪）。`FrostbridgeLook.set_ground_marks` 套到所有濕石板材質；沙盒不受影響。順便發現原本的低頻積雪（`snow_amount` 門檻 0.82）幾乎不會出現。
 - **角色擋鏡頭時淡掉**（D-115，第 6 項）：`CameraFade` 支援有 `fade_near`／`fade_far` 的 shader，送葬者鐵架 shader 加上抖動淡出；席菈與敵人 0.4～1.0 m、送葬者（又高又寬）0.9～1.9 m。
+- **南街口的一道雪**（D-114 後續）：路口截圖 `--at=cross` 南街口整條橫著一道雪（南街的範圍只伸進路口 1 m，範圍的盡頭被當成牆）；南街範圍改成一路到路口南邊的牆。
 
 **怎麼驗證**
 
 - 本機拿得到 Godot 與字型（一次成功）；`scripts/check.sh` 開工 275 個全綠，每次程式 commit 前都跑，最後 278 個全綠。新測試：`test_frostbridge::test_ground_snow_and_ruts`、`test_camera_fade::test_apply_sets_shader_fade`、`test_characters_fade_near_camera`。
-- 截圖前後對照（xvfb＋lavapipe）：廣場 `--at=plaza` 與攤子 `--pos=3.0,3.2`（第一版效果太弱、幾乎看不出來；第二版石縫的雪像一整張白格子；第三版空地的石縫雪打散成一段段，下半畫面有雪、髒雪、車轍）、主街 `--at=main`（街邊雪堆的邊緣跟地面接起來、街道中間維持濕石板）、送葬者戰 `--convoy --phase2 --face=undertaker --face-off=200 --nohud`（左邊三分之一的送葬者變成網點、看得到後面的牆）。
-- CI：開工時 ddfda0a run 42502099389 全綠（第 26 輪收尾時還在跑的截圖、smoke test 都綠）。本輪：86110de（殘雪）run 42506138834、1b86977（淡出）run 42506665809，見收尾補記。
+- 截圖前後對照（xvfb＋lavapipe）：廣場 `--at=plaza` 與攤子 `--pos=3.0,3.2`（第一版效果太弱、幾乎看不出來；第二版石縫的雪像一整張白格子；第三版空地的石縫雪打散成一段段，下半畫面有雪、髒雪、車轍）、主街 `--at=main`（街邊雪堆的邊緣跟地面接起來、街道中間維持濕石板）、南街 `--at=south`、石階 `--at=steps`、路口 `--at=cross`（修正前後對照）、送葬者戰 `--convoy --phase2 --face=undertaker --face-off=200 --nohud`（左邊三分之一的送葬者變成網點、看得到後面的牆）。
+- CI：開工時 ddfda0a run 42502099389 全綠（第 26 輪收尾時還在跑的截圖、smoke test 都綠）。本輪：86110de（殘雪）run 42506138834 全綠；1b86977（淡出）run 42506665809、ee3a0ee（南街口）run 42507232765 見收尾補記。
 
 **遇到的問題**
 

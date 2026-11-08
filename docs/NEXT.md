@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 27 輪）最後一次程式 push 是 1b86977（角色淡出，D-115），**先確認它整個綠燈**（PROGRESS 第 27 輪有收尾補記）。第 27 輪的程式 commit 都在本機跑過 `scripts/check.sh`（278 個測試）與截圖：86110de 廣場殘雪與車轍（D-114）、1b86977 席菈與敵人擋鏡頭時淡掉（D-115）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 27 輪）最後一次程式 push 是 ee3a0ee（南街口的雪，D-114 後續），**先確認它整個綠燈**（PROGRESS 第 27 輪有收尾補記）。第 27 輪的程式 commit 都在本機跑過 `scripts/check.sh`（278 個測試）與截圖：86110de 廣場殘雪與車轍（D-114，CI 綠）、1b86977 席菈與敵人擋鏡頭時淡掉（D-115）、ee3a0ee 南街的殘雪範圍伸到路口南邊。紅了就看 log 修，修不好 `git revert`。
 - **看 screens 的新圖**：`03-plaza`／`04-stall`／`02-pause` 下半畫面的石縫有一段段的雪、靠牆連成線、井邊與攤子前有灰褐髒雪、手推車到主街口一道車轍；`05-steps` 街邊雪堆的邊緣跟地面接起來；`07-convoy-fight`／`11-convoy-insight` 如果送葬者或席菈離鏡頭很近，會是網點。**特別看 `03`、`04` 的石縫雪會不會像白格子（太規則）、殘雪會不會太亮或太多**——太多就調 `wet_cobble.gdshader` 的 `lodge`／`dust` 門檻。
 - `docs/PROGRESS.md` 約 238 行；超過約 300 行時把第 19～23 輪合併成每日摘要。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
@@ -29,7 +29,7 @@
 - **第三輪盤點（PLAN 階段 2 第三張表，D-099）全部完成**：第 23 輪第 1～4 項（D-095～D-098）＋木桶（D-100）；第 24 輪第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102：`SnowMound.build(長, 寬, 高, seed, bias)`，模型 X＝長、Z＝寬、底在 y=0；`bias` 讓最高點偏一邊）、柴堆與手推車（D-103）；第 25 輪木圍欄（D-104：`FENCE_PATH`、`_build_fence`）、街邊雪帶（D-105：`_snow_bank(牆腳線起點, 終點, 牆的方向, 伸出寬度)`、`snow_banks`）、推車淡出（D-106：`CameraFade.apply(節點, near, far)`）、屋瓦（D-107：`RoofMesh.build`、`look.roof_tiles()`、`ROOF_SNOW`）、接地陰影（D-108：`ContactShadow.attach(角色, 半徑, 強度)`）。
 - **第四輪盤點（PLAN 階段 2 第四張表，D-109）**：第 26 輪完成第 1 項（D-110：`RoofMesh.slab(長, 厚, 寬)` 只有頂面 UV 是公尺、-X 端是屋簷；`SnowMound` 20 段、輪廓大起伏）、第 2 項（D-111：`Caravan` 的 `_box`／`_part`、常數 `BED_*`／`WHEEL_*`／`LANTERN_POS`）、第 3 項（D-112：`_roof_snow_lip`）、第 5 項（D-113：`Caravan._wrap_head`）、第 7 項（併入第 1 項）。
 - 第四輪第 4、6 項第 27 輪完成：地上殘雪（D-114：`FrostbridgeLook.set_ground_marks(lanes, trodden, rut)`、`frostbridge.gd` 的 `ground_lanes()`／`TRODDEN`／`RUT_PATH`；fbm 的值大多在 0.3～0.65，門檻照這個抓）、角色淡出（D-115：`CameraFade.CHARACTER_NEAR/FAR`、`EnemyActor.camera_fade_range()`；自訂 shader 要淡就宣告 `fade_near`／`fade_far` uniform，照 `frame_iron.gdshader` 的寫法）。
-- **下一輪從這裡開始：第五輪「第一眼」盤點**（PLAN 階段 2 加第五張表）：下載 screens 的 11 張（1b86977 之後的建置）＋本機截圖對照概念圖 `art-inbox/concepts/frostbridge_winter/`，依畫面被看到的程度排 5～8 項。候選：①殘雪在 `03`／`04` 的分量（太規則或太亮就調）；②南街與路口（`--at=south`、`--at=cross`）的地面與牆邊有沒有一樣的生活痕跡（車隊從那裡走，可以加第二道車轍：`RUT_PATH` 目前只有一條，shader 只支援一條折線）；③敲鐘鏡頭的鐘頂（D-081 留下「鐘頂略平、之後可加鐘鈕」：鐘架下面的鐘肩剖面 `Lathe.bell_profiles` 頂端幾乎是平的）；④店招只是一塊深色木板（door shader 的木箱模式加簡單圖案）；⑤送葬者戰淡出的網點在 `07`／`11` 好不好看（沒有 TAA）。
+- **下一輪從這裡開始：第五輪「第一眼」盤點**（PLAN 階段 2 加第五張表）：下載 screens 的 11 張（1b86977 之後的建置）＋本機截圖對照概念圖 `art-inbox/concepts/frostbridge_winter/`，依畫面被看到的程度排 5～8 項。候選：①殘雪在 `03`／`04` 的分量（太規則或太亮就調）；②南街與路口（`--at=south`、`--at=cross`）的地面與牆邊有沒有一樣的生活痕跡（車隊從那裡走，可以加第二道車轍：`RUT_PATH` 目前只有一條，shader 只支援一條折線）；③敲鐘鏡頭的鐘頂（D-081 留下「鐘頂略平、之後可加鐘鈕」：鐘架下面的鐘肩剖面 `Lathe.bell_profiles` 頂端幾乎是平的）；④店招只是一塊深色木板（door shader 的木箱模式加簡單圖案）；⑤送葬者戰淡出的網點在 `07`／`11` 好不好看：畫質只有 MSAA（`QualityPreset.msaa_for`），沒有 TAA，抖動淡出（discard）實機也會是網點——可以考慮高畫質開 TAA（注意體積霧與粒子的鬼影，要在實機看），或接受；⑥廣場中央石框裡的鋪石（同一個濕石板材質）也會有薄雪斑點，近看有點雜，可以讓石框裡不蓋 `dust`。新段落要殘雪：街道範圍要一路伸到對面那條街的牆（範圍的盡頭會被當成牆，第 27 輪南街口就是這樣）。
 - 破屋頂的山牆（PrismMesh）還是 `look.mat(ROOF)` 素面；看起來沒問題就不用改。
 - 本輪看到的小事：店招只是一塊深色木板（夜裡遠看是剪影，夠用；之後可以在 door shader 的木箱模式加一個簡單圖案）。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
