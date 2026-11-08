@@ -19,7 +19,7 @@
 
 - 本機 `scripts/check.sh` 每次程式 commit 前都跑：248 → 253 個測試全綠。新測試：`test_dev_face_arch_and_park_boss`、`test_intel_rows_and_card_layout`、`test_insight_card_on_screen_in_scene`、`test_telegraph_decals_use_shader_and_fill`、`test_stall_fill_light`。
 - 截圖（xvfb＋lavapipe）前後對照：石拱預覽（原本鐵架擋住 → 乾淨的預覽＋代價卡＋車隊戰 HUD；側面兩個角度都不行）、送葬者戰（白字 → 小卡；小卡第一版壓在開場橫幅下，改到敵人右邊、字級加大；前兆色塊 → 亮邊＋填滿，內部再調暗一次）、攤子 `--pos=3.0,3.2`（桌子正面從全黑到看得到木板）、暫停選單 `--open=pause`（暗帶與細線）。
-- CI：0f205c6 run 42476774725、eb34647 run 42477208349 綠燈。3402e19、303dcc2、678de89 的 run 收尾時見下方補記。
+- CI：0f205c6 run 42476774725、eb34647 run 42477208349、3402e19 run 42477557398 全部綠燈（303dcc2 的 run 被下一個 push 取消）。最後一次程式 commit 678de89 run 42478278287：收尾時「Import、測試、匯出」已綠燈，截圖、smoke test、發布 latest 與盤點截圖還在跑（下一輪開頭確認）。發布 latest／screens 時「main 已有更新的程式 commit」會跳過，所以 latest 目前還是 0f205c6 的圖（看穿仍是白字、戰鬥圖仍是沙盒），要等 678de89 發布後才換成霜橋鎮的戰鬥圖。
 
 **遇到的問題**
 

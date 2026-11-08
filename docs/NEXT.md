@@ -5,7 +5,7 @@
 ## 0. 開工先確認
 
 - 上一輪（第 21 輪）最後一次程式 push 是 678de89（暫停選單暗帶與細線，D-090），**先確認它整個綠燈**（PROGRESS 第 21 輪有補記收尾時的狀態）。第 21 輪的程式 commit 都在本機跑過 `scripts/check.sh`（252 個測試）與截圖：0f205c6 石拱預覽截圖（run 42476774725 綠燈）、eb34647 看穿小卡、3402e19 前兆範圍 shader＋README combat.png 改拍霜橋鎮、303dcc2 攤桌補光、678de89 暫停選單。紅了就看 log 修，修不好 `git revert`。
-- **看 latest 的 `combat.png`**（3402e19 起改成霜橋鎮送葬者戰）：看穿小卡在送葬者右邊、前兆範圍是亮邊＋往外填滿、送葬者沒被擋住。不好看就調 CI「截圖」步驟與 screens 的 `11-convoy-insight` 旗標（兩個用同一組）。
+- **看 latest 的 `combat.png`**（3402e19 起改成霜橋鎮送葬者戰；第 21 輪收尾時 latest 還是 0f205c6 的舊圖，要等 678de89 的 run 發布）：看穿小卡在送葬者右邊、前兆範圍是亮邊＋往外填滿、送葬者沒被擋住。不好看就調 CI「截圖」步驟與 screens 的 `11-convoy-insight` 旗標（兩個用同一組）。
 - **第 21 輪本機拿得到 Godot 與字型了**：`scripts/get-godot.sh` 第一次 502、自動重試後成功；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
 - **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
