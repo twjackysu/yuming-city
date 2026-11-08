@@ -23,6 +23,8 @@
 - Godot shader 內建 `TAU`，自己宣告 `const float TAU` 會編譯失敗；截圖時 Vulkan 版失敗會退回 OpenGL 再跑一次（多花 2 分鐘），所以先 `--import` 看有沒有 SHADER ERROR 再截圖。
 - 盤點時下載的 screens.zip 還是舊的（release 剛被新的建置換掉時抓到舊檔）：**看 `unzip -l` 裡的時間**確認是哪次建置。
 
+**收尾補記（04:12）**：811aa3c run 42516289465、996b307 run 42516825350 全部綠燈（測試、截圖、smoke test、發布 latest、盤點截圖）。bf01faf（店招）run 42517225546 被下一次 push 取消（CI 的 concurrency），它的程式包含在 7beb3f3 裡：7beb3f3 run 42517743185 的「Import、測試、匯出」綠燈，截圖、smoke test、打包、盤點截圖收尾時還在跑。最後一次程式 commit e342adf（預覽淡輪廓）run 42518203842 收尾時還在排隊（下一輪開頭確認；本機 `scripts/check.sh` 284 個全綠）。
+
 ## 2026-11-09 02:26–03:04　第 28 輪：第五輪「第一眼」盤點、冬夜天空、雪堆外圈變薄、提燈不投諾恩自己的影子（第五輪第 1、3、4 項）
 
 **做了什麼**
