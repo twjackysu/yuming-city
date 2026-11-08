@@ -40,7 +40,8 @@ void fragment() {
 	float rim = 1.0 - smoothstep(0.0, 0.07, edge);
 	float filled = 1.0 - smoothstep(p - 0.05, p, fill_t);
 	float front = (1.0 - smoothstep(0.0, 0.035, abs(fill_t - p))) * (1.0 - step(0.995, p));
-	float a = rim * (0.5 + 0.5 * p) + 0.04 + filled * (0.07 + 0.16 * p) + front * 0.45;
+	// D-098：裡面的底色與填滿減半（盤點截圖裡一整片亮扇形蓋住畫面下三分之一）；邊線與前緣亮線不變，範圍與剩多久照樣一眼看得出來
+	float a = rim * (0.5 + 0.5 * p) + 0.02 + filled * (0.035 + 0.085 * p) + front * 0.45;
 	ALBEDO = tint;
 	ALPHA = clamp(a, 0.0, 1.0);
 }
