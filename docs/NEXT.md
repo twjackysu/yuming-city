@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成（含倒影、送葬者倒地、席菈守車隊）；M1.4 只剩 Jacky 實機項目；接下來是霜橋鎮第一眼（倒影再強）、手把改鍵測試與階段 2 的打磨準備）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；接下來是第一眼的小毛病（重現提示壓到石拱、手把圖示、標題霧）、霜橋鎮第一眼與階段 2 的打磨準備）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 13 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
+- 上一輪（第 14 輪）最後一次程式 push（a4acb19 濕石板路）的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
@@ -13,24 +13,25 @@
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 戰鬥收尾的小細節（第 13 輪做了灰巡者撲倒、送葬者冷光＋邊緣光、席菈守車隊）
+## 1. 第一眼的小毛病（ART_QUALITY_BAR 盤點出來、還沒修的）
 
-- **其他粒子是不是也是硬邊方塊**：第 13 輪發現倒地的雪粉／灰粉是硬邊方形面片（沒有貼圖），改成 `EnemyActor.soft_dot_texture()` 柔邊圓點。同樣寫法還有：席菈燃燒劍的火星（`sheila.gd` 約 415 行）、鐵架碎掉的石粉與火星（`thrown_frame.gd` 約 229 行）、重現石拱的粒子（`nine_breath_site.gd` 約 360 行）。截圖 `--convoy --throw=arch --throw-t=0.5`、`--throw=kindling --throw-t=0.6`、`--arch=restored` 看是不是方塊；是的話共用 `soft_dot_texture()`（火星很小可以不用，石粉一定要）。
-- 灰巡者倒地截圖：`--level=sandbox --enemies --felled 14 幀`（幀數少一點才拍得到灰粉；30 幀時灰粉已經散了）。
-- 送葬者倒地冷光在高畫質（`--quality=2`）有 SSR 時會不會太亮（`--convoy --felled --quality=2`）。
+- **重現提示文字壓到石拱輪廓**：`nine_breath_site.gd` 的 `_label`（Label3D，`position = Vector3(0, 2.6, 0)`）在畫面中央蓋住石拱（第 14 輪截圖 `--convoy --throw=arch` 也看得到「Restored — 6s left」壓在拱頂）。可試：移到石拱上方 5 m 以上、或改成 HUD 上的 2D 提示（跟目標指引同一排）、字小一點。截圖 `--arch=preview`、`--arch=restored`、`--convoy --throw=arch --throw-t=0.5`。
+- **按鍵設定頁的手把圖示是文字**（A／B／LB）：可以用程序畫的圓形按鈕圖示（`InputGlyphs` 產生 `Texture2D`：圓底＋字母，ABXY 用不同底色；LB／RB／LT／RT 用圓角矩形），鍵鼠維持文字。按鍵設定頁的焦點規則見 D-057（新的疊加選單都要把焦點關住）。
+- **標題畫面霧層幾乎看不出來**：`scenes/boot/title_fog.gdshader`；不帶 `--level` 的截圖就是標題畫面（`scripts/screenshot.sh out.png 30`），前後對照。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
-- **倒影再強一點**（D-051）：目前是含蓄的暖色模糊亮塊。可試：亮窗的發光再亮一點（只在 probe 裡看得出差別）、廣場 probe 拍攝點再低一點（`PROBE_EYE` 0.6）、或在水窪 shader 裡沿視線方向把反射 UV 拉長（概念圖的長條燈影）。截圖 `--at=plaza`、`--at=south` 對照；高畫質（`--quality=2`）有 SSR 疊加也看一下。
+- 第 14 輪：燈的高光 1.0、石面 0.46、水窪細波紋（D-058）。還可以：亮窗的發光再亮一點（只在 probe 裡看得出差別）、廣場 probe 拍攝點再低（`PROBE_EYE` 0.6）。截圖 `--at=plaza`、`--at=main`、`--at=south`，高畫質 `--quality=2` 也看一下。
 - **鐘的金屬度**（D-050）：鐘在台地北端，不在任何 probe 盒子裡；要提高金屬度得在鐘樓加一個小 probe（只拍倒影層），注意反射圖集上限 8 張（`project.godot`）。
 - 半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
 - 程序人偶小幅輪廓：席菈白**短**斗篷＋寬斷劍（刃上一點冷光）；送葬者鐵架加邊緣光。不要大改（正式模型由 Jacky 做）。
 - 石階兩側可加矮石欄或石階邊的燈（`--at=steps`）。
+- 燃燒劍火星（加法混色，D-056）在畫面上還沒親眼看過：`--convoy --throw=kindling` 的鏡頭在諾恩後面、斬開的位置在鏡頭後方。可以加一個截圖旗標把鏡頭轉向席菈（例如 `--face=sheila`），順便給 Steam 截圖用。
 
-## 3. 手把與 M1.4 延伸
+## 3. 手把（M1.4 自動測試已齊）
 
-- `test_gamepad_route` 已有：梨販 → 敲九下、救援三人、灰巡者（LT／X／十字鍵上）、送葬者戰（右搖桿鎖定、B 翻滾、被抓連按 B、按住 Y 重現）、暫停選單。還沒涵蓋：**按鍵設定頁用手把改鍵**（設定 → 按鍵設定 → 十字鍵移到某一列 → A → 按新的手把鍵 → 確認綁定換了 → 「還原預設」）。共用 `_walk_to`、`_tap`、`_tap_physics`（戰鬥輸入在物理幀讀 just_pressed，用這個）、`_trigger_left`；敵人不出手時用 `set_physics_process(false)`，席菈會把不動的敵人先打倒，需要時也先停住她。
-- 注意：鎖定是**右搖桿按下**（R3），不是 RB（README 的操作表是對的）。送葬者活著時會擋路，走到石拱要從南邊繞（測試裡從石拱南 8 m 走回來）。
+- `test_gamepad_route` 涵蓋：梨販 → 敲九下、救援、灰巡者、送葬者戰、暫停選單、按鍵設定頁改鍵（第 14 輪）。手感只能等 Jacky 試玩。
+- 共用 helper：`_walk_to`、`_tap`、`_tap_physics`（戰鬥輸入在物理幀讀 just_pressed）、`_trigger_left`、`_focus_with_dpad`。鎖定是**右搖桿按下**（R3），不是 RB。
 
 ## 4. 階段 2 準備（12/1 起，可以提前）
 
@@ -43,6 +44,8 @@
 - 之後：敵人（Undertaker、Ashwalker）走同一個入口；弱點位置（灰巡者左膝、送葬者鐵架關節）用骨骼名或 Marker 對齊；動作多了換 AnimationTree。傷者／受困者的躺姿只在程序人偶上（`Puppet.lying`），模型版要另外的躺姿動畫；送葬者倒地目前是轉整個 `_body`，模型版要倒地動畫。
 
 ## 備註
+
+- 粒子一律用 `ParticleLook.material(color, additive)`（D-056）；`test_particle_look` 用 `ParticleLook.untextured(node)` 找沒貼圖的粒子，新的特效節點也加進去。
 
 - **繞 X 軸負角度是往前倒／前傾**（頭在 -Z，D-052）。送葬者用 `FALL_FORWARD = -1.0`；寫新的姿勢時照這個常數，別再寫反。
 - 水窪倒影（D-051）：新的靜態幾何要進倒影就放進 StaticBatch（`_build_reflection_probes` 會幫 Town 的 mesh 加倒影層）；動態物件不要加 `REFLECT_LAYER`（會被凍在倒影裡）。
