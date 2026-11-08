@@ -93,6 +93,86 @@ func test_settings_menu_texts_and_controls() -> void:
 	await tree.process_frame
 
 
+## D-076：四個分組標題、「‹ 值 ›」箭頭（點箭頭／左右鍵切換）、值下面的小圓點、音量百分比、整個面板塞得進 1080。
+func test_settings_menu_groups_arrows_pips() -> void:
+	var settings: Node = tree.root.get_node("Settings")
+	var menu: SettingsMenu = (load("res://scenes/ui/settings_menu.tscn") as PackedScene).instantiate() as SettingsMenu
+	tree.root.add_child(menu)
+	menu.open()
+	await tree.process_frame
+	await tree.process_frame
+	assert_eq(menu.group_keys(), PackedStringArray(["SET_GROUP_GAME", "SET_GROUP_AUDIO", "SET_GROUP_DISPLAY", "SET_GROUP_INPUT"]), "四組：遊戲／聲音／畫面／操作")
+	assert_eq(menu.group_of("Difficulty"), "Game")
+	assert_eq(menu.group_of("Subtitles"), "Game")
+	assert_eq(menu.group_of("VolumeMusic"), "Audio")
+	assert_eq(menu.group_of("Quality"), "Display")
+	assert_eq(menu.group_of("ReduceShake"), "Display")
+	assert_eq(menu.group_of("Controls"), "Input")
+
+	var quality_before: int = int(settings.get("quality"))
+	var q: Button = menu.control_of("Quality") as Button
+	var prev: ValueArrow = menu.arrow_of("Quality", -1)
+	var next: ValueArrow = menu.arrow_of("Quality", 1)
+	assert_true(prev != null and next != null, "畫質兩側有箭頭")
+	if prev == null or next == null:
+		menu.queue_free()
+		return
+	var p_pts: PackedVector2Array = prev.points()
+	var n_pts: PackedVector2Array = next.points()
+	assert_true(p_pts[1].x < p_pts[0].x, "左箭頭尖端朝左")
+	assert_true(n_pts[1].x > n_pts[0].x, "右箭頭尖端朝右")
+	assert_true(prev.position.x < q.size.x * 0.25 and next.position.x > q.size.x * 0.75, "箭頭在值的兩側")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	next._gui_input(click)
+	assert_eq(int(settings.get("quality")), (quality_before + 1) % 3, "點右箭頭：下一級")
+	assert_true(q.has_focus(), "點箭頭時焦點移到那一列")
+	assert_true(next.is_lit(), "有焦點時箭頭亮起來")
+	prev._gui_input(click)
+	prev._gui_input(click)
+	assert_eq(int(settings.get("quality")), posmod(quality_before - 1, 3), "點左箭頭：上一級（會繞回）")
+	assert_eq(q.text, QualityPreset.NAME_KEYS[int(settings.get("quality"))], "值跟著換")
+	var left := InputEventAction.new()
+	left.action = "ui_left"
+	left.pressed = true
+	q.gui_input.emit(left)
+	assert_eq(int(settings.get("quality")), posmod(quality_before - 2, 3), "左鍵（十字鍵左）切到上一個")
+	var right := InputEventAction.new()
+	right.action = "ui_right"
+	right.pressed = true
+	q.gui_input.emit(right)
+	assert_eq(int(settings.get("quality")), posmod(quality_before - 1, 3), "右鍵切到下一個")
+
+	var pips: ValuePips = menu.pips_of("Quality")
+	assert_true(pips != null and pips.count == 3, "畫質下面三顆圓點")
+	if pips != null:
+		assert_eq(pips.index, int(settings.get("quality")), "實心那顆＝目前畫質")
+		assert_true(pips.center_of(0).x < pips.center_of(2).x, "圓點由左到右")
+	assert_true(menu.pips_of("Vsync") == null, "開／關不畫圓點")
+	assert_not_null(menu.arrow_of("Vsync", 1), "開／關也有箭頭")
+	settings.call("set_quality", quality_before)
+
+	(menu.find_child("Back", true, false) as Control).grab_focus()
+	await tree.process_frame
+	assert_false(next.is_lit(), "焦點離開、滑鼠不在上面：箭頭變暗")
+
+	var vol_before: float = float(settings.call("volume", "SFX"))
+	var slider: HSlider = menu.control_of("VolumeSFX") as HSlider
+	var pct: Label = slider.get_parent().get_node("Percent") as Label
+	slider.value = 0.35
+	assert_eq(pct.text, "35%", "音量旁邊顯示百分比")
+	settings.call("set_volume", "SFX", vol_before)
+	menu.open()
+	assert_eq(pct.text, "%d%%" % roundi(vol_before * 100.0), "重新打開時百分比跟設定一致")
+
+	var panel: PanelContainer = menu.find_children("*", "PanelContainer", true, false)[0] as PanelContainer
+	assert_true(panel.get_combined_minimum_size().y <= 1040.0, "設定面板塞得進 1080 高（%.0f）" % panel.get_combined_minimum_size().y)
+	menu.close()
+	menu.queue_free()
+	await tree.process_frame
+
+
 func test_pause_menu_pauses_and_resumes() -> void:
 	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
 	tree.root.add_child(pause)

@@ -23,6 +23,10 @@ SET_FULLSCREEN,Fullscreen,全螢幕
 SET_VSYNC,V-Sync,垂直同步
 SET_REDUCE_SHAKE,Reduce Camera Shake,減少鏡頭晃動
 SET_OBJECTIVE_MARKER,Objective Marker,目標指引
+SET_GROUP_GAME,Game,遊戲
+SET_GROUP_AUDIO,Audio,聲音
+SET_GROUP_DISPLAY,Display,畫面
+SET_GROUP_INPUT,Input,操作
 GUIDE_DISTANCE,{m} m,{m} 公尺
 QUALITY_LOW,Low,低
 QUALITY_MEDIUM,Medium,中
