@@ -582,6 +582,18 @@ func test_upper_floors_have_windows_and_signs() -> void:
 	assert_true(upper >= 20, "樓上補開了不少窗（%d 扇）" % upper)
 	assert_true(upper < total, "原本的窗還在（全部 %d 扇）" % total)
 	assert_true(signs >= 4 and signs <= 20, "有幾家掛著店招（%d 塊）" % signs)
+	# D-122（第五輪盤點第 6 項）：招牌上畫著店家的剪影（靴子、壺、鑰匙），不只一種
+	var icons: Array[int] = level.get("shop_sign_icons")
+	assert_eq(icons.size(), signs, "每塊招牌都有圖案")
+	var kinds: Dictionary = {}
+	for i: int in icons:
+		assert_true(i >= 0 and i < FrostbridgeLook.SIGN_ICONS, "圖案編號在範圍內（%d）" % i)
+		kinds[i] = true
+	assert_true(kinds.size() >= 2, "不只一種圖案（%d 種）" % kinds.size())
+	for pos: Vector3 in [Vector3(1.3, 2.6, -7.9), Vector3(-12.0, 2.6, 4.4)]:
+		var t: Color = FrostbridgeLook.sign_tint(pos, true)
+		assert_true(t.r > 0.3 and t.r < 0.7, "店招模式介於木箱（0）與門（1）之間（%.2f）" % t.r)
+		assert_eq(int(floor((t.r - 0.35) * 10.0)), FrostbridgeLook.sign_icon(pos), "shader 解得回同一個圖案")
 	await _free(level)
 
 

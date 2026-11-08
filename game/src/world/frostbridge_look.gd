@@ -197,6 +197,20 @@ static func crate_tint(pos: Vector3) -> Color:
 	return Color(0.0, t.g, t.b, 1.0)
 
 
+## 店招的頂點色（door.gdshader 的店招模式，D-122）：r＝0.4／0.5／0.6 分別是靴子、壺、鑰匙的剪影
+## （畫在招牌兩個大面上），g、b 同木箱；a＝1 招牌的大面朝 ±X、0 朝 ±Z（只在大面畫圖案）。
+const SIGN_ICONS: int = 3
+
+
+static func sign_icon(pos: Vector3) -> int:
+	return int(fposmod(sin(pos.x * 5.31 + pos.z * 29.77) * 15731.743, 1.0) * SIGN_ICONS) % SIGN_ICONS
+
+
+static func sign_tint(pos: Vector3, faces_x: bool) -> Color:
+	var t: Color = door_tint(pos)
+	return Color(0.4 + 0.1 * sign_icon(pos), t.g, t.b, 1.0 if faces_x else 0.0)
+
+
 ## 一扇窗的頂點色：lit 亮或暗、energy 發光強度（0～4）。色溫、窗簾、亮度起伏用位置雜湊決定
 ## （不動關卡的 _rng，房子配置不變）；約四成的亮窗拉了半邊窗簾。
 static func window_tint(lit: bool, pos: Vector3, energy: float) -> Color:

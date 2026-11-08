@@ -58,6 +58,7 @@ var lit_window_count: int = 0
 ## D-096：樓上補開的窗、門邊的店招（測試用）
 var upper_window_count: int = 0
 var shop_sign_count: int = 0
+var shop_sign_icons: Array[int] = []
 ## 用屋瓦材質的完整屋頂數（D-107）
 var roof_count: int = 0
 ## 屋頂雪下緣的扁雪堆數（D-112）
@@ -1077,7 +1078,9 @@ func _shop_sign(batch: StaticBatch, wall_pos: Vector3, face: Vector3) -> void:
 	for k: float in [-0.28, 0.28]:
 		batch.add_box_at(Vector3(0.015, 0.24, 0.015), board_c + face * k + Vector3(0, 0.37, 0), iron, false)
 	var board_size: Vector3 = out * 0.72 + across * 0.06 + Vector3(0, 0.5, 0)
-	batch.add_box_tinted(board_size, board_c, look.door(), FrostbridgeLook.crate_tint(board_c), false)
+	# 招牌兩面畫著店家的剪影（靴子、壺、鑰匙；不用文字，D-122）
+	batch.add_box_tinted(board_size, board_c, look.door(), FrostbridgeLook.sign_tint(board_c, across.x > 0.5), false)
+	shop_sign_icons.append(FrostbridgeLook.sign_icon(board_c))
 	# 招牌頂上一小條雪
 	batch.add_box_at(out * 0.72 + across * 0.08 + Vector3(0, 0.035, 0), board_c + Vector3(0, 0.27, 0), look.snow(), false)
 	shop_sign_count += 1
