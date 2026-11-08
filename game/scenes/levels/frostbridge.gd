@@ -1211,8 +1211,10 @@ static func _house_hash(p: Vector3, salt: float) -> float:
 	return fposmod(sin(p.x * 12.9898 + p.y * 4.1414 + p.z * 78.233 + salt * 37.719) * 43758.5453, 1.0)
 
 
-## 破屋頂每片上的三團雪多高：一大塊薄的、偏一邊的一塊、屋簷那端一小團（D-127，原本 0.1／0.14／0.16）
-const RUIN_SNOW_H: Array[float] = [0.065, 0.085, 0.1]
+## 破屋頂每片上的兩團雪多高：一大塊薄的、偏一邊的一塊（D-127，原本 0.1／0.14）。
+## 原本還有屋簷那端一小團（0.42×0.48×0.1，D-133 拿掉：塌到街邊那片離鏡頭很近，像一塊發亮的白色石膏浮在瓦礫上；
+## 改成一條薄雪也還是一團亮白）
+const RUIN_SNOW_H: Array[float] = [0.065, 0.085]
 
 
 ## 陷落後的屋頂（D-091）：完整的三角屋頂陷下去以後是一大片平的淺色斜面（第二輪盤點第 9 項）。
@@ -1292,7 +1294,7 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 		var pc: Vector3 = hinge - u2 * (plen * 0.5) + n2 * (t * 0.5)
 		batch.add_mesh(RoofMesh.slab(plen, t, seg_w), Transform3D(pb, pc), tiles)
 		ruin_tiles += 1
-		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點＋屋簷那端一小團（正要滑下去）。
+		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點（屋簷那端的一小團 D-133 拿掉）。
 		# 都是中間厚、邊緣薄到 0 的低面數雪堆（SnowMound，D-102），不再是直邊的雪板。
 		# 斜的屋面上雪留不厚（D-127）：高度是原本的六成多，近看不再是一個個鼓起的白枕頭；
 		# on_tiles：雪面看得到底下一排排屋瓦的橫紋，薄的地方露出屋瓦
@@ -1306,8 +1308,6 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 		var p2_w: float = seg_w * lerpf(0.35, 0.6, _ruin_hash(center, i, 17.0))
 		batch.add_mesh(SnowMound.build(p2_len, p2_w, RUIN_SNOW_H[1], _ruin_hash(center, i, 11.0) * 97.0, Vector2.ZERO, false, true),
 			Transform3D(pb, top + pb.x * (shift - side * snow_len * 0.35) + pb.z * side * (seg_w * 0.5 - p2_w * 0.5 - 0.05)), snow)
-		batch.add_mesh(SnowMound.build(0.42, 0.48, RUIN_SNOW_H[2], _ruin_hash(center, i, 12.0) * 97.0, Vector2.ZERO, false, true),
-			Transform3D(pb, top - pb.x * (plen * 0.5 - 0.3) + pb.z * (seg_w * lerpf(-0.3, 0.3, _ruin_hash(center, i, 18.0)))), snow)
 	# 椽子：每 0.75 m 一根。洞裡的斷成兩截（屋脊那截往屋裡垂、屋簷那截翹起來），
 	# 往下滑開的那片底下是完整的（上緣的縫看得到），塌陷的那片底下沒有（已經跟著塌了）。
 	var rafters: int = 0
