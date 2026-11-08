@@ -194,3 +194,32 @@ func test_preview_ghost_grows_with_hold() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 暫停（M1.4）：暫停中重現的倒數與傷者車隊都不推進，解除後繼續。
+func test_pause_freezes_restoration_and_caravan() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(6, 0, 0), Vector3(6, 0, -20)])
+	root.add_child(caravan)
+	await tree.physics_frame
+	assert_true(site.activate())
+	await tree.physics_frame
+	tree.paused = true
+	var t0: float = site.nb.elapsed
+	var d0: float = caravan.runner.traveled
+	for i: int in 10:
+		await tree.physics_frame
+	assert_eq(site.nb.elapsed, t0, "暫停中倒數不動")
+	assert_eq(caravan.runner.traveled, d0, "暫停中車隊不動")
+	tree.paused = false
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(site.nb.elapsed > t0, "解除後倒數繼續")
+	assert_true(caravan.runner.traveled > d0 or caravan.runner.is_stopped(), "解除後車隊繼續")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
