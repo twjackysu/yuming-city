@@ -628,12 +628,51 @@ func _build_plaza_ring() -> void:
 	_batch.add_cylinder(PLAZA_RING_R + 0.12, PLAZA_RING_R + 0.12, 0.03, Vector3(0.0, 0.02, 0.0), groove, false, 48)
 	_batch.add_cylinder(PLAZA_RING_R - 0.05, PLAZA_RING_R + 0.08, 0.07, Vector3(0.0, 0.035, 0.0), curb, false, 48)
 	_batch.add_cylinder(PLAZA_RING_R - 0.4, PLAZA_RING_R - 0.4, 0.05, Vector3(0.0, 0.05, 0.0), inner, false, 48)
-	# 鐘紋石盤
-	_batch.add_cylinder(0.95, 1.0, 0.06, Vector3(0.0, 0.055, 0.0), curb, false, 40)
-	_batch.add_cylinder(0.78, 0.78, 0.06, Vector3(0.0, 0.06, 0.0), groove, false, 40)
-	_batch.add_cylinder(0.66, 0.7, 0.06, Vector3(0.0, 0.065, 0.0), curb, false, 40)
-	_batch.add_cylinder(0.16, 0.16, 0.06, Vector3(0.0, 0.07, 0.0), groove, false, 20)
-	plaza_ring_parts = 7
+	# 鐘紋石盤（D-130）：一塊淺一點的圓石盤，上面嵌一個深色的鐘的剪影（鐘頂朝北邊的鐘樓）。
+	# 之前是淺／深／淺／深四圈，加上外面的石緣，遠看整個廣場像靶心。
+	# 跟地窖門把同一個材質（偏暖的淺石色）：小鎮合併 mesh 上限 24，不另開新材質
+	var disc := look.mat(Color(0.4, 0.36, 0.3), 0.4)
+	_batch.add_cylinder(0.95, 1.0, 0.06, Vector3(0.0, 0.055, 0.0), disc, false, 40)
+	_batch.add_mesh(bell_inlay_mesh(PLAZA_BELL_H, PLAZA_BELL_R), Transform3D(Basis.IDENTITY, Vector3(0.0, 0.09, 0.0)), groove)
+	plaza_ring_parts = 5
+
+
+## 廣場石盤上的鐘：高與鐘口半徑（公尺）
+const PLAZA_BELL_H: float = 1.15
+const PLAZA_BELL_R: float = 0.5
+
+
+## 平躺在地上的鐘剪影（D-130）：用 `Lathe.bell_profiles` 的外輪廓左右鏡射＋鐘頂一個小鐘冠，
+## 三角化成朝上的平面。鐘頂朝 -Z（北），中心在原點。
+static func bell_inlay_mesh(h: float, r: float) -> ArrayMesh:
+	var outer: PackedVector2Array = Lathe.bell_profiles(h, r)[0]
+	var poly := PackedVector2Array([Vector2(-0.12 * r, 0.0), Vector2(-0.12 * r, 0.1 * h),
+			Vector2(0.12 * r, 0.1 * h), Vector2(0.12 * r, 0.0)])
+	for i: int in range(1, outer.size()):
+		poly.append(outer[i])
+	for i: int in range(outer.size() - 1, 0, -1):
+		poly.append(Vector2(-outer[i].x, outer[i].y))
+	var tris: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3.UP)
+	# Godot 的正面是順時針（跟 CylinderMesh 頂蓋一樣，右手定則的法線朝下）：從上往下看逆時針的就反過來
+	var flip: bool = false
+	if tris.size() >= 3:
+		var a: Vector2 = poly[tris[0]]
+		var cross: float = (poly[tris[1]] - a).cross(poly[tris[2]] - a)
+		flip = cross > 0.0
+	for t: int in range(0, tris.size(), 3):
+		var order: Array[int] = [tris[t], tris[t + 1], tris[t + 2]]
+		if flip:
+			order = [tris[t], tris[t + 2], tris[t + 1]]
+		for k: int in order:
+			var p: Vector2 = poly[k]
+			st.set_normal(Vector3.UP)
+			st.add_vertex(Vector3(p.x, 0.0, -(p.y + 0.45 * h)))
+	# 要有索引：StaticBatch 的 SurfaceTool 先接了有索引的圓柱，沒索引的三角形接上去不會被畫出來
+	st.index()
+	return st.commit()
 
 
 func _build_plaza() -> void:

@@ -132,7 +132,7 @@ func test_layout_nodes_and_batching() -> void:
 	# D-077：攤桌＋三個木箱用門的 shader（木箱模式），跟門合併在同一個 mesh；廣場中央石框＋鐘紋；井有燈
 	assert_eq(int(level.get("stall_crates")), 4, "攤桌＋三個疊著的木箱")
 	assert_eq(int(level.get("street_lanterns")), 10, "十盞路燈都是方形燈籠（D-080）")
-	assert_eq(int(level.get("plaza_ring_parts")), 7, "廣場石框：石縫、石緣、內圈鋪石、鐘紋四層")
+	assert_eq(int(level.get("plaza_ring_parts")), 5, "廣場石框：石縫、石緣、內圈鋪石、石盤、鐘的剪影（D-130，不再是靶心的四圈）")
 	var well_light: OmniLight3D = level.get("well_light") as OmniLight3D
 	assert_not_null(well_light, "井的木架上掛一盞小燈")
 	if well_light != null:
@@ -853,3 +853,32 @@ func test_dev_hold_insight() -> void:
 	await tree.physics_frame
 	assert_false(player.insight_active, "放開後不再看穿")
 	await _free(level)
+
+
+## 廣場石盤的鐘剪影（D-130）：平躺、正面朝上（從上面看得到）、鐘頂朝北（-Z），放得進半徑 1 m 的石盤。
+func test_plaza_bell_inlay_faces_up() -> void:
+	var script: GDScript = load("res://scenes/levels/frostbridge.gd") as GDScript
+	var mesh: ArrayMesh = script.call("bell_inlay_mesh", 1.15, 0.5) as ArrayMesh
+	assert_not_null(mesh, "有網格")
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var pts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array
+	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] as PackedInt32Array
+	assert_true(idx.size() >= 3 and idx.size() % 3 == 0, "有索引的三角形（StaticBatch 合併時才畫得出來，%d）" % idx.size())
+	var verts := PackedVector3Array()
+	for k: int in idx:
+		verts.append(pts[k])
+	var down_facing: int = 0
+	var far: float = 0.0
+	var north: float = 0.0
+	for i: int in range(0, verts.size(), 3):
+		var n: Vector3 = (verts[i + 1] - verts[i]).cross(verts[i + 2] - verts[i])
+		# Godot 正面順時針（CylinderMesh 的頂蓋也是）：從上往下看順時針 → 右手定則的法線朝下
+		if n.y > 0.0:
+			down_facing += 1
+	for v: Vector3 in verts:
+		assert_true(absf(v.y) < 0.001, "平躺")
+		far = maxf(far, Vector2(v.x, v.z).length())
+		north = minf(north, v.z)
+	assert_eq(down_facing, 0, "每個三角形正面朝上")
+	assert_true(far < 0.95, "放得進石盤（最遠 %.2f m）" % far)
+	assert_true(north < -0.5, "鐘頂朝北（%.2f）" % north)
