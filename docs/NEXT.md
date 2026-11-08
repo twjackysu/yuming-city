@@ -1,12 +1,12 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；**第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；下一步是第三輪盤點**）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；**第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；下一輪從第 5 項（送葬者輪廓）開始**）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 22 輪）最後一次程式 push 是 fed0dfb（暫停時藏 HUD，D-093），**先確認它整個綠燈**（PROGRESS 第 22 輪有補記收尾時的狀態）。第 22 輪的程式 commit 都在本機跑過 `scripts/check.sh`（254 個測試）與截圖：6e52cb9 北街破屋頂（D-091）、f1f31a3 標題的窗與鐘（D-092）、bab35da＋fed0dfb 暫停選單（D-093）、510fdb0 CI 的 `ninebreath.png` 換構圖（D-094）。紅了就看 log 修，修不好 `git revert`。
-- **看 latest 的 `ninebreath.png`**（510fdb0 起改拍石拱撐住鐵架）與 `title.png`（窗櫺、鐘室裡的鐘）；screens 的 `06-rescue.png` 應該是破屋頂、`02-pause.png` 有章節名與左下角目標、沒有 HUD。
-- **第 21、22 輪本機都拿得到 Godot 與字型**（第 22 輪一次就下載成功）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
+- 上一輪（第 23 輪）最後一次程式 push 是 0c06cf4（廣場木桶，D-100），**先確認它整個綠燈**（PROGRESS 第 23 輪有收尾補記）。第 23 輪的程式 commit 都在本機跑過 `scripts/check.sh`（257 個測試）與截圖：a0c1ed8 平的濕石板（D-095）、91bd2d9 樓上的窗與店招（D-096）、45856c8 煙囪炊煙（D-097）、9368ce7 前兆範圍裡面減半（D-098）、0c06cf4 木桶（D-100）。紅了就看 log 修，修不好 `git revert`。
+- **看 screens 的新圖**：`03-plaza`／`05-steps` 地面應該是平的長短不一石板（不再像氣泡紙）、樓上有窗、屋頂上有淡淡的煙；`11-convoy-insight` 的前兆扇形裡面暗了一半。
+- **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
 - **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
 - **字型下載 504（D-079）**：第 19 輪的 session 連不到 `notofonts/noto-cjk` 的 release（504／API 說沒有這個 repo 的存取），`scripts/check.sh` 會在 `gen_fonts.py` 掛掉。先試一次 `scripts/check.sh`；如果又是 504：`apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra`，再用 D-079 的做法（從 `/usr/share/fonts/opentype/noto/Noto{Serif,Sans}CJK-*.ttc` 取 TC 那一套、照 `gen_fonts.collect_chars()` 子集化、寫 `game/assets/generated/fonts/` 與相同的 `.stamp`；`import gen_fonts` 會留下 `scripts/__pycache__/`，記得刪掉）。**不要改 repo 的 `gen_fonts.py`**，CI 照常下載。改了 i18n CSV 後要重跑。
@@ -25,15 +25,13 @@
 ## 1. 「第一眼」打磨（照 PLAN 階段 2 的盤點表，從上往下）
 
 - 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）、路燈燈籠（D-080）。第 20 輪：鐘形與鐘室木構（D-081，旋轉體用 `Lathe`：剖面線繞 Y 軸，外側從上往下描）、敲鐘刻度（D-084，`RingTally`）、角色不擋鏡頭（D-085）。第 21 輪：石拱預覽截圖停住送葬者＋`--face=arch`（D-086）、看穿小卡（D-087）、前兆範圍 shader（D-088）、攤桌補光（D-089）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
-- **第二輪盤點 10 項全部完成**（第 22 輪：北街破屋頂 D-091、標題的窗與鐘 D-092、暫停選單目標與提示＋暫停藏 HUD D-093、README 重現圖構圖 D-094）。
-- **下一輪：第三輪盤點**（在 PLAN 階段 2 加第三張表，D-083 的做法）：下載 screens.zip（或本機 `scripts/screenshot.sh` 拍那 11 個畫面＋ latest 的 title／dialogue／bell／combat／ninebreath），照 `docs/ART_QUALITY_BAR.md` 挑最刺眼的 6～10 項排序，然後從第一項開始做。已知候選：
-  1. 破屋頂的雪塊是方塊組成、邊緣很直（D-091）：雪 shader 在邊緣淡出，或改用低面數的雪堆 mesh。
-  2. 前兆範圍內部在軟體渲染下仍偏亮（D-088）；`ninebreath.png` 舊構圖時一大塊亮邊扇形蓋住畫面——實機看過再調亮度。
-  3. 看穿小卡在一群灰巡者時會疊在一起（D-087，切片裡同時只有一隻灰巡者，沙盒才會疊；必要時只給鎖定／最近的那隻）。
-  4. 鐘頂偏平（D-081）：鐘架木塊包住頂端，加鐘鈕看不到，先不做。
-  5. 霜橋鎮的屋頂（完整的）也是平塗深色＋一塊雪稜柱：遠看可以，近看（石階、北街陷落前）可以加屋瓦紋（新 shader，只給屋頂斜面）。
-  6. （第 22 輪收尾時本機截圖 `--at=steps`、`--at=south` 看到）主街與石階兩側的上層牆面大片空白——半木構只有幾條線，二樓很多房子沒有窗：加二樓窗（D-066 的窗）、屋簷下的陰影帶、偶爾一塊店招或晾著的布。
-  7. 街邊雪帶在低角度看是一條平的淺色帶（D-068 的起伏在斜看時不明顯）：雪帶靠牆那側堆高一點（截面改成斜坡）、靠街那側不規則的邊緣。
+- 第二輪盤點 10 項全部完成（第 22 輪：北街破屋頂 D-091、標題的窗與鐘 D-092、暫停選單目標與提示＋暫停藏 HUD D-093、README 重現圖構圖 D-094）。
+- **第三輪盤點（PLAN 階段 2 第三張表，D-099）**：第 23 輪完成第 1 項濕石板（D-095，`wet_cobble.gdshader` 的 `STONE_LEN`、`bevel_width`、`bevel_strength`、`stone_lean`）、第 2 項樓上的窗與店招（D-096，`_upper_windows`、`_shop_sign`、位置雜湊 `_house_hash(p, salt)`）、第 3 項炊煙（D-097，`_chimney_top`、`MAX_SMOKE`）、第 4 項前兆裡面減半（D-098）、第 7 項的木桶（D-100，`BARREL_SPOTS`、`StaticBatch.add_shape`）。**下一輪從第 5 項開始**：
+  - **第 5 項 送葬者輪廓**：`07-convoy-fight`、`11-convoy-insight` 裡送葬者在霧裡是一團灰藍。看 `scenes/actors/enemy/` 的送葬者（程序人偶＋鐵架）：身體材質再暗一點與霧分開、鐵架加冷色 rim（只在鐵件，StandardMaterial3D 的 `rim_enabled` 或一盞很小的背光）、腳下一圈接地陰影（decal 或暗色圓片）。不要大改（正式模型等 Jacky）。截圖 `--convoy --phase2 --face=undertaker` 與 `--convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18`。
+  - 第 6 項 破屋頂的雪片：`_roof_ruin` 裡的雪是 `add_box`；改成中間厚邊緣薄的低面數雪堆（自訂 ArrayMesh：一個網格、頂點高度用 smoothstep 往邊緣降到 0），或雪 shader 依 UV 邊緣淡出（要確認 StaticBatch 合併後還有 UV）。
+  - 第 7 項 剩下的：柴堆（CylinderMesh 轉 90° 疊起來，木頭材質；端面要淺一點可以另外疊薄圓片）、一輛停著的手推車、廣場邊一段木圍欄。放在主要路線以外，要擋人的用 `add_shape`。
+  - 第 8 項 街邊雪帶靠牆堆高、靠街不規則；第 9 項 車隊戰開場鏡頭（先確認實際遊玩時進南街的鏡頭）；第 10 項 完整屋頂的屋瓦紋。
+- 本輪看到的小事：店招只是一塊深色木板（夜裡遠看是剪影，夠用；之後可以在 door shader 的木箱模式加一個簡單圖案）。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
 - 前兆範圍（D-088）：新的範圍招用 `Undertaker._decal(mesh, pos, SHAPE_*, extent, arc_deg)`；長條的敵人端在模型 +Z、扇形朝 -Z。
 - 過肩鏡頭的後續：D-085 之後 SpringArm 不撞角色，送葬者站在諾恩正後方時鏡頭會在他身體裡；等 Jacky 回饋，必要時讓離鏡頭 < 1 m 的角色淡出（或把他們的 `Puppet` 隱藏）。鏡頭參數在 `player.gd` 的 `SHOULDER_*`。
