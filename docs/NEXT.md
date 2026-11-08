@@ -1,11 +1,12 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；**第 24 輪完成第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102）、第 7 項的柴堆與手推車（D-103）；下一輪從第 7 項剩下的木圍欄、第 8 項街邊雪帶開始**）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；第 24 輪完成第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102）、第 7 項的柴堆與手推車（D-103）；**第 25 輪完成第 7 項木圍欄（D-104）、第 8 項街邊雪帶（D-105）、第 9 項推車靠近鏡頭淡出（D-106）、第 10 項屋瓦（D-107），第三輪盤點全部完成；另外做了接地陰影（D-108）。下一輪做第四輪盤點（PLAN 階段 2 第四張表的候選）**）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 24 輪）最後一次程式 push 是 cf96c27（手推車，D-103），**先確認它整個綠燈**（PROGRESS 第 24 輪有收尾補記）。第 24 輪的程式 commit 都在本機跑過 `scripts/check.sh`（263 個測試）與截圖：644554a 送葬者輪廓（D-101）、50dc185 破屋頂雪堆（D-102）、f2c7ca4 柴堆、cf96c27 手推車（D-103）。紅了就看 log 修，修不好 `git revert`。
-- **看 screens 的新圖**：`07-convoy-fight`／`11-convoy-insight` 的送葬者頭部應該是黑兜帽＋兩點霜光（不再是一顆亮球）、鐵架橫桿頂有一道淺色霜線；`06-rescue` 破屋頂上的雪是不規則的雪堆（不再是冰板）；`04-stall` 右後方東牆邊可能看得到柴堆。
+- 上一輪（第 25 輪）最後一次程式 push 是 646e4a9（接地陰影，D-108），**先確認它整個綠燈**（PROGRESS 第 25 輪有收尾補記）。第 25 輪的程式 commit 都在本機跑過 `scripts/check.sh`（273 個測試）與截圖：b0582e3 圍欄＋雪帶（D-104、D-105，CI 綠）、2510141 推車淡出（D-106）、e71299b 屋瓦（D-107）、646e4a9 接地陰影（D-108）。紅了就看 log 修，修不好 `git revert`。
+- **看 screens 的新圖**：`05-steps`／`03-plaza` 的街邊雪是不規則、靠牆高的雪堆（不再是直邊平板）；`03-plaza` 左邊主街口西側有一段木圍欄＋院子的雪；`07-convoy-fight` 畫面下方的推車與傷者淡掉、看得到街（近看有網點）；屋頂的雪下露出幾排瓦；人物腳下有柔和的接地陰影。
+- `docs/PROGRESS.md` 第 25 輪之後約 300 行：**下一輪收尾時先把第 14～18 輪合併成每日摘要**。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
 - **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
@@ -26,11 +27,11 @@
 
 - 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）、路燈燈籠（D-080）。第 20 輪：鐘形與鐘室木構（D-081，旋轉體用 `Lathe`：剖面線繞 Y 軸，外側從上往下描）、敲鐘刻度（D-084，`RingTally`）、角色不擋鏡頭（D-085）。第 21 輪：石拱預覽截圖停住送葬者＋`--face=arch`（D-086）、看穿小卡（D-087）、前兆範圍 shader（D-088）、攤桌補光（D-089）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
 - 第二輪盤點 10 項全部完成（第 22 輪：北街破屋頂 D-091、標題的窗與鐘 D-092、暫停選單目標與提示＋暫停藏 HUD D-093、README 重現圖構圖 D-094）。
-- **第三輪盤點（PLAN 階段 2 第三張表，D-099）**：第 23 輪完成第 1～4 項（D-095～D-098）與第 7 項的木桶（D-100）；第 24 輪完成第 5 項送葬者輪廓（D-101：`HoodVoid`、`frame_iron.gdshader`、`ground_shadow.gdshader`、`Undertaker.frame_iron_material()`）、第 6 項破屋頂雪堆（D-102：`SnowMound.build(長, 寬, 高, seed)`，用 `StaticBatch.add_mesh(mesh, Transform3D(basis, 底的中心), look.snow())`，模型 X＝長、Z＝寬、底在 y=0）、第 7 項的柴堆與手推車（D-103：`WOODPILE_POS`、`HANDCART_POS`）。**下一輪從這裡開始**：
-  - **第 7 項 剩下的木圍欄**：廣場邊一段木圍欄（例如東南角 z 6～9 沿牆圍出一小塊院子，或南街口兩側），立柱＋兩道橫木＋橫木頂上一條雪（SnowMound 拉長或細 box），木頭材質、`add_shape` 擋人。先看路燈位置別撞到（`_lamp` 的位置）。截圖 `--pos=x,z --nohud`。
-  - 第 8 項 街邊雪帶靠牆堆高、靠街不規則：`_build_streets` 附近 `snow` 的 `add_box_at`（frostbridge.gd 約 485～491 行）。可以沿街每 1.5～2 m 放一個 SnowMound（長條、靠牆那側高），取代或疊在平的 box 上；注意主線流程測試的走位與 `ground_y`（雪堆不加碰撞）。
-  - 第 9 項 車隊戰開場鏡頭（先確認實際遊玩時進南街的鏡頭）；第 10 項 完整屋頂的屋瓦紋。
-  - 第三輪 10 項做完後，做第四輪盤點（看 screens 的 11 張＋本機截圖，對照概念圖；可以考慮把接地陰影給灰巡者、席菈、諾恩，SnowMound 段數 14→18）。
+- **第三輪盤點（PLAN 階段 2 第三張表，D-099）全部完成**：第 23 輪第 1～4 項（D-095～D-098）＋木桶（D-100）；第 24 輪第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102：`SnowMound.build(長, 寬, 高, seed, bias)`，模型 X＝長、Z＝寬、底在 y=0；`bias` 讓最高點偏一邊）、柴堆與手推車（D-103）；第 25 輪木圍欄（D-104：`FENCE_PATH`、`_build_fence`）、街邊雪帶（D-105：`_snow_bank(牆腳線起點, 終點, 牆的方向, 伸出寬度)`、`snow_banks`）、推車淡出（D-106：`CameraFade.apply(節點, near, far)`）、屋瓦（D-107：`RoofMesh.build`、`look.roof_tiles()`、`ROOF_SNOW`）、接地陰影（D-108：`ContactShadow.attach(角色, 半徑, 強度)`）。
+- **下一輪從這裡開始：第四輪盤點**（PLAN 階段 2 第四張表已列候選）：下載 screens 的 11 張（解壓到 scratchpad、PIL 縮到 900 寬）＋本機截圖，對照概念圖 `frostbridge_winter.png`，把候選排順序、補「怎麼改」，寫 D-109。候選裡最值得先做的兩項：
+  - **車隊的推車**（`scenes/actors/caravan/caravan.gd` 的 `_build`）是 CSG 方塊與圓柱輪，比廣場的手推車（`frostbridge.gd` 的 `_build_handcart`，D-103）粗糙很多：照手推車的做法改（車斗＋車欄、木輪＋鐵輪框＋輪轂＋輻條、把手），但 Caravan 不是 StaticBatch——直接用 MeshInstance3D（BoxMesh／TorusMesh／CylinderMesh），材質照舊、做完再呼叫 `CameraFade.apply(_cart, …)`（D-106，要在所有材質都建好之後）。注意 `test_caravan` 用 `Cart` 第 0 個子節點是 `CSGBox3D` 的假設（test_cart_fades_near_camera）要一起改。
+  - **屋頂雪的下緣**：雪稜柱的下緣是一條直線；可以在雪稜柱下緣沿屋簷放幾個扁的 SnowMound（`bias` 往屋脊）讓雪線不規則，或換成自己的雪幾何。
+- 破屋頂（D-091 `_roof_ruin`）的碎片還是 `look.mat(ROOF)` 素面；要換成屋瓦得給碎片 UV（公尺），可以用 RoofMesh 的同一套 UV 規則。
 - 本輪看到的小事：店招只是一塊深色木板（夜裡遠看是剪影，夠用；之後可以在 door shader 的木箱模式加一個簡單圖案）。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
 - 前兆範圍（D-088）：新的範圍招用 `Undertaker._decal(mesh, pos, SHAPE_*, extent, arc_deg)`；長條的敵人端在模型 +Z、扇形朝 -Z。
