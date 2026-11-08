@@ -17,6 +17,11 @@ signal double_slam_verified
 signal fell
 
 const FROST: Color = Color(0.55, 0.82, 1.0)
+const TELEGRAPH_SHADER: String = "res://src/world/telegraph.gdshader"
+## 前兆範圍的形狀（telegraph.gdshader 的 shape）
+const SHAPE_DISC: int = 0
+const SHAPE_LANE: int = 1
+const SHAPE_FAN: int = 2
 
 var phase: int = 1
 ## 測試或場景可以指定；空的就用 Game.session.state
@@ -381,7 +386,7 @@ func _update_look() -> void:
 		var on: bool = brain.state == EnemyBrain.State.TELEGRAPH and _decal_for(brain.move_id) == id
 		mi.visible = on
 		if on:
-			(mi.material_override as StandardMaterial3D).albedo_color = Color(FROST, 0.15 + 0.6 * p * p)
+			(mi.material_override as ShaderMaterial).set_shader_parameter("progress", p)
 	_body.position.y = -0.5 if brain.state == EnemyBrain.State.STAGGERED else 0.0
 	var lean := Vector3.ZERO
 	if brain.state == EnemyBrain.State.TELEGRAPH:
@@ -513,28 +518,34 @@ static func _decal_for(move: String) -> String:
 
 
 func _build_decals() -> void:
-	var sweep_mesh: ArrayMesh = _fan_mesh(brain.move_num("sweep", "range", 3.2), brain.move_num("sweep", "arc_deg", 150.0))
-	_decals["sweep"] = _decal(sweep_mesh, Vector3(0, 0.03, 0))
+	var sweep_r: float = brain.move_num("sweep", "range", 3.2)
+	var sweep_arc: float = brain.move_num("sweep", "arc_deg", 150.0)
+	_decals["sweep"] = _decal(_fan_mesh(sweep_r, sweep_arc), Vector3(0, 0.03, 0), SHAPE_FAN, Vector2(sweep_r, 0.0), sweep_arc)
 	var disc := CylinderMesh.new()
 	var r: float = brain.move_num("slam", "radius", 2.0)
 	disc.top_radius = r
 	disc.bottom_radius = r
 	disc.height = 0.01
-	_decals["slam"] = _decal(disc, Vector3(0, 0.03, -brain.move_num("slam", "reach", 1.9)))
+	_decals["slam"] = _decal(disc, Vector3(0, 0.03, -brain.move_num("slam", "reach", 1.9)), SHAPE_DISC, Vector2(r, 0.0))
 	var lane := BoxMesh.new()
 	var length: float = 8.0
-	lane.size = Vector3(brain.move_num("charge", "hit_radius", 1.1) * 2.0, 0.01, length)
-	_decals["charge"] = _decal(lane, Vector3(0, 0.03, -length * 0.5))
-	_decals["grab"] = _decal(_fan_mesh(brain.move_num("grab", "range", 2.2), brain.move_num("grab", "arc_deg", 90.0)), Vector3(0, 0.03, 0))
+	var half_w: float = brain.move_num("charge", "hit_radius", 1.1)
+	lane.size = Vector3(half_w * 2.0, 0.01, length)
+	_decals["charge"] = _decal(lane, Vector3(0, 0.03, -length * 0.5), SHAPE_LANE, Vector2(half_w, length * 0.5))
+	var grab_r: float = brain.move_num("grab", "range", 2.2)
+	var grab_arc: float = brain.move_num("grab", "arc_deg", 90.0)
+	_decals["grab"] = _decal(_fan_mesh(grab_r, grab_arc), Vector3(0, 0.03, 0), SHAPE_FAN, Vector2(grab_r, 0.0), grab_arc)
 
 
-func _decal(mesh: Mesh, pos: Vector3) -> MeshInstance3D:
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.albedo_color = Color(FROST, 0.2)
+## 前兆範圍的材質（D-088）：telegraph.gdshader，亮邊＋淡底＋隨前兆進度從敵人那一端往外填滿。
+func _decal(mesh: Mesh, pos: Vector3, shape: int, extent: Vector2, arc_deg: float = 0.0) -> MeshInstance3D:
+	var mat := ShaderMaterial.new()
+	mat.shader = load(TELEGRAPH_SHADER) as Shader
+	mat.set_shader_parameter("tint", FROST)
+	mat.set_shader_parameter("shape", shape)
+	mat.set_shader_parameter("extent", extent)
+	mat.set_shader_parameter("half_arc", deg_to_rad(arc_deg * 0.5))
+	mat.set_shader_parameter("progress", 0.0)
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = mat

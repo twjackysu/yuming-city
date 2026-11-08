@@ -433,3 +433,48 @@ func test_telegraph_lean_directions() -> void:
 	assert_true(charge_z < rest_z - 0.2, "衝撞：低頭往前（%.2f → %.2f）" % [rest_z, charge_z])
 	assert_eq(Undertaker.telegraph_lean("sweep", 0.0), Vector3.ZERO, "前兆剛開始沒有姿勢")
 	assert_eq(Undertaker.telegraph_lean("unknown", 1.0), Vector3.ZERO)
+
+
+## 前兆範圍（D-088）：四種招式的地面範圍都用 telegraph.gdshader（形狀與大小照招式資料），
+## 前兆中只顯示當下那一招，進度從 0 往上長；不再是平塗的色塊。
+func test_telegraph_decals_use_shader_and_fill() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var boss: Undertaker = a[2]
+	player.global_position = Vector3(0, 0, 0)
+	boss.global_position = Vector3(0, 0, -2.0)
+	var decals: Dictionary = boss.get("_decals")
+	assert_eq(decals.size(), 4, "橫掃、下砸、衝撞、抓取")
+	var shapes: Dictionary = {"sweep": Undertaker.SHAPE_FAN, "slam": Undertaker.SHAPE_DISC, "charge": Undertaker.SHAPE_LANE, "grab": Undertaker.SHAPE_FAN}
+	for id: String in shapes:
+		var mi: MeshInstance3D = decals[id] as MeshInstance3D
+		var mat: ShaderMaterial = mi.material_override as ShaderMaterial
+		assert_true(mat != null and mat.shader.resource_path == Undertaker.TELEGRAPH_SHADER, "%s 用前兆 shader" % id)
+		assert_eq(int(mat.get_shader_parameter("shape")), int(shapes[id]), "%s 的形狀" % id)
+	var sweep_mat: ShaderMaterial = (decals["sweep"] as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(absf((sweep_mat.get_shader_parameter("extent") as Vector2).x - boss.brain.move_num("sweep", "range", 3.2)) < 0.001, "橫掃半徑照招式資料")
+	assert_true(absf(float(sweep_mat.get_shader_parameter("half_arc")) - deg_to_rad(boss.brain.move_num("sweep", "arc_deg", 150.0) * 0.5)) < 0.001, "橫掃角度照招式資料")
+	var lane_mat: ShaderMaterial = (decals["charge"] as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(absf((lane_mat.get_shader_parameter("extent") as Vector2).y - 4.0) < 0.001, "衝撞長條半長 4 m")
+	var seen: float = -1.0
+	var grew: bool = false
+	for i: int in 120:
+		await tree.physics_frame
+		if boss.brain.state == EnemyBrain.State.TELEGRAPH:
+			var cur: MeshInstance3D = decals[Undertaker._decal_for(boss.brain.move_id)] as MeshInstance3D
+			assert_true(cur.visible, "前兆中顯示當下那一招的範圍")
+			var shown: int = 0
+			for id: String in decals:
+				if (decals[id] as MeshInstance3D).visible:
+					shown += 1
+			assert_eq(shown, 1, "只顯示一個範圍")
+			var p: float = float((cur.material_override as ShaderMaterial).get_shader_parameter("progress"))
+			if seen >= 0.0 and p > seen + 0.01:
+				grew = true
+			seen = p
+			if grew:
+				break
+	assert_true(grew, "前兆進度往上長（最後 %.2f）" % seen)
+	root.queue_free()
+	await tree.process_frame
