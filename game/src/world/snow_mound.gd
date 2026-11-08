@@ -6,6 +6,8 @@ extends RefCounted
 ## 極座標網格：中心一點＋RINGS 圈 × SEGMENTS 段；不規則度由 seed 決定（位置雜湊，不動關卡的 _rng）。
 ## 正面順時針（Godot 慣例），法線朝上。用 StaticBatch.add_mesh 合併。
 ## bias：最高點往哪邊偏（以半長／半寬為 1；街邊雪帶用 (0, ±0.5) 讓靠牆那側高而陡、靠街那側低而緩，D-105）。
+## street_bank：街邊雪帶才設 true（D-126）：UV2.y 放「往 bias 那側多遠」（-1＝靠街的邊、+1＝靠牆的邊），
+## 雪 shader 用來讓靠牆的角落暗一點、靠街那側才有腳印與髒雪。其他雪堆 UV2.y＝0（都不做）。
 
 const RINGS: int = 4
 ## 20 段（D-110；原本 14 段近看看得出多邊形）
@@ -18,7 +20,7 @@ const RAGGED: float = 0.22
 const PEAK_LIMIT: float = 0.55
 
 
-static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO) -> ArrayMesh:
+static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO, street_bank: bool = false) -> ArrayMesh:
 	var a: float = length * 0.5
 	var b: float = width * 0.5
 	var edge: PackedFloat32Array = PackedFloat32Array()
@@ -35,12 +37,16 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	# UV2.x＝圈數（0＝最高點、1＝外圈）：雪 shader 用來讓外圈變薄（D-119）。
 	# 跟其他雪（方塊、稜柱，沒有 UV2）合併時，SurfaceTool 會補 0＝不變薄。
 	var rings := PackedFloat32Array()
+	# UV2.y＝往 bias 那側多遠（只有 street_bank；D-126）
+	var leans := PackedFloat32Array()
+	var lean_dir: Vector2 = bias.normalized() if street_bank and bias.length() > 0.001 else Vector2.ZERO
 	# 中心（最高點稍微偏一點，雪堆不是正中間鼓起）
 	var peak := Vector2((_hash(seed, 40.0) - 0.5) * 0.3, (_hash(seed, 41.0) - 0.5) * 0.3) + bias
 	peak = peak.clamp(Vector2(-PEAK_LIMIT, -PEAK_LIMIT), Vector2(PEAK_LIMIT, PEAK_LIMIT))
 	verts.append(Vector3(peak.x * a, height, peak.y * b))
 	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
 	rings.append(0.0)
+	leans.append(clampf(peak.dot(lean_dir), -1.0, 1.0))
 	for r: int in range(1, RINGS + 1):
 		var k: float = float(r) / float(RINGS)
 		for i: int in SEGMENTS:
@@ -59,6 +65,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 			verts.append(Vector3(x, hgt, z))
 			uvs.append(Vector2(x / length + 0.5, z / width + 0.5))
 			rings.append(k)
+			leans.append(clampf(Vector2(x / a, z / b).dot(lean_dir), -1.0, 1.0))
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var idx := PackedInt32Array()
@@ -81,7 +88,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	for n: int in idx.size():
 		var v: int = idx[n]
 		st.set_uv(uvs[v])
-		st.set_uv2(Vector2(rings[v], 0.0))
+		st.set_uv2(Vector2(rings[v], leans[v]))
 		st.add_vertex(verts[v])
 	st.index()
 	st.generate_normals()

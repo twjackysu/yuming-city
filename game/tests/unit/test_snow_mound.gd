@@ -130,3 +130,27 @@ func test_batch_with_plain_snow_keeps_rings() -> void:
 	assert_true(box_max < 0.001, "方塊的雪 UV2＝0：不變薄（%.3f）" % box_max)
 	assert_true(mound_max > 0.99, "雪堆外圈的圈數保留（%.3f）" % mound_max)
 	root.free()
+
+
+## 街邊雪帶（D-126）：UV2.y＝往牆那側多遠（靠牆的邊 +1、靠街的邊 -1），雪 shader 用來讓靠牆的角落暗、
+## 靠街那側才有腳印。不是街邊雪帶的雪堆 UV2.y 全是 0（屋頂、木堆上的雪不會有腳印）。
+func test_street_bank_lean_in_uv2() -> void:
+	var arrays: Array = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, -0.5), true).surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+	var wall_side: float = -2.0
+	var street_side: float = 2.0
+	for n: int in verts.size():
+		# 這個雪堆的牆在 -Z：越往 -Z，UV2.y 越大
+		if verts[n].z < -0.7:
+			wall_side = maxf(wall_side, uv2s[n].y)
+		if verts[n].z > 0.7:
+			street_side = minf(street_side, uv2s[n].y)
+		assert_true(absf(uv2s[n].y) <= 1.0 + 0.001, "UV2.y 在 -1～1（%.3f）" % uv2s[n].y)
+	assert_true(wall_side > 0.85, "靠牆的邊 UV2.y 接近 +1（%.3f）" % wall_side)
+	assert_true(street_side < -0.85, "靠街的邊 UV2.y 接近 -1（%.3f）" % street_side)
+	var plain: PackedVector2Array = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, -0.5)).surface_get_arrays(0)[Mesh.ARRAY_TEX_UV2]
+	var most: float = 0.0
+	for uv: Vector2 in plain:
+		most = maxf(most, absf(uv.y))
+	assert_true(most < 0.001, "沒標 street_bank 的雪堆 UV2.y＝0（%.3f）" % most)

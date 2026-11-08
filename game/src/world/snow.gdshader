@@ -16,10 +16,20 @@ uniform float sparkle_energy = 1.6;
 // 外圈的雪薄，漸漸透出底下的暗色（屋瓦、石板），雪堆不再是一塊發亮的白板。
 uniform vec3 under_color : source_color = vec3(0.13, 0.14, 0.17);
 uniform float edge_start = 0.5;
+// 雪面不是光滑的白枕頭（D-126）：
+// - 風吹的紋：順著風向的細波（波長約 22 cm，一邊緩一邊陡），一片一片的、有的地方平；只動法線與一點亮暗
+// - 街邊雪帶（UV2.y＝往牆那側多遠，-1＝靠街、+1＝靠牆；其他雪＝0）：靠牆的角落照不到天光、暗一點偏藍，
+//   靠街那側才有腳印凹痕（踩實、偏灰）與髒雪
+uniform vec2 wind_dir = vec2(0.8, 0.6);
+uniform float ripple_freq = 4.5;
+uniform float ripple_strength = 0.45;
+uniform float wall_shade = 0.55;
+uniform float footprint_density = 0.4;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
 varying float mound_k;
+varying float lean;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -50,6 +60,7 @@ void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	mound_k = UV2.x;
+	lean = UV2.y;
 }
 
 void fragment() {
@@ -62,23 +73,63 @@ void fragment() {
 	float hy = fbm((p + vec2(0.0, e)) * drift_scale);
 	vec2 grad = vec2(hx - h, hy - h) / e;
 
+	// 風吹的紋（D-126）：順著風向的細波，相位被大尺度雜訊扭曲（不是一條條直線），一片一片出現
+	float up = smoothstep(0.45, 0.75, an.y);
+	vec2 wd = normalize(wind_dir);
+	float u = dot(p, wd) * ripple_freq + fbm(p * 0.7 + 17.0) * 3.0 + dot(p, vec2(-wd.y, wd.x)) * 0.35;
+	float ph = TAU * u;
+	float arg = ph + 0.55 * sin(ph);  // 一邊緩一邊陡
+	float patch = smoothstep(0.38, 0.62, fbm(p * 0.45 + 5.0));
+	// 遠處（一個像素蓋過四分之一個波）淡掉，避免閃爍
+	float ripple_lod = 1.0 - smoothstep(0.12, 0.3, fwidth(u));
+	// 同一道紋的強弱也不一樣（不像木紋那樣整齊）
+	float ripple_amp = patch * ripple_lod * up * (0.45 + 0.55 * noise(p * 2.3 + 3.0));
+	// 波面的斜率（往風向）：d/du sin(arg)；乘上 ripple_strength 才是法線傾斜的量
+	vec2 ripple_grad = wd * cos(arg) * (1.0 + 0.55 * cos(ph)) * ripple_amp;
+
+	// 腳印（D-126）：靠街那側（lean < 0）50 cm 的格子裡偶爾一個橢圓凹痕，方向大致順著格子雜湊
+	float street = 1.0 - smoothstep(-0.55, -0.15, lean);
+	vec2 fcell = floor(p * 2.0);
+	vec2 fl = fract(p * 2.0) - 0.5 - (vec2(hash(fcell + 2.3), hash(fcell + 8.9)) - 0.5) * 0.35;
+	float fa = hash(fcell + 4.1) * 3.1416;
+	vec2 fax = vec2(cos(fa), sin(fa));
+	vec2 fq = vec2(dot(fl, fax) / 0.13, dot(fl, vec2(-fax.y, fax.x)) / 0.055);
+	float fr = length(fq);
+	float has_print = step(1.0 - footprint_density, hash(fcell + 13.7)) * street * up;
+	float print_lod = 1.0 - smoothstep(0.02, 0.05, max(fwidth(p.x), fwidth(p.y)));
+	float dent = (1.0 - smoothstep(0.75, 1.05, fr)) * has_print;
+	// 凹痕的內壁：高度往外升高，梯度朝外（fr 對 p 的梯度方向）
+	vec2 dent_dir = fax * (fq.x / 0.13) + vec2(-fax.y, fax.x) * (fq.y / 0.055);
+	float rim = smoothstep(0.55, 0.95, fr) * (1.0 - smoothstep(0.95, 1.15, fr)) * has_print * print_lod;
+	vec2 dent_grad = normalize(dent_dir + vec2(1e-5)) * rim * 0.9;
+
 	vec3 col = snow_color * mix(0.86, 1.08, h);
 	// 低處（雪堆之間）偏藍、暗一點
 	col = mix(col * shadow_tint * 1.3, col, 0.35 + 0.65 * smoothstep(0.25, 0.6, h));
-	// 街邊雪帶（貼地）被踩髒的幾塊
-	float ground = 1.0 - smoothstep(0.25, 0.6, world_pos.y);
+	// 風紋的迎風面亮一點、背風面暗一點（很淡，主要靠法線）
+	col *= 1.0 + 0.09 * sin(arg) * ripple_amp;
+	// 街邊雪帶（貼地，或台地上靠街那側）被踩髒的幾塊
+	float ground = max(1.0 - smoothstep(0.25, 0.6, world_pos.y), street);
 	float dirt = smoothstep(0.62, 0.78, fbm(p * 1.7 + 31.0)) * ground * step(0.5, an.y);
+	// 腳印裡踩實的雪：偏灰、暗一點
+	dirt = max(dirt, dent * print_lod * 0.55);
 	col = mix(col, dirt_color, dirt * 0.55);
+	col *= 1.0 - 0.3 * dent * print_lod;
+	// 靠牆的角落照不到天光：暗、偏藍
+	float wall_k = smoothstep(0.1, 0.6, lean);
+	col = mix(col, col * shadow_tint * 0.75, wall_k * wall_shade);
 	// 雪堆外圈變薄：邊界跟著雪的起伏（h）不規則，最外一點點幾乎是底下的顏色
 	float thin = smoothstep(edge_start, 1.0, mound_k + (h - 0.47) * 0.35);
 	col = mix(col, under_color, thin * 0.85);
 	ALBEDO = col;
 
 	// 法線：把世界空間的傾斜轉到 view space 疊上去（只在朝上的面）
-	vec3 tilt = vec3(-grad.x, 0.0, -grad.y) * bump_strength * step(0.5, an.y);
+	vec2 g = grad * bump_strength * step(0.5, an.y) + ripple_grad * ripple_strength + dent_grad;
+	vec3 tilt = vec3(-g.x, 0.0, -g.y);
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(tilt, 0.0)).xyz);
 	ROUGHNESS = mix(0.62, 0.85, dirt);
-	SPECULAR = 0.45;
+	// 靠牆的角落也少反射天光（不然月光下還是一條亮藍的邊）
+	SPECULAR = mix(0.45, 0.12, wall_k);
 
 	// 雪粒閃點：4 公分的格子，每格一個隨機方向；跟視線的反射方向對上時才亮
 	vec2 cell = floor(p * 25.0);
@@ -90,5 +141,5 @@ void fragment() {
 	vec2 local = fract(p * 25.0) - 0.5;
 	float dot_shape = 1.0 - smoothstep(0.08, 0.22, length(local));
 	float far = 1.0 - smoothstep(0.012, 0.03, max(fwidth(p.x), fwidth(p.y)));
-	EMISSION = vec3(0.9, 0.95, 1.0) * lit * glint * dot_shape * far * sparkle_energy * (1.0 - dirt) * (1.0 - thin);
+	EMISSION = vec3(0.9, 0.95, 1.0) * lit * glint * dot_shape * far * sparkle_energy * (1.0 - dirt) * (1.0 - thin) * (1.0 - wall_k * 0.7);
 }

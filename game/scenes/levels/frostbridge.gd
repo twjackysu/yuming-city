@@ -556,7 +556,7 @@ func _snow_bank(from: Vector3, to: Vector3, wall: Vector3, reach: float) -> void
 		var w: float = out + SNOW_BANK_INTO_WALL
 		var hgt: float = lerpf(0.13, 0.24, _house_hash(c0, 403.0))
 		var center: Vector3 = from + dir * t - wall * (w * 0.5 - SNOW_BANK_INTO_WALL)
-		var mesh: ArrayMesh = SnowMound.build(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, Vector2(0.0, 0.5 * toward_wall))
+		var mesh: ArrayMesh = SnowMound.build(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, Vector2(0.0, 0.5 * toward_wall), true)
 		_batch.add_mesh(mesh, Transform3D(basis, center), look.snow())
 		snow_banks.append(Vector4(center.x, hgt, center.z, out))
 
