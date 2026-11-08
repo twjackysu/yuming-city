@@ -2,6 +2,42 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-071　2026-11-08　遊戲 Theme 也併進引擎預設 Theme（關卡裡的 UI 之前沒套到）
+
+- 決策：`App._ready()` 除了 `root.theme = UiFonts.build_theme()`，再 `ThemeDB.get_default_theme().merge_with(theme)`。
+- 理由：驗證 D-067 時發現對話選項還是白框。用腳本確認：`root.theme` 只傳給一路都是 Control 的子孫，**傳不過 Node3D／CanvasLayer**；關卡的 HUD、對話框、暫停／設定選單、重現提示都掛在那底下，所以一直用引擎預設字型＋系統字型 fallback（Windows 上會變成系統中文字型、跟標題畫面不一致）、預設白色焦點框。D-060 記的「遊戲裡 draw_string 這套子集字型畫成缺字方塊」很可能也是這個原因（遊戲裡拿到的其實不是子集字型）。
+- 影響：關卡 UI 的字型與標題畫面一致（Noto 子集）；`test_ui_theme::test_controls_under_canvas_layer_get_game_theme` 擋回歸。之後如果要用不同的 Theme，要記得引擎預設 Theme 已經被改過。
+
+## D-070　2026-11-08　門改用 door.gdshader
+
+- 決策：新增 `src/world/door.gdshader`、`FrostbridgeLook.door()`、`door_tint()`；`_house` 的門改用 `add_box_tinted`（頂點色 g＝木色深淺與門把在哪邊、b＝舊不舊）。五片直排木板（每片深淺不同、板縫、細木紋）、門框（左右與上方）、兩道鐵條＋鉚釘、門把鐵環、門腳浸濕。鐘樓塔門維持發光（開著的門）。
+- 理由：盤點第 6 項，主街與石階兩側的門是一塊平的深棕色方塊。
+- 影響：合併 mesh +1（門原本跟其他木頭共用 `mat(WOOD)`）；扣掉 D-066 少的 2 個，總數仍比本輪開始少。
+
+## D-069　2026-11-08　「第一眼」盤點結果與 12/1–12/8 打磨順序
+
+- 決策：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（標題、設定、廣場、主街、石階、北街救援、灰巡者（沙盒）、送葬者戰、石拱預覽、日記），本輪先修最便宜、每個畫面都看得到的三項（窗 D-066、選單焦點 D-067、雪 D-068），其餘排進 PLAN 階段 2「第一眼盤點」表，依序：鏡頭過肩偏移 → 截圖旗標構圖（諾恩背影擋住左半）→ 門 → 日記紙張質感 → 送葬者在遠處看不清 → 設定頁開關樣式與分組 → 廣場中心與木箱。
+- 理由：NEXT 第 1 項。人偶（諾恩深色剪影、席菈白色棉花糖）是最大的缺口，但正式模型等 Jacky（D-041）；在那之前先讓「角色以外」的東西不再像白盒。
+- 影響：PLAN 階段 2 有逐項表（狀態欄）；之後每輪從表的最上面拿。
+
+## D-068　2026-11-08　積雪改用 snow.gdshader
+
+- 決策：新增 `src/world/snow.gdshader`、`FrostbridgeLook.snow()`（全部的雪共用一個 ShaderMaterial，取代 `look.mat(SNOW)`）：世界座標 fbm 做雪堆起伏（亮暗 0.86～1.08、低處偏藍 35%、朝上的面法線跟著傾斜）、貼地雪帶有幾塊髒雪（灰、較粗糙）、4 cm 格子的雪粒閃點（約 1.2% 的格子、跟視線反射對上才亮、遠處 fwidth 淡掉）。
+- 理由：盤點時北街救援鏡頭左半是一整片平的淺藍屋頂、主街兩側是兩條平的白帶，一眼就是白盒。
+- 影響：合併 mesh 數不變；`test_frostbridge` 擋「沒有平的淺色雪」。閃點在實機（會動的鏡頭）上要看會不會太閃，太閃就降 `sparkle_energy`。
+
+## D-067　2026-11-08　選單樣式 UiTheme：暖金色焦點細條取代 Godot 預設白框
+
+- 決策：新增 `src/ui/ui_theme.gd`（`UiTheme.style(theme)`，由 `UiFonts.build_theme()` 呼叫，套在 root）：Button 的 focus 是 `StyleBoxTexture`（程式畫的 128×4 圖：左邊 3 px 實心暖金色當九宮格左邊界、不拉伸，右邊 22% → 0 淡出），normal 等狀態是左邊距 14 px 的 StyleBoxEmpty；文字冷灰白 → 焦點／滑鼠暖金色、disabled 變暗。HSlider：細軌道、暖金色填滿、程式畫的圓形把手、焦點同按鈕。
+- 理由：盤點時標題畫面第一眼就是 Godot 預設的白色圓角方框；設定、按鍵設定也一樣。按鈕全部是 flat（不畫 normal／hover），所以焦點框是唯一的「被選中」提示，最該好看。
+- 影響：個別按鈕的顏色覆寫（對話選項、按鍵設定格）仍優先；新選單直接用 flat Button 就會套到。
+
+## D-066　2026-11-08　窗改用 window_glass.gdshader（木窗框＋十字窗櫺），每扇窗的資料放頂點色
+
+- 決策：新增 `src/world/window_glass.gdshader`、`FrostbridgeLook.window()`、`FrostbridgeLook.window_tint()`、`StaticBatch.add_box_tinted()`。房子的亮窗與暗窗、鐘樓塔窗共用一個材質（原本亮窗 `glow(LAMP, 1.4)`、暗窗、塔窗 `glow(LAMP, 4.0)` 三個 → 一個）。面內座標用 BoxMesh 的 UV（每個面佔 1/3 × 1/2 格，`fract(UV × (3, 2))`，y=0 在上，已用腳本確認）。頂點色：r 亮／暗、g 色溫與窗簾方向、b 窗簾比例（約四成的亮窗）、a 亮度（× 4）；用位置雜湊，不動 `_rng`。亮窗基準強度 `WINDOW_ENERGY` 1.5（每扇 0.75～1.2 倍）。
+- 理由：盤點時每個霜橋鎮鏡頭最亮的東西都是一塊塊奶油色的發光長方形（近看像貼紙）；有了窗框、窗櫺、窗簾，馬上像有人住的屋子。
+- 影響：合併 mesh 少 2 個（亮窗、塔窗的發光材質）；之後的門、招牌可以照同樣模式（一個 shader＋頂點色）。
+
 ## D-065　2026-11-08　「走近就能做」的提示搬到 HUD（InteractPrompt），3D 場景只留台詞
 
 - 決策：新增 `scenes/ui/interact_prompt.gd`（`InteractPrompt`，掛在 `Hud`）：每幀找 `interact_prompts` 群組裡第一個 `interact_hint()` 回傳非空字典的節點（`{"fmt": 保留 {key} 的翻譯字串, "action": 動作, "progress": 0..1 或 -1}`），在畫面下方中央顯示 `GlyphLine`＋按住進度條；重現提示同時出現時疊在它上方 12 px。`RescueSite` 拿掉瓦礫上的 Label3D（`prompt_shown()` 照舊）；`Sheila` 倒下時頭上不再浮「拉起席菈」，改由 `interact_hint()` 提供（她頭上的 Label3D 只放台詞）。

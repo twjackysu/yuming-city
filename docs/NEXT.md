@@ -1,23 +1,28 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；接下來是階段 2 的打磨盤點與霜橋鎮第一眼）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 16 輪）最後一次程式 push（59d744f 互動提示）CI run 42456450655 全綠（含 Steam 膠囊圖、發布 latest）；照常先看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
+- 上一輪（第 17 輪）最後一次程式 push 是 c7269a5（關卡 UI 套上遊戲 Theme），CI 結果見 PROGRESS 第 17 輪；照常先看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
+- **本機截圖會在真的 `user://saves`（`/root/.local/share/YumingCity/saves`）留下自動存檔**，之後標題畫面的「繼續」會變成可按；要拍新玩家的標題畫面先把 saves 移開。只有 2 核，150 幀的對話截圖要單獨跑（同時跑會超過 120 秒逾時）。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
 - **玩家看得到的字一律白話**：新名詞先寫進 `docs/design/06-terminology.md` 再用；`test_i18n::test_no_obscure_terms` 會擋舊詞（九息、弔鐘、薪火、巡界、下城、爹…）。程式識別碼照舊（`nine_breath`、`kindling`）。
 - Jacky 的概念圖在 `art-inbox/concepts/`（LFS）：`git lfs pull --include="art-inbox/concepts/frostbridge_winter/**"` 這樣指定資料夾下載（推 LFS 還是不行）。看圖前先用 PIL 縮到 900 寬。
+- 全域 Theme（D-067、D-071）：`UiTheme.style()` 定義按鈕／滑桿樣式，`App` 同時套在 root 與引擎預設 Theme；新選單直接用 flat Button 就有暖金色焦點。
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`、`--device=pad`（手把圖示）、`--nohud`（整個 HUD 不顯示，D-064）、`--face=sheila|undertaker|frame`（諾恩與鏡頭每幀轉向那個角色；燃燒劍斬鐵架：`--convoy --throw=kindling --throw-t=0.6 --face=sheila`）。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 「第一眼」盤點＋霜橋鎮第一眼
+## 1. 「第一眼」打磨（照 PLAN 階段 2 的盤點表，從上往下）
 
-- 第 16 輪已把救援與拉起席菈的提示搬進 HUD（`InteractPrompt`，D-065）。新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`。
-- **「第一眼就有質感」盤點**：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（標題、廣場、主街、石階、北街救援、灰巡者、送葬者、石拱、日記、設定），把還不夠的排成 12/1–12/8 的打磨順序寫進 PLAN 階段 2。
-- 第 16 輪做完的（不用再做）：HUD 手把圖示（D-063）、互動提示搬進 HUD（D-065）、`--convoy --arch=restored` 構圖＋CI `ninebreath.png`、`--face`、`--nohud`、Steam 膠囊圖替代版（D-064）、標題鐘樓細節。
+- 第 17 輪做完：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。
+- **下一項：鏡頭過肩偏移**（盤點第 4 項）：`player.tscn` 的 SpringArm3D 已經在 x=0.45，但諾恩還是幾乎在正中、深色背影擋住街景。試 0.7～0.9 並讓角色稍微低一點（`CAMERA_HEIGHT`），窄巷／鎖定時收回中間；注意 SpringArm 只檢查自己那條射線，側移的起點本身不檢查碰撞（主街半寬約 3.7 m，貼牆時要收回）。改完截 `--at=plaza|main|steps`、`--rescue`、`--convoy` 對照，`test_player` 有鏡頭相關測試。
+- 第 5 項：`--arch=preview`、燃燒劍（`--throw=kindling --face=sheila`）諾恩背影擋住畫面左半——截圖旗標把鏡頭往右偏或藏起諾恩（像 `--felled`）。
+- 第 7 項：日記的紙張質感（`scenes/ui/journal_view.gd`）。第 8 項：送葬者在遠處太暗。第 9 項：設定頁「‹ 值 ›」與分組。第 10 項：廣場中心與木箱。
+- 小的：門口掛燈的燈罩、路燈燈泡還是發光方塊／球（可以用窗的 shader 加燈罩框，`look.glow(LAMP, 3.2)`）；標題畫面剪影裡的亮窗也是平的小方塊（`title_fog.gdshader`）。雪粒閃點在實機會動的鏡頭下會不會太閃，等 Jacky 回饋（`sparkle_energy`）。
+- 新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`（D-065）。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
@@ -26,7 +31,6 @@
 - 半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
 - 程序人偶小幅輪廓：席菈白**短**斗篷＋寬斷劍（刃上一點冷光）；送葬者鐵架加邊緣光。不要大改（正式模型由 Jacky 做）。
 - 標題畫面（D-061）鐘樓第 16 輪加了簷口、石塊層、窄窗；霧堤速度在實機看（截圖是靜態）。
-- 燃燒劍（`--convoy --throw=kindling --throw-t=0.6 --face=sheila`）：暖光很好看，但諾恩的背影佔了畫面左邊快四分之一；要當商店截圖可以讓 `--face` 把鏡頭往右多偏一點，或像 `--felled` 一樣藏起諾恩。
 
 ## 3. 手把（M1.4 自動測試已齊）
 
@@ -35,7 +39,6 @@
 
 ## 4. 階段 2 準備（12/1 起，可以提前）
 
-- 「第一眼就有質感」盤點：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（第 15 輪已修三項：重現提示、手把圖示、標題霧），排出 12/1–12/8 的打磨順序寫進 PLAN。
 - Steam 準備：文案與規格草稿（D-055）、膠囊圖替代版（D-064，CI 產生，`python3 -P scripts/steam_mock.py <背景.png> <輸出資料夾> --title-shot <標題畫面.png>`）。下一步：把 `docs/steam/asset-specs.md` 截圖清單的 7 張做成 CI 的一個「商店截圖」步驟（全部 `--nohud`？——商店截圖通常要看得到 HUD 才像遊戲，挑 2～3 張不帶 HUD 就好），之後 GodotSteam（等存檔與輸入穩定）。
 
 ## 5. 角色模型（等 Jacky 交件）
@@ -64,7 +67,7 @@
 - Godot 的骨骼名不能有冒號：Mixamo 的 `mixamorig:LeftHand` 匯入後是 `mixamorig_LeftHand`。
 - 霜橋鎮的劇情觸發（席菈、艾妲）是在 `frostbridge.gd` 的 `_physics_process` 依任務階段輪詢距離；其他用 `StoryLevel._trigger` 的 Area3D（梨販、鐘樓、南街口、石拱回憶、地窖）。
 - `StaticBatch.build()` 之後不能再加東西（會被丟掉）：所有要合併的幾何都要在 `_batch.build(self, "Town")` 之前加。房子裝飾用位置雜湊決定，**不要多呼叫 `_rng`**（會改掉整個鎮的配置）。
-- **自己畫字的 UI 元件一律用子節點 Label**，不要在 `_draw()` 裡 `draw_string`（遊戲裡這套子集字型會畫成缺字方塊，D-060）；Label 印的是鍵名而不是翻譯 key 時標 `set_meta("glyph", true)`。
+- **自己畫字的 UI 元件一律用子節點 Label**，不要在 `_draw()` 裡 `draw_string`（遊戲裡這套子集字型會畫成缺字方塊，D-060；可能其實是 D-071 的 Theme 沒套到造成的，沒驗證前照舊用 Label）；Label 印的是鍵名而不是翻譯 key 時標 `set_meta("glyph", true)`。
 - **HUD 上含按鍵的提示一律用 `GlyphLine`**（D-063）：翻譯字串保留 `{key}`，其他佔位符先 `format` 掉，再 `line.set_line(fmt, action, App.last_device)`；測試讀 `plain_text()`（文字版「[Y]」）、`uses_glyph()`、`parts()`。放在錨點或容器裡時設 `fit_content = false`。
 - 重現提示在 HUD（`RestorePrompt`，D-059）：新的可重現物件只要是 `NineBreathSite`，提示會自動出現；不要再在 3D 場景裡浮文字。
 - 新音效：加進 `scripts/gen_sfx.py` 的 `main()` 與 `src/core/sfx.gd` 的 `NAMES`（`test_sfx` 與打包驗證都讀 NAMES）。
