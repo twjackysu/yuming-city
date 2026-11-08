@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；接下來是截圖旗標的任務狀態、霜橋鎮第一眼與階段 2 的打磨準備）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；接下來是 HUD 操作提示的手把圖示、霜橋鎮第一眼與階段 2 的打磨準備）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 15 輪）最後兩次程式 push（53fd581 標題畫面、ce6839f 石階燈）的 CI 收尾時還在跑，**先確認綠燈**（GitHub MCP `actions_list`；紅了先修）。其餘結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
+- 上一輪（第 15 輪）最後一次程式 push（fde0892 `--convoy` 任務狀態）CI run 42452708990 全綠，寫在 PROGRESS 最上面；照常先看最近的 CI（GitHub MCP `actions_list`）；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
@@ -13,11 +13,11 @@
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 截圖旗標的任務狀態（商店截圖前要修）
+## 1. HUD 操作提示的手把圖示＋截圖旗標收尾
 
-- **`--convoy`（還有 `--arch`、`--rescue`）截圖時 HUD 左上的目標還是「到廣場找梨販」**：旗標只擺場景、沒有推進任務。做法：在 `frostbridge.gd` 處理開發旗標的地方（`dev_args.has("convoy")` 前面），**在連接 `stage_changed` 之前**把任務狀態設到對應階段——例如 `--convoy` 設 `slice.met_pear_seller`、`slice.bell_rings=9`、`slice.rescue_done`、`slice.sheila_talked`、`slice.ashwalker_defeated`（推進到 `escort_convoy`），注意 `ring_bell` 的 `on_done` 會設北街陷落（要呼叫 `collapse_north_street(false)`）、每個檢查點會自動存檔（截圖模式可以接受，或先 `Game.session` 換暫存存檔路徑）。改完截 `--convoy --arch=preview` 確認目標是「護送車隊」那一句，再跑 `scripts/check.sh`。
-- 第 15 輪做完的（不用再做）：重現提示搬到 HUD（D-059）、手把按鈕圖示（D-060）、標題畫面剪影與霧堤（D-061）、石階燈柱（D-062）。
-- 順手可做：HUD 的操作提示（戰鬥 HUD 左下「[Q] 打弱點」、重現提示「按住 [Y]」）在手把模式改用 `PadGlyph` 圖示（`App.last_device == InputGlyphs.Device.PAD` 時；`PadGlyph` 字用 Label，見 D-060）。
+- **HUD 的操作提示在手把模式改用 `PadGlyph` 圖示**（D-060 只做了按鍵設定頁）：戰鬥 HUD 左下「[Q] 打弱點」三格（`combat_hud.gd` 的 `_cmd_labels`）、重現提示「按住 [Y]」（`restore_prompt.gd` 的 hint 列可在文字前放一個 `PadGlyph`，文字改用不帶鍵名的版本——要新增翻譯 key，例如 `NB_HOLD_HINT_PAD`「按住　重現 9 秒」，先查 `06-terminology.md`）。條件 `App.last_device == InputGlyphs.Device.PAD`，聽 `App.device_changed` 切換。字一律用子節點 Label（D-060）。測試：切到手把裝置後有圖示、切回鍵鼠變回文字。
+- 截圖旗標：第 15 輪 `--convoy` 已經會推進任務（`StoryLevel.dev_advance_to_convoy`，HUD 目標正確）。**`--arch` 單獨用時目標仍是「到廣場找梨販」**——商店截圖一律用 `--convoy --arch=...`；CI 的 `ninebreath.png`（`.github/workflows/ci.yml`）可以順手改成 `--convoy --arch=restored`（會多出送葬者與席菈，先本機截一張看構圖）。
+- 第 15 輪做完的（不用再做）：重現提示搬到 HUD（D-059）、手把按鈕圖示（D-060）、標題畫面剪影與霧堤（D-061）、石階燈柱（D-062）、`--convoy` 任務狀態。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
