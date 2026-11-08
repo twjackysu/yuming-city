@@ -1,12 +1,12 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；第 24 輪完成第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102）、第 7 項的柴堆與手推車（D-103）；第 25 輪完成第 7 項木圍欄（D-104）、第 8 項街邊雪帶（D-105）、第 9 項推車靠近鏡頭淡出（D-106）、第 10 項屋瓦（D-107），第三輪盤點全部完成；另外做了接地陰影（D-108）；第 26 輪做第四輪盤點（PLAN 階段 2 第四張表，D-109），完成第 1、2、3、5、7 項（D-110～D-113）；第 27 輪完成第 4 項廣場地上的殘雪與車轍（D-114）、第 6 項角色擋鏡頭時淡掉（D-115），第四輪盤點全部完成；第 28 輪做第五輪盤點（PLAN 階段 2 第五張表，D-116），完成第 1、3、4 項（D-117～D-119）；**第 29 輪完成第五張表第 2、5、6、8 項（石板鋪法 D-120、鐘鈕 D-121、店招圖案 D-122；第 7 項 TAA 等 Jacky），做第六輪盤點（PLAN 階段 2 第六張表，D-123）並完成第 1、2 項（窄街石縫雪 D-124、重現預覽淡輪廓 D-125）。下一輪從第六張表第 3 項「雪帶像光滑的白枕頭」開始**）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；第 24 輪完成第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102）、第 7 項的柴堆與手推車（D-103）；第 25 輪完成第 7 項木圍欄（D-104）、第 8 項街邊雪帶（D-105）、第 9 項推車靠近鏡頭淡出（D-106）、第 10 項屋瓦（D-107），第三輪盤點全部完成；另外做了接地陰影（D-108）；第 26 輪做第四輪盤點（PLAN 階段 2 第四張表，D-109），完成第 1、2、3、5、7 項（D-110～D-113）；第 27 輪完成第 4 項廣場地上的殘雪與車轍（D-114）、第 6 項角色擋鏡頭時淡掉（D-115），第四輪盤點全部完成；第 28 輪做第五輪盤點（PLAN 階段 2 第五張表，D-116），完成第 1、3、4 項（D-117～D-119）；第 29 輪完成第五張表第 2、5、6、8 項（石板鋪法 D-120、鐘鈕 D-121、店招圖案 D-122；第 7 項 TAA 等 Jacky），做第六輪盤點（PLAN 階段 2 第六張表，D-123）並完成第 1、2 項（窄街石縫雪 D-124、重現預覽淡輪廓 D-125）；**第 30 輪完成第六張表第 3 項雪帶（D-126）、第 4 項破屋頂的雪（D-127），廣場的圈不再是正圓（D-128）。第六張表剩第 5 項（可以不改）與第 6 項（等 Jacky）。下一輪做第七輪盤點**）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 29 輪）最後一次程式 push 是 e342adf（重現預覽淡輪廓，D-125），**先確認它整個綠燈**（PROGRESS 第 29 輪有收尾補記）。第 29 輪的程式 commit 都在本機跑過 `scripts/check.sh`（284 個測試）與截圖：811aa3c 石板鋪法（D-120）、996b307 鐘鈕（D-121）、bf01faf 店招（D-122）、7beb3f3 窄街石縫雪（D-124）、e342adf 預覽輪廓（D-125）。紅了就看 log 修，修不好 `git revert`。
-- **看 screens 的新圖**（先 `unzip -l screens.zip` 看時間，確定是 e342adf 之後的建置；第 29 輪下載到過舊檔）：`03`、`04`、`10` 廣場的石板繞石框一圈圈鋪（D-120）、石框裡乾淨；`05`、`07` 街道的石頭圓而不規則、石縫大多是暗的（D-124）；`07`、`11` 右邊的店招有圖案（D-122）；`08` 石拱預覽上面有整座拱的淡輪廓（D-125）；README 敲鐘圖（latest 的 `bell.png`）鐘頂有鐘鈕（D-121）。**特別看**：廣場的同心圓會不會太像靶心（太明顯就把排寬的變化加大，或讓圓心偏離石框）；街口弧形鋪與直排的交界（第六張表第 5 項）。
-- `docs/PROGRESS.md` 約 290 行；**超過約 300 行時把第 19～23 輪合併成每日摘要**（下一輪大概就要做）。
+- 上一輪（第 30 輪）最後一次程式 push 是 d80d35f（廣場的圈不是正圓，D-128），**先確認它整個綠燈**（PROGRESS 第 30 輪有收尾補記）。第 30 輪的程式 commit 都在本機跑過 `scripts/check.sh`（286 個測試）與截圖：8c952fe 雪帶（D-126）、4be793b 破屋頂的雪（D-127）、d80d35f 廣場（D-128）。紅了就看 log 修，修不好 `git revert`。
+- **看 screens 的新圖**（先 `unzip -l screens.zip` 看時間，確定是 d80d35f 之後的建置）：`05`、`07` 牆腳的雪帶有風紋、靠牆暗、靠街偶爾腳印（D-126）；`06-rescue` 左上破屋頂的雪薄、有屋瓦橫紋、露出屋瓦（D-127）；`03`、`10` 廣場的圈不再是正圓（D-128）。**特別看**：風紋會不會像木紋太整齊、破屋頂露出屋瓦的暗塊會不會像髒污。
+- `docs/PROGRESS.md` 約 200 行（第 30 輪已把第 19～23 輪合併成每日摘要）；超過約 300 行時把第 24～28 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
 - **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
@@ -31,8 +31,9 @@
 - 第四輪第 4、6 項第 27 輪完成：地上殘雪（D-114：`FrostbridgeLook.set_ground_marks(lanes, trodden, rut)`、`frostbridge.gd` 的 `ground_lanes()`／`TRODDEN`／`RUT_PATH`；fbm 的值大多在 0.3～0.65，門檻照這個抓）、角色淡出（D-115：`CameraFade.CHARACTER_NEAR/FAR`、`EnemyActor.camera_fade_range()`；自訂 shader 要淡就宣告 `fade_near`／`fade_far` uniform，照 `frame_iron.gdshader` 的寫法）。
 - **第五輪盤點（PLAN 階段 2 第五張表，D-116）**：第 28 輪完成第 1 項冬夜天空（D-117：`night_sky.gdshader`，`FrostbridgeLook.night_sky()`、`SKY_FOG_AFFECT` 0.4；雲的亮度 `cloud_dark`／`cloud_lit`／`cloud_cover`、星 `star_energy` 與門檻 0.998、遠山 `ridge_height()`；**不能用 TIME**，`test_night_sky` 會擋）、第 3 項雪堆外圈變薄（D-119：SnowMound 的 UV2.x＝圈數，其他雪沒有 UV2、合併時補 0；同一個 `look.snow()`）、第 4 項提燈影子（D-118：`PlayerController.SELF_LAYER` 第 12 層、`LANTERN_SHADOW_CASTERS`）。
 - 第五輪（第 29 輪）：石板鋪法（D-120：`wet_cobble.gdshader` 的 `arc_paving`／`arc_center`／`row_wave`／`clear_disc`；`FrostbridgeLook.wet_ground_arc`、`frostbridge.gd` 的 `plaza_ground()`；**shader 內建 `TAU`，不要自己宣告**）、鐘鈕（D-121：`BELL_DROP`、`_build_bell_crown`）、店招（D-122：door shader 的店招模式 r＝0.4＋0.1×圖案編號、a 標記大面朝 X／Z；`FrostbridgeLook.sign_icon`／`sign_tint`）。
-- **下一輪從這裡開始：第六張表第 3 項「雪帶像光滑的白枕頭」**（`05`、`07` 牆腳的雪帶）。雪的 shader 是 `snow.gdshader`（`look.snow()`，雪帶、屋頂雪、雪堆共用一個材質；D-119 的 UV2.x＝圈數，外圈變薄）。方向：表面加細微起伏（風吹的紋，用世界座標雜訊擾動法線，不要動幾何）、靠牆一側暗一點（可以用 UV2 圈數或法線朝向）、偶爾一點髒雪與腳印凹痕。改完 `--at=main`、`--at=steps`、`--convoy --phase2 --face=undertaker`、`--rescue` 都要截圖對照（屋頂雪也會一起變）。
-- 第六張表之後：第 4 項破屋頂雪堆（`06-rescue`）、第 5 項廣場街口的收邊石（可以不改）、第 6 項 TAA（等 Jacky 看網點）。第六張表做完就做第七輪盤點（先確認 screens 是最新的建置）。
+- 第六輪（第 30 輪）：雪帶（D-126：`snow.gdshader` 的 `wind_dir`／`ripple_*`／`wall_shade`／`footprint_density`；`SnowMound.build(..., bias, street_bank, on_tiles)`，UV2.y：街邊雪帶 -1～1＝往牆那側多遠、屋瓦上的雪＝`TILES_MARK`＋模型 X 公尺數、其他 0）、破屋頂的雪（D-127：`RUIN_SNOW_H`、`tile_row`、`under_color`）、廣場的圈（D-128）。
+- **下一輪從這裡開始：第七輪「第一眼」盤點**（PLAN 階段 2 第七張表）。先下載 screens（確認是 d80d35f 之後的建置），11 張看過一遍、對照概念圖（`art-inbox/concepts/`，LFS 要指定資料夾下載），排 5～8 項寫進 PLAN，然後從最上面做。候選（上一輪看到但還沒排）：完整屋頂的屋簷雪堆（D-112）要不要也設 `on_tiles`；腳印要不要順著街排成一串（現在是散落的單一腳印）；廣場街口弧形鋪與直排的交界（第六張表第 5 項）；標題畫面與設定頁很久沒看。
+- 第六張表剩第 5 項廣場街口的收邊石（可以不改）、第 6 項 TAA（等 Jacky 看網點）。
 - 破屋頂的山牆（PrismMesh）還是 `look.mat(ROOF)` 素面；看起來沒問題就不用改。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
 - 前兆範圍（D-088）：新的範圍招用 `Undertaker._decal(mesh, pos, SHAPE_*, extent, arc_deg)`；長條的敵人端在模型 +Z、扇形朝 -Z。
@@ -66,6 +67,7 @@
 
 ## 備註
 
+- 截圖一律在前景跑（本機一張約 1 分鐘）：Bash 工具裡 `( … &)` 背景跑的截圖會在工具呼叫結束時被收掉（第 30 輪）。
 - 粒子一律用 `ParticleLook.material(color, additive)`（D-056）；`test_particle_look` 用 `ParticleLook.untextured(node)` 找沒貼圖的粒子，新的特效節點也加進去。
 
 - **繞 X 軸負角度是往前倒／前傾**（頭在 -Z，D-052）。送葬者用 `FALL_FORWARD = -1.0`；寫新的姿勢時照這個常數，別再寫反。
