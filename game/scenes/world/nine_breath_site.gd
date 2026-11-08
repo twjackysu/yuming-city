@@ -22,6 +22,15 @@ const DESAT: float = 0.12
 const GHOST_SHADER: String = "res://src/world/restore_ghost.gdshader"
 ## 重現的石拱平常的發光強度（心跳時亮到三倍再退回）
 const ARCH_GLOW: float = 0.85
+# 石拱的形狀（D-129）：拱腳高度、拱洞半徑、拱圈外緣半徑、拱石塊數（單數，正中間是拱心石）
+const ARCH_SPRING: float = 2.0
+const ARCH_INNER: float = 1.6
+const ARCH_OUTER: float = 2.15
+const ARCH_SIDES: int = 48
+const VOUSSOIRS: int = 11
+const WALL_DEPTH: float = 1.2
+# 拱石、拱墩線腳凸出牆面多少（每一面）
+const TRIM_OUT: float = 0.07
 
 @export var object_id: String = "south_arch"
 @export var memory_id: String = "arch_father_last_talk"
@@ -306,16 +315,19 @@ func _build() -> void:
 	_arch.add_child(block)
 	var hole := CSGCylinder3D.new()
 	hole.operation = CSGShape3D.OPERATION_SUBTRACTION
-	hole.radius = 1.6
+	hole.radius = ARCH_INNER
 	hole.height = 2.0
+	# D-129：預設 8 邊的圓柱挖出來的拱頂是尖的多邊形（預覽輪廓像五角形的屋子）
+	hole.sides = ARCH_SIDES
 	hole.rotation_degrees = Vector3(90, 0, 0)
-	hole.position = Vector3(0, 2.0, 0)
+	hole.position = Vector3(0, ARCH_SPRING, 0)
 	_arch.add_child(hole)
 	var cut := CSGBox3D.new()
 	cut.operation = CSGShape3D.OPERATION_SUBTRACTION
-	cut.size = Vector3(3.2, 2.0, 2.0)
-	cut.position = Vector3(0, 1.0, 0)
+	cut.size = Vector3(ARCH_INNER * 2.0, ARCH_SPRING, 2.0)
+	cut.position = Vector3(0, ARCH_SPRING * 0.5, 0)
 	_arch.add_child(cut)
+	_build_arch_trim()
 	# 重現的石拱（D-043）：跟鎮上石牆同一個 shader（看得出是石頭），石縫透出冷光、邊緣亮，
 	# 心跳時整體亮一下。不再是整塊發白的板子。
 	_arch_mat = ShaderMaterial.new()
@@ -377,6 +389,47 @@ func _build() -> void:
 	ramp.set_color(1, Color(0.4, 0.4, 0.42, 0.0))
 	_ash.color_ramp = ramp
 	add_child(_ash)
+
+
+## 拱圈與線腳（D-129）：一圈楔形拱石（中間的拱心石高一點、凸多一點）、拱腳的線腳、柱腳、頂上的壓頂。
+## 都凸出牆面一點，預覽輪廓（fresnel）與重現後的石頭都看得出「這是一座拱」，不是牆上挖一個洞。
+func _build_arch_trim() -> void:
+	var step: float = PI / float(VOUSSOIRS)
+	var gap: float = 0.012
+	for i: int in VOUSSOIRS:
+		var key: bool = i * 2 + 1 == VOUSSOIRS
+		var a0: float = step * float(i) + gap
+		var a1: float = step * float(i + 1) - gap
+		var outer: float = ARCH_OUTER + (0.16 if key else 0.0)
+		var out: float = TRIM_OUT + (0.05 if key else 0.0)
+		var poly := PackedVector2Array()
+		for p: Vector2 in [Vector2(cos(a0), sin(a0)) * ARCH_INNER, Vector2(cos(a1), sin(a1)) * ARCH_INNER,
+				Vector2(cos(a1), sin(a1)) * outer, Vector2(cos(a0), sin(a0)) * outer]:
+			poly.append(p + Vector2(0, ARCH_SPRING))
+		var stone := CSGPolygon3D.new()
+		stone.name = "Keystone" if key else "Voussoir%d" % i
+		stone.polygon = poly
+		stone.depth = WALL_DEPTH + out * 2.0
+		# CSGPolygon3D 從 z=0 往 -Z 擠出
+		stone.position = Vector3(0, 0, stone.depth * 0.5)
+		_arch.add_child(stone)
+	for sx: float in [-1.0, 1.0]:
+		var pier_x: float = sx * (ARCH_INNER + 2.5) * 0.5
+		var impost := CSGBox3D.new()
+		impost.name = "Impost"
+		impost.size = Vector3(2.5 - ARCH_INNER + 0.08, 0.16, WALL_DEPTH + TRIM_OUT * 2.0)
+		impost.position = Vector3(pier_x, ARCH_SPRING - 0.08, 0)
+		_arch.add_child(impost)
+		var plinth := CSGBox3D.new()
+		plinth.name = "Plinth"
+		plinth.size = Vector3(2.5 - ARCH_INNER + 0.08, 0.32, WALL_DEPTH + TRIM_OUT * 2.0)
+		plinth.position = Vector3(pier_x, 0.16, 0)
+		_arch.add_child(plinth)
+	var coping := CSGBox3D.new()
+	coping.name = "Coping"
+	coping.size = Vector3(5.16, 0.18, WALL_DEPTH + TRIM_OUT * 2.0)
+	coping.position = Vector3(0, 4.6 - 0.09, 0)
+	_arch.add_child(coping)
 
 
 func _exit_tree() -> void:

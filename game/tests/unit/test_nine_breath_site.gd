@@ -174,6 +174,42 @@ func test_restored_arch_is_glowing_stone() -> void:
 	await tree.process_frame
 
 
+## 石拱的形狀（D-129）：拱洞是圓的（不是 8 邊形）、一圈單數的拱石正中是拱心石、
+## 拱石凸出牆面（前後對稱）、整座不超過 4.6 m（預覽 shader 的 height）。
+func test_arch_has_round_vault_and_voussoirs() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	await tree.physics_frame
+	var arch: CSGCombiner3D = site.get_node("Arch") as CSGCombiner3D
+	var hole: CSGCylinder3D = null
+	var stones: int = 0
+	for c: Node in arch.get_children():
+		if c is CSGCylinder3D:
+			hole = c as CSGCylinder3D
+		if c is CSGPolygon3D:
+			stones += 1
+	assert_not_null(hole, "拱洞")
+	assert_true(hole.sides >= 32, "拱洞夠圓")
+	assert_eq(stones, NineBreathSite.VOUSSOIRS, "一圈拱石")
+	assert_eq(NineBreathSite.VOUSSOIRS % 2, 1, "單數：正中是拱心石")
+	assert_not_null(arch.get_node_or_null("Keystone"), "拱心石")
+	site.activate()
+	await tree.process_frame
+	await tree.process_frame
+	var meshes: Array = arch.get_meshes()
+	assert_eq(meshes.size(), 2, "CSG 算出網格")
+	var box: AABB = (meshes[1] as Mesh).get_aabb()
+	assert_true(box.end.y <= 4.6 + 0.01, "不超過 4.6 m：%s" % box)
+	var half: float = NineBreathSite.WALL_DEPTH * 0.5
+	assert_true(box.position.z < -half - 0.05 and box.end.z > half + 0.05, "拱石凸出前後兩面：%s" % box)
+	assert_true(absf(box.position.z + box.end.z) < 0.02, "前後對稱：%s" % box)
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
 ## 預覽輪廓（D-046）：按住時用 restore_ghost shader，fill 跟著按住的進度從 0 往上長；放開就藏起來。
 func test_preview_ghost_grows_with_hold() -> void:
 	var st := GameState.new()
