@@ -15,6 +15,7 @@ var _bottom: ColorRect
 var _speaker: Label
 var _line: Label
 var _prompt: GlyphLine
+var _tally: RingTally
 var _skip: GlyphLine
 var _skip_bar: ProgressBar
 var _camera: Camera3D
@@ -58,6 +59,11 @@ func skip_text() -> String:
 
 func prompt_line() -> GlyphLine:
 	return _prompt
+
+
+## 敲鐘刻度（有 counter 的鏡頭才顯示，D-084）。
+func tally() -> RingTally:
+	return _tally
 
 
 func skip_line() -> GlyphLine:
@@ -116,13 +122,17 @@ func _notification(what: int) -> void:
 func _refresh_texts() -> void:
 	_skip.set_line(tr("HUD_CUTSCENE_SKIP"), "interact", int(App.last_device))
 	_prompt.visible = runner != null and runner.is_waiting()
+	_tally.visible = false
 	if not _prompt.visible:
 		return
 	var shot: Dictionary = runner.current()
 	var text: String = "{key}  %s" % tr(str(shot.get("prompt", "")))
 	if shot.has("counter"):
 		var n: int = int(Game.session.state.get_flag(str(shot["counter"]), 0))
-		text += "　%d／%d" % [n, int(shot.get("counter_max", 0))]
+		var of: int = int(shot.get("counter_max", 0))
+		text += "　%d／%d" % [n, of]
+		_tally.set_count(n, of)
+		_tally.visible = of > 0
 	_prompt.set_line(text, runner.awaited_action(), int(App.last_device))
 
 
@@ -195,6 +205,15 @@ func _build() -> void:
 	_prompt.anchor_top = 0.66
 	_prompt.anchor_bottom = 0.71
 	_root.add_child(_prompt)
+	# 提示上面一排九個圓點：敲過的亮起（D-084）
+	_tally = RingTally.new()
+	_tally.name = "RingTally"
+	_tally.anchor_left = 0.3
+	_tally.anchor_right = 0.7
+	_tally.anchor_top = 0.62
+	_tally.anchor_bottom = 0.655
+	_tally.visible = false
+	_root.add_child(_tally)
 
 	_skip = GlyphLine.new().configure(16, Color(0.62, 0.64, 0.68, 0.85))
 	_skip.name = "Skip"
