@@ -57,7 +57,10 @@ void fragment() {
 	float level = fill * 1.04;
 	float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 2.5);
 	if (h > level) {
-		float faint = 0.05 + 0.3 * fres;
+		// 還沒長到的拱圈也淡淡看得到一塊塊拱石的放射縫（D-135）：預覽一開始就讀得出「這是一座拱」
+		float aj0 = arch_joint(obj_pos, normalize(obj_normal));
+		float ring_seam = aj0 >= 0.0 ? 1.0 - smoothstep(0.012, 0.03, aj0) : 0.0;
+		float faint = 0.05 + 0.3 * fres + 0.14 * ring_seam;
 		ALBEDO = color * faint;
 		ALPHA = clamp(faint, 0.0, 1.0);
 	} else {
