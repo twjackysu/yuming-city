@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；接下來是第一眼的小毛病（重現提示壓到石拱、手把圖示、標題霧）、霜橋鎮第一眼與階段 2 的打磨準備）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；接下來是截圖旗標的任務狀態、霜橋鎮第一眼與階段 2 的打磨準備）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 14 輪）最後一次程式 push（a4acb19 濕石板路）的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
+- 上一輪（第 15 輪）最後兩次程式 push（53fd581 標題畫面、ce6839f 石階燈）的 CI 收尾時還在跑，**先確認綠燈**（GitHub MCP `actions_list`；紅了先修）。其餘結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
@@ -13,11 +13,11 @@
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 第一眼的小毛病（ART_QUALITY_BAR 盤點出來、還沒修的）
+## 1. 截圖旗標的任務狀態（商店截圖前要修）
 
-- **（最優先）重現提示被記憶代價面板蓋住**：第 14 輪截圖 `--level=frostbridge --convoy --arch=preview`：石拱的重現提示（`nine_breath_site.gd` 的 `_label`，Label3D 三行：可以重現／代價／按住 V）在畫面中上方，**右半被「重現的代價」記憶面板蓋住，代價那一行被切掉**（這是玩家最該看清楚的一行），上緣又跟字幕擠在一起，背後還是石拱輪廓。建議：預覽提示改成 HUD 的 2D 提示（畫面下方中央、操作提示上面一排，跟記憶面板不重疊），Label3D 只留一個小的「按住 V」或拿掉；重現中的「剩 N 秒」（`position.y = 5.3`、64 號字）也一起搬到 HUD。改完截 `--arch=preview`、`--arch=restored`、`--convoy --throw=arch --throw-t=0.5` 對照，中英文都看（英文較長）。
-- **按鍵設定頁的手把圖示是文字**（A／B／LB）：可以用程序畫的圓形按鈕圖示（`InputGlyphs` 產生 `Texture2D`：圓底＋字母，ABXY 用不同底色；LB／RB／LT／RT 用圓角矩形），鍵鼠維持文字。按鍵設定頁的焦點規則見 D-057（新的疊加選單都要把焦點關住）。
-- **標題畫面霧層幾乎看不出來**：`scenes/boot/title_fog.gdshader`；不帶 `--level` 的截圖就是標題畫面（`scripts/screenshot.sh out.png 30`），前後對照。
+- **`--convoy`（還有 `--arch`、`--rescue`）截圖時 HUD 左上的目標還是「到廣場找梨販」**：旗標只擺場景、沒有推進任務。做法：在 `frostbridge.gd` 處理開發旗標的地方（`dev_args.has("convoy")` 前面），**在連接 `stage_changed` 之前**把任務狀態設到對應階段——例如 `--convoy` 設 `slice.met_pear_seller`、`slice.bell_rings=9`、`slice.rescue_done`、`slice.sheila_talked`、`slice.ashwalker_defeated`（推進到 `escort_convoy`），注意 `ring_bell` 的 `on_done` 會設北街陷落（要呼叫 `collapse_north_street(false)`）、每個檢查點會自動存檔（截圖模式可以接受，或先 `Game.session` 換暫存存檔路徑）。改完截 `--convoy --arch=preview` 確認目標是「護送車隊」那一句，再跑 `scripts/check.sh`。
+- 第 15 輪做完的（不用再做）：重現提示搬到 HUD（D-059）、手把按鈕圖示（D-060）、標題畫面剪影與霧堤（D-061）、石階燈柱（D-062）。
+- 順手可做：HUD 的操作提示（戰鬥 HUD 左下「[Q] 打弱點」、重現提示「按住 [Y]」）在手把模式改用 `PadGlyph` 圖示（`App.last_device == InputGlyphs.Device.PAD` 時；`PadGlyph` 字用 Label，見 D-060）。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
@@ -25,7 +25,7 @@
 - **鐘的金屬度**（D-050）：鐘在台地北端，不在任何 probe 盒子裡；要提高金屬度得在鐘樓加一個小 probe（只拍倒影層），注意反射圖集上限 8 張（`project.godot`）。
 - 半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
 - 程序人偶小幅輪廓：席菈白**短**斗篷＋寬斷劍（刃上一點冷光）；送葬者鐵架加邊緣光。不要大改（正式模型由 Jacky 做）。
-- 石階兩側可加矮石欄或石階邊的燈（`--at=steps`）。
+- 標題畫面（D-061）的鐘樓還偏細長，可以加一點塔身的石塊紋或窗；霧堤速度在實機看（截圖是靜態）。
 - 燃燒劍火星（加法混色，D-056）在畫面上還沒親眼看過：`--convoy --throw=kindling` 的鏡頭在諾恩後面、斬開的位置在鏡頭後方。可以加一個截圖旗標把鏡頭轉向席菈（例如 `--face=sheila`），順便給 Steam 截圖用。
 
 ## 3. 手把（M1.4 自動測試已齊）
@@ -35,10 +35,12 @@
 
 ## 4. 階段 2 準備（12/1 起，可以提前）
 
-- 「第一眼就有質感」盤點：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（標題畫面霧層幾乎看不出來、按鍵設定頁的手把圖示是文字、重現提示文字壓到石拱輪廓），排出 12/1–12/8 的打磨順序寫進 PLAN。
-- Steam 準備：草稿已寫（D-055）：`docs/steam/store-page.md`、`docs/steam/asset-specs.md`。下一步：用截圖清單的旗標產生 7 張替代版截圖（1600×900 軟體渲染，只當版位示意，正式要 Windows 實機），做一張 Header Capsule 替代版（截圖＋標題字，920×430，PIL 合成，放 `docs/steam/mock/`，不進遊戲）；之後 GodotSteam（等存檔與輸入穩定）。
+- 「第一眼就有質感」盤點：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（第 15 輪已修三項：重現提示、手把圖示、標題霧），排出 12/1–12/8 的打磨順序寫進 PLAN。
+- Steam 準備：草稿已寫（D-055）：`docs/steam/store-page.md`、`docs/steam/asset-specs.md`。替代版截圖與 Header Capsule：**png／jpg 在 `.gitattributes` 走 LFS，雲端推不上去**，所以不要 commit 圖檔；可以把產生替代版的指令寫成 `scripts/steam_mock.py`（PIL 合成 920×430：標題畫面截圖＋標題字），讓 Jacky 本機或 CI 產生（CI 可上傳成 release 附件，跟 README 截圖一樣）。之後 GodotSteam（等存檔與輸入穩定）。
 
 ## 5. 角色模型（等 Jacky 交件）
+
+- 第 15 輪 Jacky 推了 `docs/art-trials/noen-rigging/`（本機 MPFB 分件角色＋ACCAD walk 試作，README 明寫「不是正式交件、未換遊戲內角色」）。**不要自己把它接進遊戲**，等他放 `art-inbox/characters/noen/noen.glb`。裡面的 `godot_review/` 是獨立的檢視專案，跟 `game/` 無關。
 
 - 接入點已完成（D-041、04-architecture「角色模型接入點」）。Jacky 放 `art-inbox/characters/<id>/<id>.glb` 後：跑 `scripts/check.sh`（會先 `git lfs pull --include="art-inbox/characters/**"` 才拿得到檔案），看 `[characters]` 那幾行有沒有通過；通過就截圖對照 `--at=plaza`、`--rescue`、`--convoy`，檢查提燈／鐘錘掛點、走跑步頻、面向（-Z）。席菈的燃燒劍掛在 `hand("R")`，換模型後要確認火光位置。
 - 之後：敵人（Undertaker、Ashwalker）走同一個入口；弱點位置（灰巡者左膝、送葬者鐵架關節）用骨骼名或 Marker 對齊；動作多了換 AnimationTree。傷者／受困者的躺姿只在程序人偶上（`Puppet.lying`），模型版要另外的躺姿動畫；送葬者倒地目前是轉整個 `_body`，模型版要倒地動畫。
@@ -62,7 +64,8 @@
 - Godot 的骨骼名不能有冒號：Mixamo 的 `mixamorig:LeftHand` 匯入後是 `mixamorig_LeftHand`。
 - 霜橋鎮的劇情觸發（席菈、艾妲）是在 `frostbridge.gd` 的 `_physics_process` 依任務階段輪詢距離；其他用 `StoryLevel._trigger` 的 Area3D（梨販、鐘樓、南街口、石拱回憶、地窖）。
 - `StaticBatch.build()` 之後不能再加東西（會被丟掉）：所有要合併的幾何都要在 `_batch.build(self, "Town")` 之前加。房子裝飾用位置雜湊決定，**不要多呼叫 `_rng`**（會改掉整個鎮的配置）。
-- 外觀待打磨（階段 2）：標題畫面的霧層幾乎看不出來；按鍵設定頁的手把圖示（目前是文字 A／B／LB）；重現提示文字（Label3D）在畫面中央壓到石拱輪廓。
+- **自己畫字的 UI 元件一律用子節點 Label**，不要在 `_draw()` 裡 `draw_string`（遊戲裡這套子集字型會畫成缺字方塊，D-060）；Label 印的是鍵名而不是翻譯 key 時標 `set_meta("glyph", true)`。
+- 重現提示在 HUD（`RestorePrompt`，D-059）：新的可重現物件只要是 `NineBreathSite`，提示會自動出現；不要再在 3D 場景裡浮文字。
 - 新音效：加進 `scripts/gen_sfx.py` 的 `main()` 與 `src/core/sfx.gd` 的 `NAMES`（`test_sfx` 與打包驗證都讀 NAMES）。
 - 打包驗證（D-044）：新增遊戲一定要有的資源時，把路徑加進 `scripts/verify_package.py` 的 `REQUIRED`。
 - CI 有 Node 20 deprecation 警告（actions/checkout@v4 等），目前被強制用 Node 24 跑，不影響結果。
