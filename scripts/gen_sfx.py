@@ -7,6 +7,7 @@
 - claw：爪擊。高通噪音快掃。
 - slash：席菈斷劍。帶通噪音＋金屬泛音。
 - whoosh：閃避風聲。慢起慢落的低通噪音。
+- ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -185,6 +186,21 @@ def ignite(seconds=0.9, seed=13):
     return out
 
 
+def ui_tick(seconds=0.14, seed=17):
+    """選單切換值：很小的一聲高音鐘「叮」＋極短的木頭「喀」，跟遊戲的鐘同一個語彙、不搶戲。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    click = onepole_lp(hp(noise(int(0.004 * RATE), rng), 1500), 6000)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        ping = (math.sin(2 * math.pi * 1568.0 * t) * 0.55 + math.sin(2 * math.pi * 1568.0 * 2.41 * t) * 0.2) * math.exp(-t * 38.0)
+        attack = min(1.0, t / 0.0015)
+        c = click[i] * 0.5 if i < len(click) else 0.0
+        out.append(ping * attack + c)
+    return out
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -198,6 +214,7 @@ def main():
         write("rubble_scrape", scrape()),
         write("iron_clang", clang()),
         write("ignite", ignite()),
+        write("ui_tick", ui_tick()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

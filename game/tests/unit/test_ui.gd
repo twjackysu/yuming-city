@@ -128,6 +128,8 @@ func test_settings_menu_groups_arrows_pips() -> void:
 	next._gui_input(click)
 	assert_eq(int(settings.get("quality")), (quality_before + 1) % 3, "點右箭頭：下一級")
 	assert_true(q.has_focus(), "點箭頭時焦點移到那一列")
+	assert_eq(menu.ticks, 1, "換值時一聲小小的「叮」")
+	assert_true(Sfx.NAMES.has("ui_tick"), "ui_tick 在音效清單裡（打包驗證會檢查）")
 	assert_true(next.is_lit(), "有焦點時箭頭亮起來")
 	prev._gui_input(click)
 	prev._gui_input(click)

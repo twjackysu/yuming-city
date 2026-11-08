@@ -272,7 +272,8 @@ func _add_slider(label_key: String, row_name: String, bus: String) -> void:
 	var show_pct: Callable = func(v: float) -> void: pct.text = "%d%%" % roundi(v * 100.0)
 	slider.value_changed.connect(func(v: float) -> void:
 		Settings.set_volume(bus, v)
-		show_pct.call(v))
+		show_pct.call(v)
+		tick())
 	slider.set_meta("refresh", func() -> void:
 		slider.set_value_no_signal(Settings.volume(bus))
 		show_pct.call(Settings.volume(bus)))
@@ -307,6 +308,7 @@ func _add_cycler(label_key: String, row_name: String, count: int, read_index: Ca
 	var step: Callable = func(delta: int) -> void:
 		set_index.call(posmod(int(read_index.call()) + delta, count))
 		(next if delta > 0 else prev).kick()
+		tick()
 		_refresh_all()
 	prev.stepped.connect(step)
 	next.stepped.connect(step)
@@ -322,6 +324,22 @@ func _add_cycler(label_key: String, row_name: String, count: int, read_index: Ca
 
 
 var _raised: StyleBoxEmpty
+## 上一次「叮」的時間（拖滑桿時每 70 ms 最多一聲）
+var _last_tick_ms: int = -1000
+## 測試用：響過幾聲
+var ticks: int = 0
+const TICK_GAP_MS: int = 70
+const TICK_DB: float = -15.0
+
+
+## 換值時一聲很小的「叮」（ui_tick，走 SFX 匯流排，所以調音效音量時馬上聽得到新的大小）。
+func tick() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_tick_ms < TICK_GAP_MS:
+		return
+	_last_tick_ms = now
+	ticks += 1
+	Sfx.play_flat(self, "ui_tick", TICK_DB)
 
 
 ## 跟 UiTheme 的按鈕框一樣，只是上下邊距不對稱（文字抬高 PIPS_LIFT）。
