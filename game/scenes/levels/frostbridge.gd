@@ -3,13 +3,14 @@ extends StoryLevel
 ##
 ## 版面（-Z 是北，單位公尺）：
 ##   廣場  z∈[-10,10]、x∈[-11,11]：出生點、梨販攤、井、四盞路燈
-##   主街  z∈[-30,-10]、寬 8；北街 z∈[-46,-30]（第九聲後陷落）；鐘樓 z=-50；北城牆 z=-55
+##   主街  z∈[-30,-10]、寬 8；北段 z∈[-29.2,-25.2] 四級石階往上（概念圖：街道往鐘樓爬坡）
+##   北街 z∈[-46,-30]（第九聲後陷落）；鐘樓 z=-50；北城牆 z=-55——都在高 RISE 的台地上
 ##   南街  z∈[10,34]、寬 7：石拱 z=20（九息）、送葬者戰
 ##   路口  z∈[34,42]、x∈[-20,20]：傷者車隊的終點
 ## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；會動的（北街房子、鐘）各自一個節點。
 ##
 ## 開發用旗標（`++ --level=frostbridge ...`）：`--rescue` 跳到救援段落、`--convoy` 直接開打送葬者戰、`--phase2`、
-## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|north|south|cross`（出生位置）、
+## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|steps|north|south|cross`（出生位置）、
 ## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）。
 
 const PLAZA_HALF: float = 11.0
@@ -25,6 +26,11 @@ const CROSS_N: float = 34.0
 const CROSS_S: float = 42.0
 const CROSS_HALF: float = 20.0
 const STALL_POS: Vector3 = Vector3(4.5, 0.0, -1.0)
+## 北街＋鐘樓的台地高度；主街北段四級石階（看得到的台階＋看不到的斜坡碰撞，角色不用跨階）
+const RISE: float = 0.9
+const STEPS_S: float = -25.2
+const STEPS_N: float = -29.2
+const STEP_COUNT: int = 5
 
 ## 檢查點 -> 出生位置（沒列到的用廣場）
 const CHECKPOINT_SPAWNS: Dictionary = {
@@ -35,7 +41,8 @@ const CHECKPOINT_SPAWNS: Dictionary = {
 const DEV_SPAWNS: Dictionary = {
 	"plaza": Vector3(0.0, 0.05, 7.0),
 	"main": Vector3(0.0, 0.05, -14.0),
-	"north": Vector3(0.0, 0.05, -32.0),
+	"steps": Vector3(0.6, 0.05, -21.0),
+	"north": Vector3(0.0, RISE + 0.05, -32.0),
 	"south": Vector3(0.0, 0.05, 12.0),
 	"cross": Vector3(0.0, 0.05, 36.0),
 }
@@ -53,7 +60,7 @@ func _ready() -> void:
 	_build_ground()
 	_build_plaza()
 	_build_streets()
-	_build_bell_tower(Vector3(0.0, 0.0, TOWER_Z))
+	_build_bell_tower(Vector3(0.0, RISE, TOWER_Z))
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
 	_build_cellar_hatch()
@@ -89,7 +96,7 @@ func _ready() -> void:
 		Game.session.set_flag("slice.met_pear_seller", true)
 		Game.session.set_flag("slice.bell_rings", 9)
 		collapse_north_street(false)
-		player.global_position = Vector3(-1.4, 0.05, -30.2)
+		player.global_position = Vector3(-1.4, RISE + 0.05, -30.2)
 	if dev_args.has("convoy"):
 		player.global_position = Vector3(0.0, 0.05, 10.0)
 		player.rotation.y = PI  # 面向南街
@@ -144,10 +151,10 @@ func _debug_throw(how: String, t: float) -> void:
 
 ## 北街陷落後才有受困者；讀檔時已陷落也會在這裡生成。
 const RESCUE_SPOTS: Dictionary = {
-	"north_a": Vector3(-3.0, 0.0, -33.0),
-	"north_b": Vector3(3.0, 0.0, -37.5),
-	"north_c": Vector3(-2.8, 0.0, -42.0),
-	"north_d": Vector3(3.1, 0.0, -45.0),
+	"north_a": Vector3(-3.0, RISE, -33.0),
+	"north_b": Vector3(3.0, RISE, -37.5),
+	"north_c": Vector3(-2.8, RISE, -42.0),
+	"north_d": Vector3(3.1, RISE, -45.0),
 }
 
 
@@ -167,7 +174,7 @@ func collapse_north_street(animate: bool) -> void:
 # ---------------------------------------------------------------- 席菈（段落 4）
 
 const SHEILA_WAIT_POS: Vector3 = Vector3(1.6, 0.0, -21.0)
-const ASHWALKER_POS: Vector3 = Vector3(0.0, 0.0, -34.0)
+const ASHWALKER_POS: Vector3 = Vector3(0.0, RISE, -34.0)
 const SHEILA_TALK_RANGE: float = 2.6
 
 var ashwalker: Ashwalker
@@ -330,7 +337,7 @@ func _on_convoy_finished(_injured: int) -> void:
 
 func _build_story_triggers() -> void:
 	_trigger("PearSellerTrigger", STALL_POS + Vector3(-0.8, 1.0, 0.0), Vector3(3.0, 2.0, 3.0), _on_pear_seller)
-	_trigger("BellTowerTrigger", Vector3(0.0, 1.0, TOWER_Z + 3.7), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
+	_trigger("BellTowerTrigger", Vector3(0.0, RISE + 1.0, TOWER_Z + 3.7), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
 	_trigger("CellarTrigger", CELLAR_POS + Vector3(0.0, 1.0, 0.0), Vector3(1.8, 2.0, 1.6), _on_cellar)
 	_trigger("ConvoyTrigger", Vector3(0.0, 1.0, PLAZA_S + 2.0), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_south_street)
 	_trigger("ArchMemoryTrigger", Vector3(0.0, 1.0, ARCH_Z - 5.5), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_arch_memory)
@@ -338,10 +345,10 @@ func _build_story_triggers() -> void:
 
 ## 過場鏡頭（CutsceneView 依名字找；slice_bell_nine.json 用到這三個）。
 func _build_cutscene_cameras() -> void:
-	var t := Vector3(0.0, 0.0, TOWER_Z)
+	var t := Vector3(0.0, RISE, TOWER_Z)
 	_camera_marker("BellCamWide", t + Vector3(2.6, 1.7, 19.0), t + Vector3(0.0, 14.5, 0.0))
 	_camera_marker("BellCamRope", t + Vector3(2.4, 15.6, 6.2), t + Vector3(0.0, 16.3, 0.0))
-	_camera_marker("NorthStreetCam", Vector3(-1.5, 10.0, NORTH_START + 8.0), Vector3(0.0, 1.0, NORTH_END + 4.0))
+	_camera_marker("NorthStreetCam", Vector3(-1.5, 10.0, NORTH_START + 8.0), Vector3(0.0, RISE + 1.0, NORTH_END + 4.0))
 
 
 # ---------------------------------------------------------------- 場景
@@ -357,9 +364,56 @@ func _build_ground() -> void:
 	var snow := look.mat(FrostbridgeLook.SNOW)
 	for sx: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(1.4, 0.04, PLAZA_S - PLAZA_N), Vector3(sx * (PLAZA_HALF - 0.7), 0.02, 0.0), snow, false)
-		_batch.add_box_at(Vector3(1.2, 0.04, PLAZA_N - NORTH_END), Vector3(sx * (MAIN_HALF - 0.6), 0.02, (PLAZA_N + NORTH_END) * 0.5), snow, false)
+		_batch.add_box_at(Vector3(1.2, 0.04, PLAZA_N - STEPS_S), Vector3(sx * (MAIN_HALF - 0.6), 0.02, (PLAZA_N + STEPS_S) * 0.5), snow, false)
+		_batch.add_box_at(Vector3(1.2, 0.04, STEPS_N - NORTH_END), Vector3(sx * (MAIN_HALF - 0.6), RISE + 0.02, (STEPS_N + NORTH_END) * 0.5), snow, false)
 		_batch.add_box_at(Vector3(1.0, 0.04, CROSS_N - PLAZA_S), Vector3(sx * (SOUTH_HALF - 0.5), 0.02, (PLAZA_S + CROSS_N) * 0.5), snow, false)
 	_batch.add_box_at(Vector3(CROSS_HALF * 2.0, 0.04, 1.2), Vector3(0.0, 0.02, CROSS_S - 0.6), snow, false)
+	_build_rise()
+
+
+## 北街＋鐘樓的台地與主街北段的石階。台地本體是石牆（南面露出來的那一階看得到石塊），
+## 上面再鋪一層濕石板路；石階一級一個石塊，看不到的斜坡碰撞穿過每一級的前緣。
+func _build_rise() -> void:
+	var z_n: float = TOWER_Z - 8.0
+	var depth: float = STEPS_N - z_n
+	_batch.add_box_at(Vector3(50.0, RISE + 1.0, depth), Vector3(0.0, (RISE - 1.0) * 0.5, (STEPS_N + z_n) * 0.5), look.stone_wall(1.0))
+	_batch.add_box_at(Vector3(50.0, 0.02, depth), Vector3(0.0, RISE + 0.01, (STEPS_N + z_n) * 0.5), look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4), false)
+	var run: float = (STEPS_S - STEPS_N) / float(STEP_COUNT - 1)  # 每級的深度
+	var step_h: float = RISE / float(STEP_COUNT)
+	var stone := look.stone_wall(1.0)  # 跟後牆同一個材質（不多一個 draw call）
+	var snow := look.mat(FrostbridgeLook.SNOW)
+	for i: int in STEP_COUNT - 1:
+		var top: float = step_h * float(i + 1)
+		var front: float = STEPS_S - run * float(i)
+		# 每一級從前緣一路延伸到台地（上一級蓋住後段），兩側離房子 5 cm 避免共面閃爍
+		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, top, front - STEPS_N), Vector3(0.0, top * 0.5, (front + STEPS_N) * 0.5), stone, false)
+		# 踏面前緣一條薄雪
+		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.6, 0.02, 0.12), Vector3(0.0, top + 0.01, front - 0.08), snow, false)
+	# 斜坡碰撞：上表面通過每一級的前緣——從第一級前面一級深度處的地面（STEPS_S + run）到台地邊（STEPS_N）
+	var horizontal: float = STEPS_S + run - STEPS_N
+	var angle: float = atan2(RISE, horizontal)
+	var slope_len: float = Vector2(horizontal, RISE).length()
+	var normal := Vector3(0.0, cos(angle), sin(angle))
+	var mid := Vector3(0.0, RISE * 0.5, (STEPS_S + run + STEPS_N) * 0.5)
+	var body := StaticBody3D.new()
+	body.name = "StepsRamp"
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(MAIN_HALF * 2.0, 0.4, slope_len)
+	shape.shape = box
+	shape.transform = Transform3D(Basis(Vector3.RIGHT, angle), mid - normal * 0.2)
+	body.add_child(shape)
+	add_child(body)
+
+
+## 地面高度（台地上是 RISE；石階上沿斜坡）。測試與開發用瞬移用。
+func ground_y(p: Vector3) -> float:
+	var run: float = (STEPS_S - STEPS_N) / float(STEP_COUNT - 1)
+	if p.z <= STEPS_N and absf(p.x) < 25.0:
+		return RISE
+	if p.z < STEPS_S + run and absf(p.x) < MAIN_HALF:
+		return RISE * (STEPS_S + run - p.z) / (STEPS_S + run - STEPS_N)
+	return 0.0
 
 
 func _build_plaza() -> void:
@@ -378,12 +432,12 @@ func _build_streets() -> void:
 	_row(Vector3(-MAIN_HALF, 0, PLAZA_N - 0.3), Vector3(-MAIN_HALF, 0, NORTH_START), Vector3.RIGHT)
 	_row(Vector3(MAIN_HALF, 0, NORTH_START), Vector3(MAIN_HALF, 0, PLAZA_N - 0.3), Vector3.LEFT)
 	# 北街：每棟獨立節點，第九聲後沉下去
-	_row(Vector3(-MAIN_HALF, 0, NORTH_START - 0.3), Vector3(-MAIN_HALF, 0, NORTH_END - 3.0), Vector3.RIGHT, true)
-	_row(Vector3(MAIN_HALF, 0, NORTH_END - 3.0), Vector3(MAIN_HALF, 0, NORTH_START - 0.3), Vector3.LEFT, true)
+	_row(Vector3(-MAIN_HALF, RISE, NORTH_START - 0.3), Vector3(-MAIN_HALF, RISE, NORTH_END - 3.0), Vector3.RIGHT, true)
+	_row(Vector3(MAIN_HALF, RISE, NORTH_END - 3.0), Vector3(MAIN_HALF, RISE, NORTH_START - 0.3), Vector3.LEFT, true)
 	# 北城牆
-	_batch.add_box_at(Vector3(44.0, 9.0, 1.6), Vector3(0.0, 4.5, TOWER_Z - 5.5), look.stone_wall(1.6))
-	_batch.add_box_at(Vector3(44.6, 0.5, 2.0), Vector3(0.0, 9.2, TOWER_Z - 5.5), look.mat(FrostbridgeLook.ROOF))
-	_batch.add_box_at(Vector3(44.6, 0.14, 2.0), Vector3(0.0, 9.5, TOWER_Z - 5.5), look.mat(FrostbridgeLook.SNOW), false)
+	_batch.add_box_at(Vector3(44.0, 9.0, 1.6), Vector3(0.0, RISE + 4.5, TOWER_Z - 5.5), look.stone_wall(1.6))
+	_batch.add_box_at(Vector3(44.6, 0.5, 2.0), Vector3(0.0, RISE + 9.2, TOWER_Z - 5.5), look.mat(FrostbridgeLook.ROOF))
+	_batch.add_box_at(Vector3(44.6, 0.14, 2.0), Vector3(0.0, RISE + 9.5, TOWER_Z - 5.5), look.mat(FrostbridgeLook.SNOW), false)
 	# 南街
 	_row(Vector3(-SOUTH_HALF, 0, CROSS_N - 0.3), Vector3(-SOUTH_HALF, 0, PLAZA_S + 0.3), Vector3.RIGHT)
 	_row(Vector3(SOUTH_HALF, 0, PLAZA_S + 0.3), Vector3(SOUTH_HALF, 0, CROSS_N - 0.3), Vector3.LEFT)
@@ -518,7 +572,7 @@ func _build_well(pos: Vector3) -> void:
 func _build_lamps() -> void:
 	var shadowed: Array[Vector3] = [Vector3(-8.0, 0, 7.5), Vector3(8.0, 0, -7.5), Vector3(-3.2, 0, -20.0),
 		Vector3(2.8, 0, 15.0), Vector3(6.0, 0, 38.0)]
-	var plain: Array[Vector3] = [Vector3(8.0, 0, 7.5), Vector3(-8.0, 0, -7.5), Vector3(3.2, 0, -34.0),
+	var plain: Array[Vector3] = [Vector3(8.0, 0, 7.5), Vector3(-8.0, 0, -7.5), Vector3(3.2, RISE, -34.0),
 		Vector3(-2.8, 0, 28.0), Vector3(-9.0, 0, 39.0)]
 	for p: Vector3 in shadowed:
 		_lamp_post(p, true)

@@ -56,7 +56,9 @@ func _stage(s: GameSession) -> String:
 
 ## 瞬移進觸發區（下一個物理幀才會 body_entered）。
 func _step_into(player: PlayerController, pos: Vector3, frames: int = 4) -> void:
-	player.global_position = Vector3(pos.x, 0.05, pos.z)
+	var level: StoryLevel = _level()
+	var ground: float = level.ground_y(pos) if level != null else 0.0
+	player.global_position = Vector3(pos.x, ground + 0.05, pos.z)
 	for i: int in frames:
 		await tree.physics_frame
 

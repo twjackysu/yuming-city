@@ -34,6 +34,11 @@ func _caravan_route() -> PackedVector3Array:
 	return PackedVector3Array([Vector3(-1.2, 0, 5.0), Vector3(-0.4, 0, -6.0), Vector3(0.0, 0, -12.0), Vector3(0.6, 0, -21.0)])
 
 
+## 地面高度（平地關卡是 0；霜橋鎮覆寫：北街台地與石階）。
+func ground_y(_p: Vector3) -> float:
+	return 0.0
+
+
 func _sheila_spawn() -> Vector3:
 	return Vector3(-1.4, 0.0, 3.2)
 

@@ -113,7 +113,7 @@ func test_objective_guide_points_to_current_target() -> void:
 	var tower: Vector3 = (level.get_node("BellTowerTrigger") as Node3D).global_position
 	assert_true(absf(hud.guide.distance - Vector2(tower.x - player.global_position.x, tower.z - player.global_position.z).length()) < 0.5, "敲鐘階段指向鐘樓")
 	# 走到目標旁邊就不顯示
-	player.global_position = Vector3(tower.x, 0.05, tower.z + 1.0)
+	player.global_position = Vector3(tower.x, level.ground_y(tower) + 0.05, tower.z + 1.0)
 	await tree.process_frame
 	assert_false(hud.guide.shown, "到了目標旁邊就不顯示")
 	await _free(level)
@@ -251,3 +251,33 @@ func test_convoy_unlocks_arch_memory_without_visit() -> void:
 	assert_eq(s.state.get_flag("slice.saw_south_arch"), true, "護送開打時補上石拱的記憶")
 	await _free(level)
 
+
+
+## 概念圖：主街往鐘樓爬坡——北段四級石階上到台地，北街、鐘樓、受困者都在台地上。
+func test_player_climbs_steps_to_north_street() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var rise: float = float(level.get("RISE"))
+	assert_true(rise > 0.5, "北街台地比主街高（%.2f m）" % rise)
+	assert_eq(level.ground_y(Vector3(0, 0, -20)), 0.0, "主街南段是平地")
+	assert_eq(level.ground_y(Vector3(0, 0, -40)), rise, "北街在台地上")
+	player.global_position = Vector3(0.0, 0.05, -21.0)
+	player.yaw = 0.0
+	for i: int in 5:
+		await tree.physics_frame
+	Input.action_press("move_forward")
+	for i: int in 420:
+		await tree.physics_frame
+		if player.global_position.z < -33.0:
+			break
+	Input.action_release("move_forward")
+	assert_true(player.global_position.z < -31.0, "走上石階到北街（停在 %s）" % player.global_position)
+	assert_true(absf(player.global_position.y - rise) < 0.25, "站在台地上（y=%.2f）" % player.global_position.y)
+	var tower: Node3D = level.get_node("BellTowerTrigger") as Node3D
+	assert_true(tower.global_position.y > rise, "鐘樓觸發區跟著台地抬高")
+	level.collapse_north_street(false)
+	for c: Node in level.get_children():
+		if c is RescueSite:
+			assert_true(absf((c as RescueSite).global_position.y - rise) < 0.01, "%s 在台地上" % c.name)
+	await _free(level)
