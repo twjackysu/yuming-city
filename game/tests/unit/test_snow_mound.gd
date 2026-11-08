@@ -186,3 +186,50 @@ func test_bank_uv_is_wall_meters() -> void:
 	var other: PackedVector2Array = SnowMound.build(2.4, 1.6, 0.2, 5.0).surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
 	for uv: Vector2 in other:
 		assert_true(uv.x < 2.0, "其他雪堆的 UV 不會被當成雪帶")
+
+
+## 一整條連續的街邊雪帶（D-136）：不是一串各有最高點的雪堆——沿著牆的高度慢慢起伏（相鄰兩列差很少），
+## 兩端收成 0；靠牆高、往街薄到 0；正面朝上（兩個方向的牆都是）；UV／UV2 跟 build_bank 同一套。
+func test_strip_is_continuous_bank() -> void:
+	for toward_wall: float in [-1.0, 1.0]:
+		var mesh: ArrayMesh = SnowMound.build_strip(12.0, 1.2, 0.3, 0.24, 7.0, toward_wall, 3.0)
+		var arrays: Array = mesh.surface_get_arrays(0)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+		var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		assert_true(idx != null and idx.size() > 0, "有索引（StaticBatch 合併要有索引）")
+		var front_up: int = 0
+		for t: int in range(0, idx.size(), 3):
+			if Plane(verts[idx[t]], verts[idx[t + 1]], verts[idx[t + 2]]).normal.y > 0.0:
+				front_up += 1
+		assert_eq(front_up, idx.size() / 3, "toward_wall=%d：每個三角形的正面朝上" % int(toward_wall))
+		var aabb: AABB = mesh.get_aabb()
+		assert_true(absf(aabb.size.x - 12.0) < 0.01, "沿著牆整段 12 m（%s）" % aabb)
+		assert_true(aabb.end.y < 0.24 * 1.1 and aabb.end.y > 0.15, "最高約 0.24 m（%.3f）" % aabb.end.y)
+		# 沿著牆每列的最高點：中段相鄰兩列（0.3 m）差不到 2.5 cm——不是一節一節的雪堆
+		var ridge: Dictionary = {}
+		for n: int in verts.size():
+			var key: int = roundi(verts[n].x / SnowMound.STRIP_STEP * 10.0)
+			ridge[key] = maxf(float(ridge.get(key, -1.0)), verts[n].y)
+			var dfw: float = -toward_wall * verts[n].z
+			assert_true(absf(uvs[n].y - dfw) < 0.001, "UV.y＝離牆腳線多遠（%.3f vs %.3f）" % [uvs[n].y, dfw])
+			assert_true(absf(uvs[n].x - SnowMound.BANK_MARK - 3.0 - (verts[n].x + 6.0)) < 0.001, "UV.x＝BANK_MARK＋along0＋從 -X 端起算的公尺數")
+			assert_true(uv2s[n].y <= 1.001 and uv2s[n].y >= -1.001, "UV2.y 在 -1～1")
+			if dfw > 0.95 * 1.2:
+				assert_true(verts[n].y < 0.03, "靠街的邊薄到 0（離牆 %.2f m 高 %.3f）" % [dfw, verts[n].y])
+		var keys: Array = ridge.keys()
+		keys.sort()
+		var jump: float = 0.0
+		for i: int in range(1, keys.size()):
+			jump = maxf(jump, absf(float(ridge[keys[i]]) - float(ridge[keys[i - 1]])))
+		assert_true(jump < 0.12, "沿著牆相鄰兩列最高點差 %.3f m（連兩端 1 m 的收口也不會大跳）" % jump)
+		assert_true(float(ridge[keys[0]]) < 0.02 and float(ridge[keys[keys.size() - 1]]) < 0.02, "兩端收成 0")
+		var mid: Array = keys.slice(keys.size() / 4, keys.size() * 3 / 4)
+		var mid_jump: float = 0.0
+		for i: int in range(1, mid.size()):
+			mid_jump = maxf(mid_jump, absf(float(ridge[mid[i]]) - float(ridge[mid[i - 1]])))
+		assert_true(mid_jump < 0.025, "中段相鄰兩列最高點差 %.3f m（慢慢起伏）" % mid_jump)
+	var a: PackedVector3Array = SnowMound.build_strip(8.0, 1.0, 0.3, 0.24, 1.0, -1.0, 0.0).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var a2: PackedVector3Array = SnowMound.build_strip(8.0, 1.0, 0.3, 0.24, 1.0, -1.0, 0.0).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	assert_eq(a, a2, "同一個 seed 一樣（位置雜湊）")

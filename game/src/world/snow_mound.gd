@@ -120,5 +120,82 @@ static func build_bank(length: float, width: float, height: float, seed: float, 
 	return out
 
 
+## 一整條連續的街邊雪帶（D-136，第八輪盤點第 1 項）：原本沿牆是一串重疊的 build_bank 雪堆，每個各有一個最高點，
+## 戰鬥鏡頭低角度看過去是一節一節的枕頭／沙包。改成一整條沿牆的網格：橫切面靠牆高而陡、往街慢慢變薄到 0，
+## 高度與伸出寬度沿著牆用低頻雜訊慢慢起伏（3～5 m 一個起伏）＋一點細的起伏，兩端 STRIP_TAPER（1 m）內收成 0。
+## 模型座標：X＝沿著牆（-length/2～length/2）、原點在牆腳線的中點、Y＝往上；toward_wall＝模型 +Z 是不是朝牆（±1）。
+## 埋進牆裡 into_wall（看不到，碰到牆時還很厚）；靠街那側伸出 out（每個位置 ×0.78～1.08）。
+## UV、UV2 跟 build_bank 同一套：UV＝(BANK_MARK＋along0＋沿著牆的公尺數（從 -X 端起算）, 離牆腳線多遠)、
+## UV2＝(往外第幾圈：牆腳線 0～靠街的邊 1, 往牆那側多遠：靠牆的邊 +1～靠街的邊 -1)。
+const STRIP_STEP: float = 0.3
+const STRIP_COLS: int = 9
+const STRIP_TAPER: float = 1.0
+
+
+static func build_strip(length: float, out: float, into_wall: float, height: float, seed: float,
+		toward_wall: float, along0: float) -> ArrayMesh:
+	var n: int = maxi(2, ceili(length / STRIP_STEP) + 1)
+	var verts := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var uv2s := PackedVector2Array()
+	for i: int in n:
+		var s: float = length * float(i) / float(n - 1)  # 從 -X 端起算的公尺數
+		var x: float = s - length * 0.5
+		var taper: float = smoothstep(0.0, STRIP_TAPER, minf(s, length - s))
+		var h: float = strip_height(s, height, seed) * taper
+		var o: float = strip_out(s, out, seed) * lerpf(0.55, 1.0, taper)
+		var total: float = o + into_wall
+		var u0: float = into_wall / total  # 牆腳線在橫切面的哪裡
+		for j: int in STRIP_COLS:
+			var u: float = float(j) / float(STRIP_COLS - 1)
+			var dfw: float = u * total - into_wall  # 離牆腳線多遠（往街為正）
+			var k: float = clampf((u - u0) / (1.0 - u0), 0.0, 1.0)
+			# 牆裡到牆腳線一樣高；往街：靠牆陡、靠街慢慢薄（1 - k^1.6）^1.4；最外一列稍微低於 0（貼地不露縫）
+			var y: float = h * pow(1.0 - pow(k, 1.6), 1.4) * lerpf(0.95, 1.04, _hash(seed + float(i), float(j)))
+			if j == STRIP_COLS - 1:
+				y = -0.012
+			verts.append(Vector3(x, y, -toward_wall * dfw))
+			uvs.append(Vector2(BANK_MARK + along0 + s, dfw))
+			uv2s.append(Vector2(k, 1.0 - 2.0 * u))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var idx := PackedInt32Array()
+	# j 增加＝往街；toward_wall＝+1 時往街是 -Z，繞向要反過來（Godot 正面順時針、法線朝上）
+	var flip: bool = toward_wall > 0.0
+	for i: int in n - 1:
+		for j: int in STRIP_COLS - 1:
+			var a: int = i * STRIP_COLS + j
+			var b: int = (i + 1) * STRIP_COLS + j
+			var tri: Array[int] = [a, b, b + 1, a, b + 1, a + 1]
+			if flip:
+				tri = [a, b + 1, b, a, a + 1, b + 1]
+			for v: int in tri:
+				idx.append(v)
+	for v: int in idx:
+		st.set_uv(uvs[v])
+		st.set_uv2(uv2s[v])
+		st.add_vertex(verts[v])
+	st.index()
+	st.generate_normals()
+	return st.commit()
+
+
+## 雪帶在沿著牆 s 公尺處最高多高：低頻（約 4 m）大起伏 ×0.6～1.0＋約 1.1 m 的細起伏
+static func strip_height(s: float, height: float, seed: float) -> float:
+	return height * (0.6 + 0.4 * _noise1(s / 4.2, seed) + 0.08 * (_noise1(s / 1.1, seed + 17.0) - 0.5))
+
+
+## 雪帶在沿著牆 s 公尺處靠街那側伸出多遠：約 3 m 的起伏 ×0.78～1.08＋約 0.7 m 的小缺口
+static func strip_out(s: float, out: float, seed: float) -> float:
+	return out * (0.78 + 0.26 * _noise1(s / 3.1, seed + 5.0) + 0.06 * (_noise1(s / 0.7, seed + 23.0) - 0.5))
+
+
+## 一維平滑值雜訊（0～1）：整數點是位置雜湊，中間用 smoothstep 內插
+static func _noise1(x: float, seed: float) -> float:
+	var i: float = floorf(x)
+	var f: float = x - i
+	return lerpf(_hash(seed, i * 1.37 + 3.0), _hash(seed, (i + 1.0) * 1.37 + 3.0), f * f * (3.0 - 2.0 * f))
+
+
 static func _hash(seed: float, n: float) -> float:
 	return fposmod(sin(seed * 12.9898 + n * 78.233) * 43758.5453, 1.0)

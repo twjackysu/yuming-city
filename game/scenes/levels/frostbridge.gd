@@ -526,43 +526,40 @@ const RUT_PATH: PackedVector2Array = [
 
 
 ## 街邊雪帶（D-105，第三輪盤點第 8 項）：原本是一條 4 cm 高的平板，低角度看是一條平的淺色帶。
-## 改成沿著牆腳一串互相重疊的 SnowMound：最高點偏向牆（靠牆那側高而陡、碰到牆時還很厚），
-## 往街那側慢慢變薄、邊緣不規則；每個雪堆的長短、寬窄、高低用位置雜湊（不動 _rng）。
-## 雪堆有一段埋進牆裡（看不到），靠街那側伸出來的寬度跟原本的雪帶一樣（reach）。沒有碰撞。
+## D-105 改成沿著牆腳一串互相重疊的 SnowMound；D-136（第八輪盤點第 1 項）再改成每段牆一整條連續的雪帶
+## （`SnowMound.build_strip`）：一串雪堆各有一個最高點，戰鬥鏡頭低角度看是一節一節的枕頭／沙包。
+## 靠牆那側高而陡、碰到牆時還很厚，往街那側慢慢變薄；高度與伸出寬度沿著牆慢慢起伏（位置雜湊，不動 _rng）。
+## 雪帶有一段埋進牆裡（看不到），靠街那側伸出來的寬度約 reach。沒有碰撞。
 ## from／to：牆腳線（房子正面那條線）的兩端，y 是那段地面的高度；wall：從街道指向牆的方向。
 const SNOW_BANK_STEP: float = 1.8
 const SNOW_BANK_INTO_WALL: float = 0.3
-## 每一個街邊雪堆：x、z 是中心，y 是最高點離地多高，w 是靠街那側伸出牆外多遠（給測試看）
+## 雪帶的最高高度（再乘 0.6～1.0 的起伏；D-105 一串雪堆是 0.13～0.24 m）
+const SNOW_BANK_HEIGHT: float = 0.24
+## 沿著每條雪帶每 SNOW_BANK_STEP 公尺取一個樣本：x、z 是牆腳線上的位置，y 是那裡最高多高，
+## w 是靠街那側伸出牆外多遠（給測試看）
 var snow_banks: Array[Vector4] = []
 
 
 func _snow_bank(from: Vector3, to: Vector3, wall: Vector3, reach: float) -> void:
 	var length: float = from.distance_to(to)
 	var dir: Vector3 = (to - from) / length
-	# 雪堆模型的 X＝沿著牆、Z＝X × Y；最高點往牆那邊偏
+	# 雪帶模型的 X＝沿著牆、Z＝X × Y；toward_wall＝模型 +Z 是不是朝牆
 	var side: Vector3 = dir.cross(Vector3.UP)
 	var toward_wall: float = signf(side.dot(wall))
 	var basis := Basis(dir, Vector3.UP, side)
+	var seed: float = _house_hash(from, 405.0) * 50.0
+	# D-134：UV 是雪帶自己的公尺座標（沿著牆、離牆多遠），shader 沿著雪帶畫一串腳印；
+	# 每條雪帶的起點加一個位置雜湊的偏移，各條雪帶的腳印不會排成一樣
+	var along0: float = _house_hash(from, 404.0) * 60.0
+	var mesh: ArrayMesh = SnowMound.build_strip(length, reach, SNOW_BANK_INTO_WALL, SNOW_BANK_HEIGHT, seed,
+		toward_wall, along0)
+	_batch.add_mesh(mesh, Transform3D(basis, (from + to) * 0.5), look.snow())
 	var n: int = maxi(1, roundi(length / SNOW_BANK_STEP))
-	var step: float = length / float(n)
 	for k: int in n:
-		var c0: Vector3 = from + dir * (step * (float(k) + 0.5))
-		var h0: float = _house_hash(c0, 400.0)
-		var h1: float = _house_hash(c0, 401.0)
-		var h2: float = _house_hash(c0, 402.0)
-		var seg_len: float = step * lerpf(1.3, 1.6, h0)
-		var t: float = clampf(step * (float(k) + 0.5) + (h1 - 0.5) * step * 0.3, seg_len * 0.5, length - seg_len * 0.5)
-		var out: float = reach * lerpf(0.75, 1.1, h2)  # 靠街那側伸出牆外多遠
-		var w: float = out + SNOW_BANK_INTO_WALL
-		var hgt: float = lerpf(0.13, 0.24, _house_hash(c0, 403.0))
-		var center: Vector3 = from + dir * t - wall * (w * 0.5 - SNOW_BANK_INTO_WALL)
-		# D-134：UV 是雪帶自己的公尺座標（沿著牆、離牆多遠），shader 沿著雪帶畫一串腳印；
-		# 每條雪帶的起點加一個位置雜湊的偏移，各條雪帶的腳印不會排成一樣
-		var along0: float = t + _house_hash(from, 404.0) * 60.0
-		var mesh: ArrayMesh = SnowMound.build_bank(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, toward_wall,
-			along0, w * 0.5 - SNOW_BANK_INTO_WALL)
-		_batch.add_mesh(mesh, Transform3D(basis, center), look.snow())
-		snow_banks.append(Vector4(center.x, hgt, center.z, out))
+		var s: float = length * (float(k) + 0.5) / float(n)
+		var p: Vector3 = from + dir * s
+		snow_banks.append(Vector4(p.x, SnowMound.strip_height(s, SNOW_BANK_HEIGHT, seed), p.z,
+			SnowMound.strip_out(s, reach, seed)))
 
 
 ## 北街＋鐘樓的台地與主街北段的石階。台地本體是石牆（南面露出來的那一階看得到石塊），

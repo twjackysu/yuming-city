@@ -142,10 +142,11 @@ void fragment() {
 	float ground = max(1.0 - smoothstep(0.25, 0.6, world_pos.y), street);
 	float dirt = smoothstep(0.62, 0.78, fbm(p * 1.7 + 31.0)) * ground * step(0.5, an.y);
 	// 腳印裡踩實的雪：偏灰、暗一點
-	dirt = max(dirt, dent * print_lod * 0.45);
+	dirt = max(dirt, dent * print_lod * 0.3);
 	col = mix(col, dirt_color, dirt * 0.55);
-	// 一串腳印比散落的一個個多，凹痕淡一點（D-134；原本 0.3，看起來像一排黑洞）
-	col *= 1.0 - 0.22 * dent * print_lod;
+	// 一串腳印比散落的一個個多，凹痕淡一點（D-134；原本 0.3，看起來像一排黑洞；D-136 雪帶連成一整條後
+	// 腳印更顯眼，再從 0.22 降到 0.14、髒雪 0.45 降到 0.3）
+	col *= 1.0 - 0.14 * dent * print_lod;
 	// 靠牆的角落照不到天光：暗、偏藍
 	float wall_k = smoothstep(0.1, 0.6, bank_lean);
 	col = mix(col, col * shadow_tint * 0.75, wall_k * wall_shade);
