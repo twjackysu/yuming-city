@@ -1,29 +1,28 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 段落全部可走、外牆／掛燈／目標指引、送葬者戰演出完成，剩爬坡與倒影；M1.4 流程測試、打包驗證、清單對照完成，剩手把整段測試與 Jacky 實機項目）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 段落全部可走、外牆／掛燈／目標指引／爬坡、送葬者戰演出完成，剩倒影；M1.4 流程測試、手把整段、打包驗證、匯出版 smoke test、清單對照、試玩指南完成，只剩 Jacky 實機項目）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 10 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。
+- 上一輪（第 11 輪）最後一次程式 push 的 CI 結果寫在 PROGRESS 最上面；照常看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
+- 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
+- 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
 - **玩家看得到的字一律白話**：新名詞先寫進 `docs/design/06-terminology.md` 再用；`test_i18n::test_no_obscure_terms` 會擋舊詞（九息、弔鐘、薪火、巡界、下城、爹…）。程式識別碼照舊（`nine_breath`、`kindling`）。
 - Jacky 的概念圖在 `art-inbox/concepts/`（LFS）：`git lfs pull --include="art-inbox/concepts/frostbridge_winter/**"` 這樣指定資料夾下載（推 LFS 還是不行）。看圖前先用 PIL 縮到 900 寬。
-- 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
+- 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`。沙盒（`--level=sandbox`）還有 `--enemies`、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
 ## 1. 霜橋鎮第一眼（照概念圖）
 
-- **街道往鐘樓爬坡**：概念圖主街往遠處鐘樓上坡、有幾級石階。最便宜：北街＋鐘樓那段地面整體抬高 0.6～1.2 m、主街盡頭加 3～4 級台階（碰撞要跟著；北街陷落、救援位置 `RESCUE_SPOTS`、席菈等待點的 y 要對；`test_frostbridge`、`test_slice_playthrough` 會擋）。先畫在 05 再做。
-- **水窪倒影**：中畫質沒有 SSR，水窪只有燈的高光。試 1～2 個 ReflectionProbe（廣場、南街，UPDATE_ONCE），截圖比較；benchmark 量不到就寫進 FOR_JACKY 請他比。
-- 鐘室的鐘偏暗（看 `--cutscene=slice_bell_nine --cutscene-steps=3`）；半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
-- 車隊提燈在 `--convoy` 開場離鏡頭很近，像一個白色圓盤：鏡頭 SpringArm 太近時把近處小物件淡掉，或車隊出生點往前挪 2 m。
+- **水窪倒影**：中畫質沒有 SSR，水窪只有燈的高光。試 1～2 個 ReflectionProbe（廣場、南街，UPDATE_ONCE），截圖比較（`--at=plaza`、`--at=south`）；benchmark 量不到就寫進 FOR_JACKY 請他比。有了 probe 之後鐘可以再提高金屬度（D-050）。
+- **石階打磨**（第 11 輪做了，D-048）：台階用石牆 shader，在霧裡偏灰白、偏平（看 `--at=steps`）。可以把台階顏色壓暗一點（另一個 `stone_wall` 參數會多一個 draw call，`test_layout_nodes_and_batching` 上限 24）、兩側加矮石欄或石階邊的燈。
+- 半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
 - 程序人偶小幅輪廓：席菈白**短**斗篷＋寬斷劍（刃上一點冷光）；送葬者鐵架加邊緣光。不要大改（正式模型由 Jacky 做）。
 
-## 2. M1.4 收尾（清單見 05「M1.4 必須驗證對照」）
+## 2. 手把與 M1.4 延伸
 
-- 補測試：手把整段（`Input.parse_input_event` 模擬搖桿＋A／X，至少走完梨販 → 敲鐘）。（暫停中重現倒數與車隊不推進：第 10 輪 `test_nine_breath_site::test_pause_freezes_restoration_and_caravan` 完成）
-- 打包版 smoke test：CI 匯出後用 Linux 執行檔跑一次 `--screenshot`（xvfb），確認匯出版能開到霜橋鎮（不只是編輯器）。
-- 寫試玩指南給 Jacky（20～30 分鐘路線、兩條路線各怎麼走、哪些感想最有用），放 `docs/playtest.md`，FOR_JACKY 第 1 項改成連過去。
+- `test_gamepad_route` 目前走到敲完九下＋暫停選單（Start → 設定 → B 返回）：延伸到救援（按住 A 搬瓦礫）、灰巡者（X 揮擊、LT 看穿、十字鍵上 叫席菈打弱點）、按鍵設定頁用手把改鍵。每段一個測試函式比較好維護（共用 `_walk_to`、`_tap`）。
 
 ## 3. 送葬者戰再打磨（第 10 輪完成鐵架飛出、燃燒劍火光、躺姿）
 
@@ -38,6 +37,9 @@
 - 之後：敵人（Undertaker、Ashwalker）走同一個入口；弱點位置（灰巡者左膝、送葬者鐵架關節）用骨骼名或 Marker 對齊；動作多了換 AnimationTree。傷者／受困者的躺姿只在程序人偶上（`Puppet.lying`），模型版要另外的躺姿動畫。
 
 ## 備註
+
+- **霜橋鎮北段有高低差**（D-048）：主街 z < -24.2 開始上石階，z ≤ -29.2 是高 0.9 m 的台地。測試或開發旗標瞬移角色時用 `level.ground_y(pos) + 0.05`，不要寫死 y=0.05（會卡進台地）。新增北街的東西 y 用 `RISE`。
+- 手把 UI：`ui_accept`＝A、`ui_cancel`＝B 是 `InputSetup.ensure_ui_pad()` 補的（D-047）；新選單照常用 `ui_*` 動作＋`grab_focus()` 第一個按鈕就能用手把。
 
 - 目標指引（D-040）：任務每個階段都要有 `marker`（測試會擋）。新章節照填；`nearest:<前綴>` 會跳過 `is_available()` 回傳 false 的節點。
 - 主線流程測試 `tests/flow/test_slice_playthrough.gd`：真的換場景（`Game.go_to_level`）＋每個檢查點 `Game.retry()`。新增段落時在這裡補一段；場景層面的斷言寫在 `[檢查點]` 前綴的訊息裡。

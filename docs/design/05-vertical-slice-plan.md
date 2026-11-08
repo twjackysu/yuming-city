@@ -33,7 +33,7 @@
 | 11/20 | 九息石拱場景物件（預覽、按住確認、心跳倒數、去飽和、化灰、推出碰撞體）＋薪火劍替代路線（11/8 已完成） |
 | 11/21 | 死亡重試、難度三級；M1.2 驗收（sandbox 內可打完送葬者，兩條路線有流程測試）（11/8 已完成） |
 | **M1.3 霜橋鎮內容** | |
-| 11/22 | 霜橋鎮白盒：街道、梨販攤、鐘樓、南街石拱、北街；VoxelGI、霧、燈（11/8 已完成白盒＋StaticBatch、濕石板路、半木構房子＋石牆、門口掛燈、目標指引；VoxelGI、爬坡未做） |
+| 11/22 | 霜橋鎮白盒：街道、梨販攤、鐘樓、南街石拱、北街；VoxelGI、霧、燈（11/8 已完成白盒＋StaticBatch、濕石板路、半木構房子＋石牆、門口掛燈、目標指引、主街往鐘樓爬坡（D-048）；VoxelGI 未做） |
 | 11/23 | 段落 1：梨販、艾妲對話、買梨；日記與記憶條目（11/8 已完成日記與石拱回憶：走進南街 → 日記解鎖） |
 | 11/24 | 段落 2：敲鐘九下演出、北街崩塌；程序鐘聲（11/8 已在霜橋鎮可玩） |
 | 11/25 | 段落 3：救援互動、救出計數（11/8 已完成） |
@@ -41,8 +41,8 @@
 | 11/27 | 段落 5、6 串進霜橋鎮；死者名單、收束；M1.3 驗收（11/8 已串進：南街送葬者戰、艾妲＋地窖、死者名單 29／30／31／33） |
 | **M1.4 串接驗收** | |
 | 11/28 | 主線流程測試從新遊戲走到結尾（兩條路線：九息／薪火劍）；任務恢復測試（11/8 已完成：`test_slice_playthrough.gd`，真的換場景＋每個檢查點重來） |
-| 11/29 | 手把全流程檢查、字幕／音量／畫質／暫停逐項；打包版 smoke test（CI 跑匯出版的截圖模式） |
-| 11/30 | 「必須驗證」清單逐項打勾；寫試玩指南給 Jacky；修 bug |
+| 11/29 | 手把全流程檢查、字幕／音量／畫質／暫停逐項；打包版 smoke test（CI 跑匯出版的截圖模式）（11/8 已完成：`test_gamepad_route`、`scripts/smoke_export.sh`） |
+| 11/30 | 「必須驗證」清單逐項打勾；寫試玩指南給 Jacky；修 bug（11/8 已完成：[`docs/playtest.md`](../playtest.md)） |
 
 ## 驗收清單（對應 vertical-slice.md）
 
@@ -67,7 +67,7 @@
 | 可協作同伴（席菈）：三指令、時機窗、拒絕、倒下拉起 | ✅ | `test_companion::*`、`test_combat_hud::test_pull_sheila_up_and_after_combat`、`test_lock_on::test_sheila_attacks_locked_target` |
 | 九秒能力：預覽、代價、視聽回饋、結束狀態 | ✅ | `test_nine_breath_site::*`、`test_journal::test_arch_preview_highlights_memory`、`test_restored_arch_is_glowing_stone` |
 | 讀檔不重複付費、不卡死 | ✅ | `test_nine_breath::test_save_mid_restoration_loads_as_spent_without_double_charge`、`test_save::test_memory_cost_is_paid_once` |
-| 鍵鼠與手把都能完成 | ✅／👤 | 每個動作兩種綁定 `test_input::test_every_action_has_keyboard_and_gamepad`；改鍵 `test_controls_menu_rebind_cancel_reset`；整段手把要 Jacky 試玩 |
+| 鍵鼠與手把都能完成 | ✅／👤 | 每個動作兩種綁定 `test_input::test_every_action_has_keyboard_and_gamepad`；改鍵 `test_controls_menu_rebind_cancel_reset`；**只用手把事件**走梨販 → 敲九下、暫停選單 → 設定 → 返回 `test_gamepad_route`（這個測試抓到 A 按不下選項的 bug，D-047）；A／B 確認返回 `test_input::test_ui_actions_have_pad_buttons`；手感要 Jacky 試玩 |
 | 字幕 | ✅ | 開關存檔 `test_settings::test_settings_round_trip`；作用範圍（D-045）`test_companion::test_sheila_barks_follow_subtitle_setting` |
 | 音量 | ✅ | `test_settings::test_audio_buses`、`test_sfx::test_play_uses_sfx_bus_and_missing_is_silent` |
 | 基本畫質 | ✅ | `test_quality::*`（三級切換套到已載入場景） |
@@ -78,10 +78,23 @@
 | 任務恢復（每個檢查點重來） | ✅ | `test_slice_playthrough::*`（真的換場景，兩條路線） |
 | 從頭玩到尾 | ✅／👤 | 同上（場景層面）；20～30 分鐘的實際體感要 Jacky 試玩 |
 | 打包版有全部資源 | ✅ | CI `scripts/verify_package.py`（D-044） |
+| 打包版能開到關卡 | ✅ | CI `scripts/smoke_export.sh`：匯出的 Linux 執行檔在 xvfb 開到霜橋鎮主街截圖（D-049） |
 | 實機效能（打包版） | 👤 | `--benchmark` JSON（FOR_JACKY 第 1 項） |
 | 代表最終方向的一小段場景 | 🔨 | 霜橋鎮廣場＋送葬者戰燃燒劍／石拱瞬間；正式角色模型到了再定 |
 
-還沒有自動測試、之後補：手把整段的流程測試（用 `Input.parse_input_event` 模擬搖桿）。
+手把整段（第 11 輪）：`test_gamepad_route` 目前走到敲完九下，另有暫停選單一段；之後可延伸到救援（按住 A）與戰鬥（X、LT、十字鍵指令）。
+
+## 主街往鐘樓爬坡（第 11 輪，D-048）
+
+```
+ z:  -10 ─────────── -24.2  -25.2 ── -29.2 ─────────── -46 ── -50 ── -55.5
+     主街（平地 y=0）      │ 石階 4 級 │ 台地 y=0.9：北街（陷落）、鐘樓、北城牆
+                          │ ╱斜坡碰撞（穿過每級前緣，10°）
+```
+
+- 每級高 0.18 m、深 1.0 m；最後一級就是台地邊。看得到的是石塊台階（踏面前緣一條薄雪），碰撞是一片看不到的斜坡——角色不用跨階、腳最多離踏面 0.18 m。
+- 台地本體用石牆 shader（南面露出的那一階看得到石塊），上面再鋪一層濕石板路（世界座標，跟主街接得起來）。
+- 跟著抬高：北街兩排房子、受困者、灰巡者、北街路燈、鐘樓、觸發區、敲鐘鏡頭、北城牆。`StoryLevel.ground_y()` 給測試與瞬移用。
 
 ## 風險與備案
 

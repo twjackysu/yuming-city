@@ -14,7 +14,7 @@
 
 ## 試玩
 
-- **Windows**：到 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 `YumingCity-windows-x64-*.zip`，解壓後執行 `YumingCity.exe`。這是每次推送到 `main` 自動建置的開發版。
+- **Windows**：到 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 `YumingCity-windows-x64-*.zip`，解壓後執行 `YumingCity.exe`。這是每次推送到 `main` 自動建置的開發版。路線、兩條結局分支與想聽的感想見 [試玩指南](docs/playtest.md)。
 - **用 Godot 開啟原始專案**：安裝 [Godot 4.7.2 stable](https://godotengine.org/download/archive/4.7.2-stable/)（標準版，不是 .NET 版），在專案管理員「匯入」`game/project.godot`。Linux 可以直接執行 `scripts/get-godot.sh` 下載並驗證同一版本。
 
 ## 操作方式
@@ -43,9 +43,9 @@
 
 - Godot 4.7.2 專案骨架（`game/`），Forward+ 渲染，Windows 預設 D3D12
 - 繁中＋英文在地化，所有玩家可見文字都走翻譯 key
-- 自動測試（腳本型別檢查、i18n 規則、主線流程）與 GitHub Actions 自動匯出 Windows／Linux
+- 自動測試（腳本型別檢查、i18n 規則、主線流程、只用手把走完開頭）與 GitHub Actions 自動匯出 Windows／Linux（匯出版會實際開到霜橋鎮截圖驗證）
 - 資料驅動任務系統、版本化存檔（自動存檔、死亡重試）、重現（九息）狀態機；主線流程測試真的換場景從新遊戲走到切片結尾，每個檢查點都重來一次驗證任務恢復（兩條路線）
-- 第三人稱移動與越肩鏡頭、霜橋鎮白盒（廣場、主街、北街、鐘樓、南街石拱、路口；體積霧、暖光、濕石板路、半木構房子與石牆、門口掛燈、靜態幾何合併）、程序人偶與程式動畫；正式角色模型一放進 `art-inbox/characters/` 通過收件檢查就自動換上
+- 第三人稱移動與越肩鏡頭、霜橋鎮白盒（廣場、主街、北街、鐘樓、南街石拱、路口；體積霧、暖光、濕石板路、半木構房子與石牆、門口掛燈、往鐘樓爬坡的石階、靜態幾何合併）、程序人偶與程式動畫；正式角色模型一放進 `art-inbox/characters/` 通過收件檢查就自動換上
 - 切片各段落：梨販（南街石拱的回憶）→ 敲鐘九下 → 北街救援（按住搬瓦礫）→ 席菈登場對話（說實話／說謊）＋灰巡者（看穿教學）→ 南街送葬者戰 → 艾妲（死者名單依救援與護送結果）與地窖
 - 日記：記憶條目；付出後內文變成被整齊剪掉的空白，只留下殘留的一句
 - 暫停選單、設定選單（難度、語言、主音量／音樂／音效／語音、字幕、畫質三級、全螢幕、垂直同步、減少鏡頭晃動）、HUD（目前目標、存檔提示、目標指引：指向下一個目標的小菱形＋距離，可在設定關掉）
