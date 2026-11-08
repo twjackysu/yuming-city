@@ -116,6 +116,9 @@ func _ready() -> void:
 			_debug_throw.call_deferred(str(dev_args["throw"]), float(str(dev_args.get("throw-t", "0.3"))))
 		if dev_args.has("felled"):
 			_debug_felled.call_deferred()
+	# 截圖用：`--insight` 一開始就按住看穿（README 的戰鬥圖改拍霜橋鎮送葬者戰，第二輪盤點第 2 項）
+	if dev_args.has("insight"):
+		dev_hold_insight()
 	if dev_args.has("arch"):
 		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
 		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
@@ -149,6 +152,11 @@ func _ready() -> void:
 	if str(dev_args.get("hide", "")) == "noen":
 		dev_hide_player.call_deferred()
 	player.snap_camera()
+
+
+## 截圖用：按住看穿（跟沙盒的 `--insight` 一樣，直接按下輸入動作；放開要呼叫 Input.action_release）。
+func dev_hold_insight() -> void:
+	Input.action_press("insight")
 
 
 ## 截圖用：把諾恩移到 "x,z"（高度照地面）。格式不對就不動，回傳有沒有移動。

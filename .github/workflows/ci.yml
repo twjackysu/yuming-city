@@ -189,6 +189,7 @@ jobs:
           shot 08-arch-preview 40 --level=frostbridge --convoy --arch=preview --locale=zh_TW
           shot 09-journal 40 --level=frostbridge --open=journal --locale=zh_TW
           shot 10-plaza-en 40 --level=frostbridge --at=plaza --locale=en
+          shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --face=undertaker --face-off=14 --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"
@@ -217,4 +218,4 @@ jobs:
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "盤點截圖 / Screen check (${SHORT_SHA})" \
-            --notes "開發用：每次 main 建置自動拍的主要畫面（設定、暫停、廣場、攤子、石階、救援、送葬者戰、石拱預覽、日記、英文版廣場）。試玩請下載 latest。 / Dev-only screenshots of key screens from main ${SHORT_SHA}. Download the game from the 'latest' release."
+            --notes "開發用：每次 main 建置自動拍的主要畫面（設定、暫停、廣場、攤子、石階、救援、送葬者戰、石拱預覽、日記、英文版廣場、送葬者戰看穿）。試玩請下載 latest。 / Dev-only screenshots of key screens from main ${SHORT_SHA}. Download the game from the 'latest' release."

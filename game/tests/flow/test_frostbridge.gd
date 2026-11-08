@@ -476,3 +476,20 @@ func test_dev_place_and_hide_player() -> void:
 			shown += 1
 	assert_eq(shown, 0, "諾恩的模型全部藏起來")
 	await _free(level)
+
+
+## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
+func test_dev_hold_insight() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	level.call("dev_hold_insight")
+	await tree.physics_frame
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	assert_true(Input.is_action_pressed("insight"), "看穿鍵按著")
+	assert_true(player.insight_active, "諾恩在看穿")
+	Input.action_release("insight")
+	await tree.physics_frame
+	assert_false(player.insight_active, "放開後不再看穿")
+	await _free(level)
