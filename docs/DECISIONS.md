@@ -2,6 +2,36 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-085　2026-11-08　角色不擋鏡頭的 SpringArm
+
+- 決策：諾恩的鏡頭 SpringArm 原本只排除諾恩自己；現在所有 CharacterBody3D／RigidBody3D（席菈、敵人）都加進排除清單（`_ready` 掃一次現有的，`SceneTree.node_added` 補上之後生成的），跟過肩射線 `shoulder_room` 的規則一致（D-072）：只有牆與場景會讓鏡頭收回。
+- 理由：第二輪盤點第 8 項。screens 的 `08-arch-preview.png`（重現石拱的預覽，切片最關鍵的一刻）鏡頭貼在諾恩後腦，畫面左下一大塊深色人影——身後的席菈（或送葬者）擋在鏡頭與諾恩之間，SpringArm 把鏡頭拉近。遊戲中只要有人走到諾恩背後就會發生，鏡頭會突然往前跳。
+- 影響：`test_camera_shoulder::test_body_behind_does_not_pull_camera_but_wall_does`。角色本身可能會出現在鏡頭與諾恩之間（被看穿過去）；需要的話之後讓離鏡頭 < 1 m 的角色淡出（NEXT 過肩鏡頭的後續）。
+
+## D-084　2026-11-08　敲鐘刻度（RingTally）
+
+- 決策：過場等待輸入、而且鏡頭有 `counter` 時（敲鐘九下），提示上方顯示一排圓點：敲過的實心暖金色＋淡光暈（剛敲的那一下光暈多亮 0.4、約半秒退掉），還沒敲的淡灰色空心圈，最後一個（第九下）半徑 7.5（其他 5）。`RingTally`（`src/ui/ring_tally.gd`）只用 `draw_circle`／`draw_arc` 畫圖形、不畫字（D-060）；「3／9」數字照舊留在提示那一行（無障礙、測試）。
+- 理由：第二輪盤點第 4 項。敲鐘是整個切片最有儀式感的一段，只有畫面正中一行小字「[F] 敲鐘　3／9」；一排會亮起的鐘點讓玩家一眼看到「還差幾下」，第九個特別大，預告最後一下的份量。
+- 影響：`test_main_flow` 檢查刻度顯示、九個、敲八下亮八個、光暈。之後其他「按 N 次」的鏡頭（若有）自動有刻度。這一輪沒有本機截圖（D-082），位置與大小看 CI 的 `bell.png`（敲第 3 下）再調。
+
+## D-083　2026-11-08　第二輪「第一眼」盤點用 CI 截圖做，7 項寫進 PLAN
+
+- 決策：第一輪 10 項做完後的第二輪盤點，先用 CI 發布的截圖（latest 的 `title`／`dialogue`／`bell`／`combat`）加上第一輪留下的候選排出 7 項（敲鐘鐘室、README 的戰鬥圖換成霜橋鎮、看穿面板、敲鐘刻度、暫停選單、梨販攤補光、標題的窗）；收尾時「盤點截圖」job（D-082）的 screens 發布了，看過後補上第 8 項（石拱預覽鏡頭貼到諾恩後腦）與第 9 項（北街救援的平屋頂）。
+- 理由：敲鐘是遊戲副標題的那一刻、README 第三張圖，現在是最平的一張（素面圓桶＋灰霧）；README 的戰鬥圖是沙盒，玩家與 Jacky 打開 repo 第一眼就看到。順序照「被看到的程度」。
+- 影響：每輪照表從上往下拿；新發現照樣加進表。
+
+## D-082　2026-11-08　本 session 下載不到 Godot：改靠 CI 驗證，CI 新增「盤點截圖」job 發布到 prerelease「screens」
+
+- 決策：第 20 輪的雲端 session 對 `github.com/godotengine/godot/releases/download/...` 一律回 504（GitHub API 回「這個 session 沒開這個 repo 的存取」；`add_repo` 不在這次的工具裡），`scripts/get-godot.sh` 拿不到 Godot，本機不能 import、測試、截圖。照排程指示**不繞過**（不從其他來源下載未驗證的 Godot、不把 Godot 轉存到自己的 repo），這一輪完全靠 GitHub Actions 驗證：push 前用 `gdtoolkit` 的 `gdparse`（PyPI）檢查 GDScript 語法、用 Python 驗證幾何（三角形方向與法線），推上去看 CI 的測試與截圖。artifact 的儲存空間（`*.blob.core.windows.net`）也被擋，只有本 repo 的 release 下載得到（偶爾 504，重試幾次會過）。所以 CI 新增平行的 `screens` job（`continue-on-error`）：import 後拍 10 個主要畫面，上傳 artifact 並發布到 prerelease「screens」（每張 PNG＋`screens.zip`），main 已有更新的程式 commit 時跳過發布。
+- 理由：之後的 session 也可能遇到同樣的存取範圍；有了 screens，loop 與 Jacky 都能在不跑 Godot 的情況下看到每個主要畫面，盤點與前後對照不必等本機截圖。平行 job 不拉長「測試與匯出」的時間。
+- 影響：下一輪開工先試 `scripts/get-godot.sh`；拿不到就照這個做法（NEXT 寫了步驟）。下載 screens：`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（失敗重試）。FOR_JACKY 註記：排程任務如果能把 `godotengine/godot`、`notofonts/noto-cjk` 加進可存取的 repo，雲端本機就能跑測試與截圖。
+
+## D-081　2026-11-08　鐘改成車床旋轉的鐘形（Lathe）、鐘室加格柵與百葉
+
+- 決策：新增 `Lathe`（`src/world/lathe.gd`）：剖面線（x＝半徑、y＝高度）繞 Y 軸轉成 ArrayMesh，法線取剖面切線右轉 90°（`n = (-dy, dr)`，外側從上往下描、內側從下往上描），一條剖面線內平滑、硬邊分成好幾條剖面線；三角形照 Godot 的順時針正面排。`Lathe.bell_mesh(1.5, 0.95)` 是鐘：肩、細腰、外翻鐘口、厚唇、中空。鐘身加三道 TorusMesh 紋帶（磨亮一點的青銅：粗糙度 0.3、金屬度 0.45），頂上一塊深色木頭鐘架包住橫梁、兩條鐵箍，全部掛在 `Bell` 底下（敲鐘時一起擺）。鐘室屋頂下四根木格柵，背面與東西兩側各 8 片往外斜 38° 的百葉板（正面留空，從街上看得到鐘）。木構沿用既有木頭材質（進合併、小鎮 mesh 數不變），燈數不變；鐘身青銅的參數不變（金屬度高了在夜裡會變黑影，D-050）。
+- 理由：第二輪盤點第 1 項。latest 的 `bell.png`：鐘是圓柱＋球＋薄唇拼成的橘色桶，背後一片灰霧，頭上一塊平的棕色屋頂板。百葉讓鐘的背後是被鐘室燈照暖的斜木條，格柵讓屋頂看得出結構；紋帶在燈下有一圈一圈的高光。
+- 影響：`test_lathe`（外形與範圍、頂點數、外側法線朝外、鐘唇朝下、所有三角形朝法線那一側）、`test_frostbridge` 檢查 `BellBody` 是 ArrayMesh、紋帶、鐘架、`belfry_louvres == 24`。之後要做其他旋轉體（井的水桶、燈罩、花瓶）也用 `Lathe`。
+
 ## D-080　2026-11-08　路燈改成方形燈籠、門邊掛燈加鐵框
 
 - 決策：路燈柱頂的發光球換成方形燈籠（鐵底座 0.3 m、發光玻璃 0.24×0.34、四角 2.5 cm 細鐵條、鐵頂板、八角形尖頂＋一小片雪）；門邊掛燈的發光方塊外面也加四角鐵條（`_cage_bars`）。鐵件用門邊掛燈原本的鐵材質、尖頂用屋頂材質，小鎮 mesh 數不變；OmniLight 的位置與參數都不變（地面照明不變）。

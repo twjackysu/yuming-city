@@ -2,6 +2,31 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-08 18:26–19:10　第 20 輪：第二輪「第一眼」盤點、鐘形與鐘室木構、敲鐘刻度、角色不擋鏡頭、霜橋鎮 `--insight`、CI「盤點截圖」job（本機拿不到 Godot，全靠 CI 驗證）
+
+**做了什麼**
+
+- **本機拿不到 Godot**（D-082）：這個 session 的 GitHub 存取只有本 repo，`godotengine/godot` 的 release 一律 504（API 說沒有存取，`add_repo` 不在工具裡）。照指示不繞過，改成 push 前 `gdparse`（gdtoolkit）查語法、幾何用 Python 驗證，推上去看 CI。artifact 的儲存空間也被擋，只有本 repo 的 release 下載得到。
+- **CI「盤點截圖」job**（D-082）：跟測試平行跑，拍 11 個主要畫面（設定、暫停、廣場、梨販攤、石階、救援、送葬者戰、石拱預覽、日記、英文版廣場、送葬者戰＋看穿），發布到 prerelease「screens」（含 `screens.zip`），`continue-on-error`。
+- **第二輪盤點**（D-083）：用 latest 的截圖排了 7 項寫進 PLAN 階段 2 第二張表（敲鐘鐘室、README 戰鬥圖換霜橋鎮、看穿面板、敲鐘刻度、暫停選單、梨販攤補光、標題的窗）；收尾前 screens 發布後看了 7 張，補上第 8 項（石拱預覽鏡頭）、第 9 項（北街救援的平屋頂）。
+- **鐘與鐘室**（D-081，第 1 項）：新增 `Lathe`（剖面線繞 Y 軸轉成 ArrayMesh），鐘改成真的鐘形（肩、細腰、外翻鐘口、厚唇、中空）＋三道磨亮紋帶＋木頭鐘架與鐵箍；鐘室屋頂下木格柵、背面與兩側 24 片百葉。小鎮 mesh 數與燈數不變。
+- **敲鐘刻度**（D-084，第 4 項）：提示上方九個圓點，敲過的亮成暖金色、剛敲的外圈亮一下、第九個大一點（`RingTally`，只畫圖形）。
+- **角色不擋鏡頭**（D-085，第 8 項）：screens 的石拱預覽鏡頭貼在諾恩後腦（身後的角色把 SpringArm 拉近）；SpringArm 改成跟過肩射線一樣只撞場景，角色一律排除。
+- **霜橋鎮 `--insight`**（第 2 項的一半）：截圖時一開始就按住看穿；screens 多一張 `11-convoy-insight`，看過構圖再把 README 的戰鬥圖從沙盒換掉。
+- FOR_JACKY 第 3 項改成「雲端 session 下載不到 Godot」（排程任務若能加 `godotengine/godot`、`notofonts/noto-cjk` 的存取就能恢復本機驗證）＋screens 連結；第 1 項加上鐘的變化。
+
+**怎麼驗證**
+
+- 本機：`gdparse` 檢查全部改動的 GDScript；Python 重算 `Lathe` 的鐘剖面——256 個三角形的 (v2-v0)×(v1-v0) 全部跟法線同側（Godot 順時針正面）、內外壁不交叉；workflow 用 PyYAML 解析。
+- 新測試：`test_lathe`（外形與範圍、頂點數、外側法線朝外、鐘唇朝下、三角形方向）、`test_frostbridge`（`BellBody` 是 ArrayMesh、紋帶、鐘架、24 片百葉；`test_dev_hold_insight`）、`test_main_flow`（敲鐘刻度：顯示、九個、敲八下亮八個、光暈）。
+- `test_camera_shoulder::test_body_behind_does_not_pull_camera_but_wall_does`（身後角色不拉近、同位置的牆會拉近）。
+- CI：鐘 badfe31 run 42472291053 全部綠燈；c058a65（含 screens job、`--insight`、敲鐘刻度）run 42472703725 兩個 job 全部綠燈，latest 與 screens 都發布了。看過 latest 的 `bell.png`：鐘形、紋帶高光、木頭鐘架、屋頂格柵、背後百葉、九個刻度（亮 3 個）都正常；screens 11 張都拍出來了。最後一次程式 commit 8607088（鏡頭）run 42473580804：「Import、測試、匯出」綠燈（含新的鏡頭測試）、盤點截圖 job 綠燈並發布 screens；`08-arch-preview.png` 鏡頭回到諾恩後方正常距離（之前貼在後腦），但送葬者站在諾恩與石拱之間擋住預覽——截圖旗標下一輪換位置。收尾時主 job 的截圖、smoke test、發布 latest 還在跑（下一輪開頭確認）。
+
+**遇到的問題**
+
+- 本機不能截圖，鐘、百葉、刻度的畫面都還沒親眼看過——下一輪先看 latest 的 `bell.png` 與 screens 驗收（NEXT 第 0 節寫了要看什麼）。
+- 先 `git stash` 再 `git add`，程式改動被收走、7dae3ac 只帶到 `ring_tally.gd`，補了 c058a65（NEXT 寫了正確順序）。
+
 ## 2026-11-08 17:27–18:15　第 19 輪：設定頁分組與「‹ 值 ›」、廣場石框與鐘紋、井、木箱、選單換值的「叮」、路燈燈籠（盤點第 9、10 項，第一輪盤點完成）
 
 **做了什麼**
