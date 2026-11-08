@@ -60,6 +60,8 @@ var upper_window_count: int = 0
 var shop_sign_count: int = 0
 ## 用屋瓦材質的完整屋頂數（D-107）
 var roof_count: int = 0
+## 屋頂雪下緣的扁雪堆數（D-112）
+var roof_snow_lips: int = 0
 ## 屋頂的雪蓋住上面多少（以屋頂高度的比例；原本 0.82，D-107 改成露出最下面三四排瓦）
 const ROOF_SNOW: float = 0.7
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
@@ -941,6 +943,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 	var snow_roof := PrismMesh.new()
 	snow_roof.size = Vector3((depth + 0.7) * ROOF_SNOW, roof_h * ROOF_SNOW, w + 0.56)
 	roof_batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * (1.0 - ROOF_SNOW) + roof_h * ROOF_SNOW * 0.5 + 0.06, 0)), look.snow())
+	_roof_snow_lip(roof_batch, basis, origin, center, depth + 0.7, roof_h, w + 0.56, h + 0.25)
 	if collapsible:
 		roof_batch.build(holder, "Roof")
 		var ruin := StaticBatch.new()
@@ -1096,6 +1099,38 @@ func _chimney_top(batch: StaticBatch, holder: Node3D, top: Vector3, house_center
 	smoke.color_ramp = ramp
 	holder.add_child(smoke)
 	smoke_count += 1
+
+
+## 屋頂雪的下緣（第四輪盤點第 3 項，D-112）：雪稜柱的下緣是一條直線，遠看每棟屋頂都是「雪＋一道直邊的深色帶」。
+## 沿兩邊屋簷方向，在雪的下緣放一串貼著斜面的扁雪堆（SnowMound，最高點偏向屋脊、埋進雪稜柱底下），
+## 往下伸出的長短不一：有的地方雪往下多蓋兩排瓦、有的地方照樣露出瓦。長短、寬窄、往下伸多少用位置雜湊（不動 _rng）。
+## base_w／roof_h／length 是屋頂（RoofMesh）的底寬、高、沿屋脊長；eave_y 是屋簷高度（房子座標）。
+func _roof_snow_lip(batch: StaticBatch, roof_basis: Basis, origin: Vector3, center: Vector3, base_w: float, roof_h: float,
+		length: float, eave_y: float) -> void:
+	var hx: float = base_w * 0.5
+	var slope_len: float = Vector2(hx, roof_h).length()
+	for sx: float in [-1.0, 1.0]:
+		var along := Vector3(0.0, 0.0, sx)
+		var n := Vector3(sx * roof_h, hx, 0.0).normalized()
+		var up_slope: Vector3 = along.cross(n)
+		var mb := Basis(along, n, up_slope)
+		# 雪稜柱的下緣落在斜面上的那條線（房子座標，旋轉前）
+		var edge := Vector3(sx * hx * ROOF_SNOW, eave_y + roof_h * (1.0 - ROOF_SNOW), 0.0)
+		var count: int = maxi(2, int(ceil(length / 1.5)))
+		var step: float = length / float(count)
+		for i: int in count:
+			var key: Vector3 = center + Vector3(sx * 3.1, 0.0, float(i) * 1.7)
+			var z: float = -length * 0.5 + step * (float(i) + 0.5) + step * lerpf(-0.2, 0.2, _house_hash(key, 401.0))
+			var mound_l: float = minf(step * lerpf(1.1, 1.45, _house_hash(key, 402.0)), length - absf(z) * 2.0 + step * 0.4)
+			var mound_w: float = lerpf(0.55, 0.9, _house_hash(key, 403.0))
+			# 往下伸出多少（沿斜面，0＝剛好在直邊上）；雪堆的上半埋在雪稜柱底下
+			var reach: float = lerpf(0.06, 0.45, _house_hash(key, 404.0))
+			reach = minf(reach, slope_len * (1.0 - ROOF_SNOW) - 0.35)
+			var p: Vector3 = edge - up_slope * (reach - mound_w * 0.5) + Vector3(0.0, 0.0, z)
+			var mound: ArrayMesh = SnowMound.build(mound_l, mound_w, lerpf(0.08, 0.12, _house_hash(key, 405.0)),
+				_house_hash(key, 406.0) * 97.0, Vector2(0.0, 0.4))
+			batch.add_mesh(mound, Transform3D(roof_basis * mb, origin + roof_basis * p), look.snow())
+			roof_snow_lips += 1
 
 
 ## 房子裝飾用的位置雜湊（0～1，不動 _rng）。

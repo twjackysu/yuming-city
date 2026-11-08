@@ -713,6 +713,8 @@ func test_roofs_use_tiles() -> void:
 	assert_true(int(level.get("roof_count")) >= 20, "每棟房子一個屋瓦屋頂（%d）" % int(level.get("roof_count")))
 	var snow_cover: float = float(level.get("ROOF_SNOW"))
 	assert_true(snow_cover > 0.55 and snow_cover < 0.8, "雪蓋住屋頂的上 %.0f%%，下緣露出幾排瓦" % (snow_cover * 100.0))
+	# D-112：雪的下緣不是一條直線——每片斜面沿屋簷一串扁雪堆
+	assert_true(int(level.get("roof_snow_lips")) >= int(level.get("roof_count")) * 4, "每棟屋頂兩邊各至少兩個雪堆（%d）" % int(level.get("roof_snow_lips")))
 	var found: bool = false
 	for mi: Node in level.get_node("Town").find_children("*", "MeshInstance3D", true, false):
 		var m: ShaderMaterial = (mi as MeshInstance3D).material_override as ShaderMaterial
