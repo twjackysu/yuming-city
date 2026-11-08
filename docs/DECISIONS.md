@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-064　2026-11-08　Steam 膠囊圖替代版由 CI 產生（`scripts/steam_mock.py`），截圖旗標 `--nohud`、`--face`
+
+- 決策：新增 `scripts/steam_mock.py`（PIL）：拿無 HUD 的主街夜景截圖（`--level=frostbridge --at=main --quality=2 --nohud`）cover 裁切、壓暗＋暗角＋底部漸層，左下疊「餘命城／YUMING CITY」（遊戲自己的標題子集字型＋暖色光暈），產生 Header 920×430、Small 462×174、Main 1232×706；Library 600×900 用標題畫面截圖的鐘樓剪影（切掉底部「原型版本」字、避開左側標題與選單）。CI 截圖步驟後跑（`pillow==11.3.0`、`continue-on-error`），全部進 artifact、Header 附在 latest release。新旗標：`--nohud`（`Hud` 整層不顯示）；`--face=sheila|undertaker|frame`（每幀把諾恩與鏡頭轉向那個角色，燃燒劍斬鐵架在諾恩背後才拍得到）；`--convoy --arch=restored|spent` 時諾恩退到送葬者北邊（原本站進送葬者身體裡）。
+- 理由：NEXT 第 4 項「替代版截圖與 Header Capsule」：png 走 LFS、雲端推不上去，所以圖不進 git，改成指令＋CI 產生。膠囊圖規則只能有遊戲名稱與美術，所以只放標題字。
+- 影響：Jacky 在 release 下載 `header_capsule.png` 就能看到商店頁大概的樣子；正式主視覺（ART_REQUESTS）做好後換掉。Steam 商店截圖要 1920×1080 高畫質，仍需在 Windows 實機截（雲端軟體渲染品質不夠）。
+
+## D-063　2026-11-08　HUD 的操作提示在手把模式用按鈕圖示（GlyphLine）
+
+- 決策：新增 `src/ui/glyph_line.gd`（`GlyphLine`，HBoxContainer）：吃「已翻譯、保留 `{key}`」的字串＋動作＋裝置。鍵鼠模式整句一個 Label（「按住 [V]　重現 9 秒」）；手把模式把 `{key}` 換成 `PadGlyph`、前後各一個 Label（`{key}` 可以出現多次，例如「{key} 繼續・按住 {key} 跳過」）；圖示高度 = 字級 × 1.3；`plain_text()` 永遠是文字版（測試、讀屏）。用在：戰鬥 HUD 三個指令＋掙扎提示、重現提示的「按住」列、對話框提示列、過場的動作提示與「按住跳過」。`InputGlyphs.spec_for_action()` 新增（`label_for_action` 改用它）。不需要新的翻譯 key。
+- 理由：D-060 只做了按鍵設定頁；手把玩家在戰鬥裡看到「[↑] 打弱點」「按住 [Y]」的文字不夠直覺，也跟設定頁不一致。
+- 影響：3D 場景裡的提示（救援「按住 [A]」、拉起席菈）仍是 Label3D 文字；之後要換圖示得改成 HUD 提示或 Sprite3D。新的 HUD 提示照這個模式：翻譯字串放 `{key}`，交給 `GlyphLine.set_line()`。
+
 ## D-062　2026-11-08　石階兩側的矮石燈柱
 
 - 決策：`frostbridge.gd` 的 `_build_step_lanterns()`：石階底下（z = STEPS_S + 0.45）與台地邊（z = STEPS_N − 0.45、y = RISE）各一對矮石燈柱（石柱 0.8 m＋小燈籠），貼著街邊（|x| = MAIN_HALF − 0.38），每盞一個不投影的小 OmniLight（範圍 3.8 m、強度 1.1）。石柱有碰撞；材質跟後牆、屋頂、路燈共用（合併 mesh 數不變）。

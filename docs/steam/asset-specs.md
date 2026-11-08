@@ -4,6 +4,10 @@
 > 誰做：構圖與程序截圖 loop 可以先做「替代版」（遊戲內截圖＋標題字），正式的主視覺（key art）需要 Jacky 用 AI 生成或委託繪製，需求另列在 `docs/ART_REQUESTS.md`。
 > 規則重點：膠囊圖（capsule）上**只能有遊戲名稱／標誌與美術**，不能放評價、獎項、「特價」「新作」等字樣；文字要在小尺寸也讀得出來。
 
+## 替代版膠囊圖（已自動產生）
+
+CI 每次 push 到 main 都會用遊戲內截圖＋標題字產生 Header／Small／Main／Library 四張替代版（D-064），Header 附在 [latest release](https://github.com/twjackysu/yuming-city/releases/tag/latest)（`header_capsule.png`），四張都在該次 CI 的 artifact 裡。本機產生：`python3 -P scripts/steam_mock.py <主街夜景.png> <輸出資料夾> --title-shot <標題畫面.png>`（背景截圖用 `scripts/screenshot.sh out.png 40 --level=frostbridge --at=main --quality=2 --nohud`）。上架前換成正式主視覺。
+
 ## 商店頁（Store assets）
 
 | 素材 | 尺寸（px） | 用途 | 替代版做法 |
@@ -41,7 +45,7 @@
 | 3 | 陷落的北街救援 | `--rescue` |
 | 4 | 看穿灰巡者、席菈在旁 | （沙盒）`--level=sandbox --enemies --insight` |
 | 5 | 送葬者舉起鐵架、石拱重現 | `--convoy --throw=arch --throw-t=0.5` |
-| 6 | 燃燒劍斬斷鐵架 | `--convoy --throw=kindling --throw-t=0.6` |
+| 6 | 燃燒劍斬斷鐵架 | `--convoy --throw=kindling --throw-t=0.6 --face=sheila`（鏡頭轉向席菈，不然斬開的位置在鏡頭後方） |
 | 7 | 日記：被剪掉的記憶 | `--open=journal` |
 
 > 商店截圖要 1920 × 1080：在 Windows 實機用高畫質截（雲端只有軟體渲染，品質不夠上架）。這件事會寫進 FOR_JACKY（階段 2）。

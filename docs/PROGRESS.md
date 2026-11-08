@@ -2,6 +2,28 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-08 14:26–15:05　第 16 輪：HUD 的手把按鈕圖示、Steam 膠囊圖替代版、燃燒劍斬鐵架拍得到了、標題鐘樓細節
+
+**做了什麼**
+
+- **HUD 操作提示在手把模式改用按鈕圖示**（D-063）：新增 `GlyphLine`——翻譯字串裡的 `{key}` 在鍵鼠是「[V]」文字、手把換成 `PadGlyph`（可以出現多次）。用在戰鬥 HUD 三個指令（十字鍵圖示＋打弱點／閃開／守住）、掙扎提示（連按 B 圖示）、重現提示（按住 Y 圖示　重現 9 秒）、對話框「繼續・按住跳過」（兩個 A 圖示）、過場的動作提示與「按住跳過」。切換裝置即時跟著換；不需要新翻譯 key。
+- **Steam 膠囊圖替代版**（D-064）：`scripts/steam_mock.py` 用無 HUD 的主街夜景＋遊戲自己的標題字型合成 Header 920×430、Small 462×174、Main 1232×706，Library 600×900 用標題畫面的鐘樓剪影。CI 新增截圖 `street.png`（新旗標 `--nohud`）與「Steam 膠囊圖替代版」步驟，Header 附在 latest release。
+- **截圖旗標 `--face=sheila|undertaker|frame`**：每幀把諾恩與鏡頭轉向那個角色。`--convoy --throw=kindling --throw-t=0.6 --face=sheila` 第一次親眼看到燃燒劍：劍火把石板路照成一片暖橘、鐵架斷成兩截、車隊在旁（可當 Steam 截圖 6）。
+- **`--convoy --arch=restored`**：諾恩原本站進送葬者身體裡（畫面左邊一大塊黑影），改成退到送葬者北邊；CI 的 `ninebreath.png` 改用它（送葬者扛著鐵架擋在亮起的石拱前、席菈在旁、HUD 目標正確）。
+- **標題畫面的鐘樓**：鐘室下一圈簷口、淡淡的石塊層、中段兩道微光窄窗、塔基微微放寬。
+
+**怎麼驗證**
+
+- 測試 221 → 228 全綠：`test_glyph_line`（鍵鼠文字／手把圖示、圖示兩側字段、兩個 `{key}`、沒有手把綁定退回文字、戰鬥 HUD 三格與十字鍵形狀、掙扎提示、重現提示仍水平置中且跟場景文字一致、對話框與過場聽 `device_changed` 切換）、`test_frostbridge::test_dev_face_turns_player_to_target`；`test_combat_hud` 的守住染色改讀 `GlyphLine.text_color()`。
+- 畫面（xvfb＋lavapipe）：`--convoy --arch=preview --device=pad`（「按住 (Y)　重現 9 秒」黃色 Y 圓鈕）、沙盒 `--boss --insight --device=pad`（三個十字鍵圖示、亮起的那一臂各不同）、`--convoy --arch=restored` 改前後、`--face=sheila` 燃燒劍、膠囊圖四張（第一版 Header 左上有 HUD 目標字 → 加 `--nohud`；Library 第一版裁到標題畫面自己的「City」字 → 改成以鐘樓為中心、切掉底部原型小字）、標題鐘樓改前後。
+- CI：HUD 圖示 run 42455412833、`--arch` 構圖 run 42455586170 綠燈；最後一次程式 commit（7a4cffe 標題鐘樓）的 run 見下一則收尾紀錄。
+
+**遇到的問題**
+
+- 第一次全測試有 15 個失敗：其實只有 `test_combat_hud` 還在讀舊的 `_cmd_labels`（SCRIPT ERROR），那個測試的場景沒被釋放，席菈和敵人漏到後面的測試造成連鎖失敗 → 修好一個就全綠。
+- `HUD_DLG_HINT` 有兩個 `{key}`：第一版 GlyphLine 只換第一個 → 改成依 `{key}` 切段、圖示可重複。
+- helper 取名 `_set` 會蓋掉 Object 的內建虛擬方法 → 改名 `_put_text`。
+
 ## 2026-11-08 13:27–14:05　第 15 輪：重現提示搬到 HUD、手把按鈕圖示、標題畫面冬夜剪影、石階燈柱、`--convoy` 任務狀態
 
 **做了什麼**
