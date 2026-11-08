@@ -75,14 +75,34 @@ func test_frame_flies_and_shatters_on_arch() -> void:
 	f.advance(ThrownFrame.FLIGHT_SEC * 0.6)
 	assert_eq(impacts, ["arch"] as Array[String], "撞上一次")
 	assert_eq(f.pieces.size(), 10, "碎成十截")
+	assert_eq(site.flash_count, 1, "撞上那一刻石拱的冷光閃一下")
+	assert_eq(f.clinks, 0, "碎片還在空中")
 	for i: int in 60:
 		f.advance(1.0 / 30.0)
 	for p: Node3D in f.pieces:
 		assert_true(p.position.y >= f.ground_y, "碎片不穿地")
+	assert_true(f.clinks > 0 and f.clinks <= ThrownFrame.MAX_CLINKS, "碎片落地有叮噹聲，但不會十截一起響（%d 聲）" % f.clinks)
 	f.advance(ThrownFrame.DEBRIS_LIFE)
 	assert_true(f.is_queued_for_deletion(), "碎片時間到消失")
 	root.queue_free()
 	await tree.process_frame
+	await tree.process_frame
+
+
+## 石拱不在（還沒重現或已經化灰）時 flash() 不作用。
+func test_arch_flash_only_when_solid() -> void:
+	var st := GameState.new()
+	var site := NineBreathSite.new()
+	site.state = st
+	tree.root.add_child(site)
+	await tree.process_frame
+	site.flash()
+	assert_eq(site.flash_count, 0, "沒有石拱：不閃")
+	site.update_hold(1.1, true)
+	assert_true(site.is_solid(), "重現了")
+	site.flash()
+	assert_eq(site.flash_count, 1, "石拱在：閃一下")
+	site.queue_free()
 	await tree.process_frame
 
 

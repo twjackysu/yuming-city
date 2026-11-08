@@ -152,6 +152,19 @@ func _on_breath(i: int) -> void:
 	breath.emit(i)
 
 
+## 重現的石拱被東西撞上（送葬者的鐵架）：冷光猛亮一下再退回（D-053）。石拱不在時不作用。
+var flash_count: int = 0
+
+
+func flash(strength: float = 5.0) -> void:
+	if not is_solid() or _arch_mat == null:
+		return
+	flash_count += 1
+	var t := create_tween()
+	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW * strength, 0.04)
+	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW, 0.8).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+
+
 func _on_finished() -> void:
 	_apply_phase(true)
 	spent.emit()

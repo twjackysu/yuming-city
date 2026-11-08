@@ -103,6 +103,8 @@ func _on_frame_impact(outcome: String) -> void:
 	if thrown_frame != null and is_instance_valid(thrown_frame):
 		var at: Vector3 = thrown_frame.to
 		Sfx.play_at(self, "iron_clang" if outcome == "arch" else "blunt_weak", at, 6.0, 0.02, 14.0)
+	if outcome == "arch" and arch_site != null:
+		arch_site.flash()
 
 
 func _sheila() -> Sheila:

@@ -24,8 +24,12 @@ var ground_y: float = 0.0
 var t: float = 0.0
 var has_impacted: bool = false
 var pieces: Array[Node3D] = []
+## 碎片第一次落地的叮噹聲（測試用；最多 MAX_CLINKS 聲，免得十截一起響成一片）
+var clinks: int = 0
+const MAX_CLINKS: int = 6
 
 var _frame: Node3D
+var _landed: Array[bool] = []
 var _vel: Array[Vector3] = []
 var _spin: Array[Vector3] = []
 var _life: float = 0.0
@@ -92,6 +96,9 @@ func advance(delta: float) -> void:
 		var pos: Vector3 = p.position + v * delta
 		if pos.y < ground_y + 0.05:
 			pos.y = ground_y + 0.05
+			if not _landed[i]:
+				_landed[i] = true
+				_clink(pos, absf(v.y))
 			v = Vector3(v.x * 0.55, absf(v.y) * 0.25, v.z * 0.55)
 			_spin[i] *= 0.5
 		p.position = pos
@@ -105,6 +112,14 @@ func advance(delta: float) -> void:
 		_flash.light_energy = maxf(_flash.light_energy - delta * 9.0, 0.0)
 	if _life >= DEBRIS_LIFE:
 		queue_free()
+
+
+## 鐵條落地：小聲、音高散一點的鐵撞擊聲，落得越重越大聲。
+func _clink(at: Vector3, speed: float) -> void:
+	if clinks >= MAX_CLINKS:
+		return
+	clinks += 1
+	Sfx.play_at(self, "iron_clang", at, -16.0 + clampf(speed, 0.0, 6.0) * 1.2, 0.3, 4.0)
 
 
 func _face_flight() -> void:
@@ -147,6 +162,7 @@ func _impact() -> void:
 				# 斷口：燒紅的小截面
 				half.add_child(_hot_tip(Vector3(-s * 0.36, y, 0)))
 			pieces.append(half)
+			_landed.append(false)
 			_vel.append(side * s * _rng.randf_range(3.0, 4.0) + back * 0.8 + Vector3.UP * 2.5)
 			_spin.append(Vector3(_rng.randf_range(-6.0, 6.0), s * 5.0, 0))
 		_burst(at, HOT, 48, 5.0, 0.05, 1.1)
@@ -163,6 +179,7 @@ func _piece(pos: Vector3, rot: Basis, size: Vector3, vel: Vector3, hot: bool) ->
 	if hot:
 		p.add_child(_hot_tip(Vector3.ZERO))
 	pieces.append(p)
+	_landed.append(false)
 	_vel.append(vel)
 	_spin.append(Vector3(_rng.randf_range(-12.0, 12.0), _rng.randf_range(-8.0, 8.0), 0))
 
