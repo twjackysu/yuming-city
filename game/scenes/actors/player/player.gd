@@ -33,6 +33,14 @@ const LOCK_FLICK_MOUSE: float = 0.12
 const CAMERA_DIST: float = 3.2
 const CAMERA_DIST_COMBAT: float = 4.2
 const COMBAT_RANGE: float = 20.0
+## 過肩偏移（D-072）：鏡頭在諾恩右後方，諾恩落在畫面左側、街景留在中間。
+## 戰鬥中／鎖定時收小（敵人在畫面中間、諾恩不擋）；右邊有牆時沿著肩膀那條射線收回，不會穿牆。
+const SHOULDER_OFFSET: float = 0.85
+const SHOULDER_OFFSET_COMBAT: float = 0.55
+## 肩膀那條射線離牆至少留這麼多（鏡頭近平面＋SpringArm 的 margin）
+const SHOULDER_MARGIN: float = 0.35
+## 放回去的速度（m/s）；收回是立即的（被牆擋住時不能慢慢穿過去）
+const SHOULDER_EASE: float = 1.6
 
 var yaw: float = 0.0
 var pitch: float = -0.18
@@ -54,6 +62,8 @@ var _flick_acc: float = 0.0
 var _pad_flick_armed: bool = true
 var _lock_marker: MeshInstance3D
 
+## 目前的過肩偏移（SpringArm 的 x，m）
+var _shoulder: float = SHOULDER_OFFSET
 var _dodge_left: float = 0.0
 var _dodge_cooldown: float = 0.0
 var _dodge_dir: Vector3 = Vector3.ZERO
@@ -530,6 +540,50 @@ func _follow_rig(delta: float) -> void:
 	_rig.global_position = _rig.global_position.lerp(target, clampf(14.0 * delta, 0.0, 1.0))
 	_rig.rotation = Vector3(0.0, yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
+	_update_shoulder(delta)
+
+
+## 這個時候想要的過肩偏移（還沒扣掉牆）：探索 0.85 m，戰鬥中或鎖定時 0.55 m。
+func shoulder_target() -> float:
+	return SHOULDER_OFFSET_COMBAT if lock_target != null or in_combat() else SHOULDER_OFFSET
+
+
+## 目前的過肩偏移（m，SpringArm 的 x）。
+func shoulder_offset() -> float:
+	return _shoulder
+
+
+## 跟著想要的值慢慢變；任何時候都不超過肩膀那條射線量到的空間（貼牆時立即收回）。
+func _update_shoulder(delta: float) -> void:
+	var want: float = shoulder_target()
+	var room: float = shoulder_room(want)
+	_shoulder = minf(move_toward(_shoulder, want, SHOULDER_EASE * delta), room)
+	_arm.position.x = _shoulder
+
+
+## 從鏡頭架（諾恩頭部高度）往右打一條射線，回傳往右最多能放多遠（m）。
+## 只算場景（牆、房子、箱子）；擋到席菈、敵人、車隊等角色不算——他們走過去時鏡頭不該跟著抖。
+func shoulder_room(want: float) -> float:
+	if not is_inside_tree():
+		return want
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var from: Vector3 = _rig.global_position
+	var right: Vector3 = _rig.global_basis.x.normalized()
+	var to: Vector3 = from + right * (want + SHOULDER_MARGIN)
+	var ex: Array[RID] = [get_rid()]
+	for _i: int in 4:
+		var q := PhysicsRayQueryParameters3D.create(from, to)
+		q.exclude = ex
+		var hit: Dictionary = space.intersect_ray(q)
+		if hit.is_empty():
+			return want
+		var who: Object = hit.get("collider")
+		if who is CharacterBody3D or who is RigidBody3D:
+			ex.append(hit.get("rid") as RID)
+			continue
+		var d: float = from.distance_to(hit.get("position") as Vector3)
+		return clampf(d - SHOULDER_MARGIN, 0.0, want)
+	return want
 
 
 ## 傳送玩家後呼叫，鏡頭立即就位（不從舊位置滑過來）。
@@ -537,3 +591,5 @@ func snap_camera() -> void:
 	_rig.global_position = global_position + Vector3(0.0, CAMERA_HEIGHT, 0.0)
 	_rig.rotation = Vector3(0.0, yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
+	_shoulder = minf(shoulder_target(), shoulder_room(shoulder_target())) if is_inside_tree() else shoulder_target()
+	_arm.position.x = _shoulder
