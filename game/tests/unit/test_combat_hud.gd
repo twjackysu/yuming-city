@@ -58,7 +58,15 @@ func test_pull_sheila_up_and_after_combat() -> void:
 	await tree.physics_frame
 	await tree.physics_frame
 	assert_true(sheila.revive_prompt_shown(), "諾恩在旁邊：顯示拉起提示")
-	assert_true(sheila.line_text().contains("拉起席菈"), sheila.line_text())
+	# 提示在 HUD 下方中央（InteractPrompt，D-065），不在她頭上
+	var prompt := InteractPrompt.new()
+	root.add_child(prompt)
+	prompt.refresh(0.0)
+	assert_true(prompt.is_shown(), "HUD 顯示拉起提示")
+	assert_true(prompt.text().contains("拉起席菈"), prompt.text())
+	assert_true(prompt.text().begins_with("[F]"), "鍵鼠：[F]：" + prompt.text())
+	assert_false(prompt.line().uses_glyph())
+	assert_false(sheila.line_text().contains("拉起席菈"), "頭上不再浮提示：" + sheila.line_text())
 	assert_true(sheila.revive(), "拉起")
 	assert_eq(sheila.brain.mode, CompanionBrain.Mode.FOLLOW)
 	assert_true(absf(sheila.health.hp - 160.0 * 0.4) < 0.01, "生命回到 40%%（%.1f）" % sheila.health.hp)

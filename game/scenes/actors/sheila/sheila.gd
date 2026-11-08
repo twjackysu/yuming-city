@@ -42,6 +42,7 @@ var _fire_left: float = 0.0
 
 func _ready() -> void:
 	add_to_group("companion")
+	add_to_group("interact_prompts")
 	add_to_group("heartbeat")
 	if difficulty == "":
 		difficulty = Settings.difficulty
@@ -266,10 +267,8 @@ func _first_in_group(group: String) -> Node3D:
 func _down_tick() -> void:
 	var near: bool = leader != null and _flat_dist(leader) <= CombatTuning.num("sheila.revive_range", 1.8)
 	if brain.can_be_revived():
+		# 提示「{key} 拉起席菈」在 HUD 下方中央（interact_hint → InteractPrompt，D-065）
 		if near and not Game.is_player_locked():
-			_line.text = TranslationServer.translate("SHEILA_REVIVE_HINT").format({"key": InputGlyphs.label_for_action("interact", App.last_device)})
-			_line.visible = true
-			_line_left = 0.1
 			if Input.is_action_just_pressed("interact"):
 				revive()
 	elif not _enemies_near(20.0):
@@ -294,6 +293,13 @@ func revive(hp_ratio: float = -1.0) -> bool:
 ## 諾恩是否在拉得到她的距離內、而且還來得及（HUD／提示用）。
 func revive_prompt_shown() -> bool:
 	return brain.can_be_revived() and leader != null and _flat_dist(leader) <= CombatTuning.num("sheila.revive_range", 1.8)
+
+
+## HUD 的互動提示（InteractPrompt）：倒下、諾恩在旁邊、還來得及 →「{key} 拉起席菈」。
+func interact_hint() -> Dictionary:
+	if not revive_prompt_shown():
+		return {}
+	return {"fmt": TranslationServer.translate("SHEILA_REVIVE_HINT"), "action": "interact", "progress": -1.0}
 
 
 func _enemies_near(radius: float) -> bool:

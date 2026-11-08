@@ -22,6 +22,8 @@ var combat: CombatHud
 var guide: ObjectiveGuide
 ## 重現提示（下方中央，D-059）
 var restore: RestorePrompt
+## 互動提示（救援、拉起席菈；疊在重現提示上方，D-065）
+var interact: InteractPrompt
 var _banner_tween: Tween
 
 
@@ -116,6 +118,9 @@ func _build() -> void:
 	add_child(guide)
 	restore = RestorePrompt.new()
 	add_child(restore)
+	interact = InteractPrompt.new()
+	add_child(interact)
+	interact.avoid = restore
 
 
 func _process(delta: float) -> void:

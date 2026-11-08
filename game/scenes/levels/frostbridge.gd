@@ -99,7 +99,7 @@ func _ready() -> void:
 		Game.session.set_flag("slice.met_pear_seller", true)
 		Game.session.set_flag("slice.bell_rings", 9)
 		collapse_north_street(false)
-		player.global_position = Vector3(-1.4, RISE + 0.05, -30.2)
+		player.global_position = Vector3(-2.0, RISE + 0.05, -31.3)  # 離第一個受困者（north_a）約 1.8 m，提示會出現
 	if dev_args.has("convoy"):
 		player.global_position = Vector3(0.0, 0.05, 10.0)
 		player.rotation.y = PI  # 面向南街

@@ -5,6 +5,7 @@ extends Node3D
 ##   slice.rescued.<site_id>＝true、slice.rescued_count +1（影響死者名單與艾妲的態度）。
 ## 救出三人後任務進入「席菈」段落（slice_main.json），在送葬者戰之前還可以繼續救。
 ## 讀檔後已救出的點只剩散開的碎石，不能再救。
+## 提示「按住 A　搬開瓦礫」＋按住進度在 HUD 下方中央（InteractPrompt，D-065），不在瓦礫上浮 3D 文字。
 
 signal rescued(site_id: String)
 
@@ -18,7 +19,7 @@ var hold: float = 0.0
 var _player: PlayerController
 var _rubble: Node3D
 var _person: Node3D
-var _label: Label3D
+var _prompt_on: bool = false
 var _done: bool = false
 ## 搬瓦礫的刮石聲間隔與次數（測試用）
 const SCRAPE_EVERY: float = 0.35
@@ -27,6 +28,7 @@ var scrape_count: int = 0
 
 func _ready() -> void:
 	add_to_group("rescue_sites")
+	add_to_group("interact_prompts")
 	_build()
 	_done = bool(_state().get_flag(flag_key(), false))
 	if _done:
@@ -52,7 +54,14 @@ func is_available() -> bool:
 
 
 func prompt_shown() -> bool:
-	return _label.visible
+	return _prompt_on
+
+
+## HUD 的互動提示（InteractPrompt）：走近時「按住 {key}　搬開瓦礫」＋按住進度。
+func interact_hint() -> Dictionary:
+	if not _prompt_on:
+		return {}
+	return {"fmt": TranslationServer.translate("RESCUE_HOLD_HINT"), "action": "interact", "progress": clampf(hold / HOLD_SEC, 0.0, 1.0)}
 
 
 func _physics_process(delta: float) -> void:
@@ -62,9 +71,7 @@ func _physics_process(delta: float) -> void:
 			break
 	var near: bool = is_available() and _player != null and not Game.is_player_locked() \
 		and _player.global_position.distance_to(global_position) <= RANGE
-	_label.visible = near
-	if near:
-		_label.text = TranslationServer.translate("RESCUE_HOLD_HINT").format({"key": InputGlyphs.label_for_action("interact", App.last_device)})
+	_prompt_on = near
 	update_hold(delta, near and Input.is_action_pressed("interact"))
 
 
@@ -92,7 +99,7 @@ func rescue() -> void:
 		return
 	_done = true
 	hold = 0.0
-	_label.visible = false
+	_prompt_on = false
 	if Game.session != null:
 		Game.session.set_flag(flag_key(), true)
 		Game.session.add_flag("slice.rescued_count")
@@ -185,14 +192,3 @@ func _build() -> void:
 	glow.light_volumetric_fog_energy = 0.8
 	glow.position = Vector3(0.8, 0.4, 0.4)
 	add_child(glow)
-	_label = Label3D.new()
-	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_label.no_depth_test = true
-	_label.fixed_size = true
-	_label.pixel_size = 0.0009
-	_label.font_size = 30
-	_label.outline_size = 18
-	_label.modulate = Color(0.95, 0.9, 0.8)
-	_label.position = Vector3(0, 1.4, 0)
-	_label.visible = false
-	add_child(_label)
