@@ -20,6 +20,8 @@ var _banner: Label
 var combat: CombatHud
 ## 目標指引（指向目前目標的小菱形＋距離）
 var guide: ObjectiveGuide
+## 重現提示（下方中央，D-059）
+var restore: RestorePrompt
 var _banner_tween: Tween
 
 
@@ -109,6 +111,8 @@ func _build() -> void:
 	add_child(combat)
 	guide = ObjectiveGuide.new()
 	add_child(guide)
+	restore = RestorePrompt.new()
+	add_child(restore)
 
 
 func _process(delta: float) -> void:

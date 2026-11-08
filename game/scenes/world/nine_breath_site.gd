@@ -2,8 +2,8 @@ class_name NineBreathSite
 extends Node3D
 ## 九息可保存物（docs/design/02-gameplay.md「九息」）：場景這一側，狀態機在 NineBreath（D-012）。
 ##
-## BROKEN：廢墟＋地上淡淡的鐘紋；諾恩走近顯示「可保存：南街石拱」與代價，按住 nine_breath（V／Y）時
-##         顯示重現後的輪廓（預覽，不付代價），按滿 1 秒才發動，放開就取消。
+## BROKEN：廢墟＋地上淡淡的鐘紋；諾恩走近時 HUD 下方中央顯示「可以重現：南街石拱」與代價（RestorePrompt，D-059），
+##         按住 nine_breath（V／Y）時顯示重現後的輪廓（預覽，不付代價），按滿 1 秒才發動，放開就取消。
 ## RESTORED：石拱重現、只有它發光、畫面去飽和、九聲心跳倒數；完整碰撞（擋鐵架拋擲），站在裡面的人被推出。
 ## SPENT：化灰（粒子），石拱消失只剩廢墟；記憶已付（GameState.memories_paid），讀檔後保持。
 
@@ -40,7 +40,6 @@ var _arch_mat: ShaderMaterial
 var _ghost_mat: ShaderMaterial
 var _ring: MeshInstance3D
 var _ring_mat: StandardMaterial3D
-var _label: Label3D
 var _ash: CPUParticles3D
 var _env: Environment
 var _env_saturation: float = 1.0
@@ -71,8 +70,39 @@ func prompt_shown() -> bool:
 	return _prompt_shown
 
 
+## 提示全文（測試用）：走近時三行（可以重現／代價／按住），重現中是倒數。
 func prompt_text() -> String:
-	return _label.text
+	if is_counting():
+		return countdown_text()
+	if _prompt_shown:
+		return "\n".join(prompt_lines())
+	return ""
+
+
+## HUD 用的三行：可以重現什麼、代價、按住哪個鍵（照目前的裝置）。
+func prompt_lines() -> PackedStringArray:
+	var key: String = InputGlyphs.label_for_action("nine_breath", App.last_device)
+	return PackedStringArray([tr(label_key), tr(cost_key), tr("NB_HOLD_HINT").format({"key": key})])
+
+
+func hold_ratio() -> float:
+	return clampf(hold / HOLD_SEC, 0.0, 1.0)
+
+
+## 重現中（石拱立著、倒數中）。
+func is_counting() -> bool:
+	return nb.phase == NineBreath.Phase.RESTORED
+
+
+## 還剩幾秒（心跳點亮著幾顆）。
+func breaths_left() -> int:
+	if not is_counting():
+		return 0
+	return clampi(int(ceil(nb.remaining() - 0.001)), 0, NineBreath.BREATHS)
+
+
+func countdown_text() -> String:
+	return tr("NB_BREATHS_LEFT").format([breaths_left()])
 
 
 func is_previewing() -> bool:
@@ -145,7 +175,6 @@ func activate() -> bool:
 
 func _on_breath(i: int) -> void:
 	Sfx.play_flat(self, "heartbeat", -4.0 + float(i) * 0.4)
-	_label.text = tr("NB_BREATHS_LEFT").format([NineBreath.BREATHS - i])
 	var t := create_tween()
 	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW * 3.0, 0.06)
 	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW, 0.6)
@@ -182,17 +211,12 @@ func _apply_phase(animate: bool) -> void:
 			_arch.use_collision = true
 			_ring.visible = false
 			_set_prompt(false)
-			_label.visible = true
-			_label.font_size = 64
-			_label.position = Vector3(0, 5.3, 0)
-			_label.text = tr("NB_BREATHS_LEFT").format([NineBreath.BREATHS])
 			_desaturate(true, animate)
 		NineBreath.Phase.SPENT:
 			_arch.visible = false
 			_arch.use_collision = false
 			_ring.visible = false
 			_set_prompt(false)
-			_label.visible = false
 			_desaturate(false, animate)
 			if animate:
 				_ash.restart()
@@ -203,10 +227,6 @@ func _set_prompt(on: bool) -> void:
 	if on == _prompt_shown:
 		return
 	_prompt_shown = on
-	_label.visible = on
-	if on:
-		var key: String = InputGlyphs.label_for_action("nine_breath", App.last_device)
-		_label.text = "%s\n%s\n%s" % [tr(label_key), tr(cost_key), tr("NB_HOLD_HINT").format({"key": key})]
 
 
 ## 站在石拱實體範圍裡的人往前或往後推出去（不讓人卡在牆裡）。
@@ -322,23 +342,6 @@ func _build() -> void:
 	_ring.position = Vector3(0, 0.03, 0)
 	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_ring)
-	_label = Label3D.new()
-	_label.name = "Prompt"
-	_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_label.no_depth_test = true
-	_label.fixed_size = true
-	_label.pixel_size = 0.0009
-	_label.font_size = 30
-	_label.outline_size = 18
-	_label.modulate = Color(0.85, 0.94, 1.0)
-	_label.outline_modulate = Color(0.02, 0.03, 0.06, 0.95)
-	_label.position = Vector3(0, 2.6, 0)
-	var f: Font = UiFonts.load_font(UiFonts.UI_SANS)
-	if f != null:
-		_label.font = f
-	_label.visible = false
-	add_child(_label)
 	# 化灰：一次性的灰燼粒子，從石拱的形狀往上飄散
 	_ash = CPUParticles3D.new()
 	_ash.name = "Ash"
