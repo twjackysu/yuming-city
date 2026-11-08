@@ -55,3 +55,33 @@ func test_outline_differs_by_seed_and_is_deterministic() -> void:
 	var a2: PackedVector3Array = SnowMound.build(1.0, 1.0, 0.1, 1.0).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	assert_eq(a, a2, "同一個 seed 一樣（位置雜湊，不靠亂數）")
 	assert_true(a != b, "不同 seed 輪廓不同")
+
+
+## 街邊雪帶（D-105）：bias 讓最高點偏向一邊（靠牆那側高而陡、另一側緩），網格照樣正面朝上。
+func test_peak_bias_leans_toward_wall() -> void:
+	var mesh: ArrayMesh = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, 0.5))
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var top := Vector3(0, -1, 0)
+	for v: Vector3 in verts:
+		if v.y > top.y:
+			top = v
+	assert_true(top.z > 0.2, "最高點偏向 +Z（z=%.2f）" % top.z)
+	# 同樣離中心 0.5 m：+Z 那側比 -Z 那側高
+	var plus: float = 0.0
+	var minus: float = 0.0
+	for v: Vector3 in verts:
+		if absf(v.x) < 0.5:
+			if v.z > 0.45:
+				plus = maxf(plus, v.y)
+			elif v.z < -0.45:
+				minus = maxf(minus, v.y)
+	assert_true(plus > minus + 0.03, "靠牆那側比較厚（%.3f > %.3f）" % [plus, minus])
+	var front_up: int = 0
+	for t: int in range(0, idx.size(), 3):
+		if Plane(verts[idx[t]], verts[idx[t + 1]], verts[idx[t + 2]]).normal.y > 0.0:
+			front_up += 1
+	assert_eq(front_up, idx.size() / 3, "偏一邊也不會翻面（%d/%d）" % [front_up, idx.size() / 3])
+	var far: Vector3 = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, 3.0)).get_aabb().end
+	assert_true(far.z <= 0.8 + 0.001, "bias 太大也不會跑出輪廓（%s）" % far)

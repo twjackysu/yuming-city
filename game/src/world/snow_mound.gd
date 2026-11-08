@@ -5,6 +5,7 @@ extends RefCounted
 ## 模型座標：X＝長、Z＝寬、Y＝往上；底在 y=0（邊緣稍微低一點，貼在斜面上不會露縫）。
 ## 極座標網格：中心一點＋RINGS 圈 × SEGMENTS 段；不規則度由 seed 決定（位置雜湊，不動關卡的 _rng）。
 ## 正面順時針（Godot 慣例），法線朝上。用 StaticBatch.add_mesh 合併。
+## bias：最高點往哪邊偏（以半長／半寬為 1；街邊雪帶用 (0, ±0.5) 讓靠牆那側高而陡、靠街那側低而緩，D-105）。
 
 const RINGS: int = 4
 const SEGMENTS: int = 14
@@ -12,9 +13,11 @@ const SEGMENTS: int = 14
 const SQUARENESS: float = 3.2
 ## 輪廓往內凹的最大比例（每段不同）
 const RAGGED: float = 0.22
+## 最高點最多偏到哪裡（以半長／半寬為 1；要留在輪廓裡面，網格才不會翻面）
+const PEAK_LIMIT: float = 0.55
 
 
-static func build(length: float, width: float, height: float, seed: float) -> ArrayMesh:
+static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO) -> ArrayMesh:
 	var a: float = length * 0.5
 	var b: float = width * 0.5
 	var edge: PackedFloat32Array = PackedFloat32Array()
@@ -24,7 +27,8 @@ static func build(length: float, width: float, height: float, seed: float) -> Ar
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	# 中心（最高點稍微偏一點，雪堆不是正中間鼓起）
-	var peak := Vector2((_hash(seed, 40.0) - 0.5) * 0.3, (_hash(seed, 41.0) - 0.5) * 0.3)
+	var peak := Vector2((_hash(seed, 40.0) - 0.5) * 0.3, (_hash(seed, 41.0) - 0.5) * 0.3) + bias
+	peak = peak.clamp(Vector2(-PEAK_LIMIT, -PEAK_LIMIT), Vector2(PEAK_LIMIT, PEAK_LIMIT))
 	verts.append(Vector3(peak.x * a, height, peak.y * b))
 	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
 	for r: int in range(1, RINGS + 1):
@@ -34,9 +38,10 @@ static func build(length: float, width: float, height: float, seed: float) -> Ar
 			var c: float = cos(th)
 			var s: float = sin(th)
 			var sq: float = pow(pow(absf(c), SQUARENESS) + pow(absf(s), SQUARENESS), -1.0 / SQUARENESS)
-			var rr: float = k * sq * lerpf(1.0, edge[i], k)
-			var x: float = lerpf(peak.x, c * rr, k) * a
-			var z: float = lerpf(peak.y, s * rr, k) * b
+			# 每一圈是輪廓對最高點的縮放（k²：裡面幾圈靠近最高點）；最高點偏很多時也不會翻面
+			var rr: float = sq * lerpf(1.0, edge[i], k)
+			var x: float = lerpf(peak.x, c * rr, k * k) * a
+			var z: float = lerpf(peak.y, s * rr, k * k) * b
 			# 高度：中間平緩、靠邊緣才很快降到 0；外圈稍微低於 0（貼進斜面）
 			var hgt: float = height * pow(1.0 - k * k, 0.7) * lerpf(0.88, 1.08, _hash(seed, 60.0 + float(r * SEGMENTS + i)))
 			if r == RINGS:

@@ -481,15 +481,51 @@ func _build_ground() -> void:
 	# 廣場鋪石（略暗）與中央的圓形石框
 	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false)
 	_build_plaza_ring()
-	# 積雪：牆腳的淺色帶
-	var snow := look.snow()
+	# 積雪：牆腳的雪帶（D-105：靠牆堆高、靠街邊緣不規則的一串雪堆，取代平的淺色帶）
 	for sx: float in [-1.0, 1.0]:
-		_batch.add_box_at(Vector3(1.4, 0.04, PLAZA_S - PLAZA_N), Vector3(sx * (PLAZA_HALF - 0.7), 0.02, 0.0), snow, false)
-		_batch.add_box_at(Vector3(1.2, 0.04, PLAZA_N - STEPS_S), Vector3(sx * (MAIN_HALF - 0.6), 0.02, (PLAZA_N + STEPS_S) * 0.5), snow, false)
-		_batch.add_box_at(Vector3(1.2, 0.04, STEPS_N - NORTH_END), Vector3(sx * (MAIN_HALF - 0.6), RISE + 0.02, (STEPS_N + NORTH_END) * 0.5), snow, false)
-		_batch.add_box_at(Vector3(1.0, 0.04, CROSS_N - PLAZA_S), Vector3(sx * (SOUTH_HALF - 0.5), 0.02, (PLAZA_S + CROSS_N) * 0.5), snow, false)
-	_batch.add_box_at(Vector3(CROSS_HALF * 2.0, 0.04, 1.2), Vector3(0.0, 0.02, CROSS_S - 0.6), snow, false)
+		var wall := Vector3(sx, 0, 0)
+		_snow_bank(Vector3(sx * PLAZA_HALF, 0.02, PLAZA_S), Vector3(sx * PLAZA_HALF, 0.02, PLAZA_N), wall, 1.4)
+		_snow_bank(Vector3(sx * MAIN_HALF, 0.0, PLAZA_N), Vector3(sx * MAIN_HALF, 0.0, STEPS_S), wall, 1.2)
+		_snow_bank(Vector3(sx * MAIN_HALF, RISE, STEPS_N), Vector3(sx * MAIN_HALF, RISE, NORTH_END), wall, 1.2)
+		_snow_bank(Vector3(sx * SOUTH_HALF, 0.0, PLAZA_S), Vector3(sx * SOUTH_HALF, 0.0, CROSS_N), wall, 1.0)
+	_snow_bank(Vector3(-CROSS_HALF, 0.0, CROSS_S), Vector3(CROSS_HALF, 0.0, CROSS_S), Vector3.BACK, 1.2)
 	_build_rise()
+
+
+## 街邊雪帶（D-105，第三輪盤點第 8 項）：原本是一條 4 cm 高的平板，低角度看是一條平的淺色帶。
+## 改成沿著牆腳一串互相重疊的 SnowMound：最高點偏向牆（靠牆那側高而陡、碰到牆時還很厚），
+## 往街那側慢慢變薄、邊緣不規則；每個雪堆的長短、寬窄、高低用位置雜湊（不動 _rng）。
+## 雪堆有一段埋進牆裡（看不到），靠街那側伸出來的寬度跟原本的雪帶一樣（reach）。沒有碰撞。
+## from／to：牆腳線（房子正面那條線）的兩端，y 是那段地面的高度；wall：從街道指向牆的方向。
+const SNOW_BANK_STEP: float = 1.8
+const SNOW_BANK_INTO_WALL: float = 0.3
+## 每一個街邊雪堆：x、z 是中心，y 是最高點離地多高，w 是靠街那側伸出牆外多遠（給測試看）
+var snow_banks: Array[Vector4] = []
+
+
+func _snow_bank(from: Vector3, to: Vector3, wall: Vector3, reach: float) -> void:
+	var length: float = from.distance_to(to)
+	var dir: Vector3 = (to - from) / length
+	# 雪堆模型的 X＝沿著牆、Z＝X × Y；最高點往牆那邊偏
+	var side: Vector3 = dir.cross(Vector3.UP)
+	var toward_wall: float = signf(side.dot(wall))
+	var basis := Basis(dir, Vector3.UP, side)
+	var n: int = maxi(1, roundi(length / SNOW_BANK_STEP))
+	var step: float = length / float(n)
+	for k: int in n:
+		var c0: Vector3 = from + dir * (step * (float(k) + 0.5))
+		var h0: float = _house_hash(c0, 400.0)
+		var h1: float = _house_hash(c0, 401.0)
+		var h2: float = _house_hash(c0, 402.0)
+		var seg_len: float = step * lerpf(1.3, 1.6, h0)
+		var t: float = clampf(step * (float(k) + 0.5) + (h1 - 0.5) * step * 0.3, seg_len * 0.5, length - seg_len * 0.5)
+		var out: float = reach * lerpf(0.75, 1.1, h2)  # 靠街那側伸出牆外多遠
+		var w: float = out + SNOW_BANK_INTO_WALL
+		var hgt: float = lerpf(0.13, 0.24, _house_hash(c0, 403.0))
+		var center: Vector3 = from + dir * t - wall * (w * 0.5 - SNOW_BANK_INTO_WALL)
+		var mesh: ArrayMesh = SnowMound.build(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, Vector2(0.0, 0.5 * toward_wall))
+		_batch.add_mesh(mesh, Transform3D(basis, center), look.snow())
+		snow_banks.append(Vector4(center.x, hgt, center.z, out))
 
 
 ## 北街＋鐘樓的台地與主街北段的石階。台地本體是石牆（南面露出來的那一階看得到石塊），
@@ -574,6 +610,7 @@ func _build_plaza() -> void:
 	_build_plaza_barrels()
 	_build_woodpile(WOODPILE_POS)
 	_build_handcart(HANDCART_POS)
+	_build_fence(FENCE_PATH)
 
 
 ## 廣場東側牆邊的柴堆（D-103，第三輪盤點第 7 項）：地窖北邊、靠牆，一落橫放的圓木，
@@ -703,6 +740,79 @@ func _build_handcart(base: Vector3) -> void:
 	col.size = Vector3(bed.x + 0.9, bed_y + 0.25, bed.z + 0.2)
 	_batch.add_shape(xf * Transform3D(Basis.IDENTITY, Vector3(0.4, (bed_y + 0.25) * 0.5, 0)), col)
 	handcart_built = true
+
+
+## 廣場西北角的木圍欄（D-104，第三輪盤點第 7 項的最後一步）：北排最東那棟（主街口）門前圍出一小塊院子——
+## 從房子正面往廣場伸出一段、轉角再往西一段；最西那一格的上橫木斷了一頭、斜斜垂到雪裡。
+## 立柱（頂上一小團雪）＋上下兩道橫木（上面那道頂上一條雪）；立柱的高低與歪斜、橫木的高低用位置雜湊（不動 _rng）。
+## 院子裡一整片沒人踩過的雪（靠房子那側厚）。每一段一個細長方塊碰撞，會擋人。
+const FENCE_PATH: Array[Vector3] = [Vector3(-4.7, 0.0, -10.0), Vector3(-4.7, 0.0, -8.3), Vector3(-7.25, 0.0, -8.3)]
+const FENCE_BAY: float = 0.9
+const FENCE_HEIGHT: float = 0.95
+const FENCE_RAILS: Array[float] = [0.36, 0.76]
+var fence_posts: int = 0
+var fence_rails: int = 0
+var fence_broken_rail: bool = false
+
+
+func _build_fence(path: Array[Vector3]) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	var snow := look.snow()
+	var y0: float = 0.02  # 廣場鋪石的高度
+	for seg: int in path.size() - 1:
+		var a: Vector3 = path[seg] + Vector3(0, y0, 0)
+		var b: Vector3 = path[seg + 1] + Vector3(0, y0, 0)
+		var length: float = a.distance_to(b)
+		var dir: Vector3 = (b - a) / length
+		var side: Vector3 = dir.cross(Vector3.UP)
+		var along := Basis(dir, Vector3.UP, side)
+		var bays: int = maxi(1, ceili(length / FENCE_BAY))
+		var bay: float = length / float(bays)
+		var last_seg: bool = seg == path.size() - 2
+		for i: int in bays + 1:
+			if i == 0 and seg > 0:
+				continue  # 轉角的立柱跟上一段共用
+			var p: Vector3 = a + dir * (bay * float(i))
+			var hp: float = _house_hash(p, 500.0)
+			var post_h: float = FENCE_HEIGHT + lerpf(-0.06, 0.08, hp)
+			# 立柱微微歪向一邊（沿著圍欄或往外）
+			var tilt := Basis(dir if hp > 0.5 else side, deg_to_rad(lerpf(-3.0, 3.0, _house_hash(p, 501.0))))
+			var top: Vector3 = p + tilt * Vector3(0, post_h, 0)
+			_batch.add_box(Vector3(0.11, post_h, 0.11), Transform3D(tilt * along, p + tilt * Vector3(0, post_h * 0.5, 0)), wood, false)
+			_batch.add_mesh(SnowMound.build(0.15, 0.15, 0.05, p.x * 2.3 + p.z), Transform3D(tilt * along, top - Vector3(0, 0.005, 0)), snow)
+			fence_posts += 1
+		for i: int in bays:
+			var m: Vector3 = a + dir * (bay * (float(i) + 0.5))
+			for r: int in FENCE_RAILS.size():
+				var ry: float = FENCE_RAILS[r] + (_house_hash(m, 510.0 + float(r)) - 0.5) * 0.06
+				var roll := Basis(side, deg_to_rad((_house_hash(m, 520.0 + float(r)) - 0.5) * 4.0))
+				var rail_len: float = bay + 0.06
+				var rail_xf := Transform3D(roll * along, m + Vector3(0, ry, 0) - side * 0.06)
+				if last_seg and i == bays - 1 and r == FENCE_RAILS.size() - 1:
+					# 斷掉的上橫木：靠轉角那頭還釘著，另一頭垂到雪裡
+					var pivot: Vector3 = m - dir * (bay * 0.5) + Vector3(0, ry, 0) - side * 0.06
+					var drop: float = asin(clampf((ry - 0.06) / rail_len, 0.0, 1.0))
+					var hang := Basis(side, -drop)
+					rail_xf = Transform3D(hang * along, pivot + hang * (dir * (rail_len * 0.5)))
+					fence_broken_rail = true
+				_batch.add_box(Vector3(rail_len, 0.08, 0.045), rail_xf, wood, false)
+				if r == FENCE_RAILS.size() - 1 and not (last_seg and i == bays - 1):
+					# 上橫木頂上一條雪
+					_batch.add_mesh(SnowMound.build(bay * 0.9, 0.07, 0.03, m.x * 4.1 + m.z * 1.3),
+						rail_xf * Transform3D(Basis.IDENTITY, Vector3(0, 0.035, 0)), snow)
+				fence_rails += 1
+		var col := BoxShape3D.new()
+		col.size = Vector3(length, FENCE_HEIGHT, 0.16)
+		_batch.add_shape(Transform3D(along, (a + b) * 0.5 + Vector3(0, FENCE_HEIGHT * 0.5, 0) - side * 0.03), col)
+	# 院子裡沒人踩過的雪：一整片薄雪堆，靠房子那側厚（深色的圍欄襯在白雪前面，一眼看得出是一塊院子）
+	var lo: Vector3 = path[0]
+	var hi: Vector3 = path[0]
+	for p: Vector3 in path:
+		lo = lo.min(p)
+		hi = hi.max(p)
+	var yard: Vector3 = (lo + hi) * 0.5
+	_batch.add_mesh(SnowMound.build(hi.x - lo.x + 0.3, hi.z - lo.z + 0.3, 0.12, yard.x * 3.7, Vector2(0.0, -0.4)),
+		Transform3D(Basis.IDENTITY, Vector3(yard.x, y0, yard.z - 0.05)), snow)
 
 
 func _cart_box(xf: Transform3D, size: Vector3, local: Vector3, mat: Material) -> void:

@@ -647,6 +647,59 @@ func test_plaza_handcart() -> void:
 	await _free(level)
 
 
+## 木圍欄（D-104）：廣場西北角圍出一小塊院子，不擋主街口、路燈、井、木桶；有一根斷掉的橫木；會擋人。
+func test_plaza_fence() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var posts: int = int(level.get("fence_posts"))
+	var rails: int = int(level.get("fence_rails"))
+	assert_true(posts >= 5 and posts <= 10, "圍欄有一排立柱（%d 根）" % posts)
+	assert_eq(rails, (posts - 1) * 2, "每一格上下兩道橫木")
+	assert_true(bool(level.get("fence_broken_rail")), "最西那一格的上橫木斷了一頭")
+	var path: Array = level.get("FENCE_PATH")
+	for p: Vector3 in path:
+		assert_true(absf(p.x) > 4.0 + 0.5 and absf(p.x) < 11.0, "在廣場裡、不擋主街口（x=%.1f）" % p.x)
+		assert_true(p.z >= -10.0 and p.z < -7.0, "靠北排房子（z=%.1f）" % p.z)
+		assert_true(p.distance_to(Vector3(-6.0, 0.0, -3.5)) > 3.5, "離井夠遠")
+		assert_true(p.distance_to(Vector3(-8.0, 0.0, -7.5)) > 0.9, "不撞路燈")
+		for spot: Vector3 in level.get("BARREL_SPOTS"):
+			assert_true(p.distance_to(spot) > 1.8, "不跟木桶疊在一起")
+	await tree.physics_frame
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	# 從廣場往北、橫穿前面那段圍欄
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(-6.0, 0.5, -7.0), Vector3(-6.0, 0.5, -9.5)))
+	assert_true(not hit.is_empty() and absf((hit["position"] as Vector3).z + 8.3) < 0.2, "前面那段圍欄會擋人（%s）" % [hit.get("position")])
+	# 從主街口往西、橫穿東邊那段
+	hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(-3.6, 0.5, -9.2), Vector3(-5.6, 0.5, -9.2)))
+	assert_true(not hit.is_empty() and absf((hit["position"] as Vector3).x + 4.7) < 0.2, "東邊那段圍欄會擋人（%s）" % [hit.get("position")])
+	# 主街口本身是空的
+	hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(-3.5, 0.5, -7.0), Vector3(3.5, 0.5, -7.0)))
+	assert_true(hit.is_empty(), "往主街的路沒有被擋住（%s）" % [hit.get("position")])
+	await _free(level)
+
+
+## 街邊雪帶（D-105）：沿牆一串雪堆，靠牆那側高、高低不一，不會蓋到石階，也不擋路（沒有碰撞）。
+func test_street_snow_banks() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var banks: Array = level.get("snow_banks")
+	assert_true(banks.size() >= 60, "沿街一串雪堆（%d 個）" % banks.size())
+	var lo: float = 1.0
+	var hi: float = 0.0
+	for b: Vector4 in banks:
+		lo = minf(lo, b.y)
+		hi = maxf(hi, b.y)
+		assert_true(not (b.z < -25.2 and b.z > -29.2), "石階上沒有雪堆（z=%.1f）" % b.z)
+		assert_true(b.w > 0.6 and b.w < 1.6, "靠街那側伸出 %.2f m" % b.w)
+	assert_true(hi > 0.18 and lo < 0.16 and hi - lo > 0.05, "高低不一（%.2f～%.2f m）" % [lo, hi])
+	await tree.physics_frame
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	# 廣場東側牆腳：雪沒有碰撞，往下的射線打在地面
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(10.6, 2.0, 1.5), Vector3(10.6, -1.0, 1.5)))
+	assert_true(not hit.is_empty() and (hit["position"] as Vector3).y < 0.05, "雪堆不擋人（%s）" % [hit.get("position")])
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()
