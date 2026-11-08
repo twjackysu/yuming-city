@@ -106,3 +106,38 @@ func test_characters_do_not_push_camera() -> void:
 	assert_true(absf(player.shoulder_offset() - PlayerController.SHOULDER_OFFSET) < 0.01, "席菈或路人站在右邊不會把鏡頭推進來（%.2f）" % player.shoulder_offset())
 	root.queue_free()
 	await tree.process_frame
+
+
+## D-085：角色站在諾恩正後方（鏡頭那一側）時，SpringArm 不被拉近；牆照樣會把鏡頭拉近。
+func test_body_behind_does_not_pull_camera_but_wall_does() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var arm: SpringArm3D = player.get_node("CameraRig/Pitch/SpringArm3D") as SpringArm3D
+	# 後來才生成的角色（像送葬者、席菈）：一面寬 3.5 m、高 3 m 的身體擋在鏡頭與諾恩之間
+	var body := CharacterBody3D.new()
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(3.5, 3.0, 0.4)
+	shape.shape = box
+	shape.position = Vector3(0.75, 1.5, 0)
+	body.add_child(shape)
+	body.position = Vector3(0, 0, 1.8)
+	root.add_child(body)
+	await _frames(10)
+	assert_true(arm.get_hit_length() > arm.spring_length - 0.05, "角色擋在身後不拉近鏡頭（%.2f / %.2f）" % [arm.get_hit_length(), arm.spring_length])
+	body.queue_free()
+	# 同樣位置換成牆：鏡頭照樣收回，不穿牆
+	var wall := StaticBody3D.new()
+	var wshape := CollisionShape3D.new()
+	var wbox := BoxShape3D.new()
+	wbox.size = Vector3(3.5, 3.0, 0.4)
+	wshape.shape = wbox
+	wshape.position = Vector3(0.75, 1.5, 0)
+	wall.add_child(wshape)
+	wall.position = Vector3(0, 0, 1.8)
+	root.add_child(wall)
+	await _frames(10)
+	assert_true(arm.get_hit_length() < arm.spring_length - 0.5, "牆在身後會把鏡頭拉近（%.2f / %.2f）" % [arm.get_hit_length(), arm.spring_length])
+	root.queue_free()
+	await tree.process_frame

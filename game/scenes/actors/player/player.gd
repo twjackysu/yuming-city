@@ -108,6 +108,13 @@ func _ready() -> void:
 	_lantern.reparent(_puppet.hand("L"), false)
 	_lantern.position = Vector3(0, -0.12, 0)
 	_arm.add_excluded_object(get_rid())
+	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則（D-085）。
+	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
+	get_tree().node_added.connect(_on_node_added_for_camera)
+	for n: Node in get_tree().root.find_children("*", "CharacterBody3D", true, false):
+		_exclude_from_camera(n)
+	for n: Node in get_tree().root.find_children("*", "RigidBody3D", true, false):
+		_exclude_from_camera(n)
 	health = Health.new(CombatTuning.num("noen.max_hp", 100.0))
 	health.name = "Health"
 	health.invulnerable_check = is_invulnerable
@@ -559,6 +566,18 @@ func _update_shoulder(delta: float) -> void:
 	var room: float = shoulder_room(want)
 	_shoulder = minf(move_toward(_shoulder, want, SHOULDER_EASE * delta), room)
 	_arm.position.x = _shoulder
+
+
+func _on_node_added_for_camera(n: Node) -> void:
+	_exclude_from_camera(n)
+
+
+## 角色（CharacterBody3D／RigidBody3D）不讓鏡頭的 SpringArm 撞到：站在諾恩身後時鏡頭不會被拉到他後腦（D-085）。
+func _exclude_from_camera(n: Node) -> void:
+	if n == self or _arm == null:
+		return
+	if n is CharacterBody3D or n is RigidBody3D:
+		_arm.add_excluded_object((n as CollisionObject3D).get_rid())
 
 
 ## 從鏡頭架（諾恩頭部高度）往右打一條射線，回傳往右最多能放多遠（m）。
