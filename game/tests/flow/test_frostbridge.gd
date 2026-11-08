@@ -153,6 +153,13 @@ func test_layout_nodes_and_batching() -> void:
 		assert_true(l.position.z > -30.0 and l.position.z < -24.5, "燈柱在石階頭尾（z=%.2f）" % l.position.z)
 		assert_false(l.shadow_enabled, "矮燈不投影")
 	assert_true(int(level.get("lantern_count")) >= 6, "不少房子門口有掛燈（%d）" % int(level.get("lantern_count")))
+	# 鐘室（D-081）：車床做的鐘身＋三道紋帶＋木頭鐘架都掛在 Bell 底下（敲鐘時一起擺）；背面與兩側百葉
+	var bell: Node3D = level.get_node("Bell") as Node3D
+	var bell_body: MeshInstance3D = bell.get_node("BellBody") as MeshInstance3D
+	assert_true(bell_body.mesh is ArrayMesh, "鐘身是旋轉出來的鐘形，不是圓柱")
+	assert_true(bell.has_node("BellBand0") and bell.has_node("BellBand2"), "鐘身有紋帶")
+	assert_true(bell.has_node("BellYoke"), "鐘吊在木頭鐘架上")
+	assert_eq(int(level.get("belfry_louvres")), 24, "鐘室背面與兩側各 8 片百葉")
 	assert_false(level.has_node("Sheila"), "新遊戲時席菈還沒登場")
 	assert_false(level.has_node("Undertaker"), "送葬者還沒出現")
 	await _free(level)

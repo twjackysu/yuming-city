@@ -878,12 +878,27 @@ func _build_bell_tower(pos: Vector3) -> void:
 	door.position = pos + Vector3(0, 1.8, 3.4)
 	add_child(door)
 	light_count += 1
+	# 鐘室的木構：屋頂底下的格柵（看得出是木頭撐著，不是一塊平板）＋背面與兩側的百葉擋板
+	# （鐘的背後是暖光照著的斜木條，不再是一片灰霧；正面留空，從街上看得到鐘）。D-081
+	_build_belfry_timber(pos)
 	# 廢鐘：掛在鐘室正中的橫梁下，鐘口朝下（會擺動，不進合併）
 	_batch.add_box_at(Vector3(4.2, 0.2, 0.2), pos + Vector3(0, 17.2, 0), look.mat(FrostbridgeLook.WOOD), false)
 	_bell = Node3D.new()
 	_bell.name = "Bell"
 	_bell.position = pos + Vector3(0, 17.1, 0)
 	add_child(_bell)
+	_build_bell_body(_bell)
+
+
+const BELL_HEIGHT: float = 1.5
+const BELL_MOUTH: float = 0.95
+## 鐘身上的紋帶：[高度比例, 那個高度的鐘身半徑比例]（Lathe.bell_profiles 的外側剖面）
+const BELL_BANDS := [Vector2(0.12, 0.50), Vector2(0.62, 0.62), Vector2(0.86, 0.80)]
+
+
+## 鐘身：車床旋轉出來的鐘形（肩、細腰、外翻的鐘口、厚唇、中空）＋三道凸起的紋帶＋
+## 頂上的木頭鐘架與兩條鐵箍。全部掛在 bell 底下，敲鐘時一起擺。D-081
+func _build_bell_body(bell: Node3D) -> void:
 	# 舊青銅：金屬度不能太高——夜裡沒有可反射的環境，高金屬度的鐘在敲鐘鏡頭裡只剩一個黑影
 	var bronze := StandardMaterial3D.new()
 	bronze.albedo_color = Color(0.46, 0.34, 0.2)
@@ -893,32 +908,76 @@ func _build_bell_tower(pos: Vector3) -> void:
 	bronze.rim = 0.35
 	bronze.rim_tint = 0.6
 	var body := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 0.42
-	cyl.bottom_radius = 0.85
-	cyl.height = 1.3
-	body.mesh = cyl
-	body.position = Vector3(0, -0.85, 0)
+	body.name = "BellBody"
+	body.mesh = Lathe.bell_mesh(BELL_HEIGHT, BELL_MOUTH)
 	body.material_override = bronze
-	_bell.add_child(body)
-	var crown := MeshInstance3D.new()
-	var sph := SphereMesh.new()
-	sph.radius = 0.42
-	sph.height = 0.6
-	crown.mesh = sph
-	crown.position = Vector3(0, -0.2, 0)
-	crown.material_override = bronze
-	_bell.add_child(crown)
-	# 鐘口外翻的唇：輪廓才像鐘，不像倒放的桶
-	var lip := MeshInstance3D.new()
-	var lip_mesh := CylinderMesh.new()
-	lip_mesh.top_radius = 0.84
-	lip_mesh.bottom_radius = 0.95
-	lip_mesh.height = 0.14
-	lip.mesh = lip_mesh
-	lip.position = Vector3(0, -1.5 + 0.07, 0)
-	lip.material_override = bronze
-	_bell.add_child(lip)
+	bell.add_child(body)
+	# 紋帶：磨亮一點的青銅，凸出鐘面，燈一照就有一圈一圈的高光
+	var band_mat := StandardMaterial3D.new()
+	band_mat.albedo_color = Color(0.58, 0.44, 0.27)
+	band_mat.roughness = 0.3
+	band_mat.metallic = 0.45
+	band_mat.rim_enabled = true
+	band_mat.rim = 0.4
+	band_mat.rim_tint = 0.6
+	var i: int = 0
+	for b: Vector2 in BELL_BANDS:
+		var r: float = b.y * BELL_MOUTH
+		var ring := MeshInstance3D.new()
+		ring.name = "BellBand%d" % i
+		var torus := TorusMesh.new()
+		torus.inner_radius = r - 0.012
+		torus.outer_radius = r + 0.04
+		torus.rings = 40
+		torus.ring_segments = 8
+		ring.mesh = torus
+		ring.position = Vector3(0, -b.x * BELL_HEIGHT, 0)
+		ring.material_override = band_mat
+		bell.add_child(ring)
+		i += 1
+	# 鐘架（深色木塊包住橫梁）與兩條鐵箍：鐘是吊在木頭上的，不是浮在半空
+	var yoke := MeshInstance3D.new()
+	yoke.name = "BellYoke"
+	var yoke_mesh := BoxMesh.new()
+	yoke_mesh.size = Vector3(1.0, 0.34, 0.38)
+	yoke.mesh = yoke_mesh
+	yoke.position = Vector3(0, 0.12, 0)
+	yoke.material_override = look.mat(FrostbridgeLook.WOOD)
+	bell.add_child(yoke)
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)
+	for x: float in [-0.3, 0.3]:
+		var strap := MeshInstance3D.new()
+		var strap_mesh := BoxMesh.new()
+		strap_mesh.size = Vector3(0.06, 0.36, 0.42)
+		strap.mesh = strap_mesh
+		strap.position = Vector3(x, -0.02, 0)
+		strap.material_override = iron
+		bell.add_child(strap)
+
+
+## 鐘室木構（進合併，沿用木頭材質，小鎮 mesh 數不變）：屋頂下四根格柵，背面與東西兩側
+## 各一排往外斜的百葉板。pos 是鐘樓底部中心。D-081
+var belfry_louvres: int = 0
+
+
+func _build_belfry_timber(pos: Vector3) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	for x: float in [-1.0, 1.0]:
+		_batch.add_box_at(Vector3(0.18, 0.22, 4.4), pos + Vector3(x, 17.39, 0), wood, false)
+	for z: float in [-1.4, 1.4]:
+		_batch.add_box_at(Vector3(4.4, 0.22, 0.18), pos + Vector3(0, 17.39, z), wood, false)
+	var tilt: float = deg_to_rad(38.0)
+	var y: float = 14.8
+	while y < 17.25:
+		# 背面（-Z）：板子沿 X，外緣（-Z）往下斜
+		var back := Basis(Vector3.RIGHT, -tilt)
+		_batch.add_box(Vector3(3.2, 0.05, 0.38), Transform3D(back, pos + Vector3(0, y, -1.9)), wood, false)
+		# 兩側（±X）：板子沿 Z，外緣往下斜
+		for sx: float in [-1.0, 1.0]:
+			var side := Basis(Vector3.BACK, sx * tilt)
+			_batch.add_box(Vector3(0.38, 0.05, 3.2), Transform3D(side, pos + Vector3(sx * 1.9, y, 0)), wood, false)
+		belfry_louvres += 3
+		y += 0.34
 
 
 ## 梨販的攤子：木桌、布篷、一盞暖燈、一個披斗篷的人影（之後換成角色）。正面朝 +Z（出生點）。
