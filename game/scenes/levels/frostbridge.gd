@@ -128,6 +128,10 @@ func _ready() -> void:
 		if dev_args.has("convoy") and str(dev_args["arch"]) != "preview":
 			player.global_position = Vector3(1.2, 0.05, _boss_spawn().z - 6.5)
 			player.rotation.y = PI + deg_to_rad(4.0)
+		elif dev_args.has("convoy"):
+			# 預覽要站在石拱 5 m 內，送葬者卻就生在石拱前，鐵架會擋住預覽的石拱（第二輪盤點第 8 項）：
+			# 截圖時把他停在諾恩背後、鏡頭後面，畫面裡是石拱預覽＋代價卡，車隊戰的 HUD 照舊
+			dev_park_boss(player.global_position + Vector3(1.8, 0.0, -5.5))
 		player.yaw = player.rotation.y
 		match str(dev_args["arch"]):
 			"preview":
@@ -137,7 +141,7 @@ func _ready() -> void:
 			"spent":
 				arch_site.activate()
 				arch_site.nb.tick(9.5, Game.session.state)
-	# 截圖用：`--face=sheila|undertaker|frame`：每幀把諾恩（和鏡頭）轉向那個角色。
+	# 截圖用：`--face=sheila|undertaker|frame|arch`：每幀把諾恩（和鏡頭）轉向那個角色（arch＝南街石拱）。
 	# 燃燒劍斬鐵架的火星在諾恩背後，平常的鏡頭拍不到（NEXT 第 2 項、Steam 截圖 6）
 	if dev_args.has("face"):
 		_dev_face = str(dev_args["face"])
@@ -157,6 +161,17 @@ func _ready() -> void:
 ## 截圖用：按住看穿（跟沙盒的 `--insight` 一樣，直接按下輸入動作；放開要呼叫 Input.action_release）。
 func dev_hold_insight() -> void:
 	Input.action_press("insight")
+
+
+## 截圖用：送葬者移到 at（高度照地面）並停住不動（不追、不出招）。沒有送葬者回傳 false。
+func dev_park_boss(at: Vector3) -> bool:
+	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
+	if boss == null:
+		return false
+	boss.global_position = Vector3(at.x, ground_y(at) + 0.05, at.z)
+	boss.velocity = Vector3.ZERO
+	boss.set_physics_process(false)
+	return true
 
 
 ## 截圖用：把諾恩移到 "x,z"（高度照地面）。格式不對就不動，回傳有沒有移動。
@@ -180,6 +195,8 @@ func dev_face_target(who: String) -> Node3D:
 			return get_node_or_null("Undertaker") as Node3D
 		"frame":
 			return encounter.thrown_frame if encounter != null and is_instance_valid(encounter.thrown_frame) else null
+		"arch":
+			return arch_site
 	return null
 
 

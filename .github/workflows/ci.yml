@@ -189,7 +189,7 @@ jobs:
           shot 08-arch-preview 40 --level=frostbridge --convoy --arch=preview --locale=zh_TW
           shot 09-journal 40 --level=frostbridge --open=journal --locale=zh_TW
           shot 10-plaza-en 40 --level=frostbridge --at=plaza --locale=en
-          shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --face=undertaker --face-off=14 --locale=zh_TW
+          shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

@@ -478,6 +478,25 @@ func test_dev_place_and_hide_player() -> void:
 	await _free(level)
 
 
+## 截圖用 `--face=arch` 與 `--convoy --arch=preview`：送葬者停在諾恩背後、不追不出招（第二輪盤點第 8 項，
+## 原本他生在石拱前，鐵架擋住預覽的石拱）。
+func test_dev_face_arch_and_park_boss() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	assert_eq(level.call("dev_face_target", "arch"), level.get_node("SouthArch"), "arch 是南街石拱")
+	assert_true(not bool(level.call("dev_park_boss", Vector3(2.0, 0.0, 9.0))), "還沒開打，沒有送葬者")
+	level.call("start_convoy")
+	var boss: Undertaker = level.get_node("Undertaker") as Undertaker
+	assert_true(bool(level.call("dev_park_boss", Vector3(2.0, 0.0, 9.0))), "開打後可以停住送葬者")
+	for i: int in 10:
+		await tree.physics_frame
+	var at := Vector2(boss.global_position.x, boss.global_position.z)
+	assert_true(at.distance_to(Vector2(2.0, 9.0)) < 0.01, "送葬者停在 (2, 9) 不動：%s" % boss.global_position)
+	assert_true(absf(boss.global_position.y - (level.ground_y(boss.global_position) + 0.05)) < 0.01, "高度照地面")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()
