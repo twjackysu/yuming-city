@@ -17,6 +17,9 @@ const COL_HP: Color = Color(0.84, 0.78, 0.66)
 const COL_HP_SHEILA: Color = Color(0.82, 0.88, 0.95)
 const COL_STAMINA: Color = Color(0.5, 0.72, 0.9)
 const COL_DOWN: Color = Color(0.85, 0.45, 0.4)
+const COL_CMD: Color = Color(0.9, 0.92, 0.95)
+## 席菈正在守（玩家下的「守住」或劇情暫時守住）：「守住」那一格染成霜藍，玩家才知道再按一次是解除
+const COL_GUARD_ON: Color = Color(0.55, 0.85, 1.0)
 
 var noen_ratio: float = 1.0
 var sheila_ratio: float = 1.0
@@ -33,6 +36,7 @@ var _cmd_labels: Array[Label] = []
 var _struggle: Label
 ## 被抓時的掙扎提示
 var struggle_shown: bool = false
+var guard_on: bool = false
 var _alpha: float = 0.0
 
 
@@ -45,7 +49,7 @@ func _ready() -> void:
 	# 動態組字（鍵名＋翻譯）的標籤標上 glyph，UI 測試的「寫死文字」檢查會跳過
 	_sheila_name.set_meta("glyph", true)
 	for c: Array in COMMANDS:
-		var l: Label = _label("", 18, Color(0.9, 0.92, 0.95))
+		var l: Label = _label("", 18, COL_CMD)
 		l.set_meta("glyph", true)
 		l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		_cmd_labels.append(l)
@@ -104,6 +108,7 @@ func refresh(player: PlayerController, sheila: Sheila) -> void:
 		else:
 			_sheila_name.text = "SPK_SHEILA"
 	_sheila_name.visible = sheila_present
+	guard_on = sheila_present and not sheila_down and sheila.brain.guard_active
 	struggle_shown = player != null and player.grabbed_by != null
 	_struggle.visible = struggle_shown
 	if struggle_shown:
@@ -115,6 +120,8 @@ func refresh(player: PlayerController, sheila: Sheila) -> void:
 		_cmd_labels[i].text = "%s %s" % [key, tr(str(c[2]))]
 		var usable: bool = sheila_present and not sheila_down and float(cooldowns.get(str(c[1]), 0.0)) <= 0.0
 		_cmd_labels[i].modulate.a = 1.0 if usable else 0.35
+		if str(c[1]) == "guard":
+			_cmd_labels[i].add_theme_color_override("font_color", COL_GUARD_ON if guard_on else COL_CMD)
 		_cmd_labels[i].visible = sheila_present
 
 
