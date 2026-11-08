@@ -727,6 +727,30 @@ func test_street_snow_banks() -> void:
 	await _free(level)
 
 
+## 石階上的雪（D-137）：不再是每一級前緣一條筆直的白線——兩側靠牆各一堆、後緣角落偶爾一小團，
+## 中間有人走的路（STEP_PATH_HALF）沒有雪；每一團都在石階的踏面上、不會太高（不擋腳）。
+func test_step_snow_leaves_path_clear() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var snow: Array = level.get("step_snow")
+	var path_half: float = float(level.get("STEP_PATH_HALF"))
+	assert_true(snow.size() >= 8, "四級石階兩側各一堆（%d 團）" % snow.size())
+	var left: int = 0
+	var right: int = 0
+	for b: Vector4 in snow:
+		assert_true(absf(b.x) - b.w >= path_half - 0.001, "中間的路沒有雪（x=%.2f 半寬 %.2f）" % [b.x, b.w])
+		assert_true(absf(b.x) + b.w <= 4.0 + 0.15, "不會伸出街外太多（x=%.2f）" % b.x)
+		assert_true(b.z < -25.2 and b.z > -29.2, "在石階的踏面上（z=%.2f）" % b.z)
+		var ground: float = level.ground_y(Vector3(b.x, 0.0, b.z))
+		assert_true(b.y - ground < 0.3, "雪不高（%.2f m）" % (b.y - ground))
+		if b.x < 0.0:
+			left += 1
+		else:
+			right += 1
+	assert_true(left >= 4 and right >= 4, "兩側都有（左 %d、右 %d）" % [left, right])
+	await _free(level)
+
+
 ## 屋瓦（D-107）：完整的屋頂都用屋瓦材質，雪只蓋住上面一部分（露出最下面幾排瓦）。
 func test_roofs_use_tiles() -> void:
 	_session()

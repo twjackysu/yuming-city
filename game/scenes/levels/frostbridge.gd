@@ -579,9 +579,9 @@ func _build_rise() -> void:
 		var front: float = STEPS_S - run * float(i)
 		# 每一級從前緣一路延伸到台地（上一級蓋住後段），兩側離房子 5 cm 避免共面閃爍
 		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, top, front - STEPS_N), Vector3(0.0, top * 0.5, (front + STEPS_N) * 0.5), stone, false)
-		# 看得到的踏面鋪濕石板（之前石牆材質在霧裡偏灰白、偏平）；前緣一條薄雪蓋在上面
+		# 看得到的踏面鋪濕石板（之前石牆材質在霧裡偏灰白、偏平）
 		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, 0.01, run), Vector3(0.0, top + 0.005, front - run * 0.5), tread, false)
-		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.6, 0.02, 0.12), Vector3(0.0, top + 0.015, front - 0.08), snow, false)
+		_step_snow(top + 0.01, front, run, snow)
 	# 斜坡碰撞：上表面通過每一級的前緣——從第一級前面一級深度處的地面（STEPS_S + run）到台地邊（STEPS_N）
 	var horizontal: float = STEPS_S + run - STEPS_N
 	var angle: float = atan2(RISE, horizontal)
@@ -597,6 +597,39 @@ func _build_rise() -> void:
 	shape.transform = Transform3D(Basis(Vector3.RIGHT, angle), mid - normal * 0.2)
 	body.add_child(shape)
 	add_child(body)
+
+
+## 石階上的雪（D-137，第八輪盤點第 2 項）：原本每一級前緣一條 12 cm 寬、筆直的薄雪，從主街往上看
+## 是四條發亮的白線（像日光燈管）。改成雪積在人不走的地方：兩側靠牆一堆（靠牆、靠下一級的踢面那側厚），
+## 踏面後緣靠踢面的角落偶爾一小團；中間 STEP_PATH_HALF 內是有人走的路，露出濕石板。
+## 每一團：x、z 是中心，y 是最高點的世界高度，w 是半寬（沿 X，給測試看）。
+const STEP_PATH_HALF: float = 1.1
+var step_snow: Array[Vector4] = []
+
+
+func _step_snow(y: float, front: float, run: float, snow: Material) -> void:
+	for sx: float in [-1.0, 1.0]:
+		var c := Vector3(sx * MAIN_HALF, y, front)
+		var w: float = lerpf(0.8, 1.25, _house_hash(c, 410.0))
+		var d: float = run * lerpf(0.7, 0.92, _house_hash(c, 411.0))
+		var h: float = lerpf(0.06, 0.1, _house_hash(c, 412.0))
+		# 模型 X＝橫過街、Z＝沿著石階；最高點偏向牆（sx）與踏面後緣（-Z，下一級的踢面）
+		var mesh: ArrayMesh = SnowMound.build(w, d, h, c.x * 2.1 + c.z * 0.7, Vector2(sx * 0.5, -0.35))
+		var pos := Vector3(sx * (MAIN_HALF - 0.05 - w * 0.5 + 0.12), y, front - run + d * 0.5 + 0.02)
+		_batch.add_mesh(mesh, Transform3D(Basis.IDENTITY, pos), snow)
+		step_snow.append(Vector4(pos.x, y + h, pos.z, w * 0.5))
+	# 踏面後緣靠踢面的角落：一小團、偏左或偏右（在路的外面），有的級沒有
+	var c2 := Vector3(0.0, y, front)
+	if _house_hash(c2, 413.0) < 0.75:
+		var side: float = -1.0 if _house_hash(c2, 414.0) < 0.5 else 1.0
+		var w2: float = lerpf(0.5, 0.9, _house_hash(c2, 415.0))
+		var d2: float = lerpf(0.22, 0.32, _house_hash(c2, 416.0))
+		var h2: float = lerpf(0.03, 0.05, _house_hash(c2, 417.0))
+		var x2: float = side * lerpf(STEP_PATH_HALF + w2 * 0.5, MAIN_HALF - 1.4, _house_hash(c2, 418.0))
+		var mesh2: ArrayMesh = SnowMound.build(w2, d2, h2, x2 * 1.3 + front, Vector2(0.0, -0.5))
+		var pos2 := Vector3(x2, y, front - run + d2 * 0.5 + 0.01)
+		_batch.add_mesh(mesh2, Transform3D(Basis.IDENTITY, pos2), snow)
+		step_snow.append(Vector4(pos2.x, y + h2, pos2.z, w2 * 0.5))
 
 
 ## 地面高度（台地上是 RISE；石階上沿斜坡）。測試與開發用瞬移用。
