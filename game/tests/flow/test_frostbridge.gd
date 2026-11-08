@@ -121,6 +121,16 @@ func test_puddle_reflection_probes() -> void:
 		if ((c as VisualInstance3D).layers & layer) != 0:
 			actor_in_layer = true
 	assert_false(actor_in_layer, "諾恩不在倒影層（不會被凍在載入那一刻的倒影裡）")
+	# D-058：路燈、門邊掛燈、梨販燈的高光比預設強（濕石板上的燈影）；窗裡透出的小補光維持預設
+	var bright: int = 0
+	var spec: float = float(level.get("LAMP_SPECULAR"))
+	for l: Node in level.find_children("*", "OmniLight3D", true, false):
+		if is_equal_approx((l as OmniLight3D).light_specular, spec):
+			bright += 1
+	assert_true(spec > 0.5, "燈的高光比 Godot 預設 0.5 強")
+	assert_true(bright >= 8, "路燈與掛燈都加強了高光（%d 盞）" % bright)
+	var cobble: Shader = load(FrostbridgeLook.WET_COBBLE_SHADER) as Shader
+	assert_true(cobble.code.contains("ripple_strength"), "水窪有細波紋（倒影拉成直條）")
 	await _free(level)
 
 

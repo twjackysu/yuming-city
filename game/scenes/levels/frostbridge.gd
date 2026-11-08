@@ -567,6 +567,7 @@ func _door_lantern(batch: StaticBatch, holder: Node3D, wall_pos: Vector3, face: 
 		l.light_energy = 0.85
 		l.omni_range = 5.0
 		l.omni_attenuation = 1.4
+		l.light_specular = LAMP_SPECULAR
 		l.light_volumetric_fog_energy = 1.2
 		l.position = out + face * 0.15 + Vector3(0, 2.2, 0)
 		holder.add_child(l)
@@ -602,6 +603,8 @@ func _build_lamps() -> void:
 const REFLECT_LAYER: int = 1 << 10
 const PROBE_HEIGHT: float = 9.0
 const PROBE_EYE: float = 1.5  # 從離地 1.5 m 拍（大約是鏡頭高度）
+## 路燈、門邊掛燈、梨販燈的高光強度（D-058；Godot 預設 0.5）：濕石板上的燈影拉得長、亮得出來
+const LAMP_SPECULAR: float = 1.0
 
 
 func _build_reflection_probes(town: Node3D) -> void:
@@ -638,6 +641,7 @@ func _lamp_post(pos: Vector3, shadows: bool) -> void:
 	l.light_energy = 2.2
 	l.omni_range = 9.0
 	l.shadow_enabled = shadows
+	l.light_specular = LAMP_SPECULAR
 	l.light_volumetric_fog_energy = 1.4
 	l.position = pos + Vector3(0, 3.0, 0)
 	add_child(l)
@@ -738,6 +742,7 @@ func _build_pear_stall(pos: Vector3) -> void:
 	l.light_color = FrostbridgeLook.LAMP
 	l.light_energy = 1.4
 	l.omni_range = 4.5
+	l.light_specular = LAMP_SPECULAR
 	l.light_volumetric_fog_energy = 1.0
 	l.position = pos + Vector3(0, 1.85, 0.2)
 	add_child(l)
