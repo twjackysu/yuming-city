@@ -85,6 +85,24 @@ func _build() -> void:
 	shade.color = Color(0.01, 0.015, 0.025, 0.6)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(shade)
+	# 左側一條由深到透明的直向暗帶（第二輪盤點第 5 項，D-090）：選單有個「底」，右邊的場景照舊看得到
+	var band := TextureRect.new()
+	band.name = "Band"
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.01, 0.015, 0.03, 0.82))
+	grad.set_color(1, Color(0.01, 0.015, 0.03, 0.0))
+	grad.add_point(0.55, Color(0.01, 0.015, 0.03, 0.6))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = 256
+	tex.height = 4
+	band.texture = tex
+	band.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	band.stretch_mode = TextureRect.STRETCH_SCALE
+	band.anchor_bottom = 1.0
+	band.offset_right = 760.0
+	_root.add_child(band)
 
 	_menu = VBoxContainer.new()
 	_menu.name = "Menu"
@@ -101,8 +119,25 @@ func _build() -> void:
 	if serif != null:
 		title.add_theme_font_override("font", serif)
 	_menu.add_child(title)
+	# 標題下一條暖金細線（跟設定頁的分組線同一個語彙，D-076），左邊實、往右淡出
+	var rule := TextureRect.new()
+	rule.name = "Rule"
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rg := Gradient.new()
+	rg.set_color(0, Color(0.95, 0.78, 0.5, 0.85))
+	rg.set_color(1, Color(0.95, 0.78, 0.5, 0.0))
+	var rt := GradientTexture2D.new()
+	rt.gradient = rg
+	rt.width = 128
+	rt.height = 2
+	rule.texture = rt
+	rule.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rule.stretch_mode = TextureRect.STRETCH_SCALE
+	rule.custom_minimum_size = Vector2(320, 2)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_menu.add_child(rule)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 24)
+	gap.custom_minimum_size = Vector2(0, 16)
 	_menu.add_child(gap)
 
 	_resume = _button("Resume", "MENU_RESUME", resume)

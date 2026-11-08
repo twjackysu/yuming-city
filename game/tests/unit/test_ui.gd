@@ -188,6 +188,12 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	assert_true(tree.paused, "遊戲暫停")
 	assert_eq(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE, "暫停時釋放滑鼠")
 	assert_true(_assert_texts_are_keys(pause, "暫停選單") >= 4)
+	var band: TextureRect = pause.find_child("Band", true, false) as TextureRect
+	assert_true(band != null and band.offset_right >= 600.0, "選單後面有左側暗帶（D-090）")
+	var g: Gradient = (band.texture as GradientTexture2D).gradient
+	assert_true(g.sample(0.0).a > 0.7 and g.sample(1.0).a < 0.05, "暗帶由深到透明")
+	var menu: VBoxContainer = pause.find_child("Menu", true, false) as VBoxContainer
+	assert_eq(menu.get_child(1).name, &"Rule", "標題下面一條細線")
 	(pause.find_child("Settings", true, false) as Button).pressed.emit()
 	var sm: SettingsMenu = pause.find_child("SettingsMenu", true, false) as SettingsMenu
 	assert_true(sm != null and sm.visible, "暫停中可以開設定")
