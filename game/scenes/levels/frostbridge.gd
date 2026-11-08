@@ -129,6 +129,37 @@ func _ready() -> void:
 			"spent":
 				arch_site.activate()
 				arch_site.nb.tick(9.5, Game.session.state)
+	# 截圖用：`--face=sheila|undertaker|frame`：每幀把諾恩（和鏡頭）轉向那個角色。
+	# 燃燒劍斬鐵架的火星在諾恩背後，平常的鏡頭拍不到（NEXT 第 2 項、Steam 截圖 6）
+	if dev_args.has("face"):
+		_dev_face = str(dev_args["face"])
+	player.snap_camera()
+
+
+## `--face` 的目標（找不到回傳 null）。
+func dev_face_target(who: String) -> Node3D:
+	match who:
+		"sheila":
+			return get_node_or_null("Sheila") as Node3D
+		"undertaker":
+			return get_node_or_null("Undertaker") as Node3D
+		"frame":
+			return encounter.thrown_frame if encounter != null and is_instance_valid(encounter.thrown_frame) else null
+	return null
+
+
+## 諾恩面向目標（只轉水平角度），鏡頭跟著轉到他正後方。
+func _update_dev_face() -> void:
+	var target: Node3D = dev_face_target(_dev_face)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if target == null or player == null:
+		return
+	var d: Vector3 = target.global_position - player.global_position
+	d.y = 0.0
+	if d.length() < 0.3:
+		return
+	player.rotation.y = atan2(-d.x, -d.z)
+	player.yaw = player.rotation.y
 	player.snap_camera()
 
 
@@ -200,6 +231,8 @@ const ASHWALKER_POS: Vector3 = Vector3(0.0, RISE, -34.0)
 const SHEILA_TALK_RANGE: float = 2.6
 
 var ashwalker: Ashwalker
+## 截圖旗標 `--face` 的目標（""＝不轉）
+var _dev_face: String = ""
 
 
 func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
@@ -215,6 +248,8 @@ func _begin_sheila_meet() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if _dev_face != "":
+		_update_dev_face()
 	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	if stage == "aftermath":
 		_update_aftermath()

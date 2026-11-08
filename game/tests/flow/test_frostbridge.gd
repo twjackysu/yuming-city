@@ -345,3 +345,25 @@ func test_player_climbs_steps_to_north_street() -> void:
 		if c is RescueSite:
 			assert_true(absf((c as RescueSite).global_position.y - rise) < 0.01, "%s 在台地上" % c.name)
 	await _free(level)
+
+
+## 截圖旗標 `--face=sheila`：每幀把諾恩與鏡頭轉向席菈（燃燒劍斬鐵架在諾恩背後，平常拍不到）。
+func test_dev_face_turns_player_to_target() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sheila: Node3D = level.get_node("Sheila") as Node3D
+	assert_true(level.call("dev_face_target", "nobody") == null, "不認得的名字沒有目標")
+	assert_true(level.call("dev_face_target", "frame") == null, "還沒擲鐵架")
+	assert_eq(level.call("dev_face_target", "sheila"), sheila)
+	sheila.set_physics_process(false)
+	sheila.global_position = player.global_position + Vector3(3.0, 0.0, 2.0)  # 在諾恩右後方
+	level.set("_dev_face", "sheila")
+	await tree.physics_frame
+	await tree.physics_frame
+	var to: Vector3 = (sheila.global_position - player.global_position) * Vector3(1, 0, 1)
+	var fwd: Vector3 = -player.global_transform.basis.z * Vector3(1, 0, 1)
+	assert_true(fwd.normalized().dot(to.normalized()) > 0.98, "諾恩面向席菈（dot %.3f）" % fwd.normalized().dot(to.normalized()))
+	assert_true(absf(player.yaw - player.rotation.y) < 0.001, "鏡頭角度跟著轉")
+	await _free(level)
