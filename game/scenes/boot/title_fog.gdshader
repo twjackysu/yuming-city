@@ -1,5 +1,5 @@
 shader_type canvas_item;
-// 標題背景：冬夜的霜橋鎮剪影（兩層屋頂＋鐘樓）、鐘樓上的一盞暖燈、在屋頂之間流動的霧堤、暗角。
+// 標題背景：冬夜的霜橋鎮剪影（兩層屋頂＋鐘樓）、鐘樓上的一盞暖燈（鐘室裡鐘的剪影）、在屋頂之間流動的霧堤、暗角。
 // 全部程序生成，不依賴貼圖。霧要「看得出在動」：用 smoothstep 把 fbm 壓成一塊一塊的霧堤（D-061）。
 
 uniform vec3 sky_top : source_color = vec3(0.02, 0.03, 0.06);
@@ -87,7 +87,19 @@ void fragment() {
 	float course = step(fract((uv.y - glow_pos.y) / 0.014), 0.09) * body * (1.0 - belfry) * step(glow_pos.y + 0.04, uv.y);
 	col = mix(col, near_color * 1.4, tower);
 	col += vec3(0.012, 0.014, 0.02) * course;
-	col = mix(col, glow_color * 0.75, belfry);
+	// 鐘室開口裡是燈前的鐘：深色的鐘形剪影（肩、細腰、外翻的鐘口）＋上面的橫梁，燈光從後面透出來（D-092）
+	float by0 = glow_pos.y - 0.017;
+	float by1 = glow_pos.y + 0.013;
+	float yn = clamp((uv.y - by0) / (by1 - by0), 0.0, 1.0);
+	float bell_w = mix(0.0036, 0.0098, pow(yn, 2.4)) + 0.0012 * smoothstep(0.0, 0.12, yn) * (1.0 - smoothstep(0.12, 0.35, yn));
+	float bell = step(abs(tx), bell_w) * step(by0, uv.y) * step(uv.y, by1);
+	float beam = step(glow_pos.y - 0.022, uv.y) * step(uv.y, glow_pos.y - 0.0185);
+	float hanger = step(abs(tx), 0.0009) * step(glow_pos.y - 0.0185, uv.y) * step(uv.y, by0);
+	// 開口裡的光：下面亮、上面暗一點（燈在鐘後面偏下），邊緣收暗
+	float bel_light = mix(0.55, 0.85, smoothstep(glow_pos.y - 0.026, glow_pos.y + 0.022, uv.y))
+			* (1.0 - 0.35 * smoothstep(tower_w * 0.25, tower_w * 0.42, abs(tx)));
+	col = mix(col, glow_color * bel_light, belfry);
+	col = mix(col, near_color * 2.2, belfry * max(max(bell, beam), hanger));
 	// 塔身中段兩道窄窗（樓梯間的微光，比鐘室暗很多）
 	float slit_w = step(abs(tx), tower_w * 0.11);
 	float slit = slit_w * (step(glow_pos.y + 0.11, uv.y) * step(uv.y, glow_pos.y + 0.13)
@@ -104,13 +116,28 @@ void fragment() {
 	// 近的一排屋頂（最暗）＋幾扇亮著的窗
 	float near_h = roofline(ax, 0.13, 0.84, 0.08, 5.0);
 	float near_mask = smoothstep(near_h - 0.0015, near_h + 0.0015, uv.y);
+	// 亮窗（D-092）：十字窗櫺、每扇亮度與色溫不同、少數幾扇極慢地明暗（像燭火），周圍一圈很淡的暖光
 	vec2 wcell = vec2(ax / 0.032, uv.y / 0.045);
+	vec2 wid = floor(wcell);
 	vec2 wf = fract(wcell);
-	float lit = step(0.9, hash(floor(wcell) + vec2(11.0, 3.0)));
-	float win = lit * step(0.3, wf.x) * step(wf.x, 0.7) * step(0.25, wf.y) * step(wf.y, 0.75)
-			* step(0.875, uv.y);
+	// 整扇窗都在 0.875 以下才亮（之前是逐像素切，最上面一排會被切成半扇）
+	float lit = step(0.9, hash(wid + vec2(11.0, 3.0))) * step(0.875, (wid.y + 0.25) * 0.045);
+	float wbox = step(0.3, wf.x) * step(wf.x, 0.7) * step(0.25, wf.y) * step(wf.y, 0.75);
+	vec2 wl = vec2((wf.x - 0.3) / 0.4, (wf.y - 0.25) / 0.5);
+	float mullion = max(step(abs(wl.x - 0.5), 0.07), step(abs(wl.y - 0.42), 0.05));
+	float h1 = hash(wid + vec2(5.3, 17.1));
+	float h2 = hash(wid + vec2(29.7, 2.9));
+	float h3 = hash(wid + vec2(8.1, 41.3));
+	float flicker = 1.0 + step(0.55, h3) * 0.14 * sin(TIME * (0.35 + h3 * 0.5) + h1 * 31.0)
+			* (0.6 + 0.4 * sin(TIME * (1.3 + h2) + h2 * 17.0));
+	float bright = mix(0.42, 0.95, h1) * flicker;
+	vec3 wcol = mix(window_color, vec3(1.0, 0.52, 0.24), h2 * 0.8);
+	// 窗內下半稍亮（窗簾後的燈在低處）
+	float inner = mix(0.85, 1.1, wl.y);
+	float win = lit * wbox * (1.0 - mullion * 0.82);
+	float halo = lit * (1.0 - wbox) * exp(-(pow(wf.x - 0.5, 2.0) * 22.0 + pow(wf.y - 0.5, 2.0) * 9.0));
 	col = mix(col, near_color, near_mask);
-	col += window_color * win * near_mask * 0.5;
+	col += wcol * near_mask * (win * bright * inner + halo * bright * 0.09);
 
 	// 前景的低霧：貼著地面，比較濃、比較快
 	float g1 = fbm(vec2(ax * 3.0 + t * 12.0, uv.y * 6.0 - t * 2.0));
