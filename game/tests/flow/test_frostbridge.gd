@@ -556,6 +556,20 @@ func test_stall_fill_light() -> void:
 	await _free(level)
 
 
+## D-096（第三輪盤點第 2 項）：樓上不再大片空白——高的房子每層都有窗、寬的房子樓上中間再一扇；
+## 約四分之一的房子門邊吊一塊木招牌。新加的窗與招牌用位置雜湊，房子配置不變。
+func test_upper_floors_have_windows_and_signs() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var upper: int = int(level.get("upper_window_count"))
+	var signs: int = int(level.get("shop_sign_count"))
+	var total: int = int(level.get("window_count"))
+	assert_true(upper >= 20, "樓上補開了不少窗（%d 扇）" % upper)
+	assert_true(upper < total, "原本的窗還在（全部 %d 扇）" % total)
+	assert_true(signs >= 4 and signs <= 20, "有幾家掛著店招（%d 塊）" % signs)
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

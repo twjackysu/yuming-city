@@ -55,6 +55,9 @@ var lantern_count: int = 0
 var window_count: int = 0
 var door_count: int = 0
 var lit_window_count: int = 0
+## D-096：樓上補開的窗、門邊的店招（測試用）
+var upper_window_count: int = 0
+var shop_sign_count: int = 0
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
 
@@ -687,8 +690,71 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 				l.position = pos + face * 0.6
 				holder.add_child(l)
 				light_count += 1
+	_upper_windows(batch, front, w, h, dir, face, floors, window_mat)
+	if not collapsible and _house_hash(center, 3.3) < 0.28:
+		var sign_side: float = 1.0 if door_off < 0.0 else -1.0
+		_shop_sign(batch, front + dir * (door_off - sign_side * 0.95), face)
 	if collapsible:
 		batch.build(holder, "Mesh")
+
+
+## 樓上的窗（D-096，第三輪盤點第 2 項）：原本兩層樓的房子只在 1.6、4.0 m 各開兩扇窗，
+## 高的房子 4.5 m 以上、矮的房子 2 m 以上是一整片灰泥（主街、石階兩側的上層牆面大片空白）。
+## 每一層放得下窗（窗頂離屋簷 ≥ 0.4 m）就開兩扇，寬的房子樓上中間再一扇；最高一層的窗小一點。
+## 亮不亮用位置雜湊（不動 _rng，整個鎮的配置不變），不另外打燈（燈數上限）。
+func _upper_windows(batch: StaticBatch, front: Vector3, w: float, h: float, dir: Vector3, face: Vector3,
+		existing_floors: int, window_mat: Material) -> void:
+	var top_floor: int = int(floor((h - 0.85 - 1.6) / 2.4))
+	for f: int in range(1, top_floor + 1):
+		var spots: Array[float] = []
+		if f >= existing_floors:
+			spots.append(-w * 0.3)
+			spots.append(w * 0.3)
+		if w > 5.2:
+			spots.append(0.0)
+		var small: bool = f == top_floor and f >= 2
+		var size: Vector2 = Vector2(0.6, 0.75) if small else Vector2(0.7, 0.9)
+		for along: float in spots:
+			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4 - (0.08 if small else 0.0), 0)
+			var lit: bool = _house_hash(pos, 7.7) < 0.32
+			batch.add_box_tinted(_axis_size(dir, face, size.x, 0.08, size.y), pos, window_mat,
+				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
+			window_count += 1
+			upper_window_count += 1
+			if lit:
+				lit_window_count += 1
+
+
+## 店招（D-096）：約四分之一的房子門邊伸出一支鐵架，吊一塊木招牌（跟木箱同一個木頭材質）。
+## 招牌垂直於牆面，從街上斜看時是一塊突出的剪影，打破一整排平的牆面。
+func _shop_sign(batch: StaticBatch, wall_pos: Vector3, face: Vector3) -> void:
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)  # 跟門邊掛燈的鐵件同一個材質
+	var reach: float = 0.95
+	var arm_y: float = 3.05
+	var across: Vector3 = Vector3(absf(face.z), 0, absf(face.x))  # 沿牆方向
+	var out: Vector3 = Vector3(absf(face.x), 0, absf(face.z))     # 垂直牆面的軸
+	# 鐵架：一支水平臂＋一支斜撐＋貼牆的底板
+	batch.add_box_at(out * reach + Vector3(0.04, 0.04, 0.04), wall_pos + face * (reach * 0.5) + Vector3(0, arm_y, 0), iron, false)
+	batch.add_box_at(Vector3(0.05, 0.36, 0.05) + across * 0.1, wall_pos + face * 0.03 + Vector3(0, arm_y - 0.12, 0), iron, false)
+	var brace := BoxMesh.new()
+	brace.size = Vector3(0.03, 0.03, 0.62)
+	var brace_mid: Vector3 = wall_pos + face * 0.26 + Vector3(0, arm_y - 0.2, 0)
+	var brace_basis := Basis.looking_at((face * 0.5 + Vector3(0, 0.4, 0)).normalized(), Vector3.UP if absf(face.y) < 0.9 else Vector3.FORWARD)
+	batch.add_mesh(brace, Transform3D(brace_basis, brace_mid), iron)
+	# 兩條短鏈＋木招牌（垂直於牆、比臂短一點）
+	var board_c: Vector3 = wall_pos + face * (reach * 0.55) + Vector3(0, arm_y - 0.48, 0)
+	for k: float in [-0.28, 0.28]:
+		batch.add_box_at(Vector3(0.015, 0.24, 0.015), board_c + face * k + Vector3(0, 0.37, 0), iron, false)
+	var board_size: Vector3 = out * 0.72 + across * 0.06 + Vector3(0, 0.5, 0)
+	batch.add_box_tinted(board_size, board_c, look.door(), FrostbridgeLook.crate_tint(board_c), false)
+	# 招牌頂上一小條雪
+	batch.add_box_at(out * 0.72 + across * 0.08 + Vector3(0, 0.035, 0), board_c + Vector3(0, 0.27, 0), look.snow(), false)
+	shop_sign_count += 1
+
+
+## 房子裝飾用的位置雜湊（0～1，不動 _rng）。
+static func _house_hash(p: Vector3, salt: float) -> float:
+	return fposmod(sin(p.x * 12.9898 + p.y * 4.1414 + p.z * 78.233 + salt * 37.719) * 43758.5453, 1.0)
 
 
 ## 陷落後的屋頂（D-091）：完整的三角屋頂陷下去以後是一大片平的淺色斜面（第二輪盤點第 9 項）。
