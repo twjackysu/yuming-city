@@ -4,8 +4,8 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 32 輪）最後一次程式 push 見 PROGRESS 第 32 輪收尾補記，**先確認它整個綠燈**。第 32 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 290 個測試）與截圖：2bdbc26 拱石放射縫（D-132）、e89378c 拿掉破屋頂屋簷那團雪（D-133）、3d5a9ec 雪帶一串腳印（D-134）、之後一個只改註解編號的 commit。紅了就看 log 修，修不好 `git revert`。
-- **看 screens 的新圖**（先 `unzip -l screens.zip` 看時間，確定是第 32 輪最後一個程式 commit 之後的建置）：`08` 石拱預覽（預覽長到拱圈時是放射縫，D-132）；`06-rescue` 諾恩腳邊沒有白色雪塊（D-133）、破屋頂露出屋瓦是一排排橫條（D-131，CI 對比比本機強，還像髒污就調 `snow.gdshader` 的門檻 0.37～0.41）；`05`、`07` 雪帶上一串腳印（D-134；**特別看**：像不像一排黑洞——太暗就再降 `col *= 1.0 - 0.22 * dent`，太規則就加大 `line_d` 的偏移）；`03`、`04` 廣場中央的鐘剪影（D-130）遠看認不認得出是鐘。
+- 上一輪（第 32 輪）最後一次程式 push 見 PROGRESS 第 32 輪收尾補記，**先確認它整個綠燈**。第 32 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 290 個測試）與截圖：2bdbc26 拱石放射縫（D-132）、e89378c 拿掉破屋頂屋簷那團雪（D-133）、3d5a9ec 雪帶一串腳印（D-134）、d848abf 註解編號、704c087 預覽淡輪廓的放射縫（D-135，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- **看 screens 的新圖**（先 `unzip -l screens.zip` 看時間，確定是第 32 輪最後一個程式 commit 之後的建置）：`08` 石拱預覽（還沒長到的拱圈也淡淡看得到拱石，D-135；太亮或太花就降 `restore_ghost.gdshader` 的 `0.14 * ring_seam`）；`06-rescue` 諾恩腳邊沒有白色雪塊（D-133）、破屋頂露出屋瓦是一排排橫條（D-131，CI 對比比本機強，還像髒污就調 `snow.gdshader` 的門檻 0.37～0.41）；`05`、`07` 雪帶上一串腳印（D-134；**特別看**：像不像一排黑洞——太暗就再降 `col *= 1.0 - 0.22 * dent`，太規則就加大 `line_d` 的偏移）；`03`、`04` 廣場中央的鐘剪影（D-130）遠看認不認得出是鐘。
 - `docs/PROGRESS.md` 約 200 行（第 30 輪已把第 19～23 輪合併成每日摘要）；超過約 300 行時把第 24～28 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
