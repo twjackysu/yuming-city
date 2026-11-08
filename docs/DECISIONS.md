@@ -2,6 +2,24 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-041　2026-11-08　角色模型接入點：art-inbox → 收件檢查 → game/assets/characters → Puppet
+
+- 決策：Jacky 把正式模型放在 `art-inbox/characters/<id>/<id>.glb`（LFS）。`scripts/gen-assets.sh` 呼叫 `scripts/import_characters.py`，用 Jacky 的 `scripts/check_character_glb.py` 收件檢查；通過才複製到 `game/assets/characters/<id>/<id>.glb`（不進 git，CI 只 `git lfs pull` 這個資料夾）。遊戲端 `Puppet` 加 `character_id`：找得到模型（有 Skeleton3D）就用模型＋AnimationPlayer，狀態對應動作表（idle／walk／run／dodge_roll／light_attack_01，容許 glTF 前綴），手掛點用 BoneAttachment3D（Mixamo 骨骼名在 Godot 匯入後是 `mixamorig_LeftHand`）；缺的閃避動作退回整個人前滾、其他退回 idle；找不到或沒有骨架就用程序人偶。
+- 理由：Jacky 正在做正式模型（`ART_PRODUCTION.md`、`ART_QUALITY_BAR.md`），模型一到就要能換上、不用再改外部程式；收件檢查沿用他定的標準，不合格的模型不會偷偷進遊戲。`art-inbox/` 在 Godot 專案外面，匯出時打包不到，所以要複製進 `game/`。
+- 影響：PlayerController／Sheila 呼叫的介面不變（set_move_speed、play_action、current_state、hand）。碰撞、AI、弱點判定不跟模型走。之後要接 AnimationTree（混合、上半身疊加）時改 `Puppet._animate_model()`。雲端 session 沒有 LFS 檔時一律用程序人偶，所以測試用程式組的假模型驗證。
+
+## D-040　2026-11-08　目標指引：小菱形＋距離，目標寫在任務資料
+
+- 決策：HUD 畫一個指向目前目標的小菱形＋距離（畫面外貼邊緣加方向三角）；平常半透明、目標文字亮著時全亮；戰鬥中、對話／過場／倒下、離目標 4 公尺內不顯示；設定「目標指引」可關（預設開）。目標寫在 `slice_main.json` 每個階段的 `marker`（`node:`、`nearest:`、`[x,y,z]`）與 `marker_if`（依狀態換目標），測試要求每個階段都有。
+- 理由：霜橋鎮比沙盒大，NEXT 記下「玩家可能不知道要去哪」；菱形在霧裡、身後都看得到，比光柱便宜、也不用改場景。資料驅動，之後的章節照填。
+- 影響：02-gameplay 新增「目標指引」一節。之後覺得太「遊戲」可以改成目標地點的淡暖光柱，用同一份資料。
+
+## D-039　2026-11-08　房子外牆：半木構 shader（一樓石牆、樓上灰泥＋木框），後牆／城牆／鐘樓改石牆
+
+- 決策：`src/world/half_timber.gdshader`，世界座標、依法線選投影面（朝 ±X 用 ZY、朝 ±Z 用 XY），2.6 公尺以下錯位石塊＋灰縫、以上灰泥＋每層橫梁、1.5 公尺立柱、部分格子斜撐；牆腳濕、積雪，橫梁上緣薄雪；遠處細節淡掉。`FrostbridgeLook.half_timber()`（灰泥冷／暖兩色）與 `stone_wall()`（同 shader、石牆拉到頂）。門口掛燈用位置雜湊決定、不動配置用的 `_rng`。
+- 理由：概念圖的第二個辨識點是半木構房子；平塗暗色方塊是目前第一眼最大的缺點。跟濕石板路同一套做法，不需要貼圖、仍可被 StaticBatch 合併（材質數只多 3～4 個）。
+- 影響：房子大小與位置是隨機的，木框用世界座標的固定間距，所以立柱不一定對齊房子邊緣（遠看不明顯）。之後要更精緻時可以在 `_house` 裡加真的角柱幾何。
+
 ## D-038　2026-11-08　主線流程測試改成真的換場景＋每個檢查點重來
 
 - 決策：`tests/flow/test_slice_playthrough.gd` 用 `Game.go_to_level("frostbridge")`（`change_scene_to_file`）進關卡，從新遊戲走到地窖；每進一個檢查點就呼叫 `Game.retry()`（真的重新載入場景），檢查任務階段、HUD 目標、出生位置、場上的人（席菈、灰巡者、受困者、送葬者）與記憶代價。九息與薪火劍兩條路線各跑一次。

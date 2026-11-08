@@ -124,6 +124,15 @@ scenes/bench/           benchmark.tscn（固定鏡頭路徑，結束寫 user://b
 scenes/dev/             sandbox（測試移動、鏡頭、戰鬥用）
 ```
 
+### 角色模型接入點（D-041）
+
+- 交件：`art-inbox/characters/<id>/<id>.glb`（id：noen、sheila、undertaker、ashwalker；規格見 `art-inbox/README.md`、`docs/ART_QUALITY_BAR.md`）。
+- 收件：`scripts/gen-assets.sh` → `scripts/import_characters.py` → `scripts/check_character_glb.py`（靜態檢查、不執行模型內容）。通過才複製到 `game/assets/characters/<id>/<id>.glb`（gitignore）；LFS 指標檔略過；沒過就刪掉舊複本。CI 先 `git lfs pull --include="art-inbox/characters/**"`。
+- 遊戲端：`CharacterModels`（路徑、動作表對應、手骨骼名稱）＋`Puppet.character_id`。有 Skeleton3D 的模型才採用；AnimationPlayer 依 `current_state()` 播 `ANIM_MAP` 裡的第一個存在的動作（idle、walk、run、dodge_roll、light_attack_01；比對結尾，所以 `Armature|idle` 也行），走跑循環、播放速度跟移動速度走。缺閃避動作 → 整個人前滾；缺其他 → idle。
+- 掛點：`hand("L"|"R")` 回傳手骨骼上的 BoneAttachment3D（`lefthand`／`hand_l`／`hand.l`…，去掉 `mixamorig_` 前綴比對）；找不到骨骼就放在估計位置並警告。提燈、鐘錘、席菈的劍照舊掛上。
+- 不跟模型走的：碰撞膠囊、AI、弱點判定（灰巡者左膝、送葬者鐵架關節的位置仍由程式決定，之後用骨骼名或 Marker 對齊時要在這裡補）。
+- 下一步：敵人（Undertaker、Ashwalker）也走同一個入口；動作多了以後換 AnimationTree。
+
 ### 測試與命令列
 
 - `scripts/check.sh`：import（兩次，D-006）→ 所有腳本載入 → `tests/unit` → `tests/flow`。
