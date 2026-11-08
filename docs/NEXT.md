@@ -15,7 +15,7 @@
 
 ## 1. 第一眼的小毛病（ART_QUALITY_BAR 盤點出來、還沒修的）
 
-- **重現提示文字壓到石拱輪廓**：`nine_breath_site.gd` 的 `_label`（Label3D，`position = Vector3(0, 2.6, 0)`）在畫面中央蓋住石拱（第 14 輪截圖 `--convoy --throw=arch` 也看得到「Restored — 6s left」壓在拱頂）。可試：移到石拱上方 5 m 以上、或改成 HUD 上的 2D 提示（跟目標指引同一排）、字小一點。截圖 `--arch=preview`、`--arch=restored`、`--convoy --throw=arch --throw-t=0.5`。
+- **（最優先）重現提示被記憶代價面板蓋住**：第 14 輪截圖 `--level=frostbridge --convoy --arch=preview`：石拱的重現提示（`nine_breath_site.gd` 的 `_label`，Label3D 三行：可以重現／代價／按住 V）在畫面中上方，**右半被「重現的代價」記憶面板蓋住，代價那一行被切掉**（這是玩家最該看清楚的一行），上緣又跟字幕擠在一起，背後還是石拱輪廓。建議：預覽提示改成 HUD 的 2D 提示（畫面下方中央、操作提示上面一排，跟記憶面板不重疊），Label3D 只留一個小的「按住 V」或拿掉；重現中的「剩 N 秒」（`position.y = 5.3`、64 號字）也一起搬到 HUD。改完截 `--arch=preview`、`--arch=restored`、`--convoy --throw=arch --throw-t=0.5` 對照，中英文都看（英文較長）。
 - **按鍵設定頁的手把圖示是文字**（A／B／LB）：可以用程序畫的圓形按鈕圖示（`InputGlyphs` 產生 `Texture2D`：圓底＋字母，ABXY 用不同底色；LB／RB／LT／RT 用圓角矩形），鍵鼠維持文字。按鍵設定頁的焦點規則見 D-057（新的疊加選單都要把焦點關住）。
 - **標題畫面霧層幾乎看不出來**：`scenes/boot/title_fog.gdshader`；不帶 `--level` 的截圖就是標題畫面（`scripts/screenshot.sh out.png 30`），前後對照。
 
