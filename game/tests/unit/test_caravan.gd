@@ -113,3 +113,42 @@ func test_lantern_glass_fades_near_camera() -> void:
 		assert_true(m.distance_fade_min_distance < m.distance_fade_max_distance and m.distance_fade_min_distance > 0.3, "淡掉的距離合理")
 	caravan.queue_free()
 	await tree.process_frame
+
+
+## 推車從後面追上諾恩時會經過鏡頭底下（第三輪盤點第 9 項，D-106）：推車與傷者的材質離鏡頭太近就抖動淡掉，
+## 燈罩維持自己的淡出距離。
+func test_cart_fades_near_camera() -> void:
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(0, 0, 0), Vector3(0, 0, -10)])
+	tree.root.add_child(caravan)
+	var mats: Array[BaseMaterial3D] = []
+	_collect(caravan, mats)
+	assert_true(mats.size() >= 6, "推車、布、傷者都有材質（%d）" % mats.size())
+	var faded: int = 0
+	for m: BaseMaterial3D in mats:
+		if m.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER:
+			faded += 1
+	assert_eq(faded, mats.size(), "每個材質離鏡頭太近都會淡掉（%d/%d）" % [faded, mats.size()])
+	var wood: BaseMaterial3D = (caravan.find_child("Cart", true, false).get_child(0) as CSGBox3D).material as BaseMaterial3D
+	assert_true(absf(wood.distance_fade_min_distance - Caravan.CART_FADE_NEAR) < 0.001, "推車木頭 %.2f" % wood.distance_fade_min_distance)
+	assert_true(absf(wood.distance_fade_max_distance - Caravan.CART_FADE_FAR) < 0.001, "推車木頭 %.2f" % wood.distance_fade_max_distance)
+	assert_true(Caravan.CART_FADE_FAR < PlayerController.CAMERA_DIST_COMBAT - 0.6, "戰鬥時鏡頭在諾恩身後 4.2 m：諾恩身邊的推車不會淡掉")
+	var glass: MeshInstance3D = caravan.find_child("LanternGlass", true, false) as MeshInstance3D
+	assert_true(absf((glass.material_override as BaseMaterial3D).distance_fade_max_distance - Caravan.GLASS_FADE_FAR) < 0.001, "燈罩維持自己的淡出距離")
+	caravan.queue_free()
+	await tree.process_frame
+
+
+func _collect(node: Node, out: Array[BaseMaterial3D]) -> void:
+	var cands: Array = []
+	if node is CSGPrimitive3D:
+		cands.append(node.get("material"))
+	if node is GeometryInstance3D:
+		cands.append((node as GeometryInstance3D).material_override)
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh is PrimitiveMesh:
+		cands.append(((node as MeshInstance3D).mesh as PrimitiveMesh).material)
+	for c: Variant in cands:
+		if c is BaseMaterial3D and not out.has(c):
+			out.append(c as BaseMaterial3D)
+	for child: Node in node.get_children():
+		_collect(child, out)

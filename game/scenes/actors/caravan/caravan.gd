@@ -12,6 +12,11 @@ const CLOTH: Color = Color(0.32, 0.29, 0.26)
 ## 燈罩離鏡頭這麼近以內看不到、到 FAR 才完全不透明
 const GLASS_FADE_NEAR: float = 0.8
 const GLASS_FADE_FAR: float = 2.2
+## 推車與傷者：離鏡頭 CART_FADE_NEAR 以內看不到、到 CART_FADE_FAR 才完全不透明（D-106）。
+## 車隊戰時過肩鏡頭在諾恩身後約 4.2 m（CAMERA_DIST_COMBAT）：推車從後面追上來、經過鏡頭底下時
+## 不再擋住半個畫面；推車在諾恩身邊或前面時（離鏡頭 3.4 m 以上）照常看得到。
+const CART_FADE_NEAR: float = 1.6
+const CART_FADE_FAR: float = 3.4
 
 var route: PackedVector3Array = []
 var runner: CaravanRunner
@@ -157,3 +162,4 @@ func _build() -> void:
 		cap.material_override = iron
 		cap.position = _lantern.position + Vector3(0.0, y, 0.0)
 		_cart.add_child(cap)
+	CameraFade.apply(_cart, CART_FADE_NEAR, CART_FADE_FAR)
