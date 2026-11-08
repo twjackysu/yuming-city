@@ -275,15 +275,8 @@ func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> v
 	ps.scale_amount_max = 1.6
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.35, 0.35)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = color
-	# 圓形、邊緣淡出的貼圖（沒有貼圖時是硬邊方塊，一眼就看得出是方形面片）
-	mat.albedo_texture = soft_dot_texture()
-	quad.material = mat
+	# 圓形、邊緣淡出的貼圖（沒有貼圖時是硬邊方塊，一眼就看得出是方形面片；D-056）
+	quad.material = ParticleLook.material(color)
 	ps.mesh = quad
 	var ramp := Gradient.new()
 	ramp.set_color(0, Color(1, 1, 1, 1))
@@ -294,20 +287,9 @@ func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> v
 	ps.emitting = true
 
 
-## 粒子用的柔邊圓點（中心白、往外透明；32×32，倒下時才建一張）。
+## 粒子用的柔邊圓點（共用 ParticleLook，D-056）。
 static func soft_dot_texture() -> GradientTexture2D:
-	var g := Gradient.new()
-	g.set_color(0, Color(1, 1, 1, 1))
-	g.set_color(1, Color(1, 1, 1, 0))
-	g.add_point(0.45, Color(1, 1, 1, 0.55))
-	var t := GradientTexture2D.new()
-	t.gradient = g
-	t.fill = GradientTexture2D.FILL_RADIAL
-	t.fill_from = Vector2(0.5, 0.5)
-	t.fill_to = Vector2(1.0, 0.5)
-	t.width = 32
-	t.height = 32
-	return t
+	return ParticleLook.soft_dot()
 
 
 func _update_insight() -> void:

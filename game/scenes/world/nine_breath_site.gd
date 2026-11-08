@@ -358,14 +358,9 @@ func _build() -> void:
 	_ash.scale_amount_min = 0.5
 	_ash.scale_amount_max = 1.2
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.06, 0.06)
-	var am := StandardMaterial3D.new()
-	am.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	am.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	am.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	am.vertex_color_use_as_albedo = true
-	am.albedo_color = Color(0.7, 0.72, 0.76, 0.85)
-	quad.material = am
+	# 柔邊圓點（D-056）：比方形面片大一點，看起來一樣大但邊緣是散的灰
+	quad.size = Vector2(0.09, 0.09)
+	quad.material = ParticleLook.material(Color(0.7, 0.72, 0.76, 0.85), false, BaseMaterial3D.BILLBOARD_PARTICLES)
 	_ash.mesh = quad
 	var ramp := Gradient.new()
 	ramp.set_color(0, Color(0.85, 0.92, 1.0, 1.0))

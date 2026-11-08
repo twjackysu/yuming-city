@@ -413,14 +413,9 @@ func _build_sword() -> Node3D:
 	_fire_sparks.initial_velocity_max = 1.2
 	_fire_sparks.local_coords = false
 	var spark := QuadMesh.new()
-	spark.size = Vector2(0.035, 0.035)
-	var spark_mat := StandardMaterial3D.new()
-	spark_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	spark_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	spark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	spark_mat.vertex_color_use_as_albedo = true
-	spark_mat.albedo_color = Color(1.0, 0.62, 0.25)
-	spark.material = spark_mat
+	# 圓形亮點＋加法混色（D-056）：比方形面片大一點，亮心一樣大，疊在一起更亮
+	spark.size = Vector2(0.05, 0.05)
+	spark.material = ParticleLook.material(Color(1.0, 0.62, 0.25), true)
 	_fire_sparks.mesh = spark
 	var ramp := Gradient.new()
 	ramp.set_color(0, Color(1, 1, 1, 1))

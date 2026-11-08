@@ -165,7 +165,7 @@ func _impact() -> void:
 			_landed.append(false)
 			_vel.append(side * s * _rng.randf_range(3.0, 4.0) + back * 0.8 + Vector3.UP * 2.5)
 			_spin.append(Vector3(_rng.randf_range(-6.0, 6.0), s * 5.0, 0))
-		_burst(at, HOT, 48, 5.0, 0.05, 1.1)
+		_burst(at, HOT, 48, 5.0, 0.07, 1.1, true)
 		_light(at, HOT, 4.0)
 	impacted.emit(outcome)
 
@@ -209,7 +209,7 @@ func _hot_tip(pos: Vector3) -> MeshInstance3D:
 	return mi
 
 
-func _burst(at: Vector3, color: Color, amount: int, speed: float, size: float, life: float) -> void:
+func _burst(at: Vector3, color: Color, amount: int, speed: float, size: float, life: float, additive: bool = false) -> void:
 	var ps := CPUParticles3D.new()
 	ps.name = "Burst"
 	ps.position = at
@@ -228,13 +228,8 @@ func _burst(at: Vector3, color: Color, amount: int, speed: float, size: float, l
 	ps.scale_amount_max = 1.4
 	var quad := QuadMesh.new()
 	quad.size = Vector2(size, size)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = color
-	quad.material = mat
+	# 石粉是柔邊圓點、火星是加法混色的亮點（D-056；沒貼圖時是硬邊方塊）
+	quad.material = ParticleLook.material(color, additive)
 	ps.mesh = quad
 	var ramp := Gradient.new()
 	ramp.set_color(0, Color(1, 1, 1, 1))
