@@ -748,7 +748,7 @@ func test_ground_snow_and_ruts() -> void:
 		for l: Vector4 in lanes:
 			inside = inside or (absf(probe.x - l.x) < l.z and absf(probe.y - l.y) < l.w)
 		assert_true(inside, "(%.0f, %.0f) 在街道範圍裡" % [probe.x, probe.y])
-	for mouth: Vector2 in [Vector2(0, -10), Vector2(0, 10)]:
+	for mouth: Vector2 in [Vector2(0, -10), Vector2(0, 10), Vector2(0, 34), Vector2(0, 35)]:
 		var deep: float = 0.0
 		for l: Vector4 in lanes:
 			var d := Vector2(l.z - absf(mouth.x - l.x), l.w - absf(mouth.y - l.y))

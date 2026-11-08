@@ -508,7 +508,7 @@ func ground_lanes() -> Array[Vector4]:
 	return [
 		Vector4(0.0, 0.0, PLAZA_HALF, PLAZA_S),
 		Vector4(0.0, (NORTH_END - 1.0) * 0.5, MAIN_HALF, (1.0 - NORTH_END) * 0.5),
-		Vector4(0.0, (CROSS_N + 1.0) * 0.5, SOUTH_HALF, (CROSS_N + 1.0) * 0.5),
+		Vector4(0.0, CROSS_S * 0.5, SOUTH_HALF, CROSS_S * 0.5),  # 一路伸到路口南邊的牆：南街口不會積成一道雪
 		Vector4(0.0, (CROSS_N + CROSS_S) * 0.5, CROSS_HALF, (CROSS_S - CROSS_N) * 0.5),
 	]
 
