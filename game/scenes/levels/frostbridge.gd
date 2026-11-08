@@ -395,14 +395,16 @@ func _build_rise() -> void:
 	var run: float = (STEPS_S - STEPS_N) / float(STEP_COUNT - 1)  # 每級的深度
 	var step_h: float = RISE / float(STEP_COUNT)
 	var stone := look.stone_wall(1.0)  # 跟後牆同一個材質（不多一個 draw call）
+	var tread := look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4)  # 踏面跟台地上的濕石板同一個材質
 	var snow := look.mat(FrostbridgeLook.SNOW)
 	for i: int in STEP_COUNT - 1:
 		var top: float = step_h * float(i + 1)
 		var front: float = STEPS_S - run * float(i)
 		# 每一級從前緣一路延伸到台地（上一級蓋住後段），兩側離房子 5 cm 避免共面閃爍
 		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, top, front - STEPS_N), Vector3(0.0, top * 0.5, (front + STEPS_N) * 0.5), stone, false)
-		# 踏面前緣一條薄雪
-		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.6, 0.02, 0.12), Vector3(0.0, top + 0.01, front - 0.08), snow, false)
+		# 看得到的踏面鋪濕石板（之前石牆材質在霧裡偏灰白、偏平）；前緣一條薄雪蓋在上面
+		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, 0.01, run), Vector3(0.0, top + 0.005, front - run * 0.5), tread, false)
+		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.6, 0.02, 0.12), Vector3(0.0, top + 0.015, front - 0.08), snow, false)
 	# 斜坡碰撞：上表面通過每一級的前緣——從第一級前面一級深度處的地面（STEPS_S + run）到台地邊（STEPS_N）
 	var horizontal: float = STEPS_S + run - STEPS_N
 	var angle: float = atan2(RISE, horizontal)
