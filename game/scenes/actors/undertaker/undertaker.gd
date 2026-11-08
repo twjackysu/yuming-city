@@ -18,6 +18,13 @@ signal fell
 
 const FROST: Color = Color(0.55, 0.82, 1.0)
 const TELEGRAPH_SHADER: String = "res://src/world/telegraph.gdshader"
+## 霧裡的輪廓（D-101）：鐵架的冷色邊緣光＋朝上的薄霜、腳下的接地陰影
+const FRAME_IRON_SHADER: String = "res://scenes/actors/undertaker/frame_iron.gdshader"
+const GROUND_SHADOW_SHADER: String = "res://scenes/actors/undertaker/ground_shadow.gdshader"
+## 大衣的底色：比霧暗得多，隔著霧才看得出一個深色的人形（原本 0.11，跟夜霧差不多亮）
+const ROBE_ALBEDO: Color = Color(0.055, 0.055, 0.065)
+const GROUND_SHADOW_RADIUS: float = 1.15
+const GROUND_SHADOW_STRENGTH: float = 0.6
 ## 前兆範圍的形狀（telegraph.gdshader 的 shape）
 const SHAPE_DISC: int = 0
 const SHAPE_LANE: int = 1
@@ -333,9 +340,20 @@ func _on_died() -> void:
 	t.tween_property(_body, "rotation_degrees:x", FALL_FORWARD * 84.0, FALL_DROP_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	t.parallel().tween_property(_body, "position:y", 0.3, FALL_DROP_SEC)
 	t.parallel().tween_property(torso, "rotation_degrees", Vector3.ZERO, FALL_DROP_SEC)
+	# 接地陰影跟著倒下的身體往前、拉長成躺著的形狀（D-101）
+	var shadow: MeshInstance3D = ground_shadow()
+	if shadow != null:
+		var fwd: Vector3 = forward()
+		fwd.y = 0.0
+		var lying_at: Vector3 = to_local(global_position + fwd.normalized() * 1.1)
+		lying_at.y = 0.015
+		shadow.rotation.y = _body.rotation.y
+		t.parallel().tween_property(shadow, "position", lying_at, FALL_DROP_SEC)
+		t.parallel().tween_property(shadow, "scale", Vector3(0.9, 1.0, 1.8), FALL_DROP_SEC)
 	t.tween_callback(_on_fall_impact)
 	t.tween_interval(FALL_LIE_SEC)
 	t.tween_property(_body, "position:y", -1.4, FALL_SINK_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.parallel().tween_method(_set_shadow_strength, GROUND_SHADOW_STRENGTH, 0.0, FALL_SINK_SEC)
 	t.tween_callback(queue_free)
 
 
@@ -356,6 +374,11 @@ func _on_fall_impact() -> void:
 ## 兜帽裡的霜光（D-075）；倒下時跪地那段熄掉
 const HOOD_EYE_ENERGY: float = 5.0
 const HOOD_LIGHT_ENERGY: float = 0.9
+const HOOD_LIGHT_RANGE: float = 1.2
+## 兜帽冷光在體積霧裡的亮度（Godot 預設 1.0）：只留一點點霧光，不再是一顆光球
+const HOOD_LIGHT_FOG: float = 0.15
+## 兜帽口最前面的 z（上身座標，-Z 是前方）；頭巾球在 (0, 1.45, -0.32)、半徑 0.26
+const HOOD_FACE_Z: float = -0.6
 
 
 ## 倒地後身上的霜氣散出來：一盞冷光從大衣上方慢慢熄掉，讓暗色大衣在夜裡有輪廓（D-054）。
@@ -423,16 +446,13 @@ func _build_body() -> void:
 	shape.position = Vector3(0, 1.3, 0)
 	add_child(shape)
 	var robe := StandardMaterial3D.new()
-	robe.albedo_color = Color(0.11, 0.11, 0.12)
+	robe.albedo_color = ROBE_ALBEDO
 	robe.roughness = 1.0
 	# 邊緣光：暗色大衣在燈下有一圈輪廓（D-054）
 	robe.rim_enabled = true
 	robe.rim = 0.7
 	robe.rim_tint = 0.35
-	var iron := StandardMaterial3D.new()
-	iron.albedo_color = Color(0.3, 0.24, 0.2)
-	iron.metallic = 0.7
-	iron.roughness = 0.6
+	var iron: ShaderMaterial = frame_iron_material()
 	var torso := Node3D.new()
 	torso.name = "Torso"
 	torso.position = Vector3(0, 1.0, 0)
@@ -472,16 +492,37 @@ func _build_body() -> void:
 		eye.mesh = eye_mesh
 		eye.material_override = eye_mat
 		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		eye.position = Vector3(x, 1.44, -0.53)
+		eye.position = Vector3(x, 1.44, HOOD_FACE_Z - 0.012)
 		torso.add_child(eye)
+	# 兜帽口（D-101）：兜帽前面一塊壓扁的黑色橢球，看起來是兜帽裡一片看不見臉的黑，
+	# 兩點霜光浮在黑裡（原本霜光點在頭巾球裡面被擋住，兜帽冷光又把頭巾照成一顆亮球）
+	var void_mat := StandardMaterial3D.new()
+	void_mat.albedo_color = Color(0.008, 0.008, 0.012)
+	void_mat.roughness = 1.0
+	var void_mesh := SphereMesh.new()
+	void_mesh.radius = 0.17
+	void_mesh.height = 0.34
+	void_mesh.radial_segments = 16
+	void_mesh.rings = 8
+	var face := MeshInstance3D.new()
+	face.name = "HoodVoid"
+	face.mesh = void_mesh
+	face.material_override = void_mat
+	face.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	face.scale = Vector3(1.0, 1.12, 0.35)
+	face.position = Vector3(0, 1.43, HOOD_FACE_Z + 0.17 * 0.35)
+	torso.add_child(face)
 	var hood_light := OmniLight3D.new()
 	hood_light.name = "HoodLight"
 	hood_light.light_color = FROST
 	hood_light.light_energy = HOOD_LIGHT_ENERGY
-	hood_light.omni_range = 2.4
+	# 只照胸口一小塊（D-101）：原本 2.4 m、放在兜帽前，把頭巾照成一顆亮球、整件大衣正面照成霧藍色，
+	# 又在體積霧裡亮成一團光，整個人看起來是一團灰藍
+	hood_light.omni_range = HOOD_LIGHT_RANGE
 	hood_light.omni_attenuation = 1.6
 	hood_light.shadow_enabled = false
-	hood_light.position = Vector3(0, 1.3, -0.8)
+	hood_light.light_volumetric_fog_energy = HOOD_LIGHT_FOG
+	hood_light.position = Vector3(0, 1.05, -0.78)
 	torso.add_child(hood_light)
 	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）；擲出去之後整組藏起來（ThrownFrame 接手）
 	var frame := Node3D.new()
@@ -507,7 +548,43 @@ func _build_body() -> void:
 		arm.rotation_degrees = Vector3(-20, 0, side * 8.0)
 		arm.material = robe
 		torso.add_child(arm)
+	_build_ground_shadow()
 	_build_decals()
+
+
+## 鐵架材質（D-101）：背上的與擲出去的（ThrownFrame）共用
+static func frame_iron_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = load(FRAME_IRON_SHADER) as Shader
+	mat.set_shader_parameter("rim_color", FROST)
+	return mat
+
+
+## 腳下的接地陰影（D-101）：掛在送葬者本身（不跟著 _body 跪下、下沉），永遠貼地
+func _build_ground_shadow() -> void:
+	var plane := PlaneMesh.new()
+	plane.size = Vector2.ONE * GROUND_SHADOW_RADIUS * 2.0
+	var mat := ShaderMaterial.new()
+	mat.shader = load(GROUND_SHADOW_SHADER) as Shader
+	mat.set_shader_parameter("strength", GROUND_SHADOW_STRENGTH)
+	mat.render_priority = -1
+	var mi := MeshInstance3D.new()
+	mi.name = "GroundShadow"
+	mi.mesh = plane
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = Vector3(0, 0.015, 0)
+	add_child(mi)
+
+
+func ground_shadow() -> MeshInstance3D:
+	return get_node_or_null("GroundShadow") as MeshInstance3D
+
+
+func _set_shadow_strength(v: float) -> void:
+	var mi: MeshInstance3D = ground_shadow()
+	if mi != null:
+		(mi.material_override as ShaderMaterial).set_shader_parameter("strength", v)
 
 
 ## 招式 → 地面霜紋（連續下砸共用下砸的圓、抓取用小扇形）

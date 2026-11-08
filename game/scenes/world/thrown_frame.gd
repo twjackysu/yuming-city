@@ -34,7 +34,7 @@ var _vel: Array[Vector3] = []
 var _spin: Array[Vector3] = []
 var _life: float = 0.0
 var _flash: OmniLight3D
-var _iron: StandardMaterial3D
+var _iron: ShaderMaterial
 var _rng := RandomNumberGenerator.new()
 
 
@@ -59,10 +59,8 @@ func _ready() -> void:
 	top_level = true
 	global_transform = Transform3D.IDENTITY
 	_rng.seed = 9091
-	_iron = StandardMaterial3D.new()
-	_iron.albedo_color = Color(0.3, 0.24, 0.2)
-	_iron.metallic = 0.7
-	_iron.roughness = 0.6
+	# 跟背上的鐵架同一個材質：冷色邊緣光＋朝上的薄霜（D-101）
+	_iron = Undertaker.frame_iron_material()
 	_frame = Node3D.new()
 	_frame.name = "Frame"
 	add_child(_frame)

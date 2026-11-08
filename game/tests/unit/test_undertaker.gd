@@ -408,6 +408,12 @@ func test_cut_down_falls_forward_then_sinks() -> void:
 	if frame != null:
 		var up: float = (frame.global_basis * Vector3(0, 0, 1)).y
 		assert_true(up > 0.8, "背上的鐵架朝天（%.2f）" % up)
+	var shadow: MeshInstance3D = boss.ground_shadow()
+	assert_not_null(shadow, "倒地後還有接地陰影")
+	if shadow != null:
+		var at: Vector3 = shadow.global_position - origin
+		assert_true(at.dot(fwd) > 0.8 and shadow.scale.z > 1.5, "接地陰影跟著身體往前、拉長（%.2f m、×%.2f）" % [at.dot(fwd), shadow.scale.z])
+		assert_true(shadow.global_position.y < 0.05, "接地陰影仍貼地")
 	assert_true(boss.has_node("FallPuff"), "落地揚起雪粉")
 	assert_true(boss.has_node("FrostExhale"), "倒地後身上的霜氣散出一盞冷光（暗色大衣在夜裡有輪廓）")
 	assert_eq(boss.collision_layer, 0, "倒下後不再擋路")
@@ -417,6 +423,75 @@ func test_cut_down_falls_forward_then_sinks() -> void:
 		await tree.process_frame
 	assert_false(is_instance_valid(boss), "躺一會兒後沉進雪裡、移除")
 	Engine.time_scale = prev_scale
+	root.queue_free()
+	await tree.process_frame
+
+
+## 霧裡的輪廓（D-101）：大衣比霧暗、兜帽冷光只照一小塊且幾乎不進體積霧、
+## 鐵架（背上的與擲出去的）用冷色邊緣光＋霜的材質、腳下一片貼地的接地陰影（不跟著身體跪下）。
+func test_silhouette_reads_in_fog() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	boss.global_position = Vector3(0, 0, -4.0)
+	await tree.physics_frame
+	var coat: CSGCylinder3D = null
+	for c: Node in boss._body.get_node("Torso").get_children():
+		if c is CSGCylinder3D and coat == null:
+			coat = c as CSGCylinder3D
+	assert_not_null(coat, "找得到大衣")
+	if coat != null:
+		var robe: StandardMaterial3D = coat.material as StandardMaterial3D
+		assert_true(robe.albedo_color.get_luminance() < 0.08, "大衣夠暗，霧裡看得出深色人形（%.3f）" % robe.albedo_color.get_luminance())
+		assert_true(robe.rim_enabled, "大衣保留燈下的邊緣光（D-054）")
+	var hood_light: OmniLight3D = boss._body.get_node("Torso/HoodLight") as OmniLight3D
+	assert_true(hood_light.omni_range <= 1.5, "兜帽冷光只照兜帽口與胸口（%.1f m）" % hood_light.omni_range)
+	assert_true(hood_light.light_volumetric_fog_energy < 0.5, "兜帽冷光不在霧裡亮成一顆光球")
+	# 兜帽口：一片黑，霜光點在黑的前面（看得到），冷光在胸口不在兜帽前（不把頭巾照成亮球）
+	var void_mi: MeshInstance3D = boss._body.get_node_or_null("Torso/HoodVoid") as MeshInstance3D
+	assert_not_null(void_mi, "兜帽口有一片黑")
+	if void_mi != null:
+		var front_z: float = void_mi.position.z - (void_mi.mesh as SphereMesh).radius * void_mi.scale.z
+		var eye: Node3D = boss._body.get_node("Torso/HoodEyeL") as Node3D
+		assert_true(eye.position.z < front_z, "霜光點在兜帽口前面（%.3f < %.3f）" % [eye.position.z, front_z])
+		assert_true(front_z < -0.32 - 0.26 + 0.005, "兜帽口在頭巾球外面（%.3f）" % front_z)
+		assert_true((void_mi.material_override as StandardMaterial3D).albedo_color.get_luminance() < 0.02, "兜帽口是黑的")
+	assert_true(hood_light.position.y < 1.2, "冷光照胸口（上身座標 y %.2f）" % hood_light.position.y)
+	var frame: Node3D = boss._frame_node()
+	assert_not_null(frame, "背上有鐵架")
+	var iron_parts: int = 0
+	for c: Node in frame.get_children():
+		var mat: ShaderMaterial = (c as CSGShape3D).material as ShaderMaterial if c is CSGShape3D else null
+		if mat != null and mat.shader.resource_path == Undertaker.FRAME_IRON_SHADER:
+			iron_parts += 1
+			assert_eq(mat.get_shader_parameter("rim_color"), Undertaker.FROST, "鐵件的邊緣光是霜色")
+	assert_eq(iron_parts, frame.get_child_count(), "鐵架每一根都用鐵架材質（%d／%d）" % [iron_parts, frame.get_child_count()])
+	var src: String = (load(Undertaker.FRAME_IRON_SHADER) as Shader).code
+	assert_true(src.contains("EMISSION") and src.contains("VIEW"), "邊緣光照視角算（越斜越亮）")
+	var shadow: MeshInstance3D = boss.ground_shadow()
+	assert_not_null(shadow, "腳下有接地陰影")
+	if shadow != null:
+		assert_eq(shadow.get_parent(), boss, "接地陰影掛在送葬者本身，不跟著身體跪下")
+		assert_true(shadow.global_position.y < 0.05 and shadow.global_position.y > 0.0, "貼地、在地面上方一點點")
+		assert_eq(shadow.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "不投影")
+		var smat: ShaderMaterial = shadow.material_override as ShaderMaterial
+		assert_eq(smat.shader.resource_path, Undertaker.GROUND_SHADOW_SHADER, "用接地陰影 shader")
+		assert_true(smat.render_priority < 0, "畫在前兆範圍底下")
+		var decal: MeshInstance3D = (boss.get("_decals") as Dictionary)["slam"] as MeshInstance3D
+		assert_true(decal.position.y > shadow.position.y, "前兆範圍在接地陰影上面")
+		# 硬直時身體往下沉，陰影不動
+		boss._body.position.y = -0.5
+		assert_true(shadow.global_position.y > 0.0, "身體下沉時陰影仍在地面上")
+	# 擲出去的鐵架用同一個材質
+	var thrown := ThrownFrame.new()
+	thrown.from = Vector3(0, 2, -4)
+	thrown.to = Vector3(0, 0, 0)
+	root.add_child(thrown)
+	var bar: MeshInstance3D = thrown.get_node("Frame").get_child(0) as MeshInstance3D
+	assert_not_null(bar, "擲出去的鐵架有鐵件")
+	if bar != null:
+		var tm: ShaderMaterial = (bar.mesh as BoxMesh).material as ShaderMaterial
+		assert_true(tm != null and tm.shader.resource_path == Undertaker.FRAME_IRON_SHADER, "擲出去的鐵架用同一個鐵架材質")
 	root.queue_free()
 	await tree.process_frame
 
