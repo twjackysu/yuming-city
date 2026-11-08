@@ -156,3 +156,32 @@ func test_gamepad_pear_seller_to_ninth_bell() -> void:
 		scene.queue_free()
 	for i: int in 3:
 		await tree.process_frame
+
+
+## 暫停選單只用手把：Start 打開 → 十字鍵移到「設定」→ A 進設定 → B 返回暫停選單 → B 繼續遊戲。
+func test_gamepad_pause_menu_settings_and_back() -> void:
+	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
+	tree.root.add_child(pause)
+	await tree.process_frame
+	await _tap(JOY_BUTTON_START)
+	assert_true(pause.is_open(), "Start 打開暫停選單")
+	await tree.process_frame  # 第一個按鈕的焦點是 call_deferred
+	var settings_button: Button = pause.find_child("Settings", true, false) as Button
+	for i: int in 6:
+		if settings_button.has_focus():
+			break
+		await _tap(JOY_BUTTON_DPAD_DOWN)
+	assert_true(settings_button.has_focus(), "十字鍵移到「設定」")
+	await _tap(JOY_BUTTON_A)
+	var sm: SettingsMenu = pause.find_child("SettingsMenu", true, false) as SettingsMenu
+	assert_true(sm != null and sm.visible, "A 進設定")
+	await _tap(JOY_BUTTON_B)
+	assert_true(sm != null and not sm.visible, "B 關掉設定")
+	assert_true(pause.is_open(), "回到暫停選單（不是直接回遊戲）")
+	await tree.process_frame
+	assert_true(settings_button.has_focus(), "焦點回到「設定」")
+	await _tap(JOY_BUTTON_B)
+	assert_false(pause.is_open(), "B 繼續遊戲")
+	assert_false(tree.paused, "解除暫停")
+	pause.queue_free()
+	await tree.process_frame
