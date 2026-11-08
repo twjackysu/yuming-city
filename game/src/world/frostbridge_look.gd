@@ -20,8 +20,11 @@ var _mats: Dictionary = {}
 ## WorldEnvironment＋月光，加到 parent 底下。回傳 Environment（測試／截圖用）。
 static func build_environment(parent: Node3D) -> Environment:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
+	# 冬夜天空（D-117）：雲、月光、遠山稜線。霧只蓋掉天空的一部分，不然整片又是霧色。
+	env.background_mode = Environment.BG_SKY
 	env.background_color = Color(0.03, 0.04, 0.07)
+	env.sky = night_sky()
+	env.volumetric_fog_sky_affect = SKY_FOG_AFFECT
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.3, 0.38, 0.55)
 	env.ambient_light_energy = 0.45
@@ -57,6 +60,22 @@ static func build_environment(parent: Node3D) -> Environment:
 	moon.rotation_degrees = Vector3(-38.0, 35.0, 0.0)
 	parent.add_child(moon)
 	return env
+
+
+const NIGHT_SKY_SHADER: String = "res://src/world/night_sky.gdshader"
+## 霧對天空的影響（體積霧與低畫質的一般霧共用）：1.0 會把天空整片蓋成霧色
+const SKY_FOG_AFFECT: float = 0.4
+
+
+## 冬夜天空（night_sky.gdshader）。不用 TIME，反射用的 radiance 只算一次。
+static func night_sky() -> Sky:
+	var m := ShaderMaterial.new()
+	m.shader = load(NIGHT_SKY_SHADER) as Shader
+	var sky := Sky.new()
+	sky.sky_material = m
+	sky.radiance_size = Sky.RADIANCE_SIZE_128
+	sky.process_mode = Sky.PROCESS_MODE_QUALITY
+	return sky
 
 
 func mat(color: Color, roughness: float = 0.9) -> StandardMaterial3D:

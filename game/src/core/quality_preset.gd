@@ -32,7 +32,7 @@ static func apply_environment(env: Environment, level: Level) -> void:
 		env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 		env.fog_light_color = (env.volumetric_fog_albedo * 0.12 + env.volumetric_fog_emission * 2.0).clamp()
 		env.fog_density = env.volumetric_fog_density * 1.2
-		env.fog_sky_affect = 1.0
+		env.fog_sky_affect = FrostbridgeLook.SKY_FOG_AFFECT
 
 
 ## ReflectionProbe（只在載入時拍一次）：低畫質關掉，省下每個像素取樣反射的成本。

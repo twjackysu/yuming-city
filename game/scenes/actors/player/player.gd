@@ -74,6 +74,9 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 @onready var _camera: Camera3D = $CameraRig/Pitch/SpringArm3D/Camera3D
 @onready var _body: Node3D = $Body
 @onready var _lantern: Node3D = $Body/Lantern
+## 諾恩自己的幾何多一層（第 12 層）；提燈的影子不算這一層（D-118）。第 11 層是水窪倒影（frostbridge.gd 的 REFLECT_LAYER）。
+const SELF_LAYER: int = 1 << 11
+const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
 
 var _puppet: Puppet
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
@@ -108,6 +111,10 @@ func _ready() -> void:
 	# 提燈掛在左手
 	_lantern.reparent(_puppet.hand("L"), false)
 	_lantern.position = Vector3(0, -0.12, 0)
+	# 提燈照不出諾恩自己的影子（D-118）：牆、席菈、敵人照樣有提燈的影子
+	_mark_self_layer(_body)
+	var lantern_light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
+	lantern_light.shadow_caster_mask = LANTERN_SHADOW_CASTERS
 	_arm.add_excluded_object(get_rid())
 	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則（D-085）。
 	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
@@ -571,6 +578,15 @@ func _update_shoulder(delta: float) -> void:
 
 func _on_node_added_for_camera(n: Node) -> void:
 	_exclude_from_camera(n)
+	# 之後才加到身上的東西（夾板、換上的角色模型）也不投提燈的影子
+	if n is GeometryInstance3D and _body != null and _body.is_ancestor_of(n):
+		(n as GeometryInstance3D).layers |= SELF_LAYER
+
+
+## 諾恩身上所有的幾何多放一層 SELF_LAYER（鏡頭、月光、路燈照舊看得到）。
+func _mark_self_layer(root: Node) -> void:
+	for g: Node in root.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).layers |= SELF_LAYER
 
 
 ## 角色（CharacterBody3D／RigidBody3D）不讓鏡頭的 SpringArm 撞到：站在諾恩身後時鏡頭不會被拉到他後腦（D-085）。
