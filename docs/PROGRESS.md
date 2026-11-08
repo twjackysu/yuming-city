@@ -2,7 +2,7 @@
 
 新的放最上面。時間為台北時間。
 
-## 2026-11-08 19:26–20:10　第 21 輪：看穿小卡、送葬者前兆範圍 shader、README 戰鬥圖換霜橋鎮、石拱預覽截圖構圖、梨販攤補光（第二輪盤點第 2、3、6、10 項）
+## 2026-11-08 19:26–20:10　第 21 輪：看穿小卡、送葬者前兆範圍 shader、README 戰鬥圖換霜橋鎮、石拱預覽截圖構圖、梨販攤補光（第二輪盤點第 2、3、5、6、10 項）
 
 **做了什麼**
 
@@ -12,13 +12,14 @@
 - **前兆範圍 shader**（D-088，新增第 10 項）：本機截圖看到送葬者每一招前兆都是一大片平塗淺藍色塊；改成亮邊＋淡底＋從送葬者那端往外填滿、前緣亮線。
 - **README 戰鬥圖**（第 2 項）：`combat.png` 從沙盒改拍霜橋鎮送葬者戰（東側，`--pos=2.2,9.5 --face-off=18`），screens 的 `11-convoy-insight` 用同一組。
 - **梨販攤補光**（D-089，第 6 項）：桌前低處一盞小燈，桌面木板、木箱與梨子輪廓出來。
+- **暫停選單**（D-090，第 5 項基本）：左側由深到透明的直向暗帶＋標題下暖金細線。
 - 補上第 20 輪漏掉的 `.uid`（lathe、ring_tally、test_lathe）。
 
 **怎麼驗證**
 
-- 本機 `scripts/check.sh` 每次程式 commit 前都跑：248 → 252 個測試全綠。新測試：`test_dev_face_arch_and_park_boss`、`test_intel_rows_and_card_layout`、`test_insight_card_on_screen_in_scene`、`test_telegraph_decals_use_shader_and_fill`、`test_stall_fill_light`。
-- 截圖（xvfb＋lavapipe）前後對照：石拱預覽（原本鐵架擋住 → 乾淨的預覽＋代價卡＋車隊戰 HUD；側面兩個角度都不行）、送葬者戰（白字 → 小卡；小卡第一版壓在開場橫幅下，改到敵人右邊、字級加大；前兆色塊 → 亮邊＋填滿，內部再調暗一次）、攤子 `--pos=3.0,3.2`（桌子正面從全黑到看得到木板）。
-- CI：0f205c6 run 42476774725 綠燈。eb34647、3402e19、303dcc2 的 run 收尾時見下方補記。
+- 本機 `scripts/check.sh` 每次程式 commit 前都跑：248 → 253 個測試全綠。新測試：`test_dev_face_arch_and_park_boss`、`test_intel_rows_and_card_layout`、`test_insight_card_on_screen_in_scene`、`test_telegraph_decals_use_shader_and_fill`、`test_stall_fill_light`。
+- 截圖（xvfb＋lavapipe）前後對照：石拱預覽（原本鐵架擋住 → 乾淨的預覽＋代價卡＋車隊戰 HUD；側面兩個角度都不行）、送葬者戰（白字 → 小卡；小卡第一版壓在開場橫幅下，改到敵人右邊、字級加大；前兆色塊 → 亮邊＋填滿，內部再調暗一次）、攤子 `--pos=3.0,3.2`（桌子正面從全黑到看得到木板）、暫停選單 `--open=pause`（暗帶與細線）。
+- CI：0f205c6 run 42476774725、eb34647 run 42477208349 綠燈。3402e19、303dcc2、678de89 的 run 收尾時見下方補記。
 
 **遇到的問題**
 

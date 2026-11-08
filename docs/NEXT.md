@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；**第 21 輪（本機又拿得到 Godot）完成第 2、3、6 項＋新增並完成第 10 項（招式前兆範圍）＋石拱預覽截圖構圖，第二張表剩第 5、7、9 項**）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；**第 21 輪（本機又拿得到 Godot）完成第 2、3、6 項＋新增並完成第 10 項（招式前兆範圍）＋石拱預覽截圖構圖，第二張表剩第 7、9 項（第 5 項做了暗帶與細線）**）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 21 輪）最後一次程式 push 是 303dcc2（梨販攤補光，D-089），**先確認它整個綠燈**（PROGRESS 第 21 輪有補記收尾時的狀態）。第 21 輪的程式 commit 都在本機跑過 `scripts/check.sh`（252 個測試）與截圖：0f205c6 石拱預覽截圖（run 42476774725 綠燈）、eb34647 看穿小卡、3402e19 前兆範圍 shader＋README combat.png 改拍霜橋鎮、303dcc2 攤桌補光。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 21 輪）最後一次程式 push 是 678de89（暫停選單暗帶與細線，D-090），**先確認它整個綠燈**（PROGRESS 第 21 輪有補記收尾時的狀態）。第 21 輪的程式 commit 都在本機跑過 `scripts/check.sh`（252 個測試）與截圖：0f205c6 石拱預覽截圖（run 42476774725 綠燈）、eb34647 看穿小卡、3402e19 前兆範圍 shader＋README combat.png 改拍霜橋鎮、303dcc2 攤桌補光、678de89 暫停選單。紅了就看 log 修，修不好 `git revert`。
 - **看 latest 的 `combat.png`**（3402e19 起改成霜橋鎮送葬者戰）：看穿小卡在送葬者右邊、前兆範圍是亮邊＋往外填滿、送葬者沒被擋住。不好看就調 CI「截圖」步驟與 screens 的 `11-convoy-insight` 旗標（兩個用同一組）。
 - **第 21 輪本機拿得到 Godot 與字型了**：`scripts/get-godot.sh` 第一次 502、自動重試後成功；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
@@ -27,7 +27,7 @@
 - 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）、路燈燈籠（D-080）。第 20 輪：鐘形與鐘室木構（D-081，旋轉體用 `Lathe`：剖面線繞 Y 軸，外側從上往下描）、敲鐘刻度（D-084，`RingTally`）、角色不擋鏡頭（D-085）。第 21 輪：石拱預覽截圖停住送葬者＋`--face=arch`（D-086）、看穿小卡（D-087）、前兆範圍 shader（D-088）、攤桌補光（D-089）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
 - **第二輪盤點（PLAN 階段 2 第二張表，10 項）**：第 1、2、3、4、6、8、10 項完成。下一輪照這個順序：
   1. **第 9 項北街救援的屋頂**（`06-rescue.png`／`--rescue`）：陷落後左邊屋頂是一大片平的淺色斜面。照 D-068 雪的做法讓屋頂雪有起伏、邊緣露出瓦片或斷梁；先本機截圖 `--rescue` 看是哪一塊（陷落的屋頂在 `collapse_north_street`）。
-  2. **第 5 項暫停選單**：先截 `--open=pause` 看，照設定頁（D-076）加標題字、面板邊框、細線；按鈕本身已有暖金焦點（D-067）。`test_ui`／`test_gamepad_route` 的暫停測試要繼續過。
+  2. **第 5 項暫停選單的後續**：第 21 輪加了左側暗帶與標題下的暖金細線（D-090，678de89）。還可以：標題上方一行小字章節名（霜橋鎮・第九聲鐘，先查 06-terminology）、底部一行按鍵提示（GlyphLine）、右邊大片空著的地方放目前目標或日記最新一則。`test_ui`／`test_gamepad_route` 的暫停測試要繼續過。
   3. **第 7 項標題的窗**：`title_fog.gdshader` 的亮窗加十字窗櫺、亮度不一、極慢閃爍。
   4. 做完再排第三輪盤點：本機截圖 `scripts/screenshot.sh` 拍 screens 那 11 個畫面（或下載 screens.zip），照 `docs/ART_QUALITY_BAR.md` 挑最刺眼的。候選：看穿小卡在一群灰巡者時會疊在一起（D-087，必要時只給鎖定／最近的那隻）、前兆範圍內部在軟體渲染下仍偏亮（D-088）、鐘頂加鐘鈕（D-081）。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
