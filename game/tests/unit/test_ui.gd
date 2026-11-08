@@ -178,6 +178,14 @@ func test_settings_menu_groups_arrows_pips() -> void:
 func test_pause_menu_pauses_and_resumes() -> void:
 	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
 	tree.root.add_child(pause)
+	# HUD 一類的圖層：暫停時藏起來、繼續時恢復；本來就藏著的維持藏著（D-093）
+	var hud_like := CanvasLayer.new()
+	hud_like.add_to_group(PauseMenu.HIDE_GROUP)
+	tree.root.add_child(hud_like)
+	var already_hidden := CanvasLayer.new()
+	already_hidden.add_to_group(PauseMenu.HIDE_GROUP)
+	already_hidden.visible = false
+	tree.root.add_child(already_hidden)
 	await tree.process_frame
 	assert_false(pause.is_open(), "一開始沒開")
 	var ev := InputEventAction.new()
@@ -185,6 +193,7 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	ev.pressed = true
 	pause._unhandled_input(ev)
 	assert_true(pause.is_open(), "按暫停鍵打開")
+	assert_false(hud_like.visible, "暫停時 HUD 藏起來")
 	assert_true(tree.paused, "遊戲暫停")
 	assert_eq(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE, "暫停時釋放滑鼠")
 	assert_true(_assert_texts_are_keys(pause, "暫停選單") >= 4)
@@ -210,6 +219,10 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	pause._unhandled_input(ev)
 	assert_false(pause.is_open(), "再按一次繼續")
 	assert_false(tree.paused, "解除暫停")
+	assert_true(hud_like.visible, "繼續時 HUD 回來")
+	assert_false(already_hidden.visible, "本來就藏著的圖層維持藏著")
+	hud_like.queue_free()
+	already_hidden.queue_free()
 	pause.queue_free()
 	await tree.process_frame
 

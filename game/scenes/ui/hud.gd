@@ -29,6 +29,7 @@ var _banner_tween: Tween
 
 func _ready() -> void:
 	layer = 10
+	add_to_group(PauseMenu.HIDE_GROUP)  # 暫停時藏起來（D-093）
 	_build()
 	var s: GameSession = Game.session
 	s.stage_changed.connect(_on_stage_changed)

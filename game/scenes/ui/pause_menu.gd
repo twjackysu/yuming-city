@@ -6,6 +6,8 @@ extends CanvasLayer
 signal resumed
 
 const SETTINGS_SCENE: PackedScene = preload("res://scenes/ui/settings_menu.tscn")
+## 暫停時藏起來的 CanvasLayer（HUD：目標已經寫在暫停選單左下角，隔著暗幕再看到一次是重複的）
+const HIDE_GROUP: StringName = &"hide_when_paused"
 
 var _root: Control
 var _menu: VBoxContainer
@@ -16,6 +18,8 @@ var _objective_box: VBoxContainer
 var _objective: Label
 var _hint: GlyphLine
 var _mouse_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
+## 這次暫停藏起來的圖層（繼續時只恢復這些；本來就藏著的維持原狀）
+var _hidden: Array[CanvasLayer] = []
 
 
 func _ready() -> void:
@@ -48,6 +52,7 @@ func open() -> void:
 	_root.show()
 	_menu.show()
 	_settings.hide()
+	_hide_layers()
 	_refresh_info()
 	_resume.grab_focus.call_deferred()
 
@@ -78,9 +83,26 @@ func resume() -> void:
 		return
 	_settings.hide()
 	_root.hide()
+	_restore_layers()
 	get_tree().paused = false
 	Input.mouse_mode = _mouse_before
 	resumed.emit()
+
+
+func _hide_layers() -> void:
+	_hidden.clear()
+	for n: Node in get_tree().get_nodes_in_group(HIDE_GROUP):
+		var cl: CanvasLayer = n as CanvasLayer
+		if cl != null and cl.visible:
+			cl.visible = false
+			_hidden.append(cl)
+
+
+func _restore_layers() -> void:
+	for cl: CanvasLayer in _hidden:
+		if is_instance_valid(cl):
+			cl.visible = true
+	_hidden.clear()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -249,6 +271,7 @@ func _on_settings_closed() -> void:
 
 func _back_to_title() -> void:
 	_root.hide()
+	_hidden.clear()
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Game.back_to_title()
