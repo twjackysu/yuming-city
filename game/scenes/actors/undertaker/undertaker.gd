@@ -13,6 +13,8 @@ signal phase_changed(phase: int)
 signal frame_throw_started
 ## 連續下砸的第二下：諾恩看過一次（沒被打到）就變已證實
 signal double_slam_verified
+## 被斬倒、身體撞到地面的那一刻（D-052）
+signal fell
 
 const FROST: Color = Color(0.55, 0.82, 1.0)
 
@@ -290,6 +292,105 @@ func _shake_player(amount: float) -> void:
 		_player.shake(amount)
 
 
+# ---------------------------------------------------------------- 被斬倒（D-052）
+
+## 跪下 → 停一下 → 向前倒（背上的鐵架朝天）→ 落地那一刻鐵與身體撞地聲、雪粉、鏡頭小震 →
+## 躺一會兒 → 沉進雪裡消失。FALL_FORWARD：繞 X 軸轉負角度，頭朝 forward()（-Z）倒下。
+const FALL_FORWARD: float = -1.0
+const FALL_KNEEL_SEC: float = 0.45
+const FALL_HOLD_SEC: float = 0.5
+const FALL_DROP_SEC: float = 0.55
+const FALL_LIE_SEC: float = 2.5
+const FALL_SINK_SEC: float = 1.4
+## 倒地那一刻（測試用）
+var has_fallen: bool = false
+## 截圖用（--convoy --felled）：停在倒地那一刻，不沉進雪裡
+var debug_hold_fallen: bool = false
+var _fall_tween: Tween
+
+
+func fall_total_sec() -> float:
+	return FALL_KNEEL_SEC + FALL_HOLD_SEC + FALL_DROP_SEC + FALL_LIE_SEC + FALL_SINK_SEC
+
+
+func _on_died() -> void:
+	brain.kill()
+	remove_from_group("damageable")
+	# 不再追、不再更新前兆姿勢（_update_look 每幀會蓋掉倒地動作）
+	set_physics_process(false)
+	for id: String in _decals:
+		(_decals[id] as MeshInstance3D).visible = false
+	if _insight_label != null:
+		_insight_label.visible = false
+	if _weak_marker != null:
+		_weak_marker.visible = false
+	var torso: Node3D = _body.get_node("Torso") as Node3D
+	var t := create_tween()
+	_fall_tween = t
+	# 跪下：身體下沉、上身往前垂
+	t.tween_property(_body, "position:y", -0.55, FALL_KNEEL_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(torso, "rotation_degrees", Vector3(FALL_FORWARD * 18.0, 0.0, 0.0), FALL_KNEEL_SEC)
+	t.tween_interval(FALL_HOLD_SEC)
+	# 向前倒：越倒越快，身體抬回地面高度（躺平時大衣的半徑撐在雪上）
+	t.tween_property(_body, "rotation_degrees:x", FALL_FORWARD * 84.0, FALL_DROP_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(_body, "position:y", 0.3, FALL_DROP_SEC)
+	t.parallel().tween_property(torso, "rotation_degrees", Vector3.ZERO, FALL_DROP_SEC)
+	t.tween_callback(_on_fall_impact)
+	t.tween_interval(FALL_LIE_SEC)
+	t.tween_property(_body, "position:y", -1.4, FALL_SINK_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_callback(queue_free)
+
+
+func _on_fall_impact() -> void:
+	has_fallen = true
+	var at: Vector3 = global_position + forward() * 1.3
+	var parent: Node = get_parent()
+	Sfx.play_at(parent, "iron_clang", at, 1.0, 0.03)
+	Sfx.play_at(parent, "blunt", at, 2.0, 0.03)
+	_shake_player(0.35)
+	_snow_puff(at)
+	fell.emit()
+	if debug_hold_fallen and _fall_tween != null:
+		_fall_tween.pause()
+
+
+func _snow_puff(at: Vector3) -> void:
+	var ps := CPUParticles3D.new()
+	ps.name = "FallPuff"
+	ps.one_shot = true
+	ps.explosiveness = 0.9
+	ps.amount = 28
+	ps.lifetime = 1.3
+	ps.direction = Vector3.UP
+	ps.spread = 75.0
+	ps.initial_velocity_min = 0.8
+	ps.initial_velocity_max = 2.4
+	ps.gravity = Vector3(0, -1.5, 0)
+	ps.damping_min = 1.5
+	ps.damping_max = 3.0
+	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	ps.emission_box_extents = Vector3(0.6, 0.05, 1.2)
+	ps.scale_amount_min = 0.7
+	ps.scale_amount_max = 1.6
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.35, 0.35)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = Color(0.75, 0.8, 0.88, 0.55)
+	quad.material = mat
+	ps.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	ps.color_ramp = ramp
+	add_child(ps)
+	ps.global_position = at
+	ps.emitting = true
+
+
 func _update_look() -> void:
 	var p: float = brain.telegraph_progress()
 	for id: String in _decals:
@@ -299,23 +400,29 @@ func _update_look() -> void:
 		if on:
 			(mi.material_override as StandardMaterial3D).albedo_color = Color(FROST, 0.15 + 0.6 * p * p)
 	_body.position.y = -0.5 if brain.state == EnemyBrain.State.STAGGERED else 0.0
-	# 前兆姿勢：橫掃身體向左擰、下砸上身後仰、衝撞低頭
 	var lean := Vector3.ZERO
 	if brain.state == EnemyBrain.State.TELEGRAPH:
-		match brain.move_id:
-			"sweep":
-				lean = Vector3(0, 35.0 * p, 0)
-			"slam", "double_slam", "double_slam_2":
-				lean = Vector3(-18.0 * p, 0, 0)
-			"grab":
-				lean = Vector3(30.0 * p, 0, 0)
-			"charge":
-				lean = Vector3(22.0 * p, 0, 0)
+		lean = telegraph_lean(brain.move_id, p)
 	if throw_windup > 0.0:
 		# 舉起鐵架：上身後仰，越接近擲出越後仰
 		var k: float = 1.0 - throw_windup / _throw_total
-		lean = Vector3(-10.0 - 25.0 * k, 0, 0)
+		lean = Vector3(-FALL_FORWARD * (10.0 + 25.0 * k), 0, 0)
 	(_body.get_node("Torso") as Node3D).rotation_degrees = lean
+
+
+## 前兆姿勢（上身的旋轉角度）：橫掃身體向左擰、下砸上身後仰、抓取與衝撞往前探。
+## 繞 X 軸負角度是往前（FALL_FORWARD）；之前正負號寫反，下砸變成前傾、衝撞變成後仰。
+static func telegraph_lean(move_id: String, p: float) -> Vector3:
+	match move_id:
+		"sweep":
+			return Vector3(0, 35.0 * p, 0)
+		"slam", "double_slam", "double_slam_2":
+			return Vector3(-FALL_FORWARD * 18.0 * p, 0, 0)
+		"grab":
+			return Vector3(FALL_FORWARD * 30.0 * p, 0, 0)
+		"charge":
+			return Vector3(FALL_FORWARD * 22.0 * p, 0, 0)
+	return Vector3.ZERO
 
 
 func _build_body() -> void:

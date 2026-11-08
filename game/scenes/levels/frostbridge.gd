@@ -106,6 +106,8 @@ func _ready() -> void:
 			($Undertaker as Undertaker).enter_phase_two.call_deferred()
 		if dev_args.has("throw"):
 			_debug_throw.call_deferred(str(dev_args["throw"]), float(str(dev_args.get("throw-t", "0.3"))))
+		if dev_args.has("felled"):
+			_debug_felled.call_deferred()
 	if dev_args.has("arch"):
 		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
 		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
@@ -145,6 +147,18 @@ func _debug_throw(how: String, t: float) -> void:
 	while left > 0.0:
 		f.advance(minf(left, 1.0 / 60.0))
 		left -= 1.0 / 60.0
+
+
+## 截圖用：送葬者被斬倒，停在倒地那一刻（`--convoy --felled`）。
+func _debug_felled() -> void:
+	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
+	if boss == null:
+		return
+	boss.debug_hold_fallen = true
+	boss.health.apply_damage(boss.health.hp, {"kind": "kindling", "stagger": 0.0})
+	# 截圖時藏起諾恩（鏡頭在他正後方，會擋住倒在前面的送葬者）
+	for v: Node in ($Player as Node).find_children("*", "GeometryInstance3D", true, false):
+		(v as GeometryInstance3D).visible = false
 
 
 # ---------------------------------------------------------------- 救援（段落 3）

@@ -358,3 +358,69 @@ func test_grab_player_struggle_and_release() -> void:
 	assert_true(player.grabbed_by == null, "席菈打中弱點：鬆手")
 	root.queue_free()
 	await tree.process_frame
+
+
+## 被斬倒（D-052）：跪下 → 向前倒（頭朝原本面向的方向、躺平）→ 落地有雪粉 → 沉進雪裡消失。
+func test_cut_down_falls_forward_then_sinks() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var boss: Undertaker = a[2]
+	player.global_position = Vector3(0, 0, 6.0)
+	boss.global_position = Vector3(0, 0, -4.0)
+	boss._body.rotation.y = deg_to_rad(30.0)
+	await tree.physics_frame
+	var fwd: Vector3 = boss.forward()
+	var origin: Vector3 = boss.global_position
+	var fell_count: Array[int] = [0]
+	boss.fell.connect(func() -> void: fell_count[0] += 1)
+	var prev_scale: float = Engine.time_scale
+	Engine.time_scale = 4.0
+	boss.health.apply_damage(boss.health.hp, {"kind": "kindling", "stagger": 0.0})
+	assert_false(boss.is_in_group("damageable"), "倒下後不再吃傷害")
+	# 跪下的途中：還沒倒地、身體往下沉
+	for i: int in 6:
+		await tree.process_frame
+	assert_false(boss.has_fallen, "先跪下，還沒倒地")
+	for i: int in 400:
+		if boss.has_fallen:
+			break
+		await tree.process_frame
+	assert_true(boss.has_fallen, "倒地")
+	assert_eq(fell_count[0], 1, "倒地訊號一次")
+	var hood: Node3D = null
+	for c: Node in boss._body.get_node("Torso").get_children():
+		if c is CSGSphere3D:
+			hood = c as Node3D
+	assert_not_null(hood, "找得到頭巾")
+	if hood != null:
+		var rel: Vector3 = hood.global_position - origin
+		assert_true(rel.dot(fwd) > 1.2, "向前倒：頭在原本面向的前方（%.2f m）" % rel.dot(fwd))
+		assert_true(hood.global_position.y < 0.9, "躺平（頭離地 %.2f m）" % hood.global_position.y)
+	var frame: Node3D = boss._frame_node()
+	if frame != null:
+		var up: float = (frame.global_basis * Vector3(0, 0, 1)).y
+		assert_true(up > 0.8, "背上的鐵架朝天（%.2f）" % up)
+	assert_true(boss.has_node("FallPuff"), "落地揚起雪粉")
+	for i: int in 900:
+		if not is_instance_valid(boss):
+			break
+		await tree.process_frame
+	assert_false(is_instance_valid(boss), "躺一會兒後沉進雪裡、移除")
+	Engine.time_scale = prev_scale
+	root.queue_free()
+	await tree.process_frame
+
+
+## 前兆姿勢的方向（D-052 順手修正）：下砸上身後仰、抓取與衝撞往前探。頭巾在上身的 (0, 1.45, -0.32)，-Z 是前方。
+func test_telegraph_lean_directions() -> void:
+	var hood := Vector3(0.0, 1.45, -0.32)
+	var rest_z: float = hood.z
+	var slam_z: float = (Basis.from_euler(Undertaker.telegraph_lean("slam", 1.0) * (PI / 180.0)) * hood).z
+	var grab_z: float = (Basis.from_euler(Undertaker.telegraph_lean("grab", 1.0) * (PI / 180.0)) * hood).z
+	var charge_z: float = (Basis.from_euler(Undertaker.telegraph_lean("charge", 1.0) * (PI / 180.0)) * hood).z
+	assert_true(slam_z > rest_z + 0.2, "下砸：頭往後（%.2f → %.2f）" % [rest_z, slam_z])
+	assert_true(grab_z < rest_z - 0.3, "抓取：頭往前探（%.2f → %.2f）" % [rest_z, grab_z])
+	assert_true(charge_z < rest_z - 0.2, "衝撞：低頭往前（%.2f → %.2f）" % [rest_z, charge_z])
+	assert_eq(Undertaker.telegraph_lean("sweep", 0.0), Vector3.ZERO, "前兆剛開始沒有姿勢")
+	assert_eq(Undertaker.telegraph_lean("unknown", 1.0), Vector3.ZERO)
