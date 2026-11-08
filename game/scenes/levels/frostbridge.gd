@@ -635,10 +635,14 @@ func _build_bell_tower(pos: Vector3) -> void:
 	_bell.name = "Bell"
 	_bell.position = pos + Vector3(0, 17.1, 0)
 	add_child(_bell)
+	# 舊青銅：金屬度不能太高——夜裡沒有可反射的環境，高金屬度的鐘在敲鐘鏡頭裡只剩一個黑影
 	var bronze := StandardMaterial3D.new()
-	bronze.albedo_color = Color(0.32, 0.26, 0.18)
-	bronze.roughness = 0.45
-	bronze.metallic = 0.8
+	bronze.albedo_color = Color(0.46, 0.34, 0.2)
+	bronze.roughness = 0.42
+	bronze.metallic = 0.35
+	bronze.rim_enabled = true
+	bronze.rim = 0.35
+	bronze.rim_tint = 0.6
 	var body := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.42
@@ -656,6 +660,16 @@ func _build_bell_tower(pos: Vector3) -> void:
 	crown.position = Vector3(0, -0.2, 0)
 	crown.material_override = bronze
 	_bell.add_child(crown)
+	# 鐘口外翻的唇：輪廓才像鐘，不像倒放的桶
+	var lip := MeshInstance3D.new()
+	var lip_mesh := CylinderMesh.new()
+	lip_mesh.top_radius = 0.84
+	lip_mesh.bottom_radius = 0.95
+	lip_mesh.height = 0.14
+	lip.mesh = lip_mesh
+	lip.position = Vector3(0, -1.5 + 0.07, 0)
+	lip.material_override = bronze
+	_bell.add_child(lip)
 
 
 ## 梨販的攤子：木桌、布篷、一盞暖燈、一個披斗篷的人影（之後換成角色）。正面朝 +Z（出生點）。

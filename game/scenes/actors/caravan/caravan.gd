@@ -9,6 +9,9 @@ signal arrived
 
 const WOOD: Color = Color(0.3, 0.22, 0.15)
 const CLOTH: Color = Color(0.32, 0.29, 0.26)
+## 燈罩離鏡頭這麼近以內看不到、到 FAR 才完全不透明
+const GLASS_FADE_NEAR: float = 0.8
+const GLASS_FADE_FAR: float = 2.2
 
 var route: PackedVector3Array = []
 var runner: CaravanRunner
@@ -127,11 +130,30 @@ func _build() -> void:
 	_lantern.light_energy = 1.2
 	_lantern.position = Vector3(0.45, 1.3, -1.9)
 	_cart.add_child(_lantern)
-	var glass := CSGSphere3D.new()
-	glass.radius = 0.08
+	# 燈罩：暖橘色的小方燈＋鐵蓋鐵底（之前是一顆不受光的白球，經過鏡頭旁像一個白色圓盤）
 	var gm := StandardMaterial3D.new()
 	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	gm.albedo_color = Color(1.0, 0.8, 0.5)
-	glass.material = gm
+	gm.albedo_color = Color(0.95, 0.58, 0.24)
+	# 車隊從鏡頭旁邊經過時，燈罩貼到鏡頭前：太近就用抖動淡掉（光還在）
+	gm.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
+	gm.distance_fade_min_distance = GLASS_FADE_NEAR
+	gm.distance_fade_max_distance = GLASS_FADE_FAR
+	var glass := MeshInstance3D.new()
+	glass.name = "LanternGlass"
+	var glass_mesh := BoxMesh.new()
+	glass_mesh.size = Vector3(0.11, 0.15, 0.11)
+	glass.mesh = glass_mesh
+	glass.material_override = gm
 	glass.position = _lantern.position
 	_cart.add_child(glass)
+	var iron := StandardMaterial3D.new()
+	iron.albedo_color = Color(0.07, 0.07, 0.08)
+	iron.roughness = 0.5
+	for y: float in [0.095, -0.09]:
+		var cap := MeshInstance3D.new()
+		var cap_mesh := BoxMesh.new()
+		cap_mesh.size = Vector3(0.15, 0.035, 0.15)
+		cap.mesh = cap_mesh
+		cap.material_override = iron
+		cap.position = _lantern.position + Vector3(0.0, y, 0.0)
+		_cart.add_child(cap)

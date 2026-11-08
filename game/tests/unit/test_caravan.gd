@@ -98,3 +98,18 @@ func test_phase_two_chases_and_hits_caravan() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 車隊從鏡頭旁經過時，提燈的燈罩貼近鏡頭不能變成一個白色圓盤：太近就淡掉。
+func test_lantern_glass_fades_near_camera() -> void:
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(0, 0, 0), Vector3(0, 0, -10)])
+	tree.root.add_child(caravan)
+	var glass: MeshInstance3D = caravan.find_child("LanternGlass", true, false) as MeshInstance3D
+	assert_not_null(glass, "有提燈燈罩")
+	if glass != null:
+		var m: BaseMaterial3D = glass.material_override as BaseMaterial3D
+		assert_eq(m.distance_fade_mode, BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER, "靠近鏡頭用抖動淡掉")
+		assert_true(m.distance_fade_min_distance < m.distance_fade_max_distance and m.distance_fade_min_distance > 0.3, "淡掉的距離合理")
+	caravan.queue_free()
+	await tree.process_frame
