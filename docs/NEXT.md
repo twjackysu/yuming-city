@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 19 輪）最後一次程式 push 是 0b88bb6（路燈燈籠），**先確認它整個綠燈**（PROGRESS 第 19 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `frostbridge.gd` 的 `_lamp_post`、`_door_lantern`、新增 `_cage_bars` 與一個測試斷言，必要時 `git revert 0b88bb6`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
+- 上一輪（第 19 輪）最後一次程式 push 是 0b88bb6（路燈燈籠），run 42469388656——**先確認它整個綠燈**（PROGRESS 第 19 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `frostbridge.gd` 的 `_lamp_post`、`_door_lantern`、新增 `_cage_bars` 與一個測試斷言，必要時 `git revert 0b88bb6`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
 - **字型下載 504（D-079）**：第 19 輪的 session 連不到 `notofonts/noto-cjk` 的 release（504／API 說沒有這個 repo 的存取），`scripts/check.sh` 會在 `gen_fonts.py` 掛掉。先試一次 `scripts/check.sh`；如果又是 504：`apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra`，再用 D-079 的做法（從 `/usr/share/fonts/opentype/noto/Noto{Serif,Sans}CJK-*.ttc` 取 TC 那一套、照 `gen_fonts.collect_chars()` 子集化、寫 `game/assets/generated/fonts/` 與相同的 `.stamp`；`import gen_fonts` 會留下 `scripts/__pycache__/`，記得刪掉）。**不要改 repo 的 `gen_fonts.py`**，CI 照常下載。改了 i18n CSV 後要重跑。
 - `docs/PROGRESS.md` 第 18 輪把第 8～13 輪合併成摘要了；超過約 300 行時再把第 14～18 輪合併。
 - CI 有「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
