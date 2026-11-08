@@ -78,9 +78,21 @@ void fragment() {
 	float spire = step(spire_top, uv.y) * step(uv.y, glow_pos.y - 0.045)
 			* step(abs(tx), tower_w * 1.2 * (uv.y - spire_top) / 0.095);
 	float belfry = step(abs(tx), tower_w * 0.42) * step(glow_pos.y - 0.026, uv.y) * step(uv.y, glow_pos.y + 0.022);
-	float tower = max(body, spire) * (1.0 - belfry);
+	// 鐘室下的一圈簷口（比塔身寬一點）、塔基往下微微放寬，輪廓才不像一根棍子
+	float ledge = step(abs(tx), tower_w * 1.28) * step(glow_pos.y + 0.03, uv.y) * step(uv.y, glow_pos.y + 0.037);
+	float base_w = tower_w * (1.0 + 0.22 * smoothstep(glow_pos.y + 0.25, glow_pos.y + 0.45, uv.y));
+	float footing = step(abs(tx), base_w) * step(glow_pos.y + 0.25, uv.y);
+	float tower = max(max(body, spire), max(ledge, footing)) * (1.0 - belfry);
+	// 塔身的石塊層（很淡的橫紋）
+	float course = step(fract((uv.y - glow_pos.y) / 0.014), 0.09) * body * (1.0 - belfry) * step(glow_pos.y + 0.04, uv.y);
 	col = mix(col, near_color * 1.4, tower);
+	col += vec3(0.012, 0.014, 0.02) * course;
 	col = mix(col, glow_color * 0.75, belfry);
+	// 塔身中段兩道窄窗（樓梯間的微光，比鐘室暗很多）
+	float slit_w = step(abs(tx), tower_w * 0.11);
+	float slit = slit_w * (step(glow_pos.y + 0.11, uv.y) * step(uv.y, glow_pos.y + 0.13)
+			+ step(glow_pos.y + 0.2, uv.y) * step(uv.y, glow_pos.y + 0.22));
+	col = mix(col, glow_color * 0.32, slit);
 
 	// 中景的霧堤：在兩排屋頂之間流動（一塊一塊，看得出在動）
 	float b1 = fbm(vec2(ax * 2.2 + t * 7.0, uv.y * 5.0 - t * 1.5));
