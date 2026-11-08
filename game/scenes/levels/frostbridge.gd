@@ -574,6 +574,7 @@ func _build_rise() -> void:
 	var stone := look.stone_wall(1.0)  # 跟後牆同一個材質（不多一個 draw call）
 	var tread := look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4)  # 踏面跟台地上的濕石板同一個材質
 	var snow := look.snow()
+	var nose_shadow := look.mat(Color(0.05, 0.055, 0.065), 0.35)
 	for i: int in STEP_COUNT - 1:
 		var top: float = step_h * float(i + 1)
 		var front: float = STEPS_S - run * float(i)
@@ -582,6 +583,9 @@ func _build_rise() -> void:
 		# 看得到的踏面鋪濕石板（之前石牆材質在霧裡偏灰白、偏平）
 		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, 0.01, run), Vector3(0.0, top + 0.005, front - run * 0.5), tread, false)
 		_step_snow(top + 0.01, front, run, snow)
+		# 踏面前緣下的一道陰影（D-138）：18 cm 高的踢面只有一排石塊，霧裡是一條灰白的平帶；
+		# 前緣下面一道 4 cm 的暗線讓每一級讀得出來（跟廣場石框的溝同一個材質，不多 draw call）
+		_batch.add_box_at(Vector3(MAIN_HALF * 2.0 - 0.1, 0.04, 0.012), Vector3(0.0, top - 0.02, front + 0.004), nose_shadow, false)
 	# 斜坡碰撞：上表面通過每一級的前緣——從第一級前面一級深度處的地面（STEPS_S + run）到台地邊（STEPS_N）
 	var horizontal: float = STEPS_S + run - STEPS_N
 	var angle: float = atan2(RISE, horizontal)
