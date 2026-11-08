@@ -34,6 +34,9 @@ func _ready() -> void:
 	_set_objective(s.objective_key(), false)
 	_saved.modulate.a = 0.0
 	Game.player_died.connect(_on_player_died)
+	# 截圖用：`--nohud` 整個 HUD 不顯示（Steam 膠囊圖替代版的背景、宣傳截圖，D-064）
+	if App.parse_user_args(OS.get_cmdline_user_args()).has("nohud"):
+		visible = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
