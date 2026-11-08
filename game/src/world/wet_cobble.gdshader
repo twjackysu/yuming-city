@@ -258,8 +258,9 @@ void fragment() {
 	float near = wall_near(world_pos.xz);
 	float patchy = fbm(world_pos.xz * 0.9 + 4.4);
 	float lodge = clamp(near * 1.3 + smoothstep(0.5, 0.64, patchy) * 0.8, 0.0, 1.0);
-	// 空地上石縫裡的雪是一段一段的（不是一整張白格子），靠牆才連成線
-	float in_gap = (1.0 - stone) * lodge * mix(smoothstep(0.35, 0.6, noise(world_pos.xz * 2.7 + 5.0)), 1.0, near);
+	// 石縫裡的雪是一段一段的（不是一整張白格子），只有牆腳約 0.6 m 內才連成線
+	// （D-124：窄街整條都在靠牆範圍裡，原本連成線的範圍太寬，月光下整條街是淺灰格子）
+	float in_gap = (1.0 - stone) * lodge * mix(smoothstep(0.35, 0.6, noise(world_pos.xz * 2.7 + 5.0)), 1.0, smoothstep(0.85, 1.0, near));
 	float on_stone = smoothstep(0.45, 0.8, near * 0.85 + (patchy - 0.47) * 1.2) * stone;
 	float dust = smoothstep(0.5, 0.6, fbm(world_pos.xz * 0.5 + 7.0)) * smoothstep(0.25, 0.6, noise(world_pos.xz * 4.5 + 13.0));
 	float rest = max(max(in_gap * 0.75, on_stone * 0.9), dust * 0.6 * stone) * (1.0 - puddle) * step(0.5, float(lane_count));
