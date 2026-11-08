@@ -13,6 +13,8 @@ signal breath(index: int)
 
 const PROMPT_RANGE: float = 5.0
 const HOLD_SEC: float = 1.0
+## 重現用的 InputMap 動作（鍵鼠 V、手把 Y）
+const ACTION: String = "nine_breath"
 const FROST: Color = Color(0.62, 0.86, 1.0)
 const STONE: Color = Color(0.34, 0.33, 0.33)
 ## 九息期間的畫面飽和度
@@ -81,8 +83,13 @@ func prompt_text() -> String:
 
 ## HUD 用的三行：可以重現什麼、代價、按住哪個鍵（照目前的裝置）。
 func prompt_lines() -> PackedStringArray:
-	var key: String = InputGlyphs.label_for_action("nine_breath", App.last_device)
-	return PackedStringArray([tr(label_key), tr(cost_key), tr("NB_HOLD_HINT").format({"key": key})])
+	var key: String = InputGlyphs.label_for_action(ACTION, App.last_device)
+	return PackedStringArray([tr(label_key), tr(cost_key), hold_hint_format().replace("{key}", key)])
+
+
+## 「按住 {key}　重現 9 秒」（{key} 留著，HUD 在手把模式換成按鈕圖示）。
+func hold_hint_format() -> String:
+	return tr("NB_HOLD_HINT")
 
 
 func hold_ratio() -> float:

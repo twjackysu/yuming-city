@@ -14,8 +14,8 @@ var _top: ColorRect
 var _bottom: ColorRect
 var _speaker: Label
 var _line: Label
-var _prompt: Label
-var _skip: Label
+var _prompt: GlyphLine
+var _skip: GlyphLine
 var _skip_bar: ProgressBar
 var _camera: Camera3D
 var _previous_camera: Camera3D
@@ -49,11 +49,19 @@ func is_open() -> bool:
 
 
 func prompt_text() -> String:
-	return _prompt.text if _prompt.visible else ""
+	return _prompt.plain_text() if _prompt.visible else ""
 
 
 func skip_text() -> String:
-	return _skip.text
+	return _skip.plain_text()
+
+
+func prompt_line() -> GlyphLine:
+	return _prompt
+
+
+func skip_line() -> GlyphLine:
+	return _skip
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -106,18 +114,16 @@ func _notification(what: int) -> void:
 
 ## 提示與跳過文字含目前裝置的鍵名，所以不是翻譯 key（標記 meta "glyph"）。
 func _refresh_texts() -> void:
-	var key: String = InputGlyphs.label_for_action("interact", int(App.last_device))
-	_skip.text = tr("HUD_CUTSCENE_SKIP").format({"key": key})
+	_skip.set_line(tr("HUD_CUTSCENE_SKIP"), "interact", int(App.last_device))
 	_prompt.visible = runner != null and runner.is_waiting()
 	if not _prompt.visible:
 		return
 	var shot: Dictionary = runner.current()
-	var action_key: String = InputGlyphs.label_for_action(runner.awaited_action(), int(App.last_device))
-	var text: String = "%s  %s" % [action_key, tr(str(shot.get("prompt", "")))]
+	var text: String = "{key}  %s" % tr(str(shot.get("prompt", "")))
 	if shot.has("counter"):
 		var n: int = int(Game.session.state.get_flag(str(shot["counter"]), 0))
 		text += "　%d／%d" % [n, int(shot.get("counter_max", 0))]
-	_prompt.text = text
+	_prompt.set_line(text, runner.awaited_action(), int(App.last_device))
 
 
 func _ensure_camera() -> void:
@@ -180,19 +186,20 @@ func _build() -> void:
 	_line.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	box.add_child(_line)
 
-	_prompt = _label("Prompt", 26, Color(0.95, 0.82, 0.55))
-	_prompt.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_prompt.set_meta("glyph", true)
+	# 鍵名用 GlyphLine：手把模式顯示按鈕圖示（D-063）
+	_prompt = GlyphLine.new().configure(26, Color(0.95, 0.82, 0.55))
+	_prompt.name = "Prompt"
+	_prompt.fit_content = false
 	_prompt.anchor_left = 0.3
 	_prompt.anchor_right = 0.7
 	_prompt.anchor_top = 0.66
 	_prompt.anchor_bottom = 0.71
 	_root.add_child(_prompt)
 
-	_skip = _label("Skip", 16, Color(0.62, 0.64, 0.68, 0.85))
-	_skip.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_skip.set_meta("glyph", true)
-	_skip.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_skip = GlyphLine.new().configure(16, Color(0.62, 0.64, 0.68, 0.85))
+	_skip.name = "Skip"
+	_skip.fit_content = false
+	_skip.alignment = BoxContainer.ALIGNMENT_END
 	_skip.anchor_left = 0.6
 	_skip.anchor_right = 0.97
 	_skip.anchor_top = 1.0 - BAR_HEIGHT * 0.7

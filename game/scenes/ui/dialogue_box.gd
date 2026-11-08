@@ -11,7 +11,7 @@ var runner: DialogueRunner
 var _panel: PanelContainer
 var _speaker: Label
 var _text: Label
-var _hint: Label
+var _hint: GlyphLine
 var _choices: VBoxContainer
 var _reveal: Tween
 var _hold := HoldToSkip.new(HOLD_SKIP_SEC)
@@ -35,8 +35,7 @@ func _notification(what: int) -> void:
 
 ## 提示列顯示目前裝置的互動鍵（[F]／[A]），重新綁定後也跟著換。
 func refresh_hint() -> void:
-	var key: String = InputGlyphs.label_for_action("interact", int(App.last_device))
-	_hint.text = tr("HUD_DLG_HINT").format({"key": key})
+	_hint.set_line(tr("HUD_DLG_HINT"), "interact", int(App.last_device))
 
 
 func _on_device_changed(_device: int) -> void:
@@ -44,7 +43,11 @@ func _on_device_changed(_device: int) -> void:
 
 
 func hint_text() -> String:
-	return _hint.text
+	return _hint.plain_text()
+
+
+func hint_line() -> GlyphLine:
+	return _hint
 
 
 func attach(r: DialogueRunner) -> void:
@@ -200,11 +203,9 @@ func _build() -> void:
 	_choices = VBoxContainer.new()
 	_choices.name = "Choices"
 	box.add_child(_choices)
-	_hint = Label.new()
+	# 鍵鼠「[F] 繼續」；手把 A 的按鈕圖示＋「繼續」（D-063）
+	_hint = GlyphLine.new().configure(15, Color(0.6, 0.62, 0.66, 0.8))
 	_hint.name = "Hint"
-	_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_hint.set_meta("glyph", true)
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hint.add_theme_font_size_override("font_size", 15)
-	_hint.add_theme_color_override("font_color", Color(0.6, 0.62, 0.66, 0.8))
+	_hint.fit_content = false
+	_hint.alignment = BoxContainer.ALIGNMENT_END
 	box.add_child(_hint)

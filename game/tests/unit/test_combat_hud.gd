@@ -110,13 +110,13 @@ func test_combat_hud_values() -> void:
 	assert_true(hud.command_label(0).contains("打弱點"), hud.command_label(0))
 	assert_true(hud.command_label(0).begins_with("[Q]"), hud.command_label(0))
 	# 守住中：「守住」那一格染成霜藍；解除後變回來（含劇情暫時守住，D-054）
-	var guard_label: Label = hud._cmd_labels[2]
+	var guard_label: GlyphLine = hud.command_line(2)
 	assert_true(hud.guard_on, "席菈在守")
-	assert_eq(guard_label.get_theme_color("font_color"), CombatHud.COL_GUARD_ON, "守住那一格染色")
+	assert_eq(guard_label.text_color(), CombatHud.COL_GUARD_ON, "守住那一格染色")
 	sheila.brain.guard_active = false
 	hud.refresh(player, sheila)
 	assert_false(hud.guard_on)
-	assert_eq(guard_label.get_theme_color("font_color"), CombatHud.COL_CMD, "解除後變回來")
+	assert_eq(guard_label.text_color(), CombatHud.COL_CMD, "解除後變回來")
 	sheila.brain.hold_guard(5.0)
 	hud.refresh(player, sheila)
 	assert_true(hud.guard_on, "劇情暫時守住也顯示")

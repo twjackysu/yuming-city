@@ -3,7 +3,7 @@ extends Control
 ## 重現提示（HUD，D-059）：畫面下方中央，不跟右側「重現的代價」記憶卡、上方劇情提示、左下戰鬥 HUD 重疊。
 ##
 ## 走近可重現的東西（NineBreathSite.prompt_shown()）：三行——可以重現什麼（霜藍）、**代價**（暖色、最大）、
-## 「按住 V　重現 9 秒」＋按住進度條（按滿 1 秒發動，放開歸零）。
+## 「按住 V　重現 9 秒」＋按住進度條（按滿 1 秒發動，放開歸零）。手把模式「按住」後面是 Y 的按鈕圖示（GlyphLine，D-063）。
 ## 重現中（is_counting()）：一行「重現中　還剩 N 秒」＋九顆心跳點，每過一秒熄一顆。
 ## 之前是石拱上方的 Label3D，會被記憶卡蓋住、代價那一行被切掉（第 14 輪截圖）。
 ## 純顯示：每幀從 nine_breath_site 群組讀狀態，不改任何東西。
@@ -21,7 +21,7 @@ const BAR_H: float = 4.0
 var _panel: PanelContainer
 var _title: Label
 var _cost: Label
-var _hint: Label
+var _hint: GlyphLine
 var _hint_row: HBoxContainer
 var _bar: Control
 var _count: Label
@@ -73,7 +73,8 @@ func _build() -> void:
 	_hint_row.add_theme_constant_override("separation", 14)
 	_hint_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(_hint_row)
-	_hint = _label("Hint", 20, INK)
+	_hint = GlyphLine.new().configure(20, INK)
+	_hint.name = "Hint"
 	_hint_row.add_child(_hint)
 	_bar = Control.new()
 	_bar.name = "HoldBar"
@@ -146,7 +147,7 @@ func _apply(want: String) -> void:
 		var lines: PackedStringArray = _site.prompt_lines()
 		_set_text(_title, lines[0])
 		_set_text(_cost, lines[1])
-		_set_text(_hint, lines[2])
+		_hint.set_line(_site.hold_hint_format(), NineBreathSite.ACTION, App.last_device)
 		hold_ratio = _site.hold_ratio()
 		_bar.queue_redraw()
 	else:
@@ -168,13 +169,17 @@ func _place() -> void:
 	_panel.position = Vector2((size.x - sz.x) * 0.5, size.y - BOTTOM_GAP - sz.y)
 
 
+func hint_line() -> GlyphLine:
+	return _hint
+
+
 func panel_rect() -> Rect2:
 	return Rect2(_panel.position, _panel.size)
 
 
 func text() -> String:
 	if mode == "prompt":
-		return "%s\n%s\n%s" % [_title.text, _cost.text, _hint.text]
+		return "%s\n%s\n%s" % [_title.text, _cost.text, _hint.plain_text()]
 	if mode == "count":
 		return _count.text
 	return ""

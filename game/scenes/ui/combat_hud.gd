@@ -1,6 +1,7 @@
 class_name CombatHud
 extends Control
 ## 戰鬥 HUD（左下）：諾恩生命、席菈生命＋體力、三個指令的鍵名與冷卻。
+## 鍵名用 GlyphLine：鍵鼠顯示「[Q] 打弱點」，手把顯示按鈕圖示＋「打弱點」（D-063）；掙扎提示同。
 ## 只在戰鬥中（20 公尺內有活著的敵人）淡入，探索時隱藏（03：探索時幾乎沒有 HUD）。
 ## 席菈倒下時她的條顯示「倒下」與可拉起的剩餘秒數。數值每幀從場景讀（純顯示，不改狀態）。
 
@@ -32,8 +33,8 @@ var cooldowns: Dictionary = {}
 
 var _sheila_name: Label
 var _noen_name: Label
-var _cmd_labels: Array[Label] = []
-var _struggle: Label
+var _cmd_lines: Array[GlyphLine] = []
+var _struggle: GlyphLine
 ## 被抓時的掙扎提示
 var struggle_shown: bool = false
 var guard_on: bool = false
@@ -49,13 +50,14 @@ func _ready() -> void:
 	# 動態組字（鍵名＋翻譯）的標籤標上 glyph，UI 測試的「寫死文字」檢查會跳過
 	_sheila_name.set_meta("glyph", true)
 	for c: Array in COMMANDS:
-		var l: Label = _label("", 18, COL_CMD)
-		l.set_meta("glyph", true)
-		l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-		_cmd_labels.append(l)
-	_struggle = _label("", 30, Color(1.0, 0.92, 0.85))
-	_struggle.set_meta("glyph", true)
-	_struggle.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		var line: GlyphLine = GlyphLine.new().configure(18, COL_CMD)
+		line.name = "Cmd_%s" % str(c[1])
+		line.alignment = BoxContainer.ALIGNMENT_BEGIN
+		add_child(line)
+		_cmd_lines.append(line)
+	_struggle = GlyphLine.new().configure(30, Color(1.0, 0.92, 0.85))
+	_struggle.name = "Struggle"
+	add_child(_struggle)
 	_struggle.visible = false
 	modulate.a = 0.0
 
@@ -76,8 +78,17 @@ func is_shown() -> bool:
 	return in_combat
 
 
+## 指令那一格的文字版（「[Q] 打弱點」／手把「[X] 打弱點」）。
 func command_label(i: int) -> String:
-	return _cmd_labels[i].text
+	return _cmd_lines[i].plain_text()
+
+
+func command_line(i: int) -> GlyphLine:
+	return _cmd_lines[i]
+
+
+func struggle_line() -> GlyphLine:
+	return _struggle
 
 
 func _process(delta: float) -> void:
@@ -112,17 +123,15 @@ func refresh(player: PlayerController, sheila: Sheila) -> void:
 	struggle_shown = player != null and player.grabbed_by != null
 	_struggle.visible = struggle_shown
 	if struggle_shown:
-		var k: String = InputGlyphs.label_for_action("dodge", App.last_device)
-		_struggle.text = tr("HUD_STRUGGLE").format({"key": k, "n": player.struggle_need - player.struggle})
+		_struggle.set_line(tr("HUD_STRUGGLE").format({"n": player.struggle_need - player.struggle}), "dodge", App.last_device)
 	for i: int in COMMANDS.size():
 		var c: Array = COMMANDS[i]
-		var key: String = InputGlyphs.label_for_action(str(c[0]), App.last_device)
-		_cmd_labels[i].text = "%s %s" % [key, tr(str(c[2]))]
+		_cmd_lines[i].set_line("{key} %s" % tr(str(c[2])), str(c[0]), App.last_device)
 		var usable: bool = sheila_present and not sheila_down and float(cooldowns.get(str(c[1]), 0.0)) <= 0.0
-		_cmd_labels[i].modulate.a = 1.0 if usable else 0.35
+		_cmd_lines[i].modulate.a = 1.0 if usable else 0.35
 		if str(c[1]) == "guard":
-			_cmd_labels[i].add_theme_color_override("font_color", COL_GUARD_ON if guard_on else COL_CMD)
-		_cmd_labels[i].visible = sheila_present
+			_cmd_lines[i].set_color(COL_GUARD_ON if guard_on else COL_CMD)
+		_cmd_lines[i].visible = sheila_present
 
 
 func _enemy_near(pos: Vector3) -> bool:
@@ -147,8 +156,10 @@ func _layout() -> void:
 	var o: Vector2 = _origin()
 	_noen_name.position = o + Vector2(0, -24)
 	_sheila_name.position = o + Vector2(0, 22)
-	for i: int in _cmd_labels.size():
-		_cmd_labels[i].position = o + Vector2(BAR_W + 40.0, -24.0 + 28.0 * float(i))
+	for i: int in _cmd_lines.size():
+		var line: GlyphLine = _cmd_lines[i]
+		# 每格以第 i 列的中線對齊（圖示比字高，不能用左上角對齊）
+		line.position = o + Vector2(BAR_W + 40.0, -12.0 + 28.0 * float(i) - line.size.y * 0.5)
 	_struggle.position = Vector2((size.x - _struggle.size.x) * 0.5, size.y * 0.62)
 
 

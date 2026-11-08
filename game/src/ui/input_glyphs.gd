@@ -72,13 +72,21 @@ static func label_for_spec(spec: Vector2i) -> String:
 
 ## 動作在某裝置上的鍵名，外加方括號（例如「[F]」「[A]」）。
 static func label_for_action(action: String, device: int) -> String:
+	var spec: Vector2i = spec_for_action(action, device)
+	if spec != InputSetup.NONE:
+		return "[%s]" % label_for_spec(spec)
+	return "[%s]" % TranslationServer.translate("GLYPH_UNKNOWN")
+
+
+## 動作在某裝置上的第一個綁定（鍵鼠：鍵盤／滑鼠；手把：按鈕／軸）；沒有綁定回傳 InputSetup.NONE。
+static func spec_for_action(action: String, device: int) -> Vector2i:
 	if InputMap.has_action(action):
 		var want_pad: bool = device == Device.PAD
 		for ev: InputEvent in InputMap.action_get_events(action):
 			var spec: Vector2i = spec_of_event(ev)
 			if spec != InputSetup.NONE and (spec.x >= 2) == want_pad:
-				return "[%s]" % label_for_spec(spec)
-	return "[%s]" % TranslationServer.translate("GLYPH_UNKNOWN")
+				return spec
+	return InputSetup.NONE
 
 
 ## InputMap 裡的事件 → spec（不看按下與否）。
