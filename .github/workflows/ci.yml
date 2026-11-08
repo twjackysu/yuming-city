@@ -55,7 +55,7 @@ jobs:
           scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
           scripts/screenshot.sh build/bell.png 120 --level=frostbridge --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
           scripts/screenshot.sh build/combat.png 14 --level=sandbox --boss --insight --locale=zh_TW || true
-          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --arch=restored --locale=zh_TW || true
+          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --convoy --arch=restored --locale=zh_TW || true
 
       # 匯出版本身（不是編輯器）能開到霜橋鎮、畫出東西、沒有 SCRIPT ERROR（M1.4）
       - name: 匯出版 smoke test

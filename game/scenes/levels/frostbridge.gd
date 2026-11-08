@@ -115,6 +115,11 @@ func _ready() -> void:
 		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
 		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
 		player.rotation.y = PI + deg_to_rad(8.0)
+		# 跟 `--convoy` 一起用（重現中／化灰）：送葬者站在石拱前（_boss_spawn），諾恩退到他北邊，
+		# 鏡頭裡是「送葬者擋在亮起的石拱前」，而不是站進送葬者身體裡（預覽要走近才有提示，維持原位）
+		if dev_args.has("convoy") and str(dev_args["arch"]) != "preview":
+			player.global_position = Vector3(1.2, 0.05, _boss_spawn().z - 6.5)
+			player.rotation.y = PI + deg_to_rad(4.0)
 		player.yaw = player.rotation.y
 		match str(dev_args["arch"]):
 			"preview":
