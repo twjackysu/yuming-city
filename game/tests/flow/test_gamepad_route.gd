@@ -185,3 +185,55 @@ func test_gamepad_pause_menu_settings_and_back() -> void:
 	assert_false(tree.paused, "解除暫停")
 	pause.queue_free()
 	await tree.process_frame
+
+
+## 救援只用手把：左搖桿走到受困者旁（出現提示）→ 按住 A 搬開瓦礫 → 救滿三人，任務推進到「席菈」。
+func test_gamepad_rescue_three() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	_game.set("session", s)
+	s.new_game()
+	s.set_flag("slice.met_pear_seller", true)
+	for i: int in 9:
+		s.add_flag("slice.bell_rings")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "rescue", "前提：救援階段")
+	_game.call("go_to_level", "frostbridge")
+	var level: StoryLevel = await _wait_scene()
+	assert_not_null(level, "進霜橋鎮")
+	if level == null:
+		return
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var start := Vector3(0.0, 0.0, -31.0)
+	start.y = level.ground_y(start) + 0.05
+	player.global_position = start
+	for i: int in 5:
+		await tree.physics_frame
+	var sites: Array[RescueSite] = []
+	for c: Node in level.get_children():
+		if c is RescueSite:
+			sites.append(c as RescueSite)
+	assert_eq(sites.size(), 4, "北街陷落、四個受困者")
+	var saved: int = 0
+	for site: RescueSite in sites:
+		if saved >= 3:
+			break
+		var near: bool = await _walk_to(player, site.global_position, site.prompt_shown, 600)
+		assert_true(near, "左搖桿走到受困者旁、出現按住提示（%s）" % site.name)
+		if not near:
+			break
+		_button(JOY_BUTTON_A, true)
+		for i: int in 240:
+			if site.is_rescued():
+				break
+			await tree.physics_frame
+		_button(JOY_BUTTON_A, false)
+		await tree.physics_frame
+		assert_true(site.is_rescued(), "按住 A 搬開瓦礫、救出 %s" % site.name)
+		if site.is_rescued():
+			saved += 1
+	assert_eq(saved, 3, "手把救出三人")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "meet_sheila", "救滿三人 → 席菈登場")
+	var scene: Node = tree.current_scene
+	if scene != null:
+		scene.queue_free()
+	for i: int in 3:
+		await tree.process_frame
