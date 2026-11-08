@@ -74,6 +74,8 @@ func _on_frame_throw_resolved(outcome: String) -> void:
 	var to: Vector3 = _impact_point(outcome, from, ally_at)
 	if outcome == "kindling" and ally != null:
 		ally.burn_strike(to, 1.6)
+		# 斬完留在車隊旁守著幾秒（送葬者靠近就迎上去），之後回到原本的跟隨／守住（D-054）
+		ally.hold_guard(ally_at, GUARD_HOLD_SEC, "SHEILA_HOLD_CONVOY")
 	if is_inside_tree():
 		thrown_frame = ThrownFrame.create(from, to, outcome, _ground_y())
 		thrown_frame.impacted.connect(_on_frame_impact)
@@ -83,6 +85,8 @@ func _on_frame_throw_resolved(outcome: String) -> void:
 ## 席菈離車隊超過這個距離（公尺）就先衝過去
 const DASH_FROM: float = 3.0
 const GUARD_OFFSET: float = 1.4
+## 燃燒劍路線斬完鐵架後，席菈守在車隊旁的秒數
+const GUARD_HOLD_SEC: float = 5.0
 
 
 ## 車隊與送葬者之間、離車隊 GUARD_OFFSET 公尺的位置（燃燒劍路線席菈站的地方）。
@@ -154,7 +158,7 @@ func finish() -> void:
 	if undertaker != null and is_instance_valid(undertaker) and not undertaker.health.is_dead():
 		var ally: Sheila = _sheila()
 		if ally != null:
-			ally.burn_strike(undertaker.global_position + Vector3.UP * 1.6, 2.4)
+			ally.burn_strike(undertaker.global_position + Vector3.UP * 1.6, 3.6)
 		undertaker.health.apply_damage(undertaker.health.hp, {"kind": "kindling", "stagger": 0.0})
 	banner.emit("CONVOY_THROUGH", 4.0)
 	finished.emit(injured)

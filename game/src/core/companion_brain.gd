@@ -36,6 +36,9 @@ var command_window: float = 0.6
 ## 閃開成功後的無敵時間
 var evade_invuln: float = 0.5
 var guard_active: bool = false
+## 劇情要她暫時守住（送葬者戰斬完鐵架後守著車隊，D-054）：剩餘秒數；時間到 guard_active 恢復原狀
+var guard_hold_left: float = 0.0
+var _guard_before_hold: bool = false
 ## 她站在傷者旁邊、敵人也在旁邊：叫她「閃開」＝讓攻擊砸到傷者 → 拒絕並說理由（02-gameplay）。場景每次下指令前設定。
 var near_wounded: bool = false
 
@@ -88,7 +91,18 @@ func set_down(down: bool) -> void:
 	down_elapsed = 0.0
 	if down:
 		guard_active = false
+		guard_hold_left = 0.0
 		_counter_ready = false
+
+
+## 暫時守住 seconds 秒（不經過指令冷卻與回話）。倒下時不接；守的途中玩家下「守住」會照常切換並結束暫時狀態。
+func hold_guard(seconds: float) -> void:
+	if mode == Mode.DOWN or seconds <= 0.0:
+		return
+	if guard_hold_left <= 0.0:
+		_guard_before_hold = guard_active
+	guard_active = true
+	guard_hold_left = seconds
 
 
 ## 下指令。回傳 {accepted, outcome（success／mistimed／""）, line（席菈回話的翻譯 key）}。
@@ -131,6 +145,7 @@ func command(cmd: String, target: EnemyBrain) -> Dictionary:
 			return _result("mistimed", "SHEILA_MISTIMED_EVADE")
 		"guard":
 			_accept(cmd)
+			guard_hold_left = 0.0
 			guard_active = not guard_active
 			return _result("success", "SHEILA_ACK_GUARD" if guard_active else "SHEILA_ACK_UNGUARD")
 	return _refuse("SHEILA_REFUSE_UNKNOWN")
@@ -151,6 +166,10 @@ func tick(delta: float, leader_dist: float, target: EnemyBrain, target_dist: flo
 	_invuln_left = maxf(_invuln_left - delta, 0.0)
 	_slash_timer = maxf(_slash_timer - delta, 0.0)
 	stamina = minf(stamina + stamina_regen * delta, max_stamina)
+	if guard_hold_left > 0.0:
+		guard_hold_left = maxf(guard_hold_left - delta, 0.0)
+		if guard_hold_left <= 0.0:
+			guard_active = _guard_before_hold
 	var out: PackedStringArray = _queued
 	_queued = []
 	if mode == Mode.DOWN:

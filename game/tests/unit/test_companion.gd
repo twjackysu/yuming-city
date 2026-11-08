@@ -122,6 +122,41 @@ func test_guard_toggle_and_moves() -> void:
 	assert_eq(c.desired_move(1.0, 999.0), CompanionBrain.Move.STAY)
 
 
+## 劇情暫時守住（D-054）：時間到恢復原狀；守的途中玩家下「守住」照常切換；倒下時不接。
+func test_hold_guard_expires_and_player_can_override() -> void:
+	var c := CompanionBrain.new().configure()
+	c.hold_guard(5.0)
+	c.tick(0.01, 5.0, null, 999.0)
+	assert_eq(c.mode_name(), "guard", "暫時守住")
+	assert_eq(c.desired_move(5.0, 999.0), CompanionBrain.Move.TO_GUARD)
+	assert_eq(c.cooldown_left("guard"), 0.0, "不經過指令冷卻")
+	c.tick(4.0, 5.0, null, 999.0)
+	assert_eq(c.mode_name(), "guard", "4 秒時還守著")
+	c.tick(1.1, 5.0, null, 999.0)
+	c.tick(0.01, 5.0, null, 999.0)
+	assert_eq(c.mode_name(), "follow", "5 秒後回到跟隨")
+	assert_false(c.guard_active)
+	# 本來就在守：暫時守住結束後仍然守著
+	var g := CompanionBrain.new().configure()
+	g.command("guard", null)
+	g.hold_guard(2.0)
+	g.tick(2.5, 5.0, null, 999.0)
+	assert_true(g.guard_active, "原本就在守，時間到仍然守著")
+	# 守的途中玩家按「守住」：照常切換（解除），不會時間到又被打開
+	var h := CompanionBrain.new().configure()
+	h.hold_guard(5.0)
+	h.tick(0.5, 5.0, null, 999.0)
+	assert_eq(h.command("guard", null)["line"], "SHEILA_ACK_UNGUARD", "玩家解除暫時守住")
+	assert_eq(h.guard_hold_left, 0.0)
+	h.tick(6.0, 5.0, null, 999.0)
+	assert_false(h.guard_active, "不會被暫時狀態恢復成守住")
+	# 倒下時不接
+	var d := CompanionBrain.new().configure()
+	d.set_down(true)
+	d.hold_guard(5.0)
+	assert_false(d.guard_active, "倒下時不接暫時守住")
+
+
 func test_autonomous_slash_respects_telegraph() -> void:
 	var c := CompanionBrain.new().configure()
 	var idle_enemy := EnemyBrain.new().configure("ashwalker")

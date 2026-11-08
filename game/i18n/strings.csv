@@ -103,6 +103,7 @@ SHEILA_ACK_WEAKPOINT,The knee — mine.,膝蓋——交給我。
 SHEILA_ACK_EVADE,Seen it.,看到了。
 SHEILA_ACK_GUARD,I'll hold here.,我守著。
 SHEILA_ACK_UNGUARD,Moving.,我過去。
+SHEILA_HOLD_CONVOY,I've got the wagons.,車隊我守著。
 SHEILA_MISTIMED_WEAKPOINT,Too soon—!,太早了——！
 SHEILA_MISTIMED_EVADE,It hasn't moved yet!,牠還沒出手！
 SHEILA_REFUSE_NO_TARGET,Hit what?,打誰？

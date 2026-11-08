@@ -461,6 +461,14 @@ func dash_to_point(p: Vector3) -> void:
 	t.tween_property(self, "global_position", dash_target, DASH_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
+## 劇情要她守住某處 seconds 秒（斬完鐵架後守著車隊，D-054）；line 是頭上的喊話（翻譯 key，可空）。
+func hold_guard(point: Vector3, seconds: float, line: String = "") -> void:
+	guard_point = Vector3(point.x, global_position.y, point.z)
+	brain.hold_guard(seconds)
+	if line != "":
+		say(line)
+
+
 ## 燃燒劍斬向某一點（鐵架、送葬者）：轉過去、出劍、劍燒起來。
 func burn_strike(at: Vector3, seconds: float = 1.8) -> void:
 	var d: Vector3 = at - global_position

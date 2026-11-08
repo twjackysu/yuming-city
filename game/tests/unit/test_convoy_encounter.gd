@@ -169,6 +169,51 @@ func test_kindling_sheila_dashes_to_convoy_first() -> void:
 	var flat := Vector2(f.to.x - ally.global_position.x, f.to.z - ally.global_position.z)
 	assert_true(flat.length() < 1.5, "鐵架落在她新位置的身前（%.2f）" % flat.length())
 	assert_true(ally.is_sword_lit(), "燃燒劍點起來")
+	# 斬完留在車隊旁守著（D-054）
+	assert_true(ally.brain.guard_active, "斬完鐵架守著車隊")
+	assert_true(absf(ally.brain.guard_hold_left - ConvoyEncounter.GUARD_HOLD_SEC) < 0.1, "守 %.1f 秒" % ConvoyEncounter.GUARD_HOLD_SEC)
+	var gp := Vector2(ally.guard_point.x - caravan.global_position.x, ally.guard_point.z - caravan.global_position.z)
+	assert_true(gp.length() < 2.0, "守的位置在車隊旁（%.2f m）" % gp.length())
+	assert_eq(ally.brain.cooldown_left("guard"), 0.0, "不佔玩家「守住」指令的冷卻")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
+## 席菈守著車隊時真的待在車隊旁，時間到回去跟諾恩（D-054）。
+func test_kindling_sheila_holds_by_convoy_then_follows() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var player: PlayerController = w[1]
+	var caravan: Caravan = w[3]
+	var boss: Undertaker = w[4]
+	var enc: ConvoyEncounter = w[5]
+	var ally: Sheila = _add_sheila(root, caravan.global_position + Vector3(-1.2, 0, 0))
+	ally.leader = player
+	await tree.physics_frame
+	boss.set_physics_process(false)
+	boss.trigger_frame_throw()
+	enc.frame_throw.tick(5.0, false, st)
+	enc.thrown_frame.set_physics_process(false)
+	ally.set_physics_process(true)
+	assert_true(ally.brain.guard_active, "斬完開始守")
+	var prev: float = Engine.time_scale
+	Engine.time_scale = 4.0
+	# 4 倍速 45 個物理幀 ≈ 3 秒（守 5 秒）
+	for i: int in 45:
+		await tree.physics_frame
+	assert_true(ally.brain.guard_active, "3 秒時還守著")
+	var by := Vector2(ally.global_position.x - caravan.global_position.x, ally.global_position.z - caravan.global_position.z)
+	assert_true(by.length() < 2.2, "守著的時候留在車隊旁（%.2f m），沒有跑回諾恩身邊" % by.length())
+	for i: int in 400:
+		if not ally.brain.guard_active:
+			break
+		await tree.physics_frame
+	Engine.time_scale = prev
+	assert_false(ally.brain.guard_active, "時間到結束守住")
+	ally.brain.tick(0.01, 20.0, null, 999.0)
+	assert_eq(ally.brain.desired_move(20.0, 999.0), CompanionBrain.Move.TO_LEADER, "回去跟諾恩")
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
