@@ -19,7 +19,7 @@
 - 畫面（xvfb＋lavapipe）前後對照：送葬者戰右側近景的窗、主街的窗（窗簾的褶看得到）、北街救援的屋頂雪與塔窗、主街雪帶、石階兩側的門、標題與設定與按鍵設定的焦點、重現提示（關卡字型換成 Noto 子集）。
 - 用腳本確認 BoxMesh 每個面的 UV 佔 1/3 × 1/2 格（y=0 在上），以及 root.theme 傳不過 CanvasLayer。
 - 對話選項（`--dialogue=slice_sheila_meet --dialogue-steps=5`）修正前還是白框、修正後是暖金色細條。
-- CI：窗 run 42459697988、選單焦點 run 42459944303 綠燈；雪 run 被下一個 push 取消；門 run 42460635026、關卡 Theme run 42461096716 結果見下一則或 NEXT。
+- CI：窗 run 42459697988、選單焦點 run 42459944303、門 run 42460635026（含雪；測試、匯出、截圖、smoke test、發布 latest）全部綠燈；雪 run 被下一個 push 取消。最後一次程式 commit（c7269a5 關卡 Theme）run 42461096716：收尾時「Import、測試、匯出」已綠燈，截圖、smoke test、發布 latest 還在跑（下一輪開頭確認）。
 
 **遇到的問題**
 
