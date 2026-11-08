@@ -609,6 +609,26 @@ func test_plaza_barrels() -> void:
 	await _free(level)
 
 
+## 柴堆（D-103）：東側牆邊、地窖北邊，一落橫放的圓木（切口朝廣場）、頂上有雪，會擋人。
+func test_plaza_woodpile() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var n: int = int(level.get("woodpile_logs"))
+	assert_true(n >= 30 and n <= 60, "柴堆有一落圓木（%d 根）" % n)
+	var pos: Vector3 = level.get("WOODPILE_POS")
+	assert_true(absf(pos.x) > 9.5 and absf(pos.x) < 11.0 - 0.3, "靠牆、不在廣場中間、不插進牆（x=%.1f）" % pos.x)
+	assert_true(pos.distance_to(level.get("CELLAR_POS")) > 3.0, "不擋地窖")
+	assert_true(pos.distance_to(level.get("STALL_POS")) > 5.0, "離攤子夠遠")
+	for spot: Vector3 in level.get("BARREL_SPOTS"):
+		assert_true(pos.distance_to(spot) > 2.5, "不跟木桶疊在一起")
+	await tree.physics_frame
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	var p := pos + Vector3(0, 3.0, 0)
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(p, pos + Vector3(0, -1.0, 0)))
+	assert_true(not hit.is_empty() and (hit["position"] as Vector3).y > 0.7, "柴堆會擋人（往下的射線打在柴堆頂）")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

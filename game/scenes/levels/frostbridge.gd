@@ -572,6 +572,65 @@ func _build_plaza() -> void:
 	_row(Vector3(PLAZA_HALF + 6.0, 0, PLAZA_S), Vector3(SOUTH_HALF, 0, PLAZA_S), Vector3.FORWARD)
 	_build_well(Vector3(-6.0, 0.0, -3.5))
 	_build_plaza_barrels()
+	_build_woodpile(WOODPILE_POS)
+
+
+## 廣場東側牆邊的柴堆（D-103，第三輪盤點第 7 項）：地窖北邊、靠牆，一落橫放的圓木，
+## 切口朝廣場（淺色的木頭斷面，一眼看得出是柴）、底下兩根墊木、頂上一層雪堆（SnowMound）。
+## 每根粗細與前後位置用位置雜湊（不動 _rng）；整落一個方塊碰撞，會擋人。
+const WOODPILE_POS: Vector3 = Vector3(10.2, 0.0, -7.7)
+const WOODPILE_LEN: float = 2.0
+const WOODPILE_ROWS: int = 5
+const LOG_R: float = 0.095
+const LOG_LEN: float = 0.6
+## 圓木斷面的顏色（比樹皮淺、偏暖）
+const LOG_END: Color = Color(0.46, 0.36, 0.25)
+var woodpile_logs: int = 0
+
+
+func _build_woodpile(base: Vector3) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	var end_grain := look.mat(LOG_END, 0.95)
+	var inward: float = -1.0 if base.x > 0.0 else 1.0
+	var to_plaza := Basis(Vector3.BACK, PI * 0.5)  # 圓柱的軸（Y）轉成 X
+	# 墊木
+	for dz: float in [-WOODPILE_LEN * 0.35, WOODPILE_LEN * 0.35]:
+		_batch.add_box_at(Vector3(LOG_LEN * 0.9, 0.08, 0.12), base + Vector3(0, 0.04, dz), wood, false)
+	var per_row: int = int(WOODPILE_LEN / (LOG_R * 2.05))
+	var top_y: float = 0.0
+	for row: int in WOODPILE_ROWS:
+		# 上面幾排少一根、往中間縮（堆起來不是一堵方牆）
+		var n: int = per_row - floori(row / 2.0)
+		var y: float = 0.08 + LOG_R + float(row) * LOG_R * 1.78
+		top_y = y + LOG_R
+		for i: int in n:
+			var h: float = _house_hash(base, 100.0 + float(row * 31 + i))
+			var r: float = LOG_R * lerpf(0.82, 1.08, h)
+			var z: float = (float(i) - float(n - 1) * 0.5) * LOG_R * 2.05 + (0.5 if row % 2 == 1 else 0.0) * LOG_R * 0.6
+			var stick: float = (_house_hash(base, 200.0 + float(row * 31 + i)) - 0.5) * 0.08
+			var c: Vector3 = base + Vector3(inward * stick, y, z)
+			var log_mesh := CylinderMesh.new()
+			log_mesh.top_radius = r
+			log_mesh.bottom_radius = r
+			log_mesh.height = LOG_LEN
+			log_mesh.radial_segments = 7
+			log_mesh.rings = 1
+			_batch.add_mesh(log_mesh, Transform3D(to_plaza, c), wood)
+			# 朝廣場那端的斷面：薄的淺色圓片，稍微突出一點
+			var cap := CylinderMesh.new()
+			cap.top_radius = r * 0.9
+			cap.bottom_radius = r * 0.9
+			cap.height = 0.012
+			cap.radial_segments = 7
+			cap.rings = 1
+			_batch.add_mesh(cap, Transform3D(to_plaza, c + Vector3(inward * (LOG_LEN * 0.5 + 0.004), 0, 0)), end_grain)
+			woodpile_logs += 1
+	# 頂上的雪
+	_batch.add_mesh(SnowMound.build(WOODPILE_LEN * 0.92, LOG_LEN * 0.95, 0.09, base.z * 3.1),
+		Transform3D(Basis(Vector3.UP, PI * 0.5), base + Vector3(0, top_y - 0.03, 0)), look.snow())
+	var col := BoxShape3D.new()
+	col.size = Vector3(LOG_LEN, top_y, WOODPILE_LEN)
+	_batch.add_shape(Transform3D(Basis.IDENTITY, base + Vector3(0, top_y * 0.5, 0)), col)
 
 
 ## 廣場邊的木桶（D-100，第三輪盤點第 7 項的第一步）：廣場中間大片空地、沒有生活痕跡。
