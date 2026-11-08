@@ -20,9 +20,19 @@ uniform float block_scale = 1.0;
 // 發光（重現的石拱 D-043）：石縫透出冷光＋邊緣光。0＝不發光（房子、城牆）
 uniform vec3 glow_color : source_color = vec3(0.62, 0.86, 1.0);
 uniform float glow_energy = 0.0;
+// 拱圈（重現的石拱 D-132）：物件座標 xy 平面上、以 arch_center 為圓心、arch_inner～arch_outer 之間
+// 是一圈楔形拱石——石縫沿半徑放射（每塊之間）＋內外兩圈弧線，不是水平錯縫。
+// arch_voussoirs＝0 就沒有拱圈（房子、城牆）。正中那塊（拱心石）外緣多 arch_key_extra。
+uniform int arch_voussoirs = 0;
+uniform vec2 arch_center = vec2(0.0, 2.0);
+uniform float arch_inner = 1.6;
+uniform float arch_outer = 2.15;
+uniform float arch_key_extra = 0.0;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
+varying vec3 obj_pos;
+varying vec3 obj_normal;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -52,6 +62,43 @@ float fbm(vec2 p) {
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	obj_pos = VERTEX;
+	obj_normal = NORMAL;
+}
+
+// 拱圈裡的石縫（D-132）。回傳 x＝到最近石縫的距離（公尺，不在拱圈裡是 -1）、y＝第幾塊拱石、
+// zw＝石塊邊緣往外倒的方向（物件座標 xy，只有正面）。
+vec4 arch_joint(vec3 p, vec3 nrm) {
+	if (arch_voussoirs <= 0) {
+		return vec4(-1.0, 0.0, 0.0, 0.0);
+	}
+	vec2 d = p.xy - arch_center;
+	float r = length(d);
+	float nv = float(arch_voussoirs);
+	float step_a = PI / nv;
+	float a = atan(d.y, d.x);
+	float ai = clamp(floor(a / step_a), 0.0, nv - 1.0);
+	float outer = arch_outer + (int(ai) * 2 + 1 == arch_voussoirs ? arch_key_extra : 0.0);
+	if (d.y < -0.02 || r < arch_inner - 0.03 || r > outer + 0.012) {
+		return vec4(-1.0, 0.0, 0.0, 0.0);
+	}
+	float fa = clamp(a / step_a - ai, 0.0, 1.0);
+	float dist = min(fa, 1.0 - fa) * step_a * max(r, 0.01);
+	vec2 tilt = vec2(0.0);
+	if (abs(nrm.z) > 0.5) {
+		// 正面：放射縫＋拱圈內外緣
+		float fr = clamp((r - arch_inner) / (outer - arch_inner), 0.0, 1.0);
+		dist = min(dist, min(fr, 1.0 - fr) * (outer - arch_inner));
+		vec2 rh = d / max(r, 0.01);
+		vec2 th = vec2(-rh.y, rh.x);
+		tilt = th * (fa - 0.5) * smoothstep(0.3, 0.48, abs(fa - 0.5)) * 0.5
+			+ rh * (fr - 0.5) * smoothstep(0.3, 0.48, abs(fr - 0.5)) * 0.5;
+	} else if (r < arch_inner + 0.05) {
+		// 拱洞內面：每塊拱石沿牆的厚度再分成兩段（接縫位置每塊不同）
+		float zc = (hash(vec2(ai, 41.0)) - 0.5) * 0.5;
+		dist = min(dist, abs(p.z - zc));
+	}
+	return vec4(dist, ai, tilt);
 }
 
 void fragment() {
@@ -68,6 +115,8 @@ void fragment() {
 	float rough;
 	vec2 tilt = vec2(0.0);
 	float seam = 0.0;
+	vec2 arch_tilt = vec2(0.0);
+	bool in_arch = false;
 
 	if (y < stone_height) {
 		// 石塊：每排高度略不同、錯開，灰縫帶一點抖動
@@ -79,15 +128,26 @@ void fragment() {
 		vec2 f = vec2(fract(uu), fract(y / bh));
 		vec2 dm = min(f, 1.0 - f) * vec2(bw, bh);
 		float jag = (noise(wp * 11.0) - 0.5) * 0.02;
-		float gap = smoothstep(0.018, 0.04, min(dm.x, dm.y) + jag);
-		gap = mix(0.85, gap, detail);
+		float joint = min(dm.x, dm.y);
 		float tint = hash(cell);
+		// 拱圈（D-132）：楔形拱石取代水平錯縫，每塊顏色不同、比牆石稍微平整一點
+		vec4 aj = arch_joint(obj_pos, normalize(obj_normal));
+		if (aj.x >= 0.0) {
+			joint = aj.x;
+			jag *= 0.6;
+			tint = mix(0.35, 0.85, hash(vec2(aj.y, 91.0)));
+			arch_tilt = aj.zw;
+			in_arch = true;
+		}
+		float gap = smoothstep(0.018, 0.04, joint + jag);
+		gap = mix(0.85, gap, detail);
 		vec3 stone = stone_color * mix(0.7, 1.18, tint) * mix(0.82, 1.06, fbm(wp * 2.6));
 		albedo = mix(mortar_color, stone, gap);
 		rough = mix(0.95, 0.82, gap);
 		seam = 1.0 - gap;
 		// 石塊邊緣往外倒一點（只有近處）
-		tilt = (f - 0.5) * smoothstep(0.3, 0.48, abs(f - 0.5)) * 0.5 * detail;
+		tilt = in_arch ? vec2(0.0) : (f - 0.5) * smoothstep(0.3, 0.48, abs(f - 0.5)) * 0.5 * detail;
+		arch_tilt *= detail;
 		// 石牆頂端一條薄雪（窗台般的突出）
 		float ledge = smoothstep(stone_height - 0.07, stone_height - 0.03, y) * step(stone_height, 50.0);
 		albedo = mix(albedo, snow_color * 0.9, ledge * 0.8);
@@ -141,7 +201,11 @@ void fragment() {
 		float fres = pow(1.0 - clamp(dot(normalize(NORMAL), VIEW), 0.0, 1.0), 3.0);
 		EMISSION = glow_color * glow_energy * (0.05 + 0.75 * seam * detail + 0.9 * fres);
 	}
-	if (top < 0.5 && abs(n.y) < 0.5) {
+	if (in_arch) {
+		// 拱石的邊緣往外倒：方向在物件座標 xy（沿半徑／沿拱圈），轉到世界座標
+		vec3 tw = (MODEL_MATRIX * vec4(arch_tilt, 0.0, 0.0)).xyz;
+		NORMAL = normalize((VIEW_MATRIX * vec4(normalize(n + tw), 0.0)).xyz);
+	} else if (top < 0.5 && abs(n.y) < 0.5) {
 		vec3 t_world = side_x ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
 		vec3 n_world = normalize(n + t_world * tilt.x + vec3(0.0, 1.0, 0.0) * tilt.y);
 		NORMAL = normalize((VIEW_MATRIX * vec4(n_world, 0.0)).xyz);

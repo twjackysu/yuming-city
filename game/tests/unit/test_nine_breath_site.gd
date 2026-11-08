@@ -210,6 +210,39 @@ func test_arch_has_round_vault_and_voussoirs() -> void:
 	await tree.process_frame
 
 
+## 拱石的放射縫（D-132）：重現後的石頭與預覽輪廓都拿到拱圈的形狀（跟幾何同一組常數），
+## 鎮上的石牆沒有拱圈（shader 預設 0）。
+func test_arch_shaders_get_voussoir_ring() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	await tree.physics_frame
+	var arch: CSGCombiner3D = site.get_node("Arch") as CSGCombiner3D
+	site.update_hold(0.1, true)
+	var ghost: ShaderMaterial = arch.material_override as ShaderMaterial
+	site.update_hold(0.1, false)
+	assert_true(site.activate(), "發動")
+	var stone: ShaderMaterial = arch.material_override as ShaderMaterial
+	assert_true(ghost != stone, "預覽與重現是兩個材質")
+	for m: ShaderMaterial in [ghost, stone]:
+		assert_eq(int(m.get_shader_parameter("arch_voussoirs")), NineBreathSite.VOUSSOIRS, "拱石塊數")
+		assert_eq(m.get_shader_parameter("arch_center"), Vector2(0.0, NineBreathSite.ARCH_SPRING), "拱心在拱腳高度")
+		assert_true(is_equal_approx(float(m.get_shader_parameter("arch_inner")), NineBreathSite.ARCH_INNER), "內緣＝拱洞")
+		assert_true(is_equal_approx(float(m.get_shader_parameter("arch_outer")), NineBreathSite.ARCH_OUTER), "外緣")
+		assert_true(is_equal_approx(float(m.get_shader_parameter("arch_key_extra")), NineBreathSite.KEYSTONE_RISE), "拱心石高一點")
+	var keystone: CSGPolygon3D = arch.get_node("Keystone") as CSGPolygon3D
+	var reach: float = 0.0
+	for p: Vector2 in keystone.polygon:
+		reach = maxf(reach, p.distance_to(Vector2(0.0, NineBreathSite.ARCH_SPRING)))
+	assert_true(is_equal_approx(reach, NineBreathSite.ARCH_OUTER + NineBreathSite.KEYSTONE_RISE), "幾何與 shader 同一組數字：%f" % reach)
+	var wall: ShaderMaterial = FrostbridgeLook.new().stone_wall()
+	assert_eq(wall.get_shader_parameter("arch_voussoirs"), null, "石牆沒有拱圈（用 shader 預設 0）")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
 ## 預覽輪廓（D-046）：按住時用 restore_ghost shader，fill 跟著按住的進度從 0 往上長；放開就藏起來。
 func test_preview_ghost_grows_with_hold() -> void:
 	var st := GameState.new()

@@ -28,6 +28,8 @@ const ARCH_INNER: float = 1.6
 const ARCH_OUTER: float = 2.15
 const ARCH_SIDES: int = 48
 const VOUSSOIRS: int = 11
+## 拱心石的外緣比其他拱石高多少
+const KEYSTONE_RISE: float = 0.16
 const WALL_DEPTH: float = 1.2
 # 拱石、拱墩線腳凸出牆面多少（每一面）
 const TRIM_OUT: float = 0.07
@@ -342,6 +344,13 @@ func _build() -> void:
 	_ghost_mat.set_shader_parameter("color", FROST)
 	_ghost_mat.set_shader_parameter("height", 4.6)
 	_ghost_mat.set_shader_parameter("block_scale", 1.25)
+	# D-132：拱圈上的石縫沿半徑放射（一塊塊楔形拱石），不是牆上的水平錯縫
+	for m: ShaderMaterial in [_arch_mat, _ghost_mat]:
+		m.set_shader_parameter("arch_voussoirs", VOUSSOIRS)
+		m.set_shader_parameter("arch_center", Vector2(0.0, ARCH_SPRING))
+		m.set_shader_parameter("arch_inner", ARCH_INNER)
+		m.set_shader_parameter("arch_outer", ARCH_OUTER)
+		m.set_shader_parameter("arch_key_extra", KEYSTONE_RISE)
 	_arch.material_override = _ghost_mat
 	_arch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# 地上的鐘紋：一圈淡淡的環
@@ -400,7 +409,7 @@ func _build_arch_trim() -> void:
 		var key: bool = i * 2 + 1 == VOUSSOIRS
 		var a0: float = step * float(i) + gap
 		var a1: float = step * float(i + 1) - gap
-		var outer: float = ARCH_OUTER + (0.16 if key else 0.0)
+		var outer: float = ARCH_OUTER + (KEYSTONE_RISE if key else 0.0)
 		var out: float = TRIM_OUT + (0.05 if key else 0.0)
 		var poly := PackedVector2Array()
 		for p: Vector2 in [Vector2(cos(a0), sin(a0)) * ARCH_INNER, Vector2(cos(a1), sin(a1)) * ARCH_INNER,
