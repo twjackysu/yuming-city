@@ -2,6 +2,12 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-065　2026-11-08　「走近就能做」的提示搬到 HUD（InteractPrompt），3D 場景只留台詞
+
+- 決策：新增 `scenes/ui/interact_prompt.gd`（`InteractPrompt`，掛在 `Hud`）：每幀找 `interact_prompts` 群組裡第一個 `interact_hint()` 回傳非空字典的節點（`{"fmt": 保留 {key} 的翻譯字串, "action": 動作, "progress": 0..1 或 -1}`），在畫面下方中央顯示 `GlyphLine`＋按住進度條；重現提示同時出現時疊在它上方 12 px。`RescueSite` 拿掉瓦礫上的 Label3D（`prompt_shown()` 照舊）；`Sheila` 倒下時頭上不再浮「拉起席菈」，改由 `interact_hint()` 提供（她頭上的 Label3D 只放台詞）。
+- 理由：D-063 之後 HUD 的鍵名都有手把圖示，只剩這兩個 3D 提示還是「[A]」文字；同一類提示也該在同一個位置（D-059 的理由：3D 文字會被別的面板蓋住、遠近大小不一）。
+- 影響：新的互動點（例如下一段章節的機關、門）只要加進 `interact_prompts` 群組並實作 `interact_hint()`，提示就會出現在 HUD；玩家被鎖住（對話、過場）時不顯示。
+
 ## D-064　2026-11-08　Steam 膠囊圖替代版由 CI 產生（`scripts/steam_mock.py`），截圖旗標 `--nohud`、`--face`
 
 - 決策：新增 `scripts/steam_mock.py`（PIL）：拿無 HUD 的主街夜景截圖（`--level=frostbridge --at=main --quality=2 --nohud`）cover 裁切、壓暗＋暗角＋底部漸層，左下疊「餘命城／YUMING CITY」（遊戲自己的標題子集字型＋暖色光暈），產生 Header 920×430、Small 462×174、Main 1232×706；Library 600×900 用標題畫面截圖的鐘樓剪影（切掉底部「原型版本」字、避開左側標題與選單）。CI 截圖步驟後跑（`pillow==11.3.0`、`continue-on-error`），全部進 artifact、Header 附在 latest release。新旗標：`--nohud`（`Hud` 整層不顯示）；`--face=sheila|undertaker|frame`（每幀把諾恩與鏡頭轉向那個角色，燃燒劍斬鐵架在諾恩背後才拍得到）；`--convoy --arch=restored|spent` 時諾恩退到送葬者北邊（原本站進送葬者身體裡）。

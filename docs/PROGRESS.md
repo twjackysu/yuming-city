@@ -2,7 +2,7 @@
 
 新的放最上面。時間為台北時間。
 
-## 2026-11-08 14:26–15:05　第 16 輪：HUD 的手把按鈕圖示、Steam 膠囊圖替代版、燃燒劍斬鐵架拍得到了、標題鐘樓細節
+## 2026-11-08 14:26–15:05　第 16 輪：HUD 的手把按鈕圖示（含救援與拉起席菈的提示搬進 HUD）、Steam 膠囊圖替代版、燃燒劍斬鐵架拍得到了、標題鐘樓細節
 
 **做了什麼**
 
@@ -11,12 +11,13 @@
 - **截圖旗標 `--face=sheila|undertaker|frame`**：每幀把諾恩與鏡頭轉向那個角色。`--convoy --throw=kindling --throw-t=0.6 --face=sheila` 第一次親眼看到燃燒劍：劍火把石板路照成一片暖橘、鐵架斷成兩截、車隊在旁（可當 Steam 截圖 6）。
 - **`--convoy --arch=restored`**：諾恩原本站進送葬者身體裡（畫面左邊一大塊黑影），改成退到送葬者北邊；CI 的 `ninebreath.png` 改用它（送葬者扛著鐵架擋在亮起的石拱前、席菈在旁、HUD 目標正確）。
 - **標題畫面的鐘樓**：鐘室下一圈簷口、淡淡的石塊層、中段兩道微光窄窗、塔基微微放寬。
+- **救援與拉起席菈的提示搬到 HUD**（D-065）：新增 `InteractPrompt`（下方中央、按住進度條、手把圖示、跟重現提示同時出現時疊在上方）；瓦礫上與席菈頭上不再浮 3D 提示字。`--rescue` 讓諾恩站到第一個受困者旁（之前 3.2 m，提示不會出現）。
 
 **怎麼驗證**
 
-- 測試 221 → 228 全綠：`test_glyph_line`（鍵鼠文字／手把圖示、圖示兩側字段、兩個 `{key}`、沒有手把綁定退回文字、戰鬥 HUD 三格與十字鍵形狀、掙扎提示、重現提示仍水平置中且跟場景文字一致、對話框與過場聽 `device_changed` 切換）、`test_frostbridge::test_dev_face_turns_player_to_target`；`test_combat_hud` 的守住染色改讀 `GlyphLine.text_color()`。
-- 畫面（xvfb＋lavapipe）：`--convoy --arch=preview --device=pad`（「按住 (Y)　重現 9 秒」黃色 Y 圓鈕）、沙盒 `--boss --insight --device=pad`（三個十字鍵圖示、亮起的那一臂各不同）、`--convoy --arch=restored` 改前後、`--face=sheila` 燃燒劍、膠囊圖四張（第一版 Header 左上有 HUD 目標字 → 加 `--nohud`；Library 第一版裁到標題畫面自己的「City」字 → 改成以鐘樓為中心、切掉底部原型小字）、標題鐘樓改前後。
-- CI：HUD 圖示 run 42455412833、`--arch` 構圖 run 42455586170 綠燈；最後一次程式 commit（7a4cffe 標題鐘樓）的 run 見下一則收尾紀錄。
+- 測試 221 → 229 全綠：`test_glyph_line`（鍵鼠文字／手把圖示、圖示兩側字段、兩個 `{key}`、沒有手把綁定退回文字、戰鬥 HUD 三格與十字鍵形狀、掙扎提示、重現提示仍水平置中且跟場景文字一致、對話框與過場聽 `device_changed` 切換）、`test_glyph_line::test_interact_prompt_reads_sources`（下方置中、按住進度、手把圖示、疊在重現提示上方、來源收起就消失）、`test_frostbridge::test_dev_face_turns_player_to_target`；`test_combat_hud` 的守住染色改讀 `GlyphLine.text_color()`、拉起提示改看 HUD（頭上不再有提示）。
+- 畫面（xvfb＋lavapipe）：`--convoy --arch=preview --device=pad`（「按住 (Y)　重現 9 秒」黃色 Y 圓鈕）、沙盒 `--boss --insight --device=pad`（三個十字鍵圖示、亮起的那一臂各不同）、`--convoy --arch=restored` 改前後、`--face=sheila` 燃燒劍、`--rescue --device=pad`（「按住 (A)　搬開瓦礫」＋進度條）、膠囊圖四張（第一版 Header 左上有 HUD 目標字 → 加 `--nohud`；Library 第一版裁到標題畫面自己的「City」字 → 改成以鐘樓為中心、切掉底部原型小字）、標題鐘樓改前後。
+- CI：HUD 圖示 run 42455412833、`--arch` 構圖 run 42455586170 綠燈；最後一次程式 commit（59d744f 互動提示）的 run 寫在下面。
 
 **遇到的問題**
 

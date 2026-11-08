@@ -1,10 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示、Steam 膠囊圖替代版第 16 輪完成；接下來是 3D 提示搬進 HUD、霜橋鎮第一眼與階段 2 的打磨盤點）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；接下來是階段 2 的打磨盤點與霜橋鎮第一眼）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 16 輪）最後一次程式 push（7a4cffe 標題鐘樓）CI 結果寫在 PROGRESS 最上面；照常先看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
+- 上一輪（第 16 輪）最後一次程式 push（59d744f 互動提示）CI 結果寫在 PROGRESS 最上面；照常先看最近的 CI（GitHub MCP `actions_list`）。CI 多了「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
 - 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
 - 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
@@ -13,11 +13,11 @@
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`、`--device=pad`（手把圖示）、`--nohud`（整個 HUD 不顯示，D-064）、`--face=sheila|undertaker|frame`（諾恩與鏡頭每幀轉向那個角色；燃燒劍斬鐵架：`--convoy --throw=kindling --throw-t=0.6 --face=sheila`）。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
-## 1. 3D 提示搬進 HUD（手把圖示一致）＋「第一眼」盤點
+## 1. 「第一眼」盤點＋霜橋鎮第一眼
 
-- **救援「按住 [A]」（`rescue_site.gd` 的 `_label`）與拉起席菈（`sheila.gd` 的 `_line` 用 `SHEILA_REVIVE_HINT`）還是 Label3D 文字**，手把模式看不到按鈕圖示（D-063 影響）。照 D-059 的做法：HUD 下方中央一個小提示（可以直接擴充 `RestorePrompt` 成通用的「互動提示」，或另做 `InteractPrompt`），字串保留 `{key}` 交給 `GlyphLine.set_line()`；救援的按住進度也搬過去。注意：席菈頭上的回話（`line_text()`）是台詞不是提示，留在 3D。測試：`test_combat_hud::test_pull_sheila_up...`、`test_rescue*` 讀的是 `revive_prompt_shown()`／`line_text()`，改了要一起改。
+- 第 16 輪已把救援與拉起席菈的提示搬進 HUD（`InteractPrompt`，D-065）。新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`。
 - **「第一眼就有質感」盤點**：照 `docs/ART_QUALITY_BAR.md` 逐項截圖（標題、廣場、主街、石階、北街救援、灰巡者、送葬者、石拱、日記、設定），把還不夠的排成 12/1–12/8 的打磨順序寫進 PLAN 階段 2。
-- 第 16 輪做完的（不用再做）：HUD 手把圖示（D-063）、`--convoy --arch=restored` 構圖＋CI `ninebreath.png`、`--face`、`--nohud`、Steam 膠囊圖替代版（D-064）、標題鐘樓細節。
+- 第 16 輪做完的（不用再做）：HUD 手把圖示（D-063）、互動提示搬進 HUD（D-065）、`--convoy --arch=restored` 構圖＋CI `ninebreath.png`、`--face`、`--nohud`、Steam 膠囊圖替代版（D-064）、標題鐘樓細節。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
 
