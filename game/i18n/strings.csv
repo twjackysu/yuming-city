@@ -103,6 +103,8 @@ ENEMY_ASHWALKER,Ashwalker,灰巡者
 WEAK_LEFT_KNEE,Left knee,左膝
 MOVE_CLAW,Claw swipe,爪擊
 INSIGHT_CURRENT,▶ {0},▶ {0}
+INSIGHT_SEC_WEAK,Weak point,弱點
+INSIGHT_SEC_MOVES,Moves,招式
 SHEILA_ACK_WEAKPOINT,The knee — mine.,膝蓋——交給我。
 SHEILA_ACK_EVADE,Seen it.,看到了。
 SHEILA_ACK_GUARD,I'll hold here.,我守著。

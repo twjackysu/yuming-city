@@ -127,3 +127,77 @@ func test_strike_from_left_hits_knee() -> void:
 	root.queue_free()
 	await tree.process_frame
 	Engine.time_scale = 1.0
+
+
+## 看穿小卡（第二輪盤點第 3 項，D-087）：分列資料、名字＋細線＋兩段、已證實的小勾、未證實的淡字、正在出的招變暖金色。
+func test_intel_rows_and_card_layout() -> void:
+	TranslationServer.set_locale("zh_TW")
+	var rows: Array[Dictionary] = EnemyIntel.rows("ashwalker", {"claw": false}, "claw")
+	assert_eq(rows.size(), 3, "名字、弱點、招式")
+	assert_eq(str(rows[0]["kind"]), "name")
+	assert_eq(str(rows[0]["text"]), "灰巡者")
+	assert_eq(str(rows[1]["kind"]), "weak")
+	assert_eq(str(rows[1]["text"]), "左膝", "不含「（已證實）」")
+	assert_true(bool(rows[1]["verified"]))
+	assert_eq(str(rows[2]["kind"]), "move")
+	assert_false(bool(rows[2]["verified"]), "overrides 改成未證實")
+	assert_true(bool(rows[2]["current"]), "正在出的招")
+	assert_eq(str(EnemyIntel.rows("nobody")[0]["kind"]), "unknown")
+	var card := InsightCard.new()
+	tree.root.add_child(card)
+	card.set_rows(rows)
+	var box: VBoxContainer = card.get_node("Rows") as VBoxContainer
+	var kinds: PackedStringArray = []
+	for c: Node in box.get_children():
+		kinds.append(str(c.name))
+	assert_true(box.get_child(0) is Label and (box.get_child(0) as Label).text == "灰巡者", "第一行是名字")
+	assert_true(box.get_child(1) is ColorRect, "名字下面一條細線")
+	assert_true(box.get_node_or_null("Section_weak") != null and box.get_node_or_null("Section_move") != null, "弱點、招式兩段小標題：%s" % ", ".join(kinds))
+	assert_eq((box.get_node("Section_weak") as Label).text, "弱點")
+	assert_eq(card.check_count(), 1, "只有已證實的左膝有小勾")
+	var unverified: Array[Node] = card.find_children("Unverified", "Label", true, false)
+	assert_eq(unverified.size(), 1, "未證實的招式後面一段淡字")
+	assert_eq((unverified[0] as Label).text, "（未證實？）")
+	var texts: Array[Node] = card.find_children("Text", "Label", true, false)
+	assert_eq(texts.size(), 2)
+	var cur: Label = texts[1] as Label
+	assert_true(cur.get_theme_color("font_color").is_equal_approx(InsightCard.WARM), "正在出的招是暖金色")
+	var before: int = box.get_child_count()
+	card.set_rows(EnemyIntel.rows("ashwalker", {"claw": false}, "claw"))
+	await tree.process_frame
+	assert_eq(box.get_child_count(), before, "內容一樣不重建")
+	TranslationServer.set_locale("en")
+	card.set_rows(EnemyIntel.rows("ashwalker"))
+	await tree.process_frame
+	assert_eq((box.get_node("Section_weak") as Label).text, "Weak point")
+	assert_eq(card.check_count(), 2, "全部已證實：兩個小勾")
+	card.queue_free()
+	await tree.process_frame
+
+
+## 場景裡按住看穿：小卡出現在畫面內（敵人頭頂右上方），放開收起；不再有浮在頭上的 3D 字。
+func test_insight_card_on_screen_in_scene() -> void:
+	TranslationServer.set_locale("zh_TW")
+	var a: Array = _arena()
+	var root3d: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var walker: Ashwalker = a[2]
+	walker.global_position = player.global_position + Vector3(0, 0, -6)
+	assert_eq(walker.find_children("*", "Label3D", true, false).size(), 0, "敵人頭上沒有 3D 字")
+	Input.action_press("insight")
+	for i: int in 3:
+		await tree.physics_frame
+	var card: InsightCard = walker.insight_card()
+	assert_true(card.visible, "按住看穿：小卡出現")
+	assert_true(card.rows_shown.size() >= 3, "名字、弱點、招式")
+	var rect: Rect2 = card.get_viewport_rect()
+	assert_true(rect.encloses(Rect2(card.position, card.size)), "小卡整張在畫面內：%s / %s" % [Rect2(card.position, card.size), rect])
+	var cam: Camera3D = card.get_viewport().get_camera_3d()
+	var head: Vector2 = cam.unproject_position(walker.global_position + Vector3(0, 2.0, 0))
+	assert_true(card.position.x > head.x - 1.0, "小卡在敵人頭的右邊（%.0f vs %.0f）" % [card.position.x, head.x])
+	Input.action_release("insight")
+	for i: int in 2:
+		await tree.physics_frame
+	assert_false(card.visible, "放開就收起")
+	root3d.queue_free()
+	await tree.process_frame

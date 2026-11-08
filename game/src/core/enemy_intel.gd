@@ -71,6 +71,28 @@ static func lines(enemy_id: String, overrides: Dictionary = {}, current_move: St
 	return out
 
 
+## 看穿小卡（InsightCard）用的分列資料：每列 {kind: "name"|"weak"|"move"|"unknown", text: 已翻譯的名稱（不含已證實標記）,
+## verified: bool, current: bool（正在出的招）}。順序跟 lines() 一樣：名字、弱點、招式（隱藏招出現過才列）。
+static func rows(enemy_id: String, overrides: Dictionary = {}, current_move: String = "") -> Array[Dictionary]:
+	var e: Dictionary = entry(enemy_id)
+	var out: Array[Dictionary] = []
+	if e.is_empty():
+		out.append({"kind": "unknown", "text": TranslationServer.translate("INSIGHT_UNKNOWN"), "verified": false, "current": false})
+		return out
+	out.append({"kind": "name", "text": TranslationServer.translate(str(e.get("name", enemy_id))), "verified": true, "current": false})
+	for w: Dictionary in weakpoints(enemy_id):
+		out.append({"kind": "weak", "text": TranslationServer.translate(str(w.get("label", ""))), "verified": is_verified(w, overrides), "current": false})
+	for m: Variant in e.get("moves", []):
+		if not m is Dictionary:
+			continue
+		var md: Dictionary = m as Dictionary
+		if bool(md.get("hidden", false)) and not overrides.has(str(md.get("id", ""))):
+			continue
+		var cur: bool = current_move != "" and str(md.get("id", "")) == current_move
+		out.append({"kind": "move", "text": TranslationServer.translate(str(md.get("label", ""))), "verified": is_verified(md, overrides), "current": cur})
+	return out
+
+
 static func _label(item: Dictionary, overrides: Dictionary) -> String:
 	var tag: String = "INSIGHT_VERIFIED" if is_verified(item, overrides) else "INSIGHT_UNVERIFIED"
 	return TranslationServer.translate(str(item.get("label", ""))) + TranslationServer.translate(tag)

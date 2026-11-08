@@ -19,7 +19,9 @@ var move_speed: float = 2.6
 
 var _player: PlayerController
 var _body: Node3D
-var _insight_label: Label3D
+var _insight_layer: CanvasLayer
+var _insight_card: InsightCard
+var _insight_text: String = ""
 var _weak_marker: MeshInstance3D
 var _weak_mat: StandardMaterial3D
 var _insight_shown: bool = false
@@ -105,7 +107,11 @@ func insight_shown() -> bool:
 
 
 func insight_text() -> String:
-	return _insight_label.text
+	return _insight_text
+
+
+func insight_card() -> InsightCard:
+	return _insight_card
 
 
 ## 對所有心跳（諾恩、席菈）判定：pred(位置) 為 true 就扣血。回傳命中數。
@@ -237,8 +243,8 @@ func _begin_death() -> void:
 	remove_from_group("damageable")
 	set_physics_process(false)
 	collision_layer = 0
-	if _insight_label != null:
-		_insight_label.visible = false
+	if _insight_card != null:
+		_insight_card.visible = false
 	if _weak_marker != null:
 		_weak_marker.visible = false
 
@@ -297,13 +303,17 @@ func _update_insight() -> void:
 	if _player != null and brain.state != EnemyBrain.State.DEAD:
 		on = _player.insight_active and global_position.distance_to(_player.global_position) <= INSIGHT_RANGE
 	if on:
-		_insight_label.text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, brain.intel_move()))
+		var move: String = brain.intel_move()
+		_insight_text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, move))
+		_insight_card.set_rows(EnemyIntel.rows(intel_id(), intel_overrides, move))
+		_insight_card.place(get_viewport().get_camera_3d(), global_position + Vector3(0.0, _insight_height(), 0.0))
 		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
 		_weak_mat.albedo_color.a = 0.45 + 0.4 * pulse
 	if on != _insight_shown:
 		_insight_shown = on
-		_insight_label.visible = on
 		_weak_marker.visible = on
+	if not on:
+		_insight_card.visible = false
 
 
 func _flash_weak() -> void:
@@ -315,25 +325,13 @@ func _flash_weak() -> void:
 
 
 func _build_insight() -> void:
-	_insight_label = Label3D.new()
-	_insight_label.name = "Insight"
-	_insight_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_insight_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_insight_label.no_depth_test = true
-	_insight_label.fixed_size = true
-	_insight_label.pixel_size = 0.0009
-	_insight_label.font_size = 30
-	_insight_label.outline_size = 18
-	_insight_label.modulate = Color(0.82, 0.92, 1.0)
-	_insight_label.outline_modulate = Color(0.02, 0.04, 0.08, 0.85)
-	_insight_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_insight_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	_insight_label.position = Vector3(0.35, _insight_height(), 0)
-	var f: Font = UiFonts.load_font(UiFonts.UI_SANS)
-	if f != null:
-		_insight_label.font = f
-	_insight_label.visible = false
-	add_child(_insight_label)
+	# 看穿小卡在畫面上（D-087）：自己一層 CanvasLayer，壓在 HUD（10）底下，不蓋住對話與暫停選單
+	_insight_layer = CanvasLayer.new()
+	_insight_layer.name = "InsightLayer"
+	_insight_layer.layer = 9
+	add_child(_insight_layer)
+	_insight_card = InsightCard.new()
+	_insight_layer.add_child(_insight_card)
 	_weak_mat = StandardMaterial3D.new()
 	_weak_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_weak_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
