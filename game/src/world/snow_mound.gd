@@ -1,0 +1,75 @@
+class_name SnowMound
+extends RefCounted
+## 低面數的雪堆（D-102）：中間厚、往邊緣薄到 0，輪廓是不規則的圓角長方形。
+## 取代破屋頂上直邊的雪板（box 的四邊是垂直的白牆，近看像一片片冰板）。
+## 模型座標：X＝長、Z＝寬、Y＝往上；底在 y=0（邊緣稍微低一點，貼在斜面上不會露縫）。
+## 極座標網格：中心一點＋RINGS 圈 × SEGMENTS 段；不規則度由 seed 決定（位置雜湊，不動關卡的 _rng）。
+## 正面順時針（Godot 慣例），法線朝上。用 StaticBatch.add_mesh 合併。
+
+const RINGS: int = 4
+const SEGMENTS: int = 14
+## 輪廓的「方」度：超橢圓的次方（2＝橢圓，越大越接近長方形）
+const SQUARENESS: float = 3.2
+## 輪廓往內凹的最大比例（每段不同）
+const RAGGED: float = 0.22
+
+
+static func build(length: float, width: float, height: float, seed: float) -> ArrayMesh:
+	var a: float = length * 0.5
+	var b: float = width * 0.5
+	var edge: PackedFloat32Array = PackedFloat32Array()
+	edge.resize(SEGMENTS)
+	for i: int in SEGMENTS:
+		edge[i] = 1.0 - RAGGED * _hash(seed, float(i))
+	var verts := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	# 中心（最高點稍微偏一點，雪堆不是正中間鼓起）
+	var peak := Vector2((_hash(seed, 40.0) - 0.5) * 0.3, (_hash(seed, 41.0) - 0.5) * 0.3)
+	verts.append(Vector3(peak.x * a, height, peak.y * b))
+	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
+	for r: int in range(1, RINGS + 1):
+		var k: float = float(r) / float(RINGS)
+		for i: int in SEGMENTS:
+			var th: float = TAU * float(i) / float(SEGMENTS)
+			var c: float = cos(th)
+			var s: float = sin(th)
+			var sq: float = pow(pow(absf(c), SQUARENESS) + pow(absf(s), SQUARENESS), -1.0 / SQUARENESS)
+			var rr: float = k * sq * lerpf(1.0, edge[i], k)
+			var x: float = lerpf(peak.x, c * rr, k) * a
+			var z: float = lerpf(peak.y, s * rr, k) * b
+			# 高度：中間平緩、靠邊緣才很快降到 0；外圈稍微低於 0（貼進斜面）
+			var hgt: float = height * pow(1.0 - k * k, 0.7) * lerpf(0.88, 1.08, _hash(seed, 60.0 + float(r * SEGMENTS + i)))
+			if r == RINGS:
+				hgt = -0.012
+			verts.append(Vector3(x, hgt, z))
+			uvs.append(Vector2(x / length + 0.5, z / width + 0.5))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var idx := PackedInt32Array()
+	# 中心扇形：(中心, i, i+1) 從上面看是順時針（X 往右、Z 往下）
+	for i: int in SEGMENTS:
+		idx.append(0)
+		idx.append(1 + i)
+		idx.append(1 + (i + 1) % SEGMENTS)
+	for r: int in range(1, RINGS):
+		var inner: int = 1 + (r - 1) * SEGMENTS
+		var outer: int = 1 + r * SEGMENTS
+		for i: int in SEGMENTS:
+			var j: int = (i + 1) % SEGMENTS
+			idx.append(inner + i)
+			idx.append(outer + i)
+			idx.append(outer + j)
+			idx.append(inner + i)
+			idx.append(outer + j)
+			idx.append(inner + j)
+	for n: int in idx.size():
+		var v: int = idx[n]
+		st.set_uv(uvs[v])
+		st.add_vertex(verts[v])
+	st.index()
+	st.generate_normals()
+	return st.commit()
+
+
+static func _hash(seed: float, n: float) -> float:
+	return fposmod(sin(seed * 12.9898 + n * 78.233) * 43758.5453, 1.0)

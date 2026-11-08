@@ -902,7 +902,8 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 				var db := Basis(up, _ruin_hash(center, d, 23.0) * TAU) * Basis(Vector3.RIGHT, lerpf(-0.3, 0.3, _ruin_hash(center, d, 24.0)))
 				batch.add_box(Vector3(lerpf(0.3, 0.6, _ruin_hash(center, d, 25.0)), 0.06, lerpf(0.2, 0.4, _ruin_hash(center, d, 26.0))),
 					Transform3D(db, dp), roof_mat, false)
-			batch.add_box(Vector3(0.6, 0.18, 0.5), Transform3D(Basis(up, _ruin_hash(center, i, 27.0) * TAU), up * (h + 0.34) + dir * along + face * (s * 0.4)), snow, false)
+			batch.add_mesh(SnowMound.build(0.75, 0.62, 0.2, _ruin_hash(center, i, 28.0) * 97.0),
+				Transform3D(Basis(up, _ruin_hash(center, i, 27.0) * TAU), up * (h + 0.27) + dir * along + face * (s * 0.4)), snow)
 			continue
 		var sag: bool = _ruin_hash(center, i, 2.0) < 0.5
 		kinds.append("sag" if sag else "slide")
@@ -919,20 +920,20 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 		pb = Basis(u2, deg_to_rad(lerpf(-1.0, 1.0, _ruin_hash(center, i, 6.0)) * (4.0 if sag else 1.5))) * pb
 		var pc: Vector3 = hinge - u2 * (plen * 0.5) + n2 * (t * 0.5)
 		batch.add_box(Vector3(plen, t, seg_w), Transform3D(pb, pc), roof_mat, false)
-		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點（輪廓不是方的）
-		# ＋屋簷那端一小團（正要滑下去）
+		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點＋屋簷那端一小團（正要滑下去）。
+		# 都是中間厚、邊緣薄到 0 的低面數雪堆（SnowMound，D-102），不再是直邊的雪板
 		var snow_len: float = plen * lerpf(0.5, 0.72, _ruin_hash(center, i, 7.0))
 		var shift: float = (plen - snow_len) * 0.5 * (_ruin_hash(center, i, 8.0) * 2.0 - 1.0) * 0.8
 		var top: Vector3 = pc + pb.y * (t * 0.5)
-		batch.add_box(Vector3(snow_len, 0.05, seg_w * lerpf(0.72, 0.9, _ruin_hash(center, i, 9.0))),
-			Transform3D(pb, top + pb.x * shift + pb.y * 0.025), snow, false)
+		batch.add_mesh(SnowMound.build(snow_len, seg_w * lerpf(0.78, 0.95, _ruin_hash(center, i, 9.0)), 0.08, _ruin_hash(center, i, 10.0) * 97.0),
+			Transform3D(pb, top + pb.x * shift), snow)
 		var side: float = 1.0 if _ruin_hash(center, i, 15.0) < 0.5 else -1.0
 		var p2_len: float = plen * lerpf(0.25, 0.42, _ruin_hash(center, i, 16.0))
 		var p2_w: float = seg_w * lerpf(0.35, 0.6, _ruin_hash(center, i, 17.0))
-		batch.add_box(Vector3(p2_len, 0.1, p2_w), Transform3D(pb, top + pb.x * (shift - side * snow_len * 0.35)
-			+ pb.z * side * (seg_w * 0.5 - p2_w * 0.5 - 0.05) + pb.y * 0.05), snow, false)
-		batch.add_box(Vector3(0.34, 0.14, 0.4), Transform3D(pb, top - pb.x * (plen * 0.5 - 0.3)
-			+ pb.z * (seg_w * lerpf(-0.3, 0.3, _ruin_hash(center, i, 18.0))) + pb.y * 0.07), snow, false)
+		batch.add_mesh(SnowMound.build(p2_len, p2_w, 0.14, _ruin_hash(center, i, 11.0) * 97.0),
+			Transform3D(pb, top + pb.x * (shift - side * snow_len * 0.35) + pb.z * side * (seg_w * 0.5 - p2_w * 0.5 - 0.05)), snow)
+		batch.add_mesh(SnowMound.build(0.42, 0.48, 0.16, _ruin_hash(center, i, 12.0) * 97.0),
+			Transform3D(pb, top - pb.x * (plen * 0.5 - 0.3) + pb.z * (seg_w * lerpf(-0.3, 0.3, _ruin_hash(center, i, 18.0)))), snow)
 	# 椽子：每 0.75 m 一根。洞裡的斷成兩截（屋脊那截往屋裡垂、屋簷那截翹起來），
 	# 往下滑開的那片底下是完整的（上緣的縫看得到），塌陷的那片底下沒有（已經跟著塌了）。
 	var rafters: int = 0
