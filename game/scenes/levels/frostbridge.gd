@@ -1542,6 +1542,8 @@ func _build_bell_tower(pos: Vector3) -> void:
 
 const BELL_HEIGHT: float = 1.5
 const BELL_MOUTH: float = 0.95
+## 鐘頂到鐘架之間留給鐘鈕的高度（D-121）：鐘身、紋帶往下移這麼多，鐘鈕的兩個環穿過鐘架
+const BELL_DROP: float = 0.22
 ## 鐘身上的紋帶：[高度比例, 那個高度的鐘身半徑比例]（Lathe.bell_profiles 的外側剖面）
 const BELL_BANDS := [Vector2(0.12, 0.50), Vector2(0.62, 0.62), Vector2(0.86, 0.80)]
 
@@ -1560,8 +1562,10 @@ func _build_bell_body(bell: Node3D) -> void:
 	var body := MeshInstance3D.new()
 	body.name = "BellBody"
 	body.mesh = Lathe.bell_mesh(BELL_HEIGHT, BELL_MOUTH)
+	body.position = Vector3(0, -BELL_DROP, 0)
 	body.material_override = bronze
 	bell.add_child(body)
+	_build_bell_crown(bell, bronze)
 	# 紋帶：磨亮一點的青銅，凸出鐘面，燈一照就有一圈一圈的高光
 	var band_mat := StandardMaterial3D.new()
 	band_mat.albedo_color = Color(0.58, 0.44, 0.27)
@@ -1581,7 +1585,7 @@ func _build_bell_body(bell: Node3D) -> void:
 		torus.rings = 40
 		torus.ring_segments = 8
 		ring.mesh = torus
-		ring.position = Vector3(0, -b.x * BELL_HEIGHT, 0)
+		ring.position = Vector3(0, -BELL_DROP - b.x * BELL_HEIGHT, 0)
 		ring.material_override = band_mat
 		bell.add_child(ring)
 		i += 1
@@ -1595,14 +1599,47 @@ func _build_bell_body(bell: Node3D) -> void:
 	yoke.material_override = look.mat(FrostbridgeLook.WOOD)
 	bell.add_child(yoke)
 	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)
+	# 鐵箍從鐘架往下伸到鐘肩（鐘往下移了 BELL_DROP，D-121）
 	for x: float in [-0.3, 0.3]:
 		var strap := MeshInstance3D.new()
 		var strap_mesh := BoxMesh.new()
-		strap_mesh.size = Vector3(0.06, 0.36, 0.42)
+		strap_mesh.size = Vector3(0.06, 0.48, 0.42)
 		strap.mesh = strap_mesh
-		strap.position = Vector3(x, -0.02, 0)
+		strap.position = Vector3(x, -0.08, 0)
 		strap.material_override = iron
 		bell.add_child(strap)
+
+
+## 鐘鈕（D-121）：鐘頂一個圓的鐘冠（蓋住平的鐘頂）＋兩個交叉的青銅環往上穿過鐘架。
+## 之前鐘頂直接頂著橫樑，看起來是平的、像黏在木頭上。
+func _build_bell_crown(bell: Node3D, bronze: Material) -> void:
+	var top: float = -BELL_DROP
+	var cap := MeshInstance3D.new()
+	cap.name = "BellCrown"
+	var lathe := Lathe.new(32)
+	# 外側從上往下描：圓頂 → 落到鐘頂上（鐘頂在 0.3 倍鐘口半徑內幾乎是平的）
+	lathe.add_profile(PackedVector2Array([
+		Vector2(0.0, 0.12), Vector2(0.09, 0.114), Vector2(0.17, 0.09),
+		Vector2(0.23, 0.05), Vector2(0.27, 0.015), Vector2(0.29, -0.006),
+	]))
+	cap.mesh = lathe.commit()
+	cap.position = Vector3(0, top, 0)
+	cap.material_override = bronze
+	bell.add_child(cap)
+	for i: int in 2:
+		var loop := MeshInstance3D.new()
+		loop.name = "BellLoop%d" % i
+		var torus := TorusMesh.new()
+		torus.inner_radius = 0.09
+		torus.outer_radius = 0.165
+		torus.rings = 20
+		torus.ring_segments = 8
+		loop.mesh = torus
+		# TorusMesh 躺在 XZ 平面：繞 X 轉 90° 立起來，第二個再繞 Y 轉 90°（兩個環交叉）
+		loop.basis = Basis(Vector3.UP, PI * 0.5 * i) * Basis(Vector3.RIGHT, PI * 0.5)
+		loop.position = Vector3(0, top + 0.1 + 0.09, 0)
+		loop.material_override = bronze
+		bell.add_child(loop)
 
 
 ## 鐘室木構（進合併，沿用木頭材質，小鎮 mesh 數不變）：屋頂下四根格柵，背面與東西兩側

@@ -159,6 +159,15 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true(bell_body.mesh is ArrayMesh, "鐘身是旋轉出來的鐘形，不是圓柱")
 	assert_true(bell.has_node("BellBand0") and bell.has_node("BellBand2"), "鐘身有紋帶")
 	assert_true(bell.has_node("BellYoke"), "鐘吊在木頭鐘架上")
+	# 鐘鈕（D-121）：鐘身往下移，鐘頂與鐘架之間是鐘冠＋兩個交叉的環（環往上穿進鐘架）
+	assert_true(bell.has_node("BellCrown") and bell.has_node("BellLoop0") and bell.has_node("BellLoop1"), "鐘頂有鐘鈕")
+	var drop: float = level.get("BELL_DROP")
+	assert_true(drop > 0.1 and is_equal_approx(bell_body.position.y, -drop), "鐘身在鐘架底下（%.2f）" % bell_body.position.y)
+	var yoke_bottom: float = (bell.get_node("BellYoke") as Node3D).position.y - ((bell.get_node("BellYoke") as MeshInstance3D).mesh as BoxMesh).size.y * 0.5
+	var loop: MeshInstance3D = bell.get_node("BellLoop0") as MeshInstance3D
+	var loop_top: float = loop.position.y + (loop.mesh as TorusMesh).outer_radius
+	assert_true(loop_top > yoke_bottom, "環穿進鐘架（環頂 %.2f、鐘架底 %.2f）" % [loop_top, yoke_bottom])
+	assert_true(loop.position.y - (loop.mesh as TorusMesh).outer_radius < -drop + 0.1, "環的底部埋在鐘冠裡")
 	assert_eq(int(level.get("belfry_louvres")), 24, "鐘室背面與兩側各 8 片百葉")
 	assert_false(level.has_node("Sheila"), "新遊戲時席菈還沒登場")
 	assert_false(level.has_node("Undertaker"), "送葬者還沒出現")
