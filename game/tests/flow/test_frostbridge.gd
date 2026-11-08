@@ -497,6 +497,19 @@ func test_dev_face_arch_and_park_boss() -> void:
 	await _free(level)
 
 
+## 梨販攤正面的小補光（第二輪盤點第 6 項，D-089）：在桌前、低、不投影、範圍小、不進體積霧。
+func test_stall_fill_light() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var fill: OmniLight3D = level.get_node_or_null("StallFill") as OmniLight3D
+	assert_true(fill != null, "有攤桌補光")
+	var stall: Vector3 = level.get("STALL_POS")
+	assert_true(fill.position.z > stall.z + 0.8 and fill.position.y < 1.2, "在桌子正面、低低的：%s" % fill.position)
+	assert_false(fill.shadow_enabled, "不投影")
+	assert_true(fill.omni_range <= 2.5 and fill.light_volumetric_fog_energy == 0.0, "範圍小、不進體積霧")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

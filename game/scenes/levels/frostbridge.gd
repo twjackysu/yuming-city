@@ -1039,3 +1039,17 @@ func _build_pear_stall(pos: Vector3) -> void:
 	l.position = pos + Vector3(0, 1.85, 0.2)
 	add_child(l)
 	light_count += 1
+	# 攤桌正面的小補光（第二輪盤點第 6 項，D-089）：布篷下那盞只照到桌面，從廣場走過來看到的正面與木箱一片黑。
+	# 低低地放在桌前、不投影、範圍小、不進體積霧，只把木板紋和梨子的輪廓帶出來
+	var fill := OmniLight3D.new()
+	fill.name = "StallFill"
+	fill.light_color = FrostbridgeLook.LAMP
+	fill.light_energy = 0.55
+	fill.omni_range = 2.2
+	fill.omni_attenuation = 1.6
+	fill.light_specular = 0.2
+	fill.light_volumetric_fog_energy = 0.0
+	fill.shadow_enabled = false
+	fill.position = pos + Vector3(-0.2, 0.75, 1.25)
+	add_child(fill)
+	light_count += 1
