@@ -118,3 +118,36 @@ func test_journal_view_open_close_and_cut_gap() -> void:
 	assert_false(view.is_peeking())
 	view.queue_free()
 	await tree.process_frame
+
+
+## 日記是暖色舊紙（D-073）：紙是程式畫的紋理、卡片在紙上不畫深色底（上方細線）、字是深色墨水；
+## 右側的預覽卡維持深色底亮色字（疊在遊戲畫面上要讀得到）。
+func test_journal_paper_look() -> void:
+	var tex: ImageTexture = JournalView.paper_texture()
+	assert_eq(tex.get_width(), 256)
+	assert_true(JournalView.paper_texture() == tex, "紙紋理只畫一次")
+	var c: Color = tex.get_image().get_pixel(128, 128)
+	assert_true(c.r > 0.7 and c.r > c.b + 0.1, "暖色的紙（%s）" % c)
+	var view := JournalView.new()
+	tree.root.add_child(view)
+	await tree.process_frame
+	var paper: PanelContainer = view.find_child("Paper", true, false) as PanelContainer
+	assert_true(paper.get_theme_stylebox("panel") is StyleBoxTexture, "紙用紋理")
+	_session.state.set_flag("slice.saw_south_arch", true)
+	view.open()
+	var card: PanelContainer = view.find_child("Card_" + ARCH, true, false) as PanelContainer
+	var sb: StyleBoxFlat = card.get_theme_stylebox("panel") as StyleBoxFlat
+	assert_true(sb.bg_color.a < 0.01, "紙上的卡片沒有深色底")
+	assert_eq(sb.border_width_top, 1, "上方一條細線分隔")
+	var title: Label = card.get_child(0).get_child(0) as Label
+	assert_true(title.get_theme_color("font_color").get_luminance() < 0.4, "紙上的標題是深色墨水")
+	view.close()
+	var journal: Journal = tree.root.get_node("Game").get("journal") as Journal
+	journal.highlighted = ARCH
+	await tree.process_frame
+	var peek_card: PanelContainer = view.find_child("Peek", true, false).find_child("Card_" + ARCH, true, false) as PanelContainer
+	assert_true((peek_card.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.a > 0.9, "預覽卡維持深色底")
+	journal.highlighted = ""
+	await tree.process_frame
+	view.queue_free()
+	await tree.process_frame
