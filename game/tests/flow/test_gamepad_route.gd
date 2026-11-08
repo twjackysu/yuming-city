@@ -331,3 +331,110 @@ func test_gamepad_ashwalker_insight_command_attack() -> void:
 		scene.queue_free()
 	for i: int in 3:
 		await tree.process_frame
+
+
+## 按一下，以物理幀計（戰鬥輸入在 _physics_process 讀 just_pressed）。
+func _tap_physics(button: JoyButton) -> void:
+	_button(button, true)
+	for i: int in 2:
+		await tree.physics_frame
+	_button(button, false)
+	for i: int in 2:
+		await tree.physics_frame
+
+
+## 送葬者戰只用手把（M1.4）：走進南街口開打 → 按右搖桿鎖定送葬者 → B 閃避（無敵）→
+## 被抓住時連按 B 掙脫（沒被捏）→ 再按右搖桿解除鎖定 → 左搖桿走到南街石拱、按住 Y 重現。
+## 送葬者不出手、席菈先停著、車隊不動；抓取直接呼叫 begin_grab（抓取判定本身在 test_undertaker）。
+func test_gamepad_undertaker_lock_dodge_struggle_restore() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	_game.set("session", s)
+	s.new_game()
+	s.set_flag("slice.met_pear_seller", true)
+	for i: int in 9:
+		s.add_flag("slice.bell_rings")
+	s.set_flag("slice.rescue_done", true)
+	s.set_flag("slice.sheila_talked", true)
+	s.set_flag("slice.ashwalker_defeated", true)
+	s.set_flag("slice.saw_south_arch", true)  # 不播石拱回憶（另有測試），直接測按住 Y
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "escort_convoy", "前提：護送車隊")
+	_game.call("go_to_level", "frostbridge")
+	var level: StoryLevel = await _wait_scene()
+	assert_not_null(level, "進霜橋鎮")
+	if level == null:
+		return
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var trig: Node3D = level.get_node("ConvoyTrigger") as Node3D
+	var at: Vector3 = trig.global_position
+	at.y = level.ground_y(at) + 0.05
+	player.global_position = at
+	for i: int in 4:
+		await tree.physics_frame
+	var boss: Undertaker = level.get_node_or_null("Undertaker") as Undertaker
+	assert_not_null(boss, "走進南街口：送葬者出現")
+	if boss == null:
+		return
+	boss.set_physics_process(false)
+	var sheila: Sheila = level.get_node_or_null("Sheila") as Sheila
+	if sheila != null:
+		sheila.set_physics_process(false)
+	var caravan: Caravan = level.get_node_or_null("Caravan") as Caravan
+	if caravan != null:
+		caravan.runner.speed = 0.0
+
+	# --- 右搖桿按下：鎖定
+	var near: Vector3 = boss.global_position + Vector3(0.0, 0.0, -4.0)
+	near.y = level.ground_y(near) + 0.05
+	player.global_position = near
+	await tree.physics_frame
+	await _tap_physics(JOY_BUTTON_RIGHT_STICK)
+	assert_true(player.lock_target == boss, "按右搖桿：鎖定送葬者")
+
+	# --- B：閃避（前段無敵）
+	_button(JOY_BUTTON_B, true)
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(player.invulnerable, "按 B：翻滾、前段無敵")
+	_button(JOY_BUTTON_B, false)
+	for i: int in 90:
+		await tree.physics_frame
+		if not player.invulnerable and player._dodge_left <= 0.0:
+			break
+	assert_false(player.invulnerable, "翻滾結束")
+
+	# --- 被抓住：連按 B 掙脫
+	var hp0: float = player.health.hp
+	player.begin_grab(boss, 4.0, 5)
+	assert_true(player.grabbed_by == boss, "被送葬者抓住")
+	for i: int in 8:
+		if player.grabbed_by == null:
+			break
+		await _tap_physics(JOY_BUTTON_B)
+	assert_true(player.grabbed_by == null, "連按 B 掙脫（%d／%d）" % [player.struggle, player.struggle_need])
+	assert_eq(player.health.hp, hp0, "掙脫了，沒有被捏")
+
+	# --- 再按右搖桿：解除鎖定
+	await _tap_physics(JOY_BUTTON_RIGHT_STICK)
+	assert_true(player.lock_target == null, "再按右搖桿：解除鎖定")
+
+	# --- 左搖桿走到南街石拱、按住 Y 重現（從石拱南邊走回來：送葬者站在北邊的街上擋路）
+	var site: NineBreathSite = level.arch_site
+	var from: Vector3 = site.global_position + Vector3(0.6, 0.0, 8.0)
+	from.y = level.ground_y(from) + 0.05
+	player.global_position = from
+	await tree.physics_frame
+	assert_false(site.prompt_shown(), "前提：離石拱還遠")
+	var ok: bool = await _walk_to(player, site.global_position, site.prompt_shown, 600)
+	assert_true(ok, "左搖桿走到石拱前、出現提示")
+	_button(JOY_BUTTON_Y, true)
+	for i: int in 240:
+		if site.is_solid():
+			break
+		await tree.physics_frame
+	_button(JOY_BUTTON_Y, false)
+	assert_true(site.is_solid(), "按住 Y：重現南街石拱")
+	var scene: Node = tree.current_scene
+	if scene != null:
+		scene.queue_free()
+	for i: int in 3:
+		await tree.process_frame
