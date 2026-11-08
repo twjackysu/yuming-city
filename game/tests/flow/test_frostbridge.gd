@@ -586,6 +586,29 @@ func test_chimney_smoke() -> void:
 	await _free(level)
 
 
+## D-100（第三輪盤點第 7 項的第一步）：廣場牆邊有幾堆木桶，不在主要路線上、會擋人。
+func test_plaza_barrels() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var n: int = int(level.get("barrel_count"))
+	assert_true(n >= 6 and n <= 9, "廣場邊三堆木桶（%d 個）" % n)
+	var stall: Vector3 = level.get("STALL_POS")
+	for spot: Vector3 in level.get("BARREL_SPOTS"):
+		assert_true(absf(spot.x) > 9.0, "木桶靠牆、不在廣場中間（x=%.1f）" % spot.x)
+		assert_true(spot.distance_to(stall) > 4.0 and spot.distance_to(Vector3(-6.0, 0.0, -3.5)) > 3.0, "離攤子與井夠遠")
+	var space: PhysicsDirectSpaceState3D = level.get_world_3d().direct_space_state
+	var spot0: Vector3 = (level.get("BARREL_SPOTS") as Array)[0]
+	await tree.physics_frame
+	var blocked: bool = false
+	for k: int in 21:
+		var p := spot0 + Vector3(0.1, 0.0, -1.0 + 0.1 * float(k))
+		var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(p + Vector3(0, 3.0, 0), p + Vector3(0, -1.0, 0)))
+		if not hit.is_empty() and (hit["position"] as Vector3).y > 0.5:
+			blocked = true
+	assert_true(blocked, "立著的木桶會擋人（往下的射線打在桶蓋高度）")
+	await _free(level)
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

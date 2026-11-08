@@ -571,6 +571,46 @@ func _build_plaza() -> void:
 	_row(Vector3(-SOUTH_HALF, 0, PLAZA_S), Vector3(-PLAZA_HALF - 6.0, 0, PLAZA_S), Vector3.FORWARD)
 	_row(Vector3(PLAZA_HALF + 6.0, 0, PLAZA_S), Vector3(SOUTH_HALF, 0, PLAZA_S), Vector3.FORWARD)
 	_build_well(Vector3(-6.0, 0.0, -3.5))
+	_build_plaza_barrels()
+
+
+## 廣場邊的木桶（D-100，第三輪盤點第 7 項的第一步）：廣場中間大片空地、沒有生活痕跡。
+## 東西兩側牆邊、主要路線（中間、攤子、地窖、井）以外放三堆木桶：兩三個立著的（中間鼓起：上下兩段錐台＋
+## 中段、兩道鐵箍、桶蓋上一圈雪）。用木頭／鐵件／雪既有的材質（小鎮 mesh 數不變），立著的會擋人。
+const BARREL_SPOTS: Array[Vector3] = [Vector3(-10.0, 0.0, 5.2), Vector3(10.0, 0.0, 4.4), Vector3(-10.1, 0.0, -8.4)]
+var barrel_count: int = 0
+
+
+func _build_plaza_barrels() -> void:
+	for spot: Vector3 in BARREL_SPOTS:
+		var inward: float = 1.0 if spot.x < 0.0 else -1.0
+		var n: int = 2 + int(_house_hash(spot, 11.0) * 2.0)
+		for i: int in n:
+			var off := Vector3(inward * (0.1 + 0.55 * float(i % 2)), 0.0, (float(i) - float(n - 1) * 0.5) * 0.66)
+			off.z += (_house_hash(spot, 12.0 + i) - 0.5) * 0.15
+			_barrel(spot + off, _house_hash(spot, 13.0 + i))
+
+
+func _barrel(base: Vector3, hsh: float) -> void:
+	var wood := look.mat(FrostbridgeLook.WOOD)
+	var iron := look.mat(Color(0.07, 0.07, 0.08), 0.5)  # 跟門邊掛燈的鐵件同一個材質
+	var hgt: float = lerpf(0.82, 0.95, hsh)
+	var r_end: float = 0.25
+	var r_mid: float = 0.3
+	var seg: float = hgt * 0.3
+	_batch.add_cylinder(r_mid, r_end, seg, base + Vector3(0, seg * 0.5, 0), wood, false, 14)
+	_batch.add_cylinder(r_mid, r_mid, hgt - seg * 2.0, base + Vector3(0, hgt * 0.5, 0), wood, false, 14)
+	_batch.add_cylinder(r_end, r_mid, seg, base + Vector3(0, hgt - seg * 0.5, 0), wood, false, 14)
+	for y: float in [hgt * 0.2, hgt * 0.8]:
+		var r: float = lerpf(r_end, r_mid, 0.75) + 0.012
+		_batch.add_cylinder(r, r, 0.045, base + Vector3(0, y, 0), iron, false, 14)
+	# 桶蓋上的雪（薄、比桶口小一點）＋看不見的碰撞（只有一個圓柱）
+	_batch.add_cylinder(r_end - 0.03, r_end - 0.01, 0.05, base + Vector3(0, hgt + 0.025, 0), look.snow(), false, 14)
+	var col := CylinderShape3D.new()
+	col.radius = r_mid
+	col.height = hgt
+	_batch.add_shape(Transform3D(Basis.IDENTITY, base + Vector3(0, hgt * 0.5, 0)), col)
+	barrel_count += 1
 
 
 func _build_streets() -> void:

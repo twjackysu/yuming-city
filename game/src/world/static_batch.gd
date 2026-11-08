@@ -74,6 +74,11 @@ func add_sphere(radius: float, pos: Vector3, mat: Material) -> void:
 	add_mesh(m, Transform3D(Basis.IDENTITY, pos), mat)
 
 
+## 只有碰撞、不畫東西（木桶這種形狀跟碰撞盒不一樣的東西，D-100）。
+func add_shape(xform: Transform3D, shape: Shape3D) -> void:
+	_shapes.append([xform, shape])
+
+
 ## 任意 PrimitiveMesh／ArrayMesh（第 0 個 surface）。
 func add_mesh(mesh: Mesh, xform: Transform3D, mat: Material) -> void:
 	var key: int = mat.get_instance_id()
