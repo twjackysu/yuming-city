@@ -417,3 +417,45 @@ func test_dev_face_turns_player_to_target() -> void:
 	assert_true(fwd.normalized().dot(to.normalized()) > 0.98, "諾恩面向席菈（dot %.3f）" % fwd.normalized().dot(to.normalized()))
 	assert_true(absf(player.yaw - player.rotation.y) < 0.001, "鏡頭角度跟著轉")
 	await _free(level)
+
+
+## 截圖旗標 `--face-off`：轉向目標後再往左轉，目標落在畫面右側（不被諾恩的背影擋住，盤點第 5 項）。
+func test_dev_face_offset_puts_target_right() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sheila: Node3D = level.get_node("Sheila") as Node3D
+	sheila.set_physics_process(false)
+	sheila.global_position = player.global_position + Vector3(0.0, 0.0, -5.0)
+	level.set("_dev_face", "sheila")
+	level.set("_dev_face_off", 16.0)
+	await tree.physics_frame
+	await tree.physics_frame
+	var to: Vector3 = ((sheila.global_position - player.global_position) * Vector3(1, 0, 1)).normalized()
+	var fwd: Vector3 = (-player.global_transform.basis.z * Vector3(1, 0, 1)).normalized()
+	var ang: float = rad_to_deg(fwd.signed_angle_to(to, Vector3.UP))
+	assert_true(absf(ang + 16.0) < 1.0, "席菈在諾恩面向的右邊 16°（%.1f°，右邊是負）" % ang)
+	await _free(level)
+
+
+## 截圖旗標 `--pos=x,z`（高度照地面）與 `--hide=noen`（藏起諾恩的模型）。
+func test_dev_place_and_hide_player() -> void:
+	var s := _session()
+	_to_convoy(s)
+	var level: StoryLevel = await _load()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	assert_true(bool(level.call("dev_place_player", "2.6,6.5")), "x,z 格式移動")
+	assert_true(Vector2(player.global_position.x, player.global_position.z).distance_to(Vector2(2.6, 6.5)) < 0.01, "移到 (2.6, 6.5)：%s" % player.global_position)
+	assert_true(absf(player.global_position.y - (level.ground_y(player.global_position) + 0.05)) < 0.01, "高度照地面")
+	assert_true(bool(level.call("dev_place_player", "0,-35")), "北街台地")
+	assert_true(player.global_position.y > 0.8, "移到台地上就站在台地高度（y=%.2f）" % player.global_position.y)
+	assert_true(not bool(level.call("dev_place_player", "abc")), "格式不對不動")
+	assert_true(not bool(level.call("dev_place_player", "1,x")), "不是數字不動")
+	level.call("dev_hide_player")
+	var shown: int = 0
+	for v: Node in player.find_children("*", "GeometryInstance3D", true, false):
+		if (v as GeometryInstance3D).visible:
+			shown += 1
+	assert_eq(shown, 0, "諾恩的模型全部藏起來")
+	await _free(level)

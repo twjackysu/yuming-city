@@ -11,7 +11,7 @@ extends StoryLevel
 ##
 ## 開發用旗標（`++ --level=frostbridge ...`）：`--rescue` 跳到救援段落、`--convoy` 直接開打送葬者戰、`--phase2`、
 ## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|steps|north|south|cross`（出生位置）、
-## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）。
+## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）、`--hide=noen`（藏起諾恩）、`--pos=x,z`（最後把諾恩移到這裡）、`--face=...` `--face-off=度`。
 
 const PLAZA_HALF: float = 11.0
 const MAIN_HALF: float = 4.0
@@ -138,7 +138,29 @@ func _ready() -> void:
 	# 燃燒劍斬鐵架的火星在諾恩背後，平常的鏡頭拍不到（NEXT 第 2 項、Steam 截圖 6）
 	if dev_args.has("face"):
 		_dev_face = str(dev_args["face"])
+	# 截圖用：`--pos=x,z` 最後再把諾恩移到這裡（其他旗標排好場面之後換個拍攝位置；高度照地面）。
+	# 例：燃燒劍斬鐵架時送葬者站在諾恩正後方，鏡頭會卡進他身體裡 → `--pos=2.6,6.5 --face=sheila --face-off=16` 從側面拍
+	if dev_args.has("pos"):
+		dev_place_player(str(dev_args["pos"]))
+	# `--face-off=度`：轉向目標之後再往左轉幾度，目標落在畫面右側、不被諾恩的背影擋住
+	if dev_args.has("face-off"):
+		_dev_face_off = float(str(dev_args["face-off"]))
+	# 截圖用：`--hide=noen` 藏起諾恩（商店截圖：石拱預覽、燃燒劍，盤點第 5 項）
+	if str(dev_args.get("hide", "")) == "noen":
+		dev_hide_player.call_deferred()
 	player.snap_camera()
+
+
+## 截圖用：把諾恩移到 "x,z"（高度照地面）。格式不對就不動，回傳有沒有移動。
+func dev_place_player(spec: String) -> bool:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	var xz: PackedStringArray = spec.split(",")
+	if player == null or xz.size() != 2 or not xz[0].is_valid_float() or not xz[1].is_valid_float():
+		return false
+	var at := Vector3(float(xz[0]), 0.0, float(xz[1]))
+	player.global_position = Vector3(at.x, ground_y(at) + 0.05, at.z)
+	player.snap_camera()
+	return true
 
 
 ## `--face` 的目標（找不到回傳 null）。
@@ -163,7 +185,7 @@ func _update_dev_face() -> void:
 	d.y = 0.0
 	if d.length() < 0.3:
 		return
-	player.rotation.y = atan2(-d.x, -d.z)
+	player.rotation.y = atan2(-d.x, -d.z) + deg_to_rad(_dev_face_off)
 	player.yaw = player.rotation.y
 	player.snap_camera()
 
@@ -201,7 +223,15 @@ func _debug_felled() -> void:
 	boss.debug_hold_fallen = true
 	boss.health.apply_damage(boss.health.hp, {"kind": "kindling", "stagger": 0.0})
 	# 截圖時藏起諾恩（鏡頭在他正後方，會擋住倒在前面的送葬者）
-	for v: Node in ($Player as Node).find_children("*", "GeometryInstance3D", true, false):
+	dev_hide_player()
+
+
+## 截圖用：藏起諾恩的模型（提燈的光留著）。`--felled` 與 `--hide=noen` 用。
+func dev_hide_player() -> void:
+	var p: Node = get_node_or_null("Player")
+	if p == null:
+		return
+	for v: Node in p.find_children("*", "GeometryInstance3D", true, false):
 		(v as GeometryInstance3D).visible = false
 
 
@@ -238,6 +268,8 @@ const SHEILA_TALK_RANGE: float = 2.6
 var ashwalker: Ashwalker
 ## 截圖旗標 `--face` 的目標（""＝不轉）
 var _dev_face: String = ""
+## `--face-off`：轉向目標後再往左轉的角度（度；正＝往左轉，目標落到畫面右側）
+var _dev_face_off: float = 0.0
 
 
 func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
