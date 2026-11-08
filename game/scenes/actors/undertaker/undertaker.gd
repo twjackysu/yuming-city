@@ -19,6 +19,8 @@ signal fell
 const FROST: Color = Color(0.55, 0.82, 1.0)
 const TELEGRAPH_SHADER: String = "res://src/world/telegraph.gdshader"
 ## 霧裡的輪廓（D-101）：鐵架的冷色邊緣光＋朝上的薄霜、腳下的接地陰影
+const BIG_FADE_NEAR: float = 0.9
+const BIG_FADE_FAR: float = 1.9
 const FRAME_IRON_SHADER: String = "res://scenes/actors/undertaker/frame_iron.gdshader"
 const GROUND_SHADOW_SHADER: String = "res://scenes/actors/undertaker/ground_shadow.gdshader"
 ## 大衣的底色：比霧暗得多，隔著霧才看得出一個深色的人形（原本 0.11，跟夜霧差不多亮）
@@ -49,6 +51,11 @@ var _hit_wall: bool = false
 
 func intel_id() -> String:
 	return "undertaker"
+
+
+## 送葬者又高又寬（2.6 m、半徑 0.6 m），站在諾恩背後時離鏡頭 1.5 m 還是擋掉畫面三分之一：淡出範圍放大（D-115）
+func camera_fade_range() -> Vector2:
+	return Vector2(BIG_FADE_NEAR, BIG_FADE_FAR)
 
 
 func _insight_height() -> float:

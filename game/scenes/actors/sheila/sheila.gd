@@ -54,6 +54,7 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	add_child(health)
 	_build()
+	CameraFade.apply(self, CameraFade.CHARACTER_NEAR, CameraFade.CHARACTER_FAR)  # D-115
 
 
 func _physics_process(delta: float) -> void:

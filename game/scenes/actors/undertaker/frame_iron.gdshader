@@ -15,6 +15,11 @@ uniform float rim_power : hint_range(0.5, 8.0) = 2.5;
 uniform vec3 frost_color : source_color = vec3(0.78, 0.84, 0.9);
 uniform float frost_amount : hint_range(0.0, 1.0) = 0.65;
 
+// 靠近鏡頭抖動淡掉（D-115，CameraFade 設定；跟 StandardMaterial3D 的 DISTANCE_FADE_PIXEL_DITHER 同一套算法）。
+// fade_far 為 0 時不淡出
+uniform float fade_near = 0.0;
+uniform float fade_far = 0.0;
+
 varying float up;
 
 void vertex() {
@@ -22,6 +27,13 @@ void vertex() {
 }
 
 void fragment() {
+	if (fade_far > fade_near) {
+		const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+		float fade = smoothstep(fade_near, fade_far, length(VERTEX));
+		if (fade < 0.001 || fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
+			discard;
+		}
+	}
 	// 朝上的面（世界座標）才結霜：鐵架倒地、翻滾時霜跟著面走，不會整副變白
 	float frost = smoothstep(0.55, 0.9, up) * frost_amount;
 	ALBEDO = mix(iron_color, frost_color, frost);

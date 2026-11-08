@@ -31,6 +31,11 @@ func intel_id() -> String:
 	return ""
 
 
+## 離鏡頭多近開始淡掉（x 以內看不到、y 以外不透明，D-115）。體型大的敵人覆寫成更遠。
+func camera_fade_range() -> Vector2:
+	return Vector2(CameraFade.CHARACTER_NEAR, CameraFade.CHARACTER_FAR)
+
+
 func _ready() -> void:
 	add_to_group("damageable")
 	add_to_group("enemies")
@@ -46,6 +51,8 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	_build_body()
 	_build_insight()
+	var fade: Vector2 = camera_fade_range()
+	CameraFade.apply(self, fade.x, fade.y)  # D-115
 
 
 func _physics_process(delta: float) -> void:
