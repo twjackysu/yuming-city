@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 26 輪）最後一次程式 push 是 9a4182d（屋頂雪的下緣，D-112），**先確認它整個綠燈**（PROGRESS 第 26 輪有收尾補記）。第 26 輪的程式 commit 都在本機跑過 `scripts/check.sh`（275 個測試）與截圖：5e087df 破屋頂的瓦＋雪堆變圓（D-110，CI 綠）、bed6d66 推車重做（D-111）、9a4182d 屋頂雪的下緣（D-112）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 26 輪）最後一次程式 push 是 ddfda0a（傷者頭巾，D-113），**先確認它整個綠燈**（PROGRESS 第 26 輪有收尾補記）。第 26 輪的程式 commit 都在本機跑過 `scripts/check.sh`（275 個測試）與截圖：5e087df 破屋頂的瓦＋雪堆變圓（D-110，CI 綠）、bed6d66 推車重做（D-111）、9a4182d 屋頂雪的下緣（D-112）、ddfda0a 傷者頭巾（D-113）。紅了就看 log 修，修不好 `git revert`。
 - **看 screens 的新圖**：`06-rescue` 左邊的破屋頂有瓦、雪堆是圓的（不再像白漆）；`03-plaza`／`04-stall` 遠處屋頂雪的下緣是一團團不規則的（不再是直線）；`05-steps` 的街邊雪堆輪廓變圓；`07-convoy-fight` 鏡頭底下的推車有木板與邊板（前右角一根燈柱）。
 - `docs/PROGRESS.md` 第 26 輪把第 14～18 輪合併成每日摘要了（約 216 行）；超過約 300 行時再把第 19～23 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
@@ -27,9 +27,9 @@
 - 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）、路燈燈籠（D-080）。第 20 輪：鐘形與鐘室木構（D-081，旋轉體用 `Lathe`：剖面線繞 Y 軸，外側從上往下描）、敲鐘刻度（D-084，`RingTally`）、角色不擋鏡頭（D-085）。第 21 輪：石拱預覽截圖停住送葬者＋`--face=arch`（D-086）、看穿小卡（D-087）、前兆範圍 shader（D-088）、攤桌補光（D-089）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
 - 第二輪盤點 10 項全部完成（第 22 輪：北街破屋頂 D-091、標題的窗與鐘 D-092、暫停選單目標與提示＋暫停藏 HUD D-093、README 重現圖構圖 D-094）。
 - **第三輪盤點（PLAN 階段 2 第三張表，D-099）全部完成**：第 23 輪第 1～4 項（D-095～D-098）＋木桶（D-100）；第 24 輪第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102：`SnowMound.build(長, 寬, 高, seed, bias)`，模型 X＝長、Z＝寬、底在 y=0；`bias` 讓最高點偏一邊）、柴堆與手推車（D-103）；第 25 輪木圍欄（D-104：`FENCE_PATH`、`_build_fence`）、街邊雪帶（D-105：`_snow_bank(牆腳線起點, 終點, 牆的方向, 伸出寬度)`、`snow_banks`）、推車淡出（D-106：`CameraFade.apply(節點, near, far)`）、屋瓦（D-107：`RoofMesh.build`、`look.roof_tiles()`、`ROOF_SNOW`）、接地陰影（D-108：`ContactShadow.attach(角色, 半徑, 強度)`）。
-- **第四輪盤點（PLAN 階段 2 第四張表，D-109）**：第 26 輪完成第 1 項（D-110：`RoofMesh.slab(長, 厚, 寬)` 只有頂面 UV 是公尺、-X 端是屋簷；`SnowMound` 20 段、輪廓大起伏）、第 2 項（D-111：`Caravan` 的 `_box`／`_part`、常數 `BED_*`／`WHEEL_*`／`LANTERN_POS`）、第 3 項（D-112：`_roof_snow_lip`）、第 7 項（併入第 1 項）。
+- **第四輪盤點（PLAN 階段 2 第四張表，D-109）**：第 26 輪完成第 1 項（D-110：`RoofMesh.slab(長, 厚, 寬)` 只有頂面 UV 是公尺、-X 端是屋簷；`SnowMound` 20 段、輪廓大起伏）、第 2 項（D-111：`Caravan` 的 `_box`／`_part`、常數 `BED_*`／`WHEEL_*`／`LANTERN_POS`）、第 3 項（D-112：`_roof_snow_lip`）、第 5 項（D-113：`Caravan._wrap_head`）、第 7 項（併入第 1 項）。
 - **下一輪從這裡開始：第四張表第 4 項——廣場地上的殘雪與髒雪**（`03-plaza`、`04-stall`、`02-pause` 下半畫面一大片空的暗石板）。地面是 `_build_ground()`（`frostbridge.gd`）＋`wet_cobble.gdshader`。建議做法：在 `wet_cobble.gdshader` 加一層「殘雪」：用世界座標的低頻雜訊＋石縫遮罩，石板縫裡一點白、靠牆與角落多（可以傳入廣場的範圍或用頂點色標記「靠牆程度」），井邊與攤子前一圈踩實的灰褐髒雪（`uniform` 陣列放幾個圓心＋半徑），一兩道車轍（沿廣場西側手推車到主街口的兩條平行淡線）。水窪倒影的地方（粗糙度低）不要蓋雪。先截 `--at=plaza`、`--pos=3.0,3.2` 對照 screens，再看 `--at=main`／`--at=south` 有沒有變怪。
-- 第 5 項：傷者的頭（`caravan.gd` 的 `Puppet.new()`、`Wounded%d`）：在 `hurt.head`（或 Puppet 的頭節點，先看 `puppet.gd`）加一塊頭巾／把布拉到下巴（只改傷者）。第 6 項：`CameraFade.apply(角色, 0.4, 1.0)`，注意送葬者的 shader 材質（`frame_iron.gdshader`）不是 StandardMaterial3D，CameraFade 不會動到——要另外處理或接受。
+- 第 6 項（第 4 項之後）：`CameraFade.apply(角色, 0.4, 1.0)`，注意送葬者的 shader 材質（`frame_iron.gdshader`）不是 StandardMaterial3D，CameraFade 不會動到——要另外處理或接受。
 - 破屋頂的山牆（PrismMesh）還是 `look.mat(ROOF)` 素面；看起來沒問題就不用改。
 - 本輪看到的小事：店招只是一塊深色木板（夜裡遠看是剪影，夠用；之後可以在 door shader 的木箱模式加一個簡單圖案）。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
