@@ -129,12 +129,45 @@ func test_cart_fades_near_camera() -> void:
 		if m.distance_fade_mode == BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER:
 			faded += 1
 	assert_eq(faded, mats.size(), "每個材質離鏡頭太近都會淡掉（%d/%d）" % [faded, mats.size()])
-	var wood: BaseMaterial3D = (caravan.find_child("Cart", true, false).get_child(0) as CSGBox3D).material as BaseMaterial3D
+	var wood: BaseMaterial3D = (caravan.find_child("Cart", true, false).get_child(0) as MeshInstance3D).material_override as BaseMaterial3D
 	assert_true(absf(wood.distance_fade_min_distance - Caravan.CART_FADE_NEAR) < 0.001, "推車木頭 %.2f" % wood.distance_fade_min_distance)
 	assert_true(absf(wood.distance_fade_max_distance - Caravan.CART_FADE_FAR) < 0.001, "推車木頭 %.2f" % wood.distance_fade_max_distance)
 	assert_true(Caravan.CART_FADE_FAR < PlayerController.CAMERA_DIST_COMBAT - 0.6, "戰鬥時鏡頭在諾恩身後 4.2 m：諾恩身邊的推車不會淡掉")
 	var glass: MeshInstance3D = caravan.find_child("LanternGlass", true, false) as MeshInstance3D
 	assert_true(absf((glass.material_override as BaseMaterial3D).distance_fade_max_distance - Caravan.GLASS_FADE_FAR) < 0.001, "燈罩維持自己的淡出距離")
+	caravan.queue_free()
+	await tree.process_frame
+
+
+## 第四輪盤點（D-111）：推車不再是 CSG 方塊與實心圓柱輪——木板車斗、邊板與立樁、有輻條的木輪＋鐵輪框、車把＋橫把、燈柱。
+func test_cart_is_built_like_a_cart() -> void:
+	var caravan := Caravan.new()
+	caravan.route = PackedVector3Array([Vector3(0, 0, 0), Vector3(0, 0, -10)])
+	tree.root.add_child(caravan)
+	var cart: Node3D = caravan.find_child("Cart", true, false) as Node3D
+	var counts: Dictionary = {}
+	var csg: int = 0
+	for c: Node in cart.get_children():
+		if c is CSGShape3D:
+			csg += 1
+		var key: String = String(c.name).rstrip("0123456789")
+		counts[key] = int(counts.get(key, 0)) + 1
+	assert_eq(csg, 0, "推車沒有 CSG 方塊")
+	assert_eq(int(counts.get("Plank", 0)), Caravan.PLANKS, "車斗是一片片木板")
+	assert_eq(int(counts.get("Tire", 0)), 2, "兩個輪子各一圈鐵輪框")
+	assert_eq(int(counts.get("Felloe", 0)), 2, "木輪框")
+	assert_eq(int(counts.get("Spoke", 0)), Caravan.SPOKE_BARS * 2, "每個輪子六根輻條")
+	assert_eq(int(counts.get("Handle", 0)), 2, "兩根車把")
+	assert_eq(int(counts.get("Grip", 0)), 1, "前端橫把")
+	var tire: MeshInstance3D = cart.find_child("Tire*", false, false) as MeshInstance3D
+	assert_true(tire != null and tire.mesh is TorusMesh, "輪框是圓環（中間看得穿）")
+	if tire != null:
+		assert_true(absf(tire.global_transform.basis.y.normalized().dot(caravan.global_transform.basis.x.normalized())) > 0.99, "輪軸沿車身左右")
+		assert_true(absf(tire.position.y - Caravan.WHEEL_R) < 0.001, "輪子著地")
+	var pole: Node3D = cart.find_child("LanternPole", false, false) as Node3D
+	assert_not_null(pole, "提燈掛在燈柱上")
+	if pole != null:
+		assert_true(absf(pole.position.x - Caravan.LANTERN_POS.x) < 0.05, "燈柱在提燈正上方")
 	caravan.queue_free()
 	await tree.process_frame
 
