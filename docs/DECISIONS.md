@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-115　2026-11-09　席菈與敵人擋在鏡頭前時抖動淡掉
+
+- 決策：`CameraFade` 新增 `CHARACTER_NEAR` 0.4／`CHARACTER_FAR` 1.0，並支援宣告了 `fade_near`／`fade_far` uniform 的 ShaderMaterial（其他 shader 不動）；送葬者的 `frame_iron.gdshader` 加上跟 StandardMaterial3D `DISTANCE_FADE_PIXEL_DITHER` 同一套的抖動淡出。`Sheila._ready` 與 `EnemyActor._ready`（`_build_body` 之後）套用；敵人用 `camera_fade_range()`，送葬者覆寫成 0.9～1.9 m（`BIG_FADE_NEAR`／`BIG_FADE_FAR`）。諾恩本身不淡。
+- 理由：第四輪盤點第 6 項。D-085 之後 SpringArm 不撞角色，送葬者／席菈站到鏡頭與諾恩之間時鏡頭會在他們身體裡；送葬者又高又寬，離鏡頭 1.5 m 還擋掉畫面三分之一（截圖 `--convoy --phase2 --face=undertaker --face-off=200` 對照：鐵架與大衣變成網點、看得到後面的牆）。
+- 影響：`test_camera_fade::test_apply_sets_shader_fade`、`test_characters_fade_near_camera`。正式角色模型（glb）匯入的材質也會被設定；同一個 glb 的材質是共用資源，換模型後要確認不會影響到別的角色。抖動在沒有 TAA 時近看有網點（跟推車淡出一樣，D-106）。
+
+## D-114　2026-11-09　廣場地上的殘雪、髒雪與車轍（濕石板 shader）
+
+- 決策：`wet_cobble.gdshader` 新增三組資料（都是 uniform，沒設定時跟原本一樣，沙盒不受影響）：①`lanes[8]` 街道範圍（中心 xz、半寬 xz）：離邊越近（`wall_reach` 2.6 m，兩個方向都靠邊的角落更多）石縫裡卡的雪越多、靠牆的石板上蓋一層薄雪；空地上石縫的雪是一段一段的（細雜訊打散），另外偶爾一片被風吹散的薄雪；點在好幾個範圍裡取離牆最遠的那個，主街／南街的範圍伸進廣場，街口不會積成一道雪。②`trodden[4]` 踩實的灰褐髒雪（圓心、內外半徑）：井邊一圈、梨販攤前一片，斑駁、石縫裡最髒、粗糙度 0.62。③`rut_pts[8]` 車轍中心線：兩道相距 1.37 m（手推車的輪距）的濕亮輪溝（粗糙度 0.08、溝壁法線朝溝心）＋兩側被推開的雪，兩端淡出、中間斷斷續續。水窪不蓋雪。`FrostbridgeLook.set_ground_marks(lanes, trodden, rut)` 套到所有已建立與之後建立的濕石板材質；霜橋鎮的資料在 `frostbridge.gd` 的 `ground_lanes()`、`TRODDEN`、`RUT_PATH`（西側手推車往東出來、繞過井與中央石框、進主街）。原本的 `snow_amount` 低頻積雪門檻 0.82 幾乎不會出現（fbm 大多在 0.3～0.65），新的門檻照這個範圍抓。
+- 理由：第四輪盤點第 4 項。廣場（`03`、`04`、`02` 暫停背景）下半畫面是一大片空的暗石板；概念圖的地上有踩過的雪、髒雪與車轍。全部在 shader 裡：不擋人、不進碰撞、不多 draw call、不多頂點。街邊雪堆的邊緣也跟地面接起來了（主街截圖）。
+- 影響：`test_frostbridge::test_ground_snow_and_ruts`（每個濕石板材質都拿到資料、街口不是牆、髒雪在廣場裡、車轍不壓到井／石框／路燈／圍欄／木桶、最後進主街）。新的段落要殘雪，就在那一關呼叫 `set_ground_marks`。
+
 ## D-113　2026-11-09　車上的傷者包著頭巾
 
 - 決策：`Caravan._wrap_head(傷者, 繃帶)`：在傷者的 `joint("neck")` 下加「HeadWrap」（SphereMesh 半徑 0.148、往後腦偏 0.035 m，臉中間露出一小塊，`HEAD_WRAP` 深色毛布），第一名傷者額頭再纏「Bandage」（TorusMesh、淺色、微微歪斜）。只改傷者，不動 Puppet 本體；CameraFade 照樣套到。
