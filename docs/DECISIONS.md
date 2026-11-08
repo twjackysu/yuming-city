@@ -2,6 +2,33 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-079　2026-11-08　本 session 連不到 notofonts/noto-cjk 時，本機字型改用 apt 的 Noto CJK（不進 git）
+
+- 決策：第 19 輪的雲端 session 對 `github.com/notofonts/noto-cjk` 的 release 一律回 504（GitHub API 回「這個 session 沒開這個 repo 的存取」，`add_repo` 也不在工具裡），`scripts/gen_fonts.py` 下載失敗、`check.sh` 跑不起來。本機改用 `apt-get install fonts-noto-cjk fonts-noto-cjk-extra` 的 TTC（同一個字族的 TC 那一套，Serif SemiBold／Sans Regular／Medium），用 scratchpad 的小腳本照 `gen_fonts.py` 的字元集合子集化、寫進 gitignore 的 `game/assets/generated/fonts/` 並寫上相同的 `.stamp`，`check.sh` 就照常跑。**repo 裡的 `gen_fonts.py`、CI 都不改**（CI 照舊從 release 下載、有 cache）。
+- 理由：只是本機驗證環境的網路限制；字型版本與 SHA 固定的做法不該為了一個 session 改掉。apt 的 Noto CJK 字形與 release 版同一族，截圖看得出排版與字重。
+- 影響：NEXT「開工先確認」寫了做法；改了 `i18n/*.csv` 後要重跑那個小腳本（字元集合變了 stamp 會變，`gen_fonts.py` 又會去下載）。
+
+## D-078　2026-11-08　選單換值的「叮」（ui_tick）
+
+- 決策：新增程序音效 `ui_tick`（`scripts/gen_sfx.py`：1568 Hz 與它的 2.41 倍兩個泛音、每秒衰減 38 倍，加 4 ms 的高通噪音「喀」，共 0.14 秒）。設定頁的多選一切換（點箭頭、左右鍵、確認鍵）與拖音量滑桿時播放，-15 dB、走 SFX 匯流排，拖滑桿時每 70 ms 最多一聲。
+- 理由：「打擊感、音效」也包含選單——切換值沒有聲音時，手把玩家不確定按了有沒有作用；用高音鐘的泛音，跟遊戲的鐘同一個語彙。走 SFX 匯流排，調「音效」音量時能馬上聽到新的大小。
+- 影響：`Sfx.NAMES` 多一個（打包驗證與 `test_sfx` 會檢查）。之後其他選單（暫停、標題）的焦點移動要不要也有聲音，等 Jacky 試玩說太吵或太安靜再決定。
+
+## D-077　2026-11-08　廣場中心的石框與鐘紋、井的燈與小屋頂、木箱模式
+
+- 決策：
+  - 廣場中央的圓形石框改成：外側一道深色石縫（r 3.32）、淺色斜邊石緣（上 3.15／下 3.28、高 7 cm）、裡面低一點的鋪石（r 2.8），正中央一個「鐘紋」石盤（淺色外圈 r 1.0、深色溝 r 0.78、內圈 r 0.7、中心深色點）。全部不加碰撞（車隊與角色會走過去，石緣只高 7 cm）。
+  - 井：井身改用石牆材質（跟石階燈柱共用 `stone_wall(1.0)`）、淺色井沿石（跟廣場石緣同一個材質）、木架上兩片斜板的小屋頂＋雪、繩子與水桶；木架東側掛一盞小燈（發光小方塊＋上下兩片蓋，OmniLight 1.1、範圍 3.4 m、不投影）。
+  - `door.gdshader` 加「木箱模式」：頂點色 r＝0 時橫排四片木板、四邊一圈角條、沒有門把與鐵條（`FrostbridgeLook.crate_tint(pos)`）。梨販的攤桌與旁邊疊著的三個木箱都用它，跟門合併在同一個 mesh；`StaticBatch.add_box_tinted` 多一個 `collide` 參數（木箱要擋人）。
+- 理由：盤點第 10 項。之前的石框是兩片幾乎一樣高、顏色接近的薄圓盤，遠看只有一圈淡線；井是一個淺色圓柱；攤桌是素面方塊。截圖對照（`--at=plaza`、`--pos=3.0,3.2`）：石框與鐘紋一進廣場就看得到，井有了屋頂輪廓與暖光。新材質全部沿用既有的，小鎮合併 mesh 數不變（測試上限 24）。
+- 影響：`test_frostbridge::test_layout_nodes_and_batching` 檢查木箱數、石框層數、井燈（不投影、範圍小、在井旁）；`test_static_batch` 檢查帶色方塊的碰撞與木箱頂點色。攤子正面在夜裡偏暗、木板紋要靠近才看得到；之後可以在攤桌前面加一點補光（目前燈在布篷下）。
+
+## D-076　2026-11-08　設定頁分組、「‹ 值 ›」箭頭、小圓點、音量百分比
+
+- 決策：設定頁分成四組——遊戲（難度、語言、字幕、目標指引）、聲音（四個音量）、畫面（畫質、全螢幕、垂直同步、減少鏡頭晃動）、操作（按鍵設定）。每組一個暖金色小標題（Noto Sans Medium 17 px、英文大寫）＋往右延伸的細線。多選一（含開／關）改成「‹ 值 ›」：值置中，兩側的箭頭是 `ValueArrow`（用 `draw_polyline` 畫的線，不靠字型；平常淡灰、按鈕有焦點或滑鼠在上面時暖金色；可以點；切換時往那邊彈 4 px）；難度、語言、畫質的值下面有 `ValuePips`（幾個選項幾顆，目前那顆實心暖金色），有圓點的按鈕文字抬高 3 px 讓出空間。音量滑桿旁邊顯示百分比。列高 44 → 38、列距 8 → 4，加了四個標題後面板仍是約 900 px 高（測試擋 ≤ 1040）。新翻譯 key：`SET_GROUP_GAME`／`AUDIO`／`DISPLAY`／`INPUT`（遊戲／聲音／畫面／操作；英文 Input 避免跟「Controls」那一列重複）。
+- 理由：盤點第 9 項，開／關、畫質只是一排左對齊的文字，看不出能左右切、也看不出有幾個選項；13 列沒有分組，很難找。箭頭用畫的，是因為字型子集不一定有「‹」（D-060 的經驗）。
+- 影響：`SettingsMenu` 新增測試用的 `group_keys()`、`group_of()`、`arrow_of()`、`pips_of()`；`test_ui::test_settings_menu_groups_arrows_pips` 擋回歸。`control_of()` 照舊回傳第 2 個子節點（Slider 或 Value 按鈕），舊測試與手把流程測試不用改。
+
 ## D-075　2026-11-08　送葬者兜帽裡的霜光
 
 - 決策：送葬者的上身加兩點冷藍自發光（`HoodEyeL`／`HoodEyeR`，emission 5.0，不投影）在兜帽前緣，和一盞小 OmniLight（`HoodLight`，霜色、0.9、範圍 2.4 m、不投影）在胸口前方。被斬倒跪下的 `FALL_KNEEL_SEC` 內熄掉（光變 0、光點縮小），倒地後由 `_frost_exhale`（D-054）接手。

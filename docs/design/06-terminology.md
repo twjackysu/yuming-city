@@ -26,6 +26,7 @@
 | 看穿 | `insight` | 看穿 | Insight | 已經夠白話，保留 |
 | 灰巡者、送葬者 | `Ashwalker`、`Undertaker` | 照原作 | Ashwalker、Undertaker | 怪物名字 |
 | 餘命城 | — | 餘命城 | Yuming City | 作品名，保留 |
+| （設定頁分組） | `SET_GROUP_*` | 遊戲／聲音／畫面／操作 | Game／Audio／Display／Input | D-076；英文用 Input，避免跟「Controls（按鍵設定）」那一列重複 |
 | 噬日獸（第一部後段） | — | 吞日獸（暫定） | Sun-Eater（暫定） | 之後章節用到再定 |
 | 歸時核（第二部以後） | — | 暫不出現 | — | 之後章節用到再定 |
 

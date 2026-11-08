@@ -1,10 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；**第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成**）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 18 輪）最後一次程式 push 是 7b423d6（送葬者兜帽霜光），run 42465190105——**先確認它整個綠燈**（PROGRESS 第 18 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `undertaker.gd` 的 `_build_body`／`_on_died` 與一個測試，必要時 `git revert 7b423d6`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
+- 上一輪（第 19 輪）最後一次程式 push 是 0fbccbc（設定頁換值的「叮」），run 42469007583——**先確認它整個綠燈**（PROGRESS 第 19 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `gen_sfx.py`（新增 `ui_tick`）、`sfx.gd` 的 NAMES、`settings_menu.gd` 的 `tick()` 與一個測試斷言，必要時 `git revert 0fbccbc`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
+- **字型下載 504（D-079）**：第 19 輪的 session 連不到 `notofonts/noto-cjk` 的 release（504／API 說沒有這個 repo 的存取），`scripts/check.sh` 會在 `gen_fonts.py` 掛掉。先試一次 `scripts/check.sh`；如果又是 504：`apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra`，再用 D-079 的做法（從 `/usr/share/fonts/opentype/noto/Noto{Serif,Sans}CJK-*.ttc` 取 TC 那一套、照 `gen_fonts.collect_chars()` 子集化、寫 `game/assets/generated/fonts/` 與相同的 `.stamp`；`import gen_fonts` 會留下 `scripts/__pycache__/`，記得刪掉）。**不要改 repo 的 `gen_fonts.py`**，CI 照常下載。改了 i18n CSV 後要重跑。
 - `docs/PROGRESS.md` 第 18 輪把第 8～13 輪合併成摘要了；超過約 300 行時再把第 14～18 輪合併。
 - CI 有「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
 - **本機截圖會在真的 `user://saves`（`/root/.local/share/YumingCity/saves`）留下自動存檔**，之後標題畫面的「繼續」會變成可按；要拍新玩家的標題畫面先把 saves 移開。只有 2 核，150 幀的對話截圖要單獨跑（同時跑會超過 120 秒逾時）。
@@ -13,17 +14,16 @@
 - **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時，push 程式前先 `git stash`、push 完再 `git stash pop`。
 - **玩家看得到的字一律白話**：新名詞先寫進 `docs/design/06-terminology.md` 再用；`test_i18n::test_no_obscure_terms` 會擋舊詞（九息、弔鐘、薪火、巡界、下城、爹…）。程式識別碼照舊（`nine_breath`、`kindling`）。
 - Jacky 的概念圖在 `art-inbox/concepts/`（LFS）：`git lfs pull --include="art-inbox/concepts/frostbridge_winter/**"` 這樣指定資料夾下載（推 LFS 還是不行）。看圖前先用 PIL 縮到 900 寬。
-- 全域 Theme（D-067、D-071）：`UiTheme.style()` 定義按鈕／滑桿樣式，`App` 同時套在 root 與引擎預設 Theme；新選單直接用 flat Button 就有暖金色焦點。
+- 全域 Theme（D-067、D-071）：`UiTheme.style()` 定義按鈕／滑桿樣式，`App` 同時套在 root 與引擎預設 Theme；新選單直接用 flat Button 就有暖金色焦點。設定頁新增一列：在對的分組底下呼叫 `_add_cycler`（多選一，自動有「‹ 值 ›」與小圓點）／`_add_toggle`（開關，不畫圓點）／`_add_slider`（音量，帶百分比）；新分組用 `_add_group`（D-076），新 key 先查 `06-terminology.md`。
 - 霜橋鎮截圖旗標（`--level=frostbridge`）：`--pos=x,z`（最後把諾恩移到這裡、高度照地面）、`--face-off=度`（`--face` 之後再往左轉，目標落到畫面右側）、`--hide=noen`（D-074）、`--at=plaza|main|steps|north|south|cross`、`--rescue`、`--convoy`（＋`--phase2`、`--throw=arch|kindling --throw-t=秒`、`--felled` 送葬者倒地、截圖時藏起諾恩）、`--arch=preview|restored|spent`、`--open=journal`、`--dialogue=slice_sheila_meet --dialogue-steps=5`、`--cutscene=slice_bell_nine --cutscene-steps=3`、`--quality=0..2`、`--locale=zh_TW`、`--device=pad`（手把圖示）、`--nohud`（整個 HUD 不顯示，D-064）、`--face=sheila|undertaker|frame`（諾恩與鏡頭每幀轉向那個角色；燃燒劍斬鐵架：`--convoy --throw=kindling --throw-t=0.6 --face=sheila`）。沙盒（`--level=sandbox`）還有 `--enemies`（＋`--felled` 灰巡者撲倒）、`--boss`、`--insight`、`--lock`。軟體渲染很慢：一般 25～40 幀。
 - 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
 
 ## 1. 「第一眼」打磨（照 PLAN 階段 2 的盤點表，從上往下）
 
-- 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。
-- **下一項：第 9 項設定頁**（`scenes/ui/settings_menu.gd`）：開／關、畫質、難度這些選項現在只是文字按鈕，改成「‹ 值 ›」（左右箭頭用 Label 畫，不要 `draw_string`；手把十字鍵左右／滑鼠點箭頭都能切）；加分組標題（遊戲／聲音／畫面／操作，新翻譯 key 先查 `06-terminology.md`）。截圖用標題畫面的 `--open=settings`（`boot.gd` 已支援）。`test_ui`、`test_settings`、`test_gamepad_route`（暫停選單＋設定）要跟著改。
-- 第 10 項：廣場中心的井與石圈看不出來（井沿加燈或雪、石圈加深）；木箱是素面方塊（木板紋，照門的 shader 模式）。
+- 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
+- **下一項：第二輪「第一眼」盤點**（第一輪 10 項全部完成）。照 `docs/ART_QUALITY_BAR.md` 再截一次：標題、設定（新）、暫停選單（跟新設定頁的風格一致嗎？標題字、分組、面板邊框）、HUD（戰鬥中、重現提示）、廣場、主街、石階、北街救援、送葬者戰、石拱預覽、日記、收束（艾妲、地窖）。把新發現寫成 PLAN 階段 2 的「第二輪盤點」表（5～8 項，依每個畫面看得到的程度排序），本輪先做最上面 1～2 項。已知候選：門口掛燈與路燈燈泡還是發光方塊／球（可以用窗的 shader 加燈罩框，`look.glow(LAMP, 3.2)`）；梨販攤正面在夜裡偏暗、木箱的木板紋要靠很近才看得到（攤桌前加一點補光？注意燈數上限 40）；標題畫面剪影裡的亮窗是平的小方塊（`title_fog.gdshader`）；暫停選單還是一排按鈕。
 - 過肩鏡頭的後續：大型敵人（送葬者）站在諾恩正後方時鏡頭可能進到他模型裡（SpringArm 只看碰撞形狀）；等 Jacky 回饋，必要時讓離鏡頭 < 1 m 的敵人淡出。鏡頭參數在 `player.gd` 的 `SHOULDER_*`。
-- 小的：門口掛燈的燈罩、路燈燈泡還是發光方塊／球（可以用窗的 shader 加燈罩框，`look.glow(LAMP, 3.2)`）；標題畫面剪影裡的亮窗也是平的小方塊（`title_fog.gdshader`）。雪粒閃點在實機會動的鏡頭下會不會太閃，等 Jacky 回饋（`sparkle_energy`）。
+- 雪粒閃點在實機會動的鏡頭下會不會太閃，等 Jacky 回饋（`sparkle_energy`）。選單的「叮」（`ui_tick`，-15 dB）太吵或太小聲也等回饋；要不要讓暫停／標題選單的焦點移動也有聲音，一起決定（D-078）。
 - 新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`（D-065）。
 
 ## 2. 霜橋鎮第一眼（照概念圖）
