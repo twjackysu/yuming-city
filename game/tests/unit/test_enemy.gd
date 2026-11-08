@@ -114,6 +114,9 @@ func test_ashwalker_dies_falling_forward_not_squashed() -> void:
 		assert_true(head.global_position.y < 0.6, "貼地（頭離地 %.2f m）" % head.global_position.y)
 	assert_true(absf(walker._body.scale.y - 1.0) < 0.001, "不再壓扁")
 	assert_true(walker.has_node("FallPuff"), "落地揚起灰粉")
+	var puff: CPUParticles3D = walker.get_node("FallPuff") as CPUParticles3D
+	var puff_mat: StandardMaterial3D = (puff.mesh as QuadMesh).material as StandardMaterial3D
+	assert_true(puff_mat.albedo_texture is GradientTexture2D, "灰粉是柔邊圓點，不是硬邊方塊")
 	var glow: StandardMaterial3D = walker._claw_mat
 	for i: int in 600:
 		if glow.emission_energy_multiplier < 0.05 or not is_instance_valid(walker):
