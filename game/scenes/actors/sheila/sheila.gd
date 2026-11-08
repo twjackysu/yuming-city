@@ -72,7 +72,8 @@ func _physics_process(delta: float) -> void:
 		_perform(act)
 	_move(delta, leader_dist, target_dist)
 	_line_left = maxf(_line_left - delta, 0.0)
-	_line.visible = _line_left > 0.0
+	# 頭上的喊話＝字幕（D-045：設定關掉字幕時不顯示；對話框與過場字永遠顯示）
+	_line.visible = _line_left > 0.0 and Settings.subtitles_enabled
 	_fire_tick(delta)
 
 
@@ -108,7 +109,7 @@ func say(key: String) -> void:
 		return
 	_line.text = TranslationServer.translate(key)
 	_line_left = LINE_SEC
-	_line.visible = true
+	_line.visible = Settings.subtitles_enabled
 
 
 func line_text() -> String:

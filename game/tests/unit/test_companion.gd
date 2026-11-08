@@ -197,3 +197,25 @@ func test_sheila_weakpoint_kills_staggered_ashwalker_and_says_line() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
+
+
+## 字幕設定（D-045）：關掉時席菈頭上的喊話不顯示（台詞照樣記著，打開就看得到）。
+func test_sheila_barks_follow_subtitle_setting() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var sheila: Sheila = a[2]
+	var was: bool = Settings.subtitles_enabled
+	Settings.subtitles_enabled = false
+	sheila.say("SHEILA_ACK_GUARD")
+	var line: Label3D = sheila.get_node("Line") as Label3D
+	assert_false(line.visible, "字幕關：頭上不顯示")
+	assert_ne(sheila.line_text(), "", "台詞還是有")
+	await tree.physics_frame
+	assert_false(line.visible, "下一幀也不顯示")
+	Settings.subtitles_enabled = true
+	await tree.physics_frame
+	assert_true(line.visible, "字幕開：顯示")
+	Settings.subtitles_enabled = was
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
