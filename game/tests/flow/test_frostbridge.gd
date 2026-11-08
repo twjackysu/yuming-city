@@ -129,6 +129,15 @@ func test_layout_nodes_and_batching() -> void:
 			door_meshes += 1
 	assert_eq(door_meshes, 1, "門共用一個材質、合併成一個 mesh")
 	assert_true(int(level.get("door_count")) > 15, "每棟房子都有門（%d）" % int(level.get("door_count")))
+	# D-077：攤桌＋三個木箱用門的 shader（木箱模式），跟門合併在同一個 mesh；廣場中央石框＋鐘紋；井有燈
+	assert_eq(int(level.get("stall_crates")), 4, "攤桌＋三個疊著的木箱")
+	assert_eq(int(level.get("plaza_ring_parts")), 7, "廣場石框：石縫、石緣、內圈鋪石、鐘紋四層")
+	var well_light: OmniLight3D = level.get("well_light") as OmniLight3D
+	assert_not_null(well_light, "井的木架上掛一盞小燈")
+	if well_light != null:
+		assert_false(well_light.shadow_enabled, "井的小燈不投影")
+		assert_true(well_light.omni_range < 4.0, "井的小燈範圍小（%.1f）" % well_light.omni_range)
+		assert_true(well_light.global_position.distance_to(Vector3(-6.0, 1.7, -3.5)) < 1.5, "燈在井旁")
 	assert_eq(plain_snow, 0, "沒有平的淺色雪")
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
 	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)

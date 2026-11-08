@@ -452,8 +452,7 @@ func _build_ground() -> void:
 	_batch.add_box_at(Vector3(90.0, 1.0, 130.0), Vector3(0.0, -0.5, -5.0), look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4))
 	# 廣場鋪石（略暗）與中央的圓形石框
 	_batch.add_box_at(Vector3(PLAZA_HALF * 2.0, 0.02, PLAZA_S - PLAZA_N), Vector3(0.0, 0.01, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false)
-	_batch.add_cylinder(3.2, 3.2, 0.05, Vector3(0.0, 0.025, 0.0), look.mat(FrostbridgeLook.STONE, 0.7), false, 32)
-	_batch.add_cylinder(2.9, 2.9, 0.06, Vector3(0.0, 0.03, 0.0), look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5), false, 32)
+	_build_plaza_ring()
 	# 積雪：牆腳的淺色帶
 	var snow := look.snow()
 	for sx: float in [-1.0, 1.0]:
@@ -510,6 +509,29 @@ func ground_y(p: Vector3) -> float:
 	if p.z < STEPS_S + run and absf(p.x) < MAIN_HALF:
 		return RISE * (STEPS_S + run - p.z) / (STEPS_S + run - STEPS_N)
 	return 0.0
+
+
+## 廣場中央的圓形石框（D-077）：一圈比鋪石淺、斜邊的整塊石緣（燈光照得到斜面），裡面是低一點的鋪石，
+## 正中央一個鐘紋石盤（淺色外圈、深色溝、內圈），霜橋鎮是敲鐘的鎮。石緣只高 7 cm、不加碰撞
+## （車隊與角色會走過去）。之前是兩片幾乎一樣高、顏色接近的薄圓盤，遠看只是一圈淡淡的線。
+const PLAZA_RING_R: float = 3.2
+var plaza_ring_parts: int = 0
+
+
+func _build_plaza_ring() -> void:
+	var curb := look.mat(FrostbridgeLook.STONE.lightened(0.28), 0.55)
+	var groove := look.mat(Color(0.05, 0.055, 0.065), 0.35)
+	var inner := look.wet_ground(FrostbridgeLook.COBBLE, 0.34, 0.5)
+	# 石緣外側的一圈深色石縫，讓石緣跟鋪石分開
+	_batch.add_cylinder(PLAZA_RING_R + 0.12, PLAZA_RING_R + 0.12, 0.03, Vector3(0.0, 0.02, 0.0), groove, false, 48)
+	_batch.add_cylinder(PLAZA_RING_R - 0.05, PLAZA_RING_R + 0.08, 0.07, Vector3(0.0, 0.035, 0.0), curb, false, 48)
+	_batch.add_cylinder(PLAZA_RING_R - 0.4, PLAZA_RING_R - 0.4, 0.05, Vector3(0.0, 0.05, 0.0), inner, false, 48)
+	# 鐘紋石盤
+	_batch.add_cylinder(0.95, 1.0, 0.06, Vector3(0.0, 0.055, 0.0), curb, false, 40)
+	_batch.add_cylinder(0.78, 0.78, 0.06, Vector3(0.0, 0.06, 0.0), groove, false, 40)
+	_batch.add_cylinder(0.66, 0.7, 0.06, Vector3(0.0, 0.065, 0.0), curb, false, 40)
+	_batch.add_cylinder(0.16, 0.16, 0.06, Vector3(0.0, 0.07, 0.0), groove, false, 20)
+	plaza_ring_parts = 7
 
 
 func _build_plaza() -> void:
@@ -659,16 +681,49 @@ func _door_lantern(batch: StaticBatch, holder: Node3D, wall_pos: Vector3, face: 
 		light_count += 1
 
 
+## 井（D-077）：石砌井身＋淺色井沿石、井口積雪、木架＋小屋頂、吊著的水桶與繩子，
+## 木架東側掛一盞小燈（不投影、範圍小），從廣場另一頭也看得出井在那裡。
+var well_light: OmniLight3D
+
+
 func _build_well(pos: Vector3) -> void:
-	var stone := look.mat(FrostbridgeLook.STONE, 0.8)
+	var stone := look.stone_wall(1.0)  # 跟石階燈柱同一個材質（不多一個 draw call）
+	var curb := look.mat(FrostbridgeLook.STONE.lightened(0.28), 0.55)  # 跟廣場石緣同一個
+	var groove := look.mat(Color(0.05, 0.055, 0.065), 0.35)
 	_batch.add_cylinder(1.1, 1.2, 0.8, pos + Vector3(0, 0.4, 0), stone, true, 20)
-	_batch.add_cylinder(0.85, 0.85, 0.05, pos + Vector3(0, 0.81, 0), look.mat(Color(0.05, 0.06, 0.08), 0.2), false, 20)
-	_batch.add_cylinder(1.15, 1.2, 0.08, pos + Vector3(0, 0.84, 0), look.snow(), false, 20)
+	_batch.add_cylinder(1.18, 1.18, 0.1, pos + Vector3(0, 0.83, 0), curb, false, 20)
+	_batch.add_cylinder(0.85, 0.85, 0.05, pos + Vector3(0, 0.87, 0), groove, false, 20)
+	_batch.add_cylinder(1.14, 1.2, 0.05, pos + Vector3(0, 0.9, 0), look.snow(), false, 20)
 	var wood := look.mat(FrostbridgeLook.WOOD)
 	for sx: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(0.14, 2.2, 0.14), pos + Vector3(sx * 1.0, 1.1, 0), wood, false)
 	_batch.add_box_at(Vector3(2.3, 0.14, 0.14), pos + Vector3(0, 2.2, 0), wood, false)
-	_batch.add_box_at(Vector3(0.05, 0.9, 0.05), pos + Vector3(0, 1.7, 0), look.mat(FrostbridgeLook.ROOF), false)
+	# 小屋頂：兩片斜板＋一條雪
+	var roof := look.mat(FrostbridgeLook.ROOF)
+	for sz: float in [-1.0, 1.0]:
+		var b := Basis(Vector3.RIGHT, sz * 0.62)
+		_batch.add_box(Vector3(2.6, 0.06, 0.8), Transform3D(b, pos + Vector3(0, 2.5, sz * 0.27)), roof, false)
+		_batch.add_box(Vector3(2.6, 0.03, 0.7), Transform3D(b, pos + Vector3(0, 2.54, sz * 0.25)), look.snow(), false)
+	# 繩子與水桶
+	_batch.add_box_at(Vector3(0.03, 0.75, 0.03), pos + Vector3(0, 1.8, 0), roof, false)
+	_batch.add_cylinder(0.17, 0.14, 0.26, pos + Vector3(0, 1.3, 0), wood, false, 12)
+	_batch.add_cylinder(0.175, 0.175, 0.03, pos + Vector3(0, 1.36, 0), groove, false, 12)
+	# 小燈（燈罩是發光小方塊＋上下兩片蓋）
+	var lamp_pos: Vector3 = pos + Vector3(1.0, 1.72, 0.16)
+	_batch.add_box_at(Vector3(0.16, 0.2, 0.16), lamp_pos, look.glow(FrostbridgeLook.LAMP, 6.0), false)
+	_batch.add_box_at(Vector3(0.22, 0.04, 0.22), lamp_pos + Vector3(0, 0.12, 0), roof, false)
+	_batch.add_box_at(Vector3(0.2, 0.03, 0.2), lamp_pos + Vector3(0, -0.11, 0), roof, false)
+	well_light = OmniLight3D.new()
+	well_light.name = "WellLight"
+	well_light.light_color = FrostbridgeLook.LAMP
+	well_light.light_energy = 1.1
+	well_light.omni_range = 3.4
+	well_light.shadow_enabled = false
+	well_light.light_specular = LAMP_SPECULAR
+	well_light.light_volumetric_fog_energy = 0.8
+	well_light.position = lamp_pos + Vector3(0, -0.05, 0.05)
+	add_child(well_light)
+	light_count += 1
 
 
 func _build_lamps() -> void:
@@ -848,9 +903,21 @@ func _build_bell_tower(pos: Vector3) -> void:
 
 
 ## 梨販的攤子：木桌、布篷、一盞暖燈、一個披斗篷的人影（之後換成角色）。正面朝 +Z（出生點）。
+var stall_crates: int = 0
+
+
 func _build_pear_stall(pos: Vector3) -> void:
 	var wood := look.mat(FrostbridgeLook.WOOD)
-	_batch.add_box_at(Vector3(1.6, 0.9, 0.8), pos + Vector3(0, 0.45, 0), wood)
+	# 攤桌與旁邊疊著的木箱：橫排木板＋角條（door.gdshader 的木箱模式，D-077），不再是素面方塊
+	var crates := look.door()
+	var table_pos: Vector3 = pos + Vector3(0, 0.45, 0)
+	_batch.add_box_tinted(Vector3(1.6, 0.9, 0.8), table_pos, crates, FrostbridgeLook.crate_tint(table_pos), true)
+	stall_crates = 1
+	for c: Array in [[Vector3(1.25, 0.3, -0.15), 0.6], [Vector3(1.3, 0.24, 0.55), 0.48], [Vector3(1.22, 0.82, -0.12), 0.44]]:
+		var cpos: Vector3 = pos + (c[0] as Vector3)
+		var side: float = float(c[1])
+		_batch.add_box_tinted(Vector3(side, side, side), cpos, crates, FrostbridgeLook.crate_tint(cpos), true)
+		stall_crates += 1
 	_batch.add_box_at(Vector3(1.9, 0.06, 1.2), pos + Vector3(0, 2.1, 0.1), look.mat(Color(0.32, 0.12, 0.1)), false)
 	for x: float in [-0.85, 0.85]:
 		_batch.add_box_at(Vector3(0.07, 2.1, 0.07), pos + Vector3(x, 1.05, 0.55), wood, false)

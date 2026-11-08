@@ -28,9 +28,9 @@ func add_box_at(size: Vector3, pos: Vector3, mat: Material, collide: bool = true
 	add_box(size, Transform3D(Basis.IDENTITY, pos), mat, collide)
 
 
-## 帶頂點色的方塊（不加碰撞）：每個方塊的資料放在頂點色，shader 用 COLOR 讀（例如窗，D-066）。
-## 同一個材質的方塊要全部用這個方法加（合併後的頂點格式才一致）。
-func add_box_tinted(size: Vector3, pos: Vector3, mat: Material, tint: Color) -> void:
+## 帶頂點色的方塊：每個方塊的資料放在頂點色，shader 用 COLOR 讀（例如窗，D-066）。
+## 同一個材質的方塊要全部用這個方法加（合併後的頂點格式才一致）。collide=true 時加碰撞盒（木箱、攤桌）。
+func add_box_tinted(size: Vector3, pos: Vector3, mat: Material, tint: Color, collide: bool = false) -> void:
 	var box := BoxMesh.new()
 	box.size = size
 	var arrays: Array = box.get_mesh_arrays()
@@ -41,6 +41,10 @@ func add_box_tinted(size: Vector3, pos: Vector3, mat: Material, tint: Color) -> 
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	add_mesh(mesh, Transform3D(Basis.IDENTITY, pos), mat)
+	if collide:
+		var shape := BoxShape3D.new()
+		shape.size = size
+		_shapes.append([Transform3D(Basis.IDENTITY, pos), shape])
 
 
 ## 圓柱（top_radius=0 是圓錐）；碰撞用圓柱形狀（取較大半徑）。

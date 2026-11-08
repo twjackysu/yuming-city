@@ -67,6 +67,22 @@ func test_tinted_boxes_keep_vertex_color_and_uv() -> void:
 	await tree.process_frame
 
 
+## D-077：木箱要能擋人——帶頂點色的方塊可以選擇加碰撞盒；木箱的頂點色 r＝0（door.gdshader 的木箱模式）。
+func test_tinted_box_optional_collision_and_crate_tint() -> void:
+	var batch := StaticBatch.new()
+	var crate := ShaderMaterial.new()
+	batch.add_box_tinted(Vector3(0.6, 0.6, 0.6), Vector3(1, 0.3, 2), crate, FrostbridgeLook.crate_tint(Vector3(1, 0.3, 2)))
+	assert_eq(batch.shape_count(), 0, "預設不加碰撞（窗、門）")
+	batch.add_box_tinted(Vector3(0.6, 0.6, 0.6), Vector3(3, 0.3, 2), crate, FrostbridgeLook.crate_tint(Vector3(3, 0.3, 2)), true)
+	assert_eq(batch.shape_count(), 1, "collide=true 加一個碰撞盒")
+	var t: Color = FrostbridgeLook.crate_tint(Vector3(4.5, 0.45, -1.0))
+	assert_eq(t.r, 0.0, "木箱模式 r＝0")
+	assert_eq(t, FrostbridgeLook.crate_tint(Vector3(4.5, 0.45, -1.0)), "同一個位置顏色固定")
+	var d: Color = FrostbridgeLook.door_tint(Vector3(4.5, 0.45, -1.0))
+	assert_true(is_equal_approx(t.g, d.g) and is_equal_approx(t.b, d.b), "木色深淺與舊不舊跟門用同一套雜湊")
+	assert_eq(d.r, 1.0, "門 r＝1")
+
+
 func test_window_tint_is_deterministic_and_in_range() -> void:
 	var a: Color = FrostbridgeLook.window_tint(true, Vector3(4.2, 1.6, -12.0), 1.5)
 	assert_true(a.is_equal_approx(FrostbridgeLook.window_tint(true, Vector3(4.2, 1.6, -12.0), 1.5)), "同位置同結果")

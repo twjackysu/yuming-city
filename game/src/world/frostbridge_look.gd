@@ -160,6 +160,12 @@ static func door_tint(pos: Vector3) -> Color:
 	return Color(1.0, h1, h2, 1.0)
 
 
+## 木箱／攤桌的頂點色（door.gdshader 的木箱模式，D-077）：r＝0、g 木色深淺、b 舊不舊（位置雜湊）。
+static func crate_tint(pos: Vector3) -> Color:
+	var t: Color = door_tint(pos)
+	return Color(0.0, t.g, t.b, 1.0)
+
+
 ## 一扇窗的頂點色：lit 亮或暗、energy 發光強度（0～4）。色溫、窗簾、亮度起伏用位置雜湊決定
 ## （不動關卡的 _rng，房子配置不變）；約四成的亮窗拉了半邊窗簾。
 static func window_tint(lit: bool, pos: Vector3, energy: float) -> Color:
