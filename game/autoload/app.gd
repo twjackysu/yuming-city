@@ -9,6 +9,8 @@ extends Node
 signal device_changed(device: int)
 
 var last_device: int = InputGlyphs.Device.KBM
+## 最後動過的手把編號（右搖桿鏡頭讀這支；沒有手把事件前是 0）
+var last_pad: int = 0
 var screenshot_path: String = ""
 var screenshot_frames: int = 60
 var _frame: int = 0
@@ -28,6 +30,8 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	var d: int = InputGlyphs.device_of_event(event)
+	if d == InputGlyphs.Device.PAD and event.device >= 0:
+		last_pad = event.device
 	if d >= 0:
 		set_device(d)
 	# 開發用：F5 重新載入戰鬥數值（user://tuning.json 覆寫，D-014）

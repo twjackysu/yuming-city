@@ -56,6 +56,32 @@ func test_ui_actions_have_pad_buttons() -> void:
 	assert_true(a.is_action_pressed("ui_accept"), "套用按鍵設定後 A 仍是確認")
 
 
+## 玩家的手把不一定是 0 號（Windows 上有其他 HID 裝置或 Steam Input 虛擬手把時）：任何一支都要能玩。
+func test_any_controller_device_matches() -> void:
+	InputSetup.apply_bindings(InputSetup.defaults())
+	var x := InputEventJoypadButton.new()
+	x.device = 1
+	x.button_index = JOY_BUTTON_X
+	x.pressed = true
+	assert_true(x.is_action_pressed("attack"), "1 號手把的 X 也是揮擊")
+	var a := InputEventJoypadButton.new()
+	a.device = 2
+	a.button_index = JOY_BUTTON_A
+	a.pressed = true
+	assert_true(a.is_action_pressed("interact") and a.is_action_pressed("ui_accept"), "2 號手把的 A 也是互動／確認")
+	var stick := InputEventJoypadMotion.new()
+	stick.device = 1
+	stick.axis = JOY_AXIS_LEFT_Y
+	stick.axis_value = -1.0
+	assert_true(stick.is_action_pressed("move_forward"), "1 號手把的左搖桿也能走")
+	var before: int = App.last_pad
+	var before_device: int = App.last_device
+	App._input(x)
+	assert_eq(App.last_pad, 1, "右搖桿鏡頭跟著最後動過的手把")
+	App.last_pad = before
+	App.set_device(before_device)
+
+
 func _axis_value(action: String) -> float:
 	for ev: InputEvent in InputMap.action_get_events(action):
 		if ev is InputEventJoypadMotion:

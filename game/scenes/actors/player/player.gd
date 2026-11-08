@@ -143,7 +143,7 @@ func _add_look(delta_look: Vector2, from_mouse: bool = false) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var pad := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+	var pad := Vector2(Input.get_joy_axis(App.last_pad, JOY_AXIS_RIGHT_X), Input.get_joy_axis(App.last_pad, JOY_AXIS_RIGHT_Y))
 	if lock_target != null:
 		if _pad_flick_armed and absf(pad.x) >= LOCK_FLICK_PAD:
 			switch_lock(1 if pad.x > 0.0 else -1)
