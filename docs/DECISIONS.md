@@ -2,6 +2,12 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-080　2026-11-08　路燈改成方形燈籠、門邊掛燈加鐵框
+
+- 決策：路燈柱頂的發光球換成方形燈籠（鐵底座 0.3 m、發光玻璃 0.24×0.34、四角 2.5 cm 細鐵條、鐵頂板、八角形尖頂＋一小片雪）；門邊掛燈的發光方塊外面也加四角鐵條（`_cage_bars`）。鐵件用門邊掛燈原本的鐵材質、尖頂用屋頂材質，小鎮 mesh 數不變；OmniLight 的位置與參數都不變（地面照明不變）。
+- 理由：NEXT 的小項目、第二輪盤點的已知候選。近看時發光球像除錯用的標記；概念圖的燈是有框的燈籠。截圖（裁切放大）看得出底座、鐵條、尖頂。
+- 影響：`test_frostbridge` 檢查 `street_lanterns == 10`。
+
 ## D-079　2026-11-08　本 session 連不到 notofonts/noto-cjk 時，本機字型改用 apt 的 Noto CJK（不進 git）
 
 - 決策：第 19 輪的雲端 session 對 `github.com/notofonts/noto-cjk` 的 release 一律回 504（GitHub API 回「這個 session 沒開這個 repo 的存取」，`add_repo` 也不在工具裡），`scripts/gen_fonts.py` 下載失敗、`check.sh` 跑不起來。本機改用 `apt-get install fonts-noto-cjk fonts-noto-cjk-extra` 的 TTC（同一個字族的 TC 那一套，Serif SemiBold／Sans Regular／Medium），用 scratchpad 的小腳本照 `gen_fonts.py` 的字元集合子集化、寫進 gitignore 的 `game/assets/generated/fonts/` 並寫上相同的 `.stamp`，`check.sh` 就照常跑。**repo 裡的 `gen_fonts.py`、CI 都不改**（CI 照舊從 release 下載、有 cache）。

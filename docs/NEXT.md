@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 19 輪）最後一次程式 push 是 0fbccbc（設定頁換值的「叮」），run 42469007583——**先確認它整個綠燈**（PROGRESS 第 19 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `gen_sfx.py`（新增 `ui_tick`）、`sfx.gd` 的 NAMES、`settings_menu.gd` 的 `tick()` 與一個測試斷言，必要時 `git revert 0fbccbc`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
+- 上一輪（第 19 輪）最後一次程式 push 是 0b88bb6（路燈燈籠），**先確認它整個綠燈**（PROGRESS 第 19 輪有補記收尾時的狀態；紅了先看 smoke-export.log；這個 commit 只改了 `frostbridge.gd` 的 `_lamp_post`、`_door_lantern`、新增 `_cage_bars` 與一個測試斷言，必要時 `git revert 0b88bb6`）；照常先看最近的 CI（GitHub MCP `actions_list`）。
 - **字型下載 504（D-079）**：第 19 輪的 session 連不到 `notofonts/noto-cjk` 的 release（504／API 說沒有這個 repo 的存取），`scripts/check.sh` 會在 `gen_fonts.py` 掛掉。先試一次 `scripts/check.sh`；如果又是 504：`apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra`，再用 D-079 的做法（從 `/usr/share/fonts/opentype/noto/Noto{Serif,Sans}CJK-*.ttc` 取 TC 那一套、照 `gen_fonts.collect_chars()` 子集化、寫 `game/assets/generated/fonts/` 與相同的 `.stamp`；`import gen_fonts` 會留下 `scripts/__pycache__/`，記得刪掉）。**不要改 repo 的 `gen_fonts.py`**，CI 照常下載。改了 i18n CSV 後要重跑。
 - `docs/PROGRESS.md` 第 18 輪把第 8～13 輪合併成摘要了；超過約 300 行時再把第 14～18 輪合併。
 - CI 有「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。「Steam 膠囊圖替代版」步驟是 `continue-on-error`，失敗不會讓 CI 變紅——偶爾看一下 artifact 裡有沒有 `steam/*.png`。
@@ -20,8 +20,8 @@
 
 ## 1. 「第一眼」打磨（照 PLAN 階段 2 的盤點表，從上往下）
 
-- 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
-- **下一項：第二輪「第一眼」盤點**（第一輪 10 項全部完成）。照 `docs/ART_QUALITY_BAR.md` 再截一次：標題、設定（新）、暫停選單（跟新設定頁的風格一致嗎？標題字、分組、面板邊框）、HUD（戰鬥中、重現提示）、廣場、主街、石階、北街救援、送葬者戰、石拱預覽、日記、收束（艾妲、地窖）。把新發現寫成 PLAN 階段 2 的「第二輪盤點」表（5～8 項，依每個畫面看得到的程度排序），本輪先做最上面 1～2 項。已知候選：門口掛燈與路燈燈泡還是發光方塊／球（可以用窗的 shader 加燈罩框，`look.glow(LAMP, 3.2)`）；梨販攤正面在夜裡偏暗、木箱的木板紋要靠很近才看得到（攤桌前加一點補光？注意燈數上限 40）；標題畫面剪影裡的亮窗是平的小方塊（`title_fog.gdshader`）；暫停選單還是一排按鈕。
+- 第 17 輪：窗（D-066）、選單焦點（D-067）、雪（D-068）、門（D-070）、關卡 UI 套上 Theme（D-071）。第 18 輪：過肩鏡頭（D-072）、日記舊紙（D-073）、截圖構圖旗標（D-074）、送葬者兜帽霜光（D-075）。第 19 輪：設定頁分組與「‹ 值 ›」（D-076）、廣場石框與鐘紋＋井＋木箱模式（D-077）、選單換值的「叮」（D-078）、路燈燈籠（D-080）。新的「一個 shader＋頂點色」物件照窗與門的模式：`StaticBatch.add_box_tinted`（要擋人就 `collide=true`）＋`FrostbridgeLook.xxx_tint(pos)`（位置雜湊，不動 `_rng`），面內座標 `fract(UV × (3, 2))`。木頭東西用 `look.door()`＋`crate_tint`（r＝0 木箱模式）。小鎮合併 mesh 上限 24：新材質盡量沿用既有的（`look.mat(color, rough)` 會依參數快取）。
+- **下一項：第二輪「第一眼」盤點**（第一輪 10 項全部完成）。照 `docs/ART_QUALITY_BAR.md` 再截一次：標題、設定（新）、暫停選單（跟新設定頁的風格一致嗎？標題字、分組、面板邊框）、HUD（戰鬥中、重現提示）、廣場、主街、石階、北街救援、送葬者戰、石拱預覽、日記、收束（艾妲、地窖）。把新發現寫成 PLAN 階段 2 的「第二輪盤點」表（5～8 項，依每個畫面看得到的程度排序），本輪先做最上面 1～2 項。已知候選：梨販攤正面在夜裡偏暗、木箱的木板紋要靠很近才看得到（攤桌前加一點補光？注意燈數上限 40）；標題畫面剪影裡的亮窗是平的小方塊（`title_fog.gdshader`）；暫停選單還是一排按鈕。
 - 過肩鏡頭的後續：大型敵人（送葬者）站在諾恩正後方時鏡頭可能進到他模型裡（SpringArm 只看碰撞形狀）；等 Jacky 回饋，必要時讓離鏡頭 < 1 m 的敵人淡出。鏡頭參數在 `player.gd` 的 `SHOULDER_*`。
 - 雪粒閃點在實機會動的鏡頭下會不會太閃，等 Jacky 回饋（`sparkle_energy`）。選單的「叮」（`ui_tick`，-15 dB）太吵或太小聲也等回饋；要不要讓暫停／標題選單的焦點移動也有聲音，一起決定（D-078）。
 - 新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`（D-065）。
