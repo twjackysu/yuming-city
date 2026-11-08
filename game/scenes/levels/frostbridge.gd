@@ -556,7 +556,11 @@ func _snow_bank(from: Vector3, to: Vector3, wall: Vector3, reach: float) -> void
 		var w: float = out + SNOW_BANK_INTO_WALL
 		var hgt: float = lerpf(0.13, 0.24, _house_hash(c0, 403.0))
 		var center: Vector3 = from + dir * t - wall * (w * 0.5 - SNOW_BANK_INTO_WALL)
-		var mesh: ArrayMesh = SnowMound.build(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, Vector2(0.0, 0.5 * toward_wall), true)
+		# D-133：UV 是雪帶自己的公尺座標（沿著牆、離牆多遠），shader 沿著雪帶畫一串腳印；
+		# 每條雪帶的起點加一個位置雜湊的偏移，各條雪帶的腳印不會排成一樣
+		var along0: float = t + _house_hash(from, 404.0) * 60.0
+		var mesh: ArrayMesh = SnowMound.build_bank(seg_len, w, hgt, c0.x * 1.7 + c0.z * 3.3, toward_wall,
+			along0, w * 0.5 - SNOW_BANK_INTO_WALL)
 		_batch.add_mesh(mesh, Transform3D(basis, center), look.snow())
 		snow_banks.append(Vector4(center.x, hgt, center.z, out))
 

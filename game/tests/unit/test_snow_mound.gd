@@ -165,3 +165,24 @@ func test_on_tiles_marks_slope_meters() -> void:
 	for n: int in verts.size():
 		assert_true(uv2s[n].y > 5.0, "屋瓦上的雪 UV2.y 都大於 5（%.3f）" % uv2s[n].y)
 		assert_true(absf(uv2s[n].y - SnowMound.TILES_MARK - verts[n].x) < 0.001, "UV2.y－TILES_MARK＝模型 X（%.3f vs %.3f）" % [uv2s[n].y, verts[n].x])
+
+
+## 街邊雪帶的腳印座標（D-133）：UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)。
+## 沿著牆的座標跟世界一致（重疊的兩段算出來一樣，腳印接得起來）；離牆越遠 UV.y 越大；UV2 照舊。
+func test_bank_uv_is_wall_meters() -> void:
+	# 牆在 -Z（toward_wall＝-1）：越往 +Z 離牆越遠
+	var arrays: Array = SnowMound.build_bank(2.4, 1.6, 0.2, 5.0, -1.0, 12.5, 0.5).surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+	var uv2s: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+	assert_eq(uvs.size(), verts.size(), "每個頂點都有 UV")
+	assert_true(arrays[Mesh.ARRAY_INDEX] != null, "保留索引（StaticBatch 合併要有索引）")
+	for n: int in verts.size():
+		assert_true(uvs[n].x > 500.0, "UV.x 有 BANK_MARK（其他雪在 0～1）")
+		assert_true(absf(uvs[n].x - SnowMound.BANK_MARK - 12.5 - verts[n].x) < 0.001, "沿著牆的公尺數")
+		assert_true(absf(uvs[n].y - (0.5 + verts[n].z)) < 0.001, "離牆多遠（%.3f）" % uvs[n].y)
+	var plain: PackedVector2Array = SnowMound.build(2.4, 1.6, 0.2, 5.0, Vector2(0.0, -0.5), true).surface_get_arrays(0)[Mesh.ARRAY_TEX_UV2]
+	assert_eq(uv2s, plain, "UV2（圈數、往牆那側多遠）跟 build 一樣")
+	var other: PackedVector2Array = SnowMound.build(2.4, 1.6, 0.2, 5.0).surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+	for uv: Vector2 in other:
+		assert_true(uv.x < 2.0, "其他雪堆的 UV 不會被當成雪帶")

@@ -19,12 +19,16 @@ uniform float edge_start = 0.5;
 // 雪面不是光滑的白枕頭（D-126）：
 // - 風吹的紋：順著風向的細波（波長約 22 cm，一邊緩一邊陡），一片一片的、有的地方平；只動法線與一點亮暗
 // - 街邊雪帶（UV2.y＝往牆那側多遠，-1＝靠街、+1＝靠牆；其他雪＝0）：靠牆的角落照不到天光、暗一點偏藍，
-//   靠街那側才有腳印凹痕（踩實、偏灰）與髒雪
+//   靠街那側才有腳印（一串，D-133：踩實、偏灰）與髒雪
 uniform vec2 wind_dir = vec2(0.8, 0.6);
 uniform float ripple_freq = 4.5;
 uniform float ripple_strength = 0.45;
 uniform float wall_shade = 0.55;
 uniform float footprint_density = 0.4;
+// 腳印排成一串（D-133）：街邊雪帶的 UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)；
+// 有人沿著雪帶靠街那側走過——左右交錯、每步 step_len、一串 8 步，有 footprint_density 的機率出現
+uniform float trail_from_wall = 0.5;
+uniform float step_len = 0.36;
 // 鋪在屋瓦上的薄雪（D-127；SnowMound on_tiles：UV2.y＝10＋沿斜面的公尺數）：
 // 每排屋瓦的下緣把雪撐出一道橫紋（暗線），雪薄的地方一塊塊露出屋瓦
 uniform float tile_row = 0.26;
@@ -33,6 +37,7 @@ varying vec3 world_pos;
 varying vec3 world_normal;
 varying float mound_k;
 varying float lean;
+varying vec2 bank_uv;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -64,6 +69,7 @@ void vertex() {
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	mound_k = UV2.x;
 	lean = UV2.y;
+	bank_uv = UV;
 }
 
 void fragment() {
@@ -94,19 +100,36 @@ void fragment() {
 	// 波面的斜率（往風向）：d/du sin(arg)；乘上 ripple_strength 才是法線傾斜的量
 	vec2 ripple_grad = wd * cos(arg) * (1.0 + 0.55 * cos(ph)) * ripple_amp;
 
-	// 腳印（D-126）：靠街那側（lean < 0）50 cm 的格子裡偶爾一個橢圓凹痕，方向大致順著格子雜湊
+	// 腳印（D-126 → D-133）：不再是散落的單一凹痕，而是街邊雪帶靠街那側一串左右交錯的腳印
 	float street = 1.0 - smoothstep(-0.55, -0.15, bank_lean);
-	vec2 fcell = floor(p * 2.0);
-	vec2 fl = fract(p * 2.0) - 0.5 - (vec2(hash(fcell + 2.3), hash(fcell + 8.9)) - 0.5) * 0.35;
-	float fa = hash(fcell + 4.1) * 3.1416;
-	vec2 fax = vec2(cos(fa), sin(fa));
+	float is_bank = step(500.0, bank_uv.x);
+	float bs = bank_uv.x - 1000.0;  // 沿著牆的公尺數
+	float bd = bank_uv.y;  // 離牆腳線多遠（往街那側為正）
+	float k = floor(bs / step_len);
+	float trail_on = step(1.0 - footprint_density, hash(vec2(floor(k / 8.0), 7.3)));
+	// 偶爾一步被風吹平
+	float print_on = step(0.12, hash(vec2(k, 3.1)));
+	// 走的線慢慢偏（不是一條直線）；左右腳各偏 9 cm、腳尖稍微朝外
+	float side = mod(k, 2.0) < 0.5 ? -1.0 : 1.0;
+	float line_d = trail_from_wall + (noise(vec2(bs * 0.35, 1.7)) - 0.5) * 0.2 + side * 0.09;
+	vec2 fl = vec2(bs - (k + 0.5) * step_len - (hash(vec2(k, 5.5)) - 0.5) * 0.06, bd - line_d);
+	float toe = side * 0.12;
+	vec2 fax = vec2(cos(toe), sin(toe));
 	vec2 fq = vec2(dot(fl, fax) / 0.13, dot(fl, vec2(-fax.y, fax.x)) / 0.055);
 	float fr = length(fq);
-	float has_print = step(1.0 - footprint_density, hash(fcell + 13.7)) * street * up;
+	float has_print = is_bank * trail_on * print_on * up;
 	float print_lod = 1.0 - smoothstep(0.02, 0.05, max(fwidth(p.x), fwidth(p.y)));
 	float dent = (1.0 - smoothstep(0.75, 1.05, fr)) * has_print;
-	// 凹痕的內壁：高度往外升高，梯度朝外（fr 對 p 的梯度方向）
-	vec2 dent_dir = fax * (fq.x / 0.13) + vec2(-fax.y, fax.x) * (fq.y / 0.055);
+	// 凹痕的內壁：高度往外升高，梯度朝外。fq 在雪帶座標（沿著牆、離牆），用螢幕空間導數換回世界 xz：
+	// 雪帶座標對世界 xz 是線性的，解 [dFdx(p); dFdy(p)] · g = [dFdx(座標), dFdy(座標)]
+	vec2 dpx = dFdx(p);
+	vec2 dpy = dFdy(p);
+	float det = dpx.x * dpy.y - dpx.y * dpy.x;
+	float inv = abs(det) > 1e-10 ? 1.0 / det : 0.0;
+	vec2 gs = vec2(dpy.y * dFdx(bs) - dpx.y * dFdy(bs), -dpy.x * dFdx(bs) + dpx.x * dFdy(bs)) * inv;
+	vec2 gd = vec2(dpy.y * dFdx(bd) - dpx.y * dFdy(bd), -dpy.x * dFdx(bd) + dpx.x * dFdy(bd)) * inv;
+	vec2 d_local = fax * (fq.x / 0.13) + vec2(-fax.y, fax.x) * (fq.y / 0.055);
+	vec2 dent_dir = gs * d_local.x + gd * d_local.y;
 	float rim = smoothstep(0.55, 0.95, fr) * (1.0 - smoothstep(0.95, 1.15, fr)) * has_print * print_lod;
 	vec2 dent_grad = normalize(dent_dir + vec2(1e-5)) * rim * 0.9;
 
@@ -119,9 +142,10 @@ void fragment() {
 	float ground = max(1.0 - smoothstep(0.25, 0.6, world_pos.y), street);
 	float dirt = smoothstep(0.62, 0.78, fbm(p * 1.7 + 31.0)) * ground * step(0.5, an.y);
 	// 腳印裡踩實的雪：偏灰、暗一點
-	dirt = max(dirt, dent * print_lod * 0.55);
+	dirt = max(dirt, dent * print_lod * 0.45);
 	col = mix(col, dirt_color, dirt * 0.55);
-	col *= 1.0 - 0.3 * dent * print_lod;
+	// 一串腳印比散落的一個個多，凹痕淡一點（D-133；原本 0.3，看起來像一排黑洞）
+	col *= 1.0 - 0.22 * dent * print_lod;
 	// 靠牆的角落照不到天光：暗、偏藍
 	float wall_k = smoothstep(0.1, 0.6, bank_lean);
 	col = mix(col, col * shadow_tint * 0.75, wall_k * wall_shade);
