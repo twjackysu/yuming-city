@@ -271,6 +271,38 @@ func test_north_street_collapses() -> void:
 	await _free(level)
 
 
+## D-091：北街的房子陷落前是完整屋頂、陷落後換成破屋頂（朝街那面斷成幾片、一片掉光露出斷椽）。
+func test_collapsed_houses_show_broken_roofs() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	for house: Node3D in level._north_houses:
+		var roof: Node3D = house.get_node_or_null("Roof") as Node3D
+		var ruin: Node3D = house.get_node_or_null("Ruin") as Node3D
+		assert_true(roof != null and ruin != null, "%s 有完整與破掉兩份屋頂" % house.name)
+		assert_true(roof.visible and not ruin.visible, "陷落前看到完整屋頂")
+		var info: Dictionary = house.get_meta("ruin", {})
+		assert_true(int(info.get("segments", 0)) >= 3, "朝街那面斷成至少三片（%d）" % int(info.get("segments", 0)))
+		assert_eq(int(info.get("holes", 0)), 1, "其中一片整個掉進屋裡")
+		assert_true(int(info.get("rafters", 0)) >= 2, "洞裡露出斷掉的椽子（%d）" % int(info.get("rafters", 0)))
+		var snow_meshes: int = 0
+		var meshes: int = 0
+		for c: Node in ruin.get_children():
+			var mi: MeshInstance3D = c as MeshInstance3D
+			if mi == null:
+				continue
+			meshes += 1
+			var sm: ShaderMaterial = mi.material_override as ShaderMaterial
+			if sm != null and sm.shader.resource_path == FrostbridgeLook.SNOW_SHADER:
+				snow_meshes += 1
+		assert_eq(snow_meshes, 1, "破屋頂上的雪用積雪 shader")
+		assert_true(meshes <= 5, "破屋頂合併成少數幾個 mesh（%d）" % meshes)
+	level.collapse_north_street(false)
+	for house: Node3D in level._north_houses:
+		assert_false((house.get_node("Roof") as Node3D).visible, "%s 陷落後完整屋頂藏起來" % house.name)
+		assert_true((house.get_node("Ruin") as Node3D).visible, "%s 陷落後看到破屋頂" % house.name)
+	await _free(level)
+
+
 ## 截圖旗標 `--convoy` 把主線推進到送葬者戰：HUD 目標是護送車隊（之前停在「到廣場找梨販」）。
 func test_dev_advance_to_convoy() -> void:
 	var s := _session()

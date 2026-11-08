@@ -172,10 +172,22 @@ func collapse_north_street(animate: bool) -> void:
 			var t := create_tween().set_parallel()
 			t.tween_property(house, "position", end_pos, 1.6).set_delay(i * 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 			t.tween_property(house, "rotation_degrees", tilt, 1.6).set_delay(i * 0.12)
+			t.tween_callback(_break_roof.bind(house)).set_delay(i * 0.12 + 0.35)
 		else:
 			house.position = end_pos
 			house.rotation_degrees = tilt
+			_break_roof(house)
 		i += 1
+
+
+## 陷落的房子換上破屋頂（D-091）：有 Roof／Ruin 兩份的才換（霜橋鎮北街）。
+func _break_roof(house: Node3D) -> void:
+	var roof: Node3D = house.get_node_or_null("Roof") as Node3D
+	var ruin: Node3D = house.get_node_or_null("Ruin") as Node3D
+	if roof == null or ruin == null:
+		return
+	roof.visible = false
+	ruin.visible = true
 
 
 func is_north_collapsed() -> bool:
