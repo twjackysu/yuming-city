@@ -33,6 +33,28 @@ func test_theme_button_and_slider_styles() -> void:
 		assert_true(k.get_pixel(0, 0).a < 0.05 and k.get_pixel(k.get_width() / 2, k.get_height() / 2).a > 0.9, "把手是圓的（角落透明）")
 
 
+## D-071：關卡裡的 UI 掛在 Node3D／CanvasLayer 底下，root.theme 傳不過去；
+## App 把同一套 Theme 併進引擎預設 Theme，所以那裡的 Label／Button 也用遊戲字型與焦點樣式。
+func test_controls_under_canvas_layer_get_game_theme() -> void:
+	var n3 := Node3D.new()
+	tree.root.add_child(n3)
+	var layer := CanvasLayer.new()
+	n3.add_child(layer)
+	var label := Label.new()
+	var button := Button.new()
+	layer.add_child(label)
+	layer.add_child(button)
+	await tree.process_frame
+	assert_true(button.get_theme_stylebox("focus") is StyleBoxTexture, "CanvasLayer 底下的按鈕也是暖金色焦點框")
+	assert_true(button.get_theme_color("font_focus_color").r > button.get_theme_color("font_focus_color").b, "焦點文字暖色")
+	var ui: Font = UiFonts.load_font(UiFonts.UI_SANS)
+	if ui != null:
+		assert_true(label.get_theme_font("font") == ui, "CanvasLayer 底下的 Label 用遊戲的 UI 黑體（不是引擎預設字型＋系統字型）")
+	assert_eq(label.get_theme_font_size("font_size"), 22, "預設字級一致")
+	n3.queue_free()
+	await tree.process_frame
+
+
 ## 標題畫面：遊戲啟動時全域 Theme 已套用，「新遊戲」拿到焦點時畫的是這個焦點框。
 func test_title_menu_uses_theme_focus() -> void:
 	var boot: Control = (load("res://scenes/boot/boot.tscn") as PackedScene).instantiate() as Control

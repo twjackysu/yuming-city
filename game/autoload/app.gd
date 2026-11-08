@@ -18,7 +18,11 @@ var _frame: int = 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # 暫停中也要能截圖
-	get_tree().root.theme = UiFonts.build_theme()
+	var theme: Theme = UiFonts.build_theme()
+	get_tree().root.theme = theme
+	# root.theme 傳不過 Node3D／CanvasLayer（關卡裡的 HUD、對話框、暫停選單都在那底下），
+	# 所以也併進引擎的預設 Theme：沒有 theme 來源的 Control 都會用到同一套字型與焦點樣式（D-071）
+	ThemeDB.get_default_theme().merge_with(theme)
 	InputSetup.ensure_actions()
 	var args: Dictionary = parse_user_args(OS.get_cmdline_user_args())
 	screenshot_path = str(args.get("screenshot", ""))
