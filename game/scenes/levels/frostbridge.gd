@@ -1111,6 +1111,8 @@ static func _house_hash(p: Vector3, salt: float) -> float:
 func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: float, roof_h: float,
 		dir: Vector3, face: Vector3, prism_basis: Basis) -> Dictionary:
 	var roof_mat := look.mat(FrostbridgeLook.ROOF)
+	# 斷開的屋面與掉下來的碎片用跟完整屋頂同一套屋瓦（D-110）：RoofMesh.slab 的頂面 UV 是公尺
+	var tiles := look.roof_tiles()
 	var wood := look.mat(FrostbridgeLook.WOOD)
 	var snow := look.snow()
 	var up := Vector3.UP
@@ -1130,7 +1132,7 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 	var bn: Vector3 = back_info[1]
 	var bb := Basis(bu, bn, bu.cross(bn))
 	var back_c: Vector3 = ridge - bu * (slope_len * 0.5) + bn * (t * 0.5)
-	batch.add_box(Vector3(slope_len, t, span), Transform3D(bb, back_c), roof_mat, false)
+	batch.add_mesh(RoofMesh.slab(slope_len, t, span), Transform3D(bb, back_c), tiles)
 	batch.add_box(Vector3(slope_len * 0.78, 0.1, span * 0.97), Transform3D(bb, back_c + bu * (slope_len * 0.08) + bn * (t * 0.5 + 0.05)), snow, false)
 	# 兩端山牆（三角形，深色）＋屋脊梁
 	for side: float in [-1.0, 1.0]:
@@ -1147,6 +1149,7 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 	var fu: Vector3 = front_info[0]
 	var fn: Vector3 = front_info[1]
 	var kinds: Array[String] = []
+	var ruin_tiles: int = 1
 	for i: int in k:
 		var along: float = -span * 0.5 + seg_w * (float(i) + 0.5) + gap * float(i)
 		if i == hole:
@@ -1156,8 +1159,8 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 				var dp: Vector3 = up * (h + 0.3) + dir * (along + seg_w * lerpf(-0.4, 0.4, _ruin_hash(center, d, 21.0))) \
 					+ face * (s * lerpf(0.05, 0.75, _ruin_hash(center, d, 22.0)))
 				var db := Basis(up, _ruin_hash(center, d, 23.0) * TAU) * Basis(Vector3.RIGHT, lerpf(-0.3, 0.3, _ruin_hash(center, d, 24.0)))
-				batch.add_box(Vector3(lerpf(0.3, 0.6, _ruin_hash(center, d, 25.0)), 0.06, lerpf(0.2, 0.4, _ruin_hash(center, d, 26.0))),
-					Transform3D(db, dp), roof_mat, false)
+				batch.add_mesh(RoofMesh.slab(lerpf(0.3, 0.6, _ruin_hash(center, d, 25.0)), 0.06, lerpf(0.2, 0.4, _ruin_hash(center, d, 26.0))),
+					Transform3D(db, dp), tiles)
 			batch.add_mesh(SnowMound.build(0.75, 0.62, 0.2, _ruin_hash(center, i, 28.0) * 97.0),
 				Transform3D(Basis(up, _ruin_hash(center, i, 27.0) * TAU), up * (h + 0.27) + dir * along + face * (s * 0.4)), snow)
 			continue
@@ -1175,13 +1178,14 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 		var pb := Basis(u2, n2, u2.cross(n2))
 		pb = Basis(u2, deg_to_rad(lerpf(-1.0, 1.0, _ruin_hash(center, i, 6.0)) * (4.0 if sag else 1.5))) * pb
 		var pc: Vector3 = hinge - u2 * (plen * 0.5) + n2 * (t * 0.5)
-		batch.add_box(Vector3(plen, t, seg_w), Transform3D(pb, pc), roof_mat, false)
+		batch.add_mesh(RoofMesh.slab(plen, t, seg_w), Transform3D(pb, pc), tiles)
+		ruin_tiles += 1
 		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點＋屋簷那端一小團（正要滑下去）。
 		# 都是中間厚、邊緣薄到 0 的低面數雪堆（SnowMound，D-102），不再是直邊的雪板
 		var snow_len: float = plen * lerpf(0.5, 0.72, _ruin_hash(center, i, 7.0))
 		var shift: float = (plen - snow_len) * 0.5 * (_ruin_hash(center, i, 8.0) * 2.0 - 1.0) * 0.8
 		var top: Vector3 = pc + pb.y * (t * 0.5)
-		batch.add_mesh(SnowMound.build(snow_len, seg_w * lerpf(0.78, 0.95, _ruin_hash(center, i, 9.0)), 0.08, _ruin_hash(center, i, 10.0) * 97.0),
+		batch.add_mesh(SnowMound.build(snow_len, seg_w * lerpf(0.78, 0.95, _ruin_hash(center, i, 9.0)), 0.1, _ruin_hash(center, i, 10.0) * 97.0),
 			Transform3D(pb, top + pb.x * shift), snow)
 		var side: float = 1.0 if _ruin_hash(center, i, 15.0) < 0.5 else -1.0
 		var p2_len: float = plen * lerpf(0.25, 0.42, _ruin_hash(center, i, 16.0))
@@ -1221,7 +1225,7 @@ func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: 
 			rafters += 2
 		j += 1
 		along_r += 0.75
-	return {"segments": k, "holes": kinds.count("hole"), "kinds": kinds, "rafters": rafters}
+	return {"segments": k, "holes": kinds.count("hole"), "kinds": kinds, "rafters": rafters, "tiled": ruin_tiles}
 
 
 ## 破屋頂用的位置雜湊（0～1）：同一棟房子、同一個 i／salt 永遠同一個值。

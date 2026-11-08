@@ -299,6 +299,7 @@ func test_collapsed_houses_show_broken_roofs() -> void:
 		assert_eq(int(info.get("holes", 0)), 1, "其中一片整個掉進屋裡")
 		assert_true(int(info.get("rafters", 0)) >= 2, "洞裡露出斷掉的椽子（%d）" % int(info.get("rafters", 0)))
 		var snow_meshes: int = 0
+		var tiled_meshes: int = 0
 		var meshes: int = 0
 		for c: Node in ruin.get_children():
 			var mi: MeshInstance3D = c as MeshInstance3D
@@ -308,7 +309,12 @@ func test_collapsed_houses_show_broken_roofs() -> void:
 			var sm: ShaderMaterial = mi.material_override as ShaderMaterial
 			if sm != null and sm.shader.resource_path == FrostbridgeLook.SNOW_SHADER:
 				snow_meshes += 1
+			if sm != null and sm.shader.resource_path == FrostbridgeLook.ROOF_TILES_SHADER:
+				tiled_meshes += 1
 		assert_eq(snow_meshes, 1, "破屋頂上的雪用積雪 shader")
+		# D-110：斷開的屋面跟完整屋頂一樣有瓦（背面一片＋朝街那面沒掉光的幾片）
+		assert_eq(tiled_meshes, 1, "破屋頂的屋面用屋瓦 shader")
+		assert_eq(int(info.get("tiled", 0)), int(info.get("segments", 0)), "背面＋朝街那面沒掉進屋裡的每一片都有瓦（%d）" % int(info.get("tiled", 0)))
 		assert_true(meshes <= 5, "破屋頂合併成少數幾個 mesh（%d）" % meshes)
 	level.collapse_north_street(false)
 	for house: Node3D in level._north_houses:

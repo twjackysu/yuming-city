@@ -8,7 +8,8 @@ extends RefCounted
 ## bias：最高點往哪邊偏（以半長／半寬為 1；街邊雪帶用 (0, ±0.5) 讓靠牆那側高而陡、靠街那側低而緩，D-105）。
 
 const RINGS: int = 4
-const SEGMENTS: int = 14
+## 20 段（D-110；原本 14 段近看看得出多邊形）
+const SEGMENTS: int = 20
 ## 輪廓的「方」度：超橢圓的次方（2＝橢圓，越大越接近長方形）
 const SQUARENESS: float = 3.2
 ## 輪廓往內凹的最大比例（每段不同）
@@ -22,8 +23,13 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	var b: float = width * 0.5
 	var edge: PackedFloat32Array = PackedFloat32Array()
 	edge.resize(SEGMENTS)
+	# 輪廓往內凹：兩三個大的起伏＋一點點每段的雜訊（D-110；原本每段各自亂數，輪廓是鋸齒、近看像潑上去的白漆）
+	var ph1: float = _hash(seed, 80.0) * TAU
+	var ph2: float = _hash(seed, 81.0) * TAU
 	for i: int in SEGMENTS:
-		edge[i] = 1.0 - RAGGED * _hash(seed, float(i))
+		var th: float = TAU * float(i) / float(SEGMENTS)
+		var wave: float = 0.6 * sin(2.0 * th + ph1) + 0.3 * sin(3.0 * th + ph2) + 0.1 * (_hash(seed, float(i)) * 2.0 - 1.0)
+		edge[i] = 1.0 - RAGGED * (0.5 + 0.5 * wave)
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	# 中心（最高點稍微偏一點，雪堆不是正中間鼓起）
@@ -43,7 +49,7 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 			var x: float = lerpf(peak.x, c * rr, k * k) * a
 			var z: float = lerpf(peak.y, s * rr, k * k) * b
 			# 高度：中間平緩、靠邊緣才很快降到 0；外圈稍微低於 0（貼進斜面）
-			var hgt: float = height * pow(1.0 - k * k, 0.7) * lerpf(0.88, 1.08, _hash(seed, 60.0 + float(r * SEGMENTS + i)))
+			var hgt: float = height * pow(1.0 - k * k, 0.7) * lerpf(0.94, 1.05, _hash(seed, 60.0 + float(r * SEGMENTS + i)))
 			if r == RINGS:
 				hgt = -0.012
 			verts.append(Vector3(x, hgt, z))

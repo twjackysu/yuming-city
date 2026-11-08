@@ -42,3 +42,30 @@ func test_faces_point_outward() -> void:
 			good_normal += 1
 	assert_eq(good_face, 6, "每個三角形的正面朝外")
 	assert_eq(good_normal, 6, "法線朝外")
+
+
+## D-110：破屋頂斷開的屋面（RoofMesh.slab）——外形跟 BoxMesh 一樣；只有頂面的 UV 是公尺
+## （u＝沿屋簷、v＝從 -X 那端往上），其他面 (-1, -1)；每個三角形正面朝外、法線朝外。
+func test_slab_tiles_only_on_top() -> void:
+	var mesh: ArrayMesh = RoofMesh.slab(3.0, 0.16, 2.0)
+	var aabb: AABB = mesh.get_aabb()
+	assert_true(aabb.position.is_equal_approx(Vector3(-1.5, -0.08, -1.0)) and aabb.size.is_equal_approx(Vector3(3.0, 0.16, 2.0)), "外形跟 BoxMesh 一樣：%s" % aabb)
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+	assert_eq(verts.size(), 36, "六面各兩個三角形")
+	var top: int = 0
+	for i: int in verts.size():
+		if normals[i].y > 0.9:
+			top += 1
+			assert_true(absf(uvs[i].x - (verts[i].z + 1.0)) < 0.001 and absf(uvs[i].y - (verts[i].x + 1.5)) < 0.001, "頂面 UV 是公尺")
+		else:
+			assert_true(uvs[i].is_equal_approx(Vector2(-1.0, -1.0)), "其他面素面")
+	assert_eq(top, 6, "頂面兩個三角形")
+	var good: int = 0
+	for t: int in range(0, verts.size(), 3):
+		var center: Vector3 = (verts[t] + verts[t + 1] + verts[t + 2]) / 3.0
+		if Plane(verts[t], verts[t + 1], verts[t + 2]).normal.dot(center) > 0.0 and normals[t].dot(center) > 0.0:
+			good += 1
+	assert_eq(good, 12, "每個三角形正面與法線朝外")
