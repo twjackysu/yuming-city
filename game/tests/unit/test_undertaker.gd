@@ -374,6 +374,12 @@ func test_cut_down_falls_forward_then_sinks() -> void:
 	var origin: Vector3 = boss.global_position
 	var fell_count: Array[int] = [0]
 	boss.fell.connect(func() -> void: fell_count[0] += 1)
+	# 兜帽裡的霜光（D-075）：活著時亮著、不投影
+	var hood_light: OmniLight3D = boss._body.get_node("Torso/HoodLight") as OmniLight3D
+	assert_not_null(hood_light, "兜帽裡有一盞冷光")
+	assert_true(hood_light.light_energy > 0.5 and not hood_light.shadow_enabled, "亮著、不投影")
+	assert_not_null(boss._body.get_node_or_null("Torso/HoodEyeL"), "兜帽裡的霜光點（左）")
+	assert_not_null(boss._body.get_node_or_null("Torso/HoodEyeR"), "兜帽裡的霜光點（右）")
 	var prev_scale: float = Engine.time_scale
 	Engine.time_scale = 4.0
 	boss.health.apply_damage(boss.health.hp, {"kind": "kindling", "stagger": 0.0})
@@ -388,6 +394,7 @@ func test_cut_down_falls_forward_then_sinks() -> void:
 		await tree.process_frame
 	assert_true(boss.has_fallen, "倒地")
 	assert_eq(fell_count[0], 1, "倒地訊號一次")
+	assert_true(hood_light.light_energy < 0.01, "倒地時兜帽的霜光已經熄了（%.2f）" % hood_light.light_energy)
 	var hood: Node3D = null
 	for c: Node in boss._body.get_node("Torso").get_children():
 		if c is CSGSphere3D:

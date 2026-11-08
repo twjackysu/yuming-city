@@ -313,6 +313,11 @@ func _on_died() -> void:
 	for id: String in _decals:
 		(_decals[id] as MeshInstance3D).visible = false
 	var torso: Node3D = _body.get_node("Torso") as Node3D
+	# 兜帽裡的霜光在跪下時熄掉（倒地的冷光由 _frost_exhale 接手）
+	var dim := create_tween()
+	dim.tween_property(torso.get_node("HoodLight"), "light_energy", 0.0, FALL_KNEEL_SEC)
+	for eye: Node in torso.find_children("HoodEye*", "MeshInstance3D", false, false):
+		dim.parallel().tween_property(eye, "scale", Vector3.ONE * 0.01, FALL_KNEEL_SEC)
 	var t := create_tween()
 	_fall_tween = t
 	# 跪下：身體下沉、上身往前垂
@@ -341,6 +346,11 @@ func _on_fall_impact() -> void:
 	fell.emit()
 	if debug_hold_fallen and _fall_tween != null:
 		_fall_tween.pause()
+
+
+## 兜帽裡的霜光（D-075）；倒下時跪地那段熄掉
+const HOOD_EYE_ENERGY: float = 5.0
+const HOOD_LIGHT_ENERGY: float = 0.9
 
 
 ## 倒地後身上的霜氣散出來：一盞冷光從大衣上方慢慢熄掉，讓暗色大衣在夜裡有輪廓（D-054）。
@@ -440,6 +450,34 @@ func _build_body() -> void:
 	hood.position = Vector3(0, 1.45, -0.32)
 	hood.material = robe
 	torso.add_child(hood)
+	# 兜帽裡兩點霜光＋一盞小冷光照在胸口（D-075）：遠處的送葬者不再跟夜色融成一團，看得出他在看你
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.albedo_color = Color.BLACK
+	eye_mat.emission_enabled = true
+	eye_mat.emission = FROST
+	eye_mat.emission_energy_multiplier = HOOD_EYE_ENERGY
+	var eye_mesh := SphereMesh.new()
+	eye_mesh.radius = 0.024
+	eye_mesh.height = 0.048
+	eye_mesh.radial_segments = 8
+	eye_mesh.rings = 4
+	for x: float in [-0.065, 0.065]:
+		var eye := MeshInstance3D.new()
+		eye.name = "HoodEyeL" if x < 0.0 else "HoodEyeR"
+		eye.mesh = eye_mesh
+		eye.material_override = eye_mat
+		eye.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		eye.position = Vector3(x, 1.44, -0.53)
+		torso.add_child(eye)
+	var hood_light := OmniLight3D.new()
+	hood_light.name = "HoodLight"
+	hood_light.light_color = FROST
+	hood_light.light_energy = HOOD_LIGHT_ENERGY
+	hood_light.omni_range = 2.4
+	hood_light.omni_attenuation = 1.6
+	hood_light.shadow_enabled = false
+	hood_light.position = Vector3(0, 1.3, -0.8)
+	torso.add_child(hood_light)
 	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）；擲出去之後整組藏起來（ThrownFrame 接手）
 	var frame := Node3D.new()
 	frame.name = "Frame"
