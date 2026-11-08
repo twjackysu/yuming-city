@@ -237,3 +237,97 @@ func test_gamepad_rescue_three() -> void:
 		scene.queue_free()
 	for i: int in 3:
 		await tree.process_frame
+
+
+func _trigger_left(value: float) -> void:
+	var ev := InputEventJoypadMotion.new()
+	ev.device = PAD
+	ev.axis = JOY_AXIS_TRIGGER_LEFT
+	ev.axis_value = value
+	Input.parse_input_event(ev)
+
+
+## 灰巡者只用手把：左搖桿走到席菈 → A 讀完對話 → 灰巡者爬出來 → 按住 LT 看穿 → 走近按 X 揮擊打中 →
+## 十字鍵上 叫席菈打弱點。灰巡者不出手（set_physics_process(false)），別讓諾恩真的倒下；
+## 諾恩揮擊時席菈先停著（不然她會先把不動的灰巡者打倒）。
+func test_gamepad_ashwalker_insight_command_attack() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	_game.set("session", s)
+	s.new_game()
+	s.set_flag("slice.met_pear_seller", true)
+	for i: int in 9:
+		s.add_flag("slice.bell_rings")
+	s.add_flag("slice.rescued_count", 3)
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "meet_sheila", "前提：席菈段落")
+	_game.call("go_to_level", "frostbridge")
+	var level: StoryLevel = await _wait_scene()
+	assert_not_null(level, "進霜橋鎮")
+	if level == null:
+		return
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sheila: Sheila = level.get_node_or_null("Sheila") as Sheila
+	assert_not_null(sheila, "席菈在主街北段等")
+	if sheila == null:
+		return
+	var start := Vector3(-0.6, 0.0, -16.0)
+	start.y = level.ground_y(start) + 0.05
+	player.global_position = start
+	for i: int in 5:
+		await tree.physics_frame
+	var talking := func() -> bool: return bool(_game.call("is_in_dialogue"))
+	assert_true(await _walk_to(player, sheila.global_position, talking, 600), "左搖桿走到席菈 → 對話")
+	for i: int in 80:
+		if not bool(_game.call("is_in_dialogue")):
+			break
+		await tree.process_frame  # 選項的焦點是 call_deferred
+		await _tap(JOY_BUTTON_A)
+	assert_false(_game.call("is_in_dialogue"), "A 把席菈的對話讀完（選項按 A 選第一個）")
+	var walker: Ashwalker = level.get_node_or_null("Ashwalker") as Ashwalker
+	assert_not_null(walker, "說完話 → 灰巡者爬出來")
+	if walker == null:
+		return
+	walker.set_physics_process(false)
+	sheila.set_physics_process(false)
+
+	# --- 按住 LT 看穿
+	_trigger_left(1.0)
+	for i: int in 4:
+		await tree.physics_frame
+	assert_true(player.insight_active, "按住 LT：看穿中")
+	_trigger_left(0.0)
+	for i: int in 2:
+		await tree.physics_frame
+	assert_false(player.insight_active, "放開 LT：結束看穿")
+
+	# --- 走近按 X 揮擊
+	var close := func() -> bool:
+		if not is_instance_valid(walker):
+			return true
+		return Vector2(walker.global_position.x - player.global_position.x, walker.global_position.z - player.global_position.z).length() < 1.7
+	assert_true(await _walk_to(player, walker.global_position, close, 600), "左搖桿走到灰巡者面前")
+	var hp0: float = walker.health.hp
+	var swings: int = 0
+	for i: int in 12:
+		if walker.health.hp < hp0:
+			break
+		await _tap(JOY_BUTTON_X)
+		swings += 1
+		for k: int in 20:
+			await tree.physics_frame
+			if walker.health.hp < hp0:
+				break
+	assert_true(walker.health.hp < hp0, "X 揮擊打中灰巡者（%d 下，%.0f → %.0f）" % [swings, hp0, walker.health.hp])
+
+	# --- 十字鍵上：叫席菈打弱點
+	sheila.set_physics_process(true)
+	var answered: Array[String] = []
+	sheila.command_answered.connect(func(cmd: String, _r: Dictionary) -> void: answered.append(cmd))
+	await tree.physics_frame
+	await _tap(JOY_BUTTON_DPAD_UP)
+	await tree.physics_frame
+	assert_true("weakpoint" in answered, "十字鍵上 → 席菈回應「打弱點」（%s）" % [answered])
+	var scene: Node = tree.current_scene
+	if scene != null:
+		scene.queue_free()
+	for i: int in 3:
+		await tree.process_frame
