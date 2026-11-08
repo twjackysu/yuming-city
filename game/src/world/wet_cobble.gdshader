@@ -6,6 +6,8 @@ render_mode specular_occlusion_disabled;
 // - 石縫：較暗、濕（粗糙度低）
 // - 水窪：低頻雜訊，平的暗水面＋細波紋（倒影拉成直條；中畫質靠 ReflectionProbe，高畫質再加 SSR）
 // - 積雪：靠牆／低頻雜訊的淺色薄層（粗糙度高）
+// - 地上的殘雪與髒雪（D-114）：石縫裡卡著雪、靠牆與角落多（街道範圍 lanes）；井邊與攤子前一圈踩實的灰褐髒雪（trodden）；
+//   一道手推車的車轍（rut_pts 折線，兩條濕亮的細溝＋兩側被推開的雪）。沒設定（lane_count＝0 等）時跟原本一樣
 
 uniform vec3 stone_color : source_color = vec3(0.22, 0.23, 0.26);
 uniform vec3 gap_color : source_color = vec3(0.06, 0.065, 0.075);
@@ -25,6 +27,21 @@ uniform float bevel_strength = 0.8;
 uniform float stone_lean = 0.2;
 // 石板長寬比（沿 x 較長）
 const float STONE_LEN = 1.35;
+
+// D-114 殘雪：街道範圍（中心 xz、半寬 xz）。離邊（牆）越近，石縫裡卡的雪越多、石板上也有一片片薄雪；
+// 兩個方向都靠邊（角落）更多。點在好幾個範圍裡時取離牆最遠的那個（街口不會被當成牆）；不在任何範圍裡當成靠牆
+uniform vec4 lanes[8];
+uniform int lane_count = 0;
+uniform float wall_reach = 2.6;
+uniform vec3 grime_color : source_color = vec3(0.37, 0.34, 0.31);
+// 踩實的髒雪：圓心 xz、內半徑、外半徑（內半徑 > 0 是一圈，例如井邊）
+uniform vec4 trodden[4];
+uniform int trodden_count = 0;
+// 車轍：折線（中心線），兩道輪溝相距 rut_gauge
+uniform vec2 rut_pts[8];
+uniform int rut_count = 0;
+uniform float rut_gauge = 1.37;
+uniform float rut_width = 0.075;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -52,6 +69,84 @@ float fbm(vec2 p) {
 		a *= 0.5;
 	}
 	return v;
+}
+
+// 離牆多近（0＝街道中間、1＝牆腳或角落）
+float wall_near(vec2 xz) {
+	if (lane_count == 0) {
+		return 0.0;
+	}
+	float near = 0.75;  // 不在任何範圍裡（房子後面、鎮外）
+	bool inside = false;
+	for (int i = 0; i < 8; i++) {
+		if (i >= lane_count) {
+			break;
+		}
+		vec2 d = lanes[i].zw - abs(xz - lanes[i].xy);
+		if (d.x > 0.0 && d.y > 0.0) {
+			vec2 pr = 1.0 - smoothstep(vec2(0.0), vec2(wall_reach), d);
+			float n = clamp(pr.x + pr.y, 0.0, 1.0);
+			near = inside ? min(near, n) : n;
+			inside = true;
+		}
+	}
+	return near;
+}
+
+// 踩實的髒雪有多少（0～1，邊緣用雜訊打散）
+float trodden_mask(vec2 xz) {
+	float m = 0.0;
+	for (int i = 0; i < 4; i++) {
+		if (i >= trodden_count) {
+			break;
+		}
+		vec4 t = trodden[i];
+		float r = length(xz - t.xy);
+		float wob = (noise(xz * 1.3 + float(i) * 7.0) - 0.5) * 0.7;
+		float outer = 1.0 - smoothstep(t.w - 0.6, t.w + 0.2, r + wob);
+		float inner = t.z > 0.0 ? smoothstep(t.z - 0.05, t.z + 0.25, r) : 1.0;
+		m = max(m, outer * inner);
+	}
+	return m;
+}
+
+// 車轍：回傳 (輪溝 0～1, 輪溝旁被推開的雪 0～1, 輪溝往外的方向 xz)
+vec4 rut_mask(vec2 xz) {
+	if (rut_count < 2) {
+		return vec4(0.0);
+	}
+	float best = 1e6;
+	vec2 away = vec2(0.0);
+	float along = 0.0;
+	float total = 0.0;
+	float best_along = 0.0;
+	for (int i = 0; i < 7; i++) {
+		if (i + 1 >= rut_count) {
+			break;
+		}
+		vec2 a = rut_pts[i];
+		vec2 b = rut_pts[i + 1];
+		vec2 ab = b - a;
+		float len = length(ab);
+		float h = clamp(dot(xz - a, ab) / (len * len), 0.0, 1.0);
+		vec2 c = a + ab * h;
+		float d = length(xz - c);
+		if (d < best) {
+			best = d;
+			away = (xz - c) / max(d, 1e-4);
+			best_along = total + h * len;
+		}
+		total += len;
+	}
+	// 兩道輪溝：中心線兩側 rut_gauge/2
+	float off = best - rut_gauge * 0.5;
+	float groove = 1.0 - smoothstep(rut_width * 0.6, rut_width, abs(off));
+	float ridge = smoothstep(rut_width * 0.7, rut_width * 1.1, abs(off)) * (1.0 - smoothstep(rut_width * 1.6, rut_width * 3.2, abs(off)));
+	// 兩端淡出、中間斷斷續續（舊車轍，被踩過、被雪蓋過）
+	float ends = smoothstep(0.0, 1.5, best_along) * (1.0 - smoothstep(total - 2.5, total, best_along));
+	float broken = smoothstep(0.25, 0.55, noise(vec2(best_along * 0.9, off > 0.0 ? 3.0 : 9.0)));
+	float k = ends * mix(0.35, 1.0, broken);
+	return vec4(groove * k, ridge * k, away * sign(off));
 }
 
 void vertex() {
@@ -111,13 +206,42 @@ void fragment() {
 
 	// 積雪：薄薄一層、不蓋住水窪
 	float snow = smoothstep(1.0 - snow_amount, 1.0 - snow_amount + 0.08, fbm(world_pos.xz * 0.35 + 11.7)) * (1.0 - puddle);
+
+	// D-114 殘雪：石縫裡卡著雪（靠牆、角落多，街道中間一片一片），靠牆的石板上蓋一層薄雪，
+	// 空地上偶爾一片被風吹散的薄雪（細雜訊打散，露出石頭）。水窪不蓋。
+	// （fbm 的值大多在 0.3～0.65 之間，平均約 0.47：門檻照這個範圍抓）
+	float near = wall_near(world_pos.xz);
+	float patchy = fbm(world_pos.xz * 0.9 + 4.4);
+	float lodge = clamp(near * 1.3 + smoothstep(0.5, 0.64, patchy) * 0.8, 0.0, 1.0);
+	// 空地上石縫裡的雪是一段一段的（不是一整張白格子），靠牆才連成線
+	float in_gap = (1.0 - stone) * lodge * mix(smoothstep(0.35, 0.6, noise(world_pos.xz * 2.7 + 5.0)), 1.0, near);
+	float on_stone = smoothstep(0.45, 0.8, near * 0.85 + (patchy - 0.47) * 1.2) * stone;
+	float dust = smoothstep(0.5, 0.6, fbm(world_pos.xz * 0.5 + 7.0)) * smoothstep(0.25, 0.6, noise(world_pos.xz * 4.5 + 13.0));
+	float rest = max(max(in_gap, on_stone * 0.9), dust * 0.6 * stone) * (1.0 - puddle) * step(0.5, float(lane_count));
+	snow = max(snow, rest);
+
+	// 踩實的髒雪：灰褐、斑駁（有的地方踩到露出石頭），石縫裡最髒
+	float tm = trodden_mask(world_pos.xz);
+	float grime = tm * mix(smoothstep(0.36, 0.52, fbm(world_pos.xz * 1.7 + 21.0)), 1.0, (1.0 - stone) * 0.8) * (1.0 - puddle * 0.7);
+	// 髒雪蓋過的地方不再是乾淨的雪
+	snow *= 1.0 - tm * 0.85;
+
+	// 車轍：輪溝是濕的暗溝（積水，映得出燈），兩側一條被推開的雪
+	vec4 rut = rut_mask(world_pos.xz);
+	snow = max(snow, rut.y * 0.95 * (1.0 - puddle));
+	snow *= 1.0 - rut.x;
+
 	albedo = mix(albedo, snow_color, snow * 0.85);
+	albedo = mix(albedo, grime_color * mix(0.8, 1.15, noise(world_pos.xz * 4.0)), grime * 0.85);
+	albedo = mix(albedo, gap_color * 1.4, rut.x * 0.7);
 
 	ALBEDO = albedo;
 	// 石縫濕而不平（0.22）；水窪是平的水面（0.04），映得出燈與亮窗（中畫質靠 ReflectionProbe，高畫質再加 SSR）
 	// 每塊石板的磨損程度不同：粗糙度 ±0.08
 	float rough = mix(stone_roughness + (hash(sid + vec2(5.5, 0.7)) - 0.5) * 0.16, 0.22, 1.0 - stone);
 	rough = mix(rough, 0.04, puddle);
+	rough = mix(rough, 0.62, grime);  // 踩實的雪：半濕半糊
+	rough = mix(rough, 0.08, rut.x);  // 輪溝裡積水
 	ROUGHNESS = mix(rough, 0.85, snow);
 	SPECULAR = mix(mix(0.5, 0.75, wet), 1.0, puddle);
 	// 石板是平的：只有最邊緣一圈倒角往外倒，加上每塊自己的小傾斜與表面的細微起伏；水窪與雪是平的
@@ -132,7 +256,9 @@ void fragment() {
 		float bevel = 1.0 - smoothstep(0.0, bevel_width, -sdf - gap_half);
 		vec2 lean = vec2(hash(sid + vec2(1.9, 6.1)), hash(sid + vec2(7.3, 2.9))) - 0.5;
 		vec2 bump = vec2(noise(world_pos.xz * 6.0 + 31.0), noise(world_pos.xz * 6.0 + 57.0)) - 0.5;
-		vec2 tilt = (outward * bevel * bevel_strength + lean * stone_lean + bump * 0.06) * stone * (1.0 - puddle) * (1.0 - snow) * (1.0 - aa);
+		vec2 tilt = (outward * bevel * bevel_strength + lean * stone_lean + bump * 0.06) * stone * (1.0 - puddle) * (1.0 - snow) * (1.0 - grime) * (1.0 - aa);
+		// 輪溝兩壁往溝裡斜（燈光在溝邊拉出一條細亮線）：只在溝壁（遮罩的過渡帶），法線朝溝的中心
+		tilt -= rut.zw * rut.x * (1.0 - rut.x) * 1.2 * (1.0 - aa);
 		// 水窪波紋：沿 z 起伏（看向南北時）與沿 x 起伏（看向東西時）依視線方向混合；
 		// 波紋固定在世界座標上，轉鏡頭時只換權重，不會跟著鏡頭滑動。遠處波紋比像素細時淡掉（避免閃爍）
 		vec3 v_w = (INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz;

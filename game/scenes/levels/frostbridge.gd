@@ -482,6 +482,8 @@ func _build_cutscene_cameras() -> void:
 # ---------------------------------------------------------------- 場景
 
 func _build_ground() -> void:
+	# 地上的殘雪、髒雪與車轍（D-114）：先設好，之後建立的濕石板材質都會套上
+	look.set_ground_marks(ground_lanes(), TRODDEN, RUT_PATH)
 	# 街道與廣場：濕石板路（概念圖的燈光倒影）。地面方塊的側面埋在地下，看不到
 	_batch.add_box_at(Vector3(90.0, 1.0, 130.0), Vector3(0.0, -0.5, -5.0), look.wet_ground(FrostbridgeLook.STONE, 0.42, 0.4))
 	# 廣場鋪石（略暗）與中央的圓形石框
@@ -496,6 +498,30 @@ func _build_ground() -> void:
 		_snow_bank(Vector3(sx * SOUTH_HALF, 0.0, PLAZA_S), Vector3(sx * SOUTH_HALF, 0.0, CROSS_N), wall, 1.0)
 	_snow_bank(Vector3(-CROSS_HALF, 0.0, CROSS_S), Vector3(CROSS_HALF, 0.0, CROSS_S), Vector3.BACK, 1.2)
 	_build_rise()
+
+
+## 地上的殘雪與髒雪（D-114，第四輪盤點第 4 項）：廣場下半畫面原本是一大片空的暗石板。
+## 濕石板 shader 依「離牆多近」在石縫裡卡雪（靠牆、角落多）、井邊與梨販攤前一圈踩實的灰褐髒雪、
+## 一道從西側手推車往北繞過井與石框、進主街的車轍。全部在 shader 裡（不擋人、不進碰撞、不多 draw call）。
+## 街道範圍：中心 x、z，半寬 x、z。街道往廣場裡多伸一段，街口才不會被當成牆。
+func ground_lanes() -> Array[Vector4]:
+	return [
+		Vector4(0.0, 0.0, PLAZA_HALF, PLAZA_S),
+		Vector4(0.0, (NORTH_END - 1.0) * 0.5, MAIN_HALF, (1.0 - NORTH_END) * 0.5),
+		Vector4(0.0, (CROSS_N + 1.0) * 0.5, SOUTH_HALF, (CROSS_N + 1.0) * 0.5),
+		Vector4(0.0, (CROSS_N + CROSS_S) * 0.5, CROSS_HALF, (CROSS_S - CROSS_N) * 0.5),
+	]
+
+
+## 踩實的髒雪：井邊一圈（井身外半徑 1.2）、梨販攤前一片（攤子在 STALL_POS，正面朝南）
+const TRODDEN: Array[Vector4] = [
+	Vector4(-6.0, -3.5, 1.15, 2.7),
+	Vector4(4.3, 0.5, 0.0, 2.1),
+]
+## 車轍中心線：西側手推車（HANDCART_POS，兩輪相距約 1.37 m、沿 X 滾）往東出來，往北繞過井與中央石框，進主街
+const RUT_PATH: PackedVector2Array = [
+	Vector2(-9.3, 0.9), Vector2(-6.9, 0.6), Vector2(-4.3, -1.9), Vector2(-3.0, -5.8), Vector2(-2.3, -10.0), Vector2(-2.0, -14.5),
+]
 
 
 ## 街邊雪帶（D-105，第三輪盤點第 8 項）：原本是一條 4 cm 高的平板，低角度看是一條平的淺色帶。

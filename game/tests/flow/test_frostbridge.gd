@@ -724,6 +724,68 @@ func test_roofs_use_tiles() -> void:
 	await _free(level)
 
 
+## 地上的殘雪、髒雪與車轍（D-114）：小鎮所有濕石板材質都拿到街道範圍、踩實的髒雪、車轍；
+## 車轍從西側手推車出來、繞過井與中央石框、不撞圍欄／木桶／路燈，最後進主街；街口不被當成牆。
+func test_ground_snow_and_ruts() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var lanes: Array = level.call("ground_lanes")
+	var trodden: Array = level.get("TRODDEN")
+	var rut: PackedVector2Array = level.get("RUT_PATH")
+	var wet: int = 0
+	for mi: Node in level.get_node("Town").find_children("*", "MeshInstance3D", true, false):
+		var m: ShaderMaterial = (mi as MeshInstance3D).material_override as ShaderMaterial
+		if m == null or m.shader == null or not m.shader.resource_path.ends_with("wet_cobble.gdshader"):
+			continue
+		wet += 1
+		assert_eq(int(m.get_shader_parameter("lane_count")), lanes.size(), "濕石板材質拿到街道範圍")
+		assert_eq(int(m.get_shader_parameter("trodden_count")), trodden.size(), "濕石板材質拿到踩實的髒雪")
+		assert_eq(int(m.get_shader_parameter("rut_count")), rut.size(), "濕石板材質拿到車轍")
+	assert_true(wet >= 2, "廣場與街道兩種濕石板都有（%d）" % wet)
+	# 街道範圍：每條街都在某個範圍裡；主街、南街的範圍伸進廣場（街口不是牆）
+	for probe: Vector2 in [Vector2(0, 0), Vector2(0, -20), Vector2(0, -38), Vector2(0, 22), Vector2(0, 38)]:
+		var inside: bool = false
+		for l: Vector4 in lanes:
+			inside = inside or (absf(probe.x - l.x) < l.z and absf(probe.y - l.y) < l.w)
+		assert_true(inside, "(%.0f, %.0f) 在街道範圍裡" % [probe.x, probe.y])
+	for mouth: Vector2 in [Vector2(0, -10), Vector2(0, 10)]:
+		var deep: float = 0.0
+		for l: Vector4 in lanes:
+			var d := Vector2(l.z - absf(mouth.x - l.x), l.w - absf(mouth.y - l.y))
+			if d.x > 0.0 and d.y > 0.0:
+				deep = maxf(deep, minf(d.x, d.y))
+		assert_true(deep > 2.5, "街口 (%.0f, %.0f) 離牆 %.1f m，不會積成一道雪" % [mouth.x, mouth.y, deep])
+	# 踩實的髒雪：井邊一圈（內半徑貼著井身）、攤子前一片，都在廣場裡
+	for t: Vector4 in trodden:
+		assert_true(absf(t.x) + t.w < 11.0 + 0.5 and absf(t.y) + t.w < 10.0 + 0.5, "髒雪在廣場裡（%s）" % [t])
+	assert_true((trodden[0] as Vector4).z > 1.0, "井邊那圈從井身外開始")
+	assert_true(Vector2((trodden[1] as Vector4).x, (trodden[1] as Vector4).y).distance_to(Vector2(4.5, -1.0)) < 2.5, "一片在梨販攤前")
+	# 車轍：從手推車出來、最後進主街
+	var gauge_half: float = 1.37 * 0.5
+	var cart: Vector3 = level.get("HANDCART_POS")
+	assert_true(rut[0].distance_to(Vector2(cart.x, cart.z)) < 0.5, "車轍從手推車出來")
+	var last: Vector2 = rut[rut.size() - 1]
+	assert_true(last.y < -12.0 and absf(last.x) + gauge_half < 4.0, "最後進主街（%s）" % [last])
+	var clear: Array[Vector3] = [Vector3(-6.0, -3.5, 1.2), Vector3(0.0, 0.0, 3.32), Vector3(-8.0, -7.5, 0.3),
+		Vector3(-4.7, -8.3, 0.1), Vector3(-4.7, -10.0, 0.1)]
+	for spot: Vector3 in level.get("BARREL_SPOTS"):
+		clear.append(Vector3(spot.x, spot.z, 0.45))
+	for c: Vector3 in clear:
+		var d: float = _polyline_dist(rut, Vector2(c.x, c.y))
+		assert_true(d - gauge_half > c.z + 0.1, "車轍不壓到 (%.1f, %.1f)（中心線距離 %.2f m）" % [c.x, c.y, d])
+	await _free(level)
+
+
+func _polyline_dist(pts: PackedVector2Array, p: Vector2) -> float:
+	var best: float = INF
+	for i: int in pts.size() - 1:
+		var a: Vector2 = pts[i]
+		var ab: Vector2 = pts[i + 1] - a
+		var h: float = clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+		best = minf(best, p.distance_to(a + ab * h))
+	return best
+
+
 ## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
 func test_dev_hold_insight() -> void:
 	var s := _session()

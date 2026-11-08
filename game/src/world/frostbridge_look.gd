@@ -202,5 +202,43 @@ func wet_ground(color: Color, stone_size: float, puddles: float = 0.42) -> Shade
 	m.set_shader_parameter("stone_size", stone_size)
 	m.set_shader_parameter("puddle_amount", puddles)
 	m.set_shader_parameter("snow_color", SNOW)
+	_apply_ground_marks(m)
 	_mats[key] = m
 	return m
+
+
+## 地上的殘雪與髒雪（D-114）：wet_cobble.gdshader 的 lanes／trodden／rut_pts。
+## lanes：街道範圍（中心 x、z，半寬 x、z）；trodden：踩實的髒雪（圓心 x、z，內半徑、外半徑）；
+## rut：車轍中心線（xz 折線）。已經建立的濕石板材質立刻更新，之後建立的也會套上。
+var ground_marks: Dictionary = {}
+
+
+func set_ground_marks(lanes: Array[Vector4], trodden: Array[Vector4], rut: PackedVector2Array) -> void:
+	ground_marks = {"lanes": lanes, "trodden": trodden, "rut": rut}
+	for key: Variant in _mats:
+		if str(key).begins_with("wet/"):
+			_apply_ground_marks(_mats[key] as ShaderMaterial)
+
+
+func _apply_ground_marks(m: ShaderMaterial) -> void:
+	if ground_marks.is_empty():
+		return
+	var lanes: Array[Vector4] = ground_marks["lanes"]
+	var trodden: Array[Vector4] = ground_marks["trodden"]
+	var rut: PackedVector2Array = ground_marks["rut"]
+	m.set_shader_parameter("lanes", _pad4(lanes, 8))
+	m.set_shader_parameter("lane_count", mini(lanes.size(), 8))
+	m.set_shader_parameter("trodden", _pad4(trodden, 4))
+	m.set_shader_parameter("trodden_count", mini(trodden.size(), 4))
+	var pts := PackedVector2Array(rut)
+	pts.resize(8)
+	m.set_shader_parameter("rut_pts", pts)
+	m.set_shader_parameter("rut_count", mini(rut.size(), 8))
+
+
+static func _pad4(items: Array[Vector4], n: int) -> PackedVector4Array:
+	var out := PackedVector4Array()
+	out.resize(n)
+	for i: int in mini(items.size(), n):
+		out[i] = items[i]
+	return out
