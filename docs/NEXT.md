@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 37 輪）的程式 commit：2816522 章節切換＋酒館白盒＋第 1 章對話、05d4b45 酒館開發旗標與入夜窗光、58ae5f4 標記畫面（最後一個，CI 結果見 PROGRESS 第 37 輪）。**開工先看最新 run 整個綠燈**；開工照常先跑 `scripts/check.sh`（最後 318 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 37 輪）的程式 commit：2816522 章節切換＋酒館白盒＋第 1 章對話（run 42557511407 全綠）、05d4b45 酒館開發旗標與入夜窗光、58ae5f4 標記畫面、cf5283f 章節卡細線＋`--chapter-card`（最後一個，CI 結果見 PROGRESS 第 37 輪收尾補記）。**開工先看最新 run 整個綠燈**；開工照常先跑 `scripts/check.sh`（最後 318 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 36 輪的 run 42553368535（2140c8f）已全綠（第 37 輪開工確認）；latest 的 `achievement-icons.zip` 第 37 輪沒有回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
@@ -81,6 +81,7 @@
   2. **段落 5：一百七十二階**（新關卡 `stairs`，線性）：螺旋往下的石階（霧＋油燈範圍只看得到前後十幾級）、中間平台的髒水桶陷阱、新互動「丟石頭試探」（設 `ch1.stair_trap_sprung` → 攻略筆記第 1 條被推翻；標了我不確定的諾恩說「果然」，沒標的席菈看他一眼——用 `{"guide": "stair_arrows", "is": "wrong", "was_unsure": true}` 的 `text_if`）、往下聽到小孩笑聲。
   3. 段落 6～9（白晝城入口、柯德、上層街區、壽命石碑、柯德家晚餐、兔子）照 07 的表。
   4. 酒館美術（階段 2 後段）：現在是 CSG 白盒＋程序人偶；彌夏抱的鐘是小木箱。
+- 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
 - 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。
 
 ## 6. 角色模型（等 Jacky 交件）
