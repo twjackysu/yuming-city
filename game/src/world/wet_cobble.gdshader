@@ -34,6 +34,17 @@ uniform vec2 arc_center = vec2(0.0);
 uniform float row_wave = 1.1;
 // D-120 這個圓（中心 xz、半徑）裡不蓋殘雪與薄雪（廣場石框裡）；半徑 0＝沒有
 uniform vec3 clear_disc = vec3(0.0);
+// D-144 每顆石板不一樣（廣場前景一圈圈每顆一樣亮，像磁磚／靶心）：
+// - sunken_share：這個比例的石板微微下陷、積一層薄水（更暗、像鏡子，燈光下有的整顆亮、有的整顆黑）
+// - dark_share：這個比例的石板是後來補的深色石頭
+// - grit_amount：石縫裡一段段被砂土填平（石縫顏色接近石板），一圈圈的縫不會連成完整的圓
+// - far_fade：遠處石塊淡成平均值的速度（1.2＝原本；弧形鋪的廣場加快，圈在中距離就淡掉）
+uniform float sunken_share : hint_range(0.0, 1.0) = 0.16;
+uniform float dark_share : hint_range(0.0, 1.0) = 0.1;
+uniform float grit_amount : hint_range(0.0, 1.0) = 0.45;
+uniform float far_fade = 1.2;
+// 弧形鋪時排與排之間的縫窄多少（單位 stone_size；0＝跟石板之間的縫一樣寬）
+uniform float ring_gap_tighten = 0.025;
 
 // D-114 殘雪：街道範圍（中心 xz、半寬 xz）。離邊（牆）越近，石縫裡卡的雪越多、石板上也有一片片薄雪；
 // 兩個方向都靠邊（角落）更多。點在好幾個範圍裡時取離牆最遠的那個（街口不會被當成牆）；不在任何範圍裡當成靠牆
@@ -226,6 +237,10 @@ void fragment() {
 	vec2 shrink = vec2(hash(sid + vec2(6.6, 3.3)), hash(sid + vec2(2.4, 9.7))) * 0.045;
 	lp -= (vec2(hash(sid + vec2(8.2, 5.1)), hash(sid + vec2(4.8, 7.6))) - 0.5) * shrink;
 	half_size -= shrink;
+	// D-144 弧形鋪：排與排之間的縫（一圈圈連成圓的那條）比石板之間的縫窄，遠看不像一圈圈的線
+	if (arc_paving) {
+		half_size.y += ring_gap_tighten;
+	}
 	// 圓角每塊不同（0.06～0.24，不超過短邊的 0.8 倍）：有的方正、有的圓
 	float corner = min(mix(0.06, 0.24, hash(sid + vec2(4.1, 2.7))), min(half_size.x, half_size.y) * 0.8);
 	vec2 q = abs(lp) - (half_size - corner);
@@ -236,19 +251,29 @@ void fragment() {
 	float stone = 1.0 - smoothstep(-gap_half - 0.03, -gap_half + 0.005, sdf + jag);
 	// 遠處石塊比像素還小：淡成平均值，避免閃爍（沒有 mipmap 的程序紋理）
 	// （用連續的世界座標量：弧形鋪的 p.x 在排與排之間、接縫處不連續）
-	float aa = clamp(length(fwidth(xz) / stone_size * vec2(0.8, 1.0)) * 1.2 - 0.15, 0.0, 1.0);
+	float aa = clamp(length(fwidth(xz) / stone_size * vec2(0.8, 1.0)) * far_fade - 0.15, 0.0, 1.0);
+	// D-144 石縫裡一段段被砂土填平：沿縫斷斷續續（雜訊比一顆石板稍大），填平的地方縫不暗、不濕
+	float grit_fill = smoothstep(1.0 - grit_amount, 1.0 - grit_amount + 0.18, noise(xz * 1.25 + vec2(40.3, 17.9)));
+	float grit = grit_fill * (1.0 - stone);
 	stone = mix(stone, 0.8, aa);
 
 	float tint = hash(sid);
-	vec3 albedo = stone_color * mix(0.74, 1.14, tint);
+	vec3 albedo = stone_color * mix(0.68, 1.18, tint);
 	// 少數石板偏暖或偏冷（不同批的石頭）
 	albedo *= mix(vec3(1.0), mix(vec3(1.06, 1.0, 0.92), vec3(0.93, 0.98, 1.06), hash(sid + vec2(2.2, 8.8))), 0.6);
+	// D-144 少數是後來補的深色石頭
+	float dark = step(1.0 - dark_share, hash(sid + vec2(3.1, 7.7))) * (1.0 - aa);
+	albedo *= mix(1.0, 0.6, dark);
 	albedo *= mix(0.85, 1.05, fbm(world_pos.xz * 3.0));
-	albedo = mix(gap_color, albedo, stone);
+	vec3 grit_color = mix(stone_color * 0.85, grime_color * 0.6, 0.45);
+	albedo = mix(mix(gap_color, grit_color, grit * 0.8), albedo, stone);
 
-	// 水窪：低頻雜訊，石縫一定是濕的
+	// 水窪：低頻雜訊，石縫一定是濕的（砂土填平的縫例外）
 	float puddle = smoothstep(1.0 - puddle_amount, 1.0 - puddle_amount + 0.12, fbm(world_pos.xz * 0.18 + 3.1));
-	float wet = max(puddle, 1.0 - stone);
+	// D-144 下陷的石板積一層薄水：整顆暗、像鏡子（不蓋雪的地方才看得出來）
+	float sunken = step(1.0 - sunken_share, hash(sid + vec2(9.4, 2.6))) * stone * (1.0 - aa);
+	puddle = max(puddle, sunken * 0.7);
+	float wet = max(puddle, (1.0 - stone) * (1.0 - grit * 0.7));
 	albedo *= mix(1.0, 0.55, wet);
 	albedo *= mix(1.0, 1.0 - puddle_darken, puddle);
 
@@ -292,7 +317,7 @@ void fragment() {
 	ALBEDO = albedo;
 	// 石縫濕而不平（0.22）；水窪是平的水面（0.04），映得出燈與亮窗（中畫質靠 ReflectionProbe，高畫質再加 SSR）
 	// 每塊石板的磨損程度不同：粗糙度 ±0.08
-	float rough = mix(stone_roughness + (hash(sid + vec2(5.5, 0.7)) - 0.5) * 0.16, 0.22, 1.0 - stone);
+	float rough = mix(stone_roughness + (hash(sid + vec2(5.5, 0.7)) - 0.5) * 0.16, mix(0.22, 0.6, grit), 1.0 - stone);
 	rough = mix(rough, 0.04, puddle);
 	rough = mix(rough, 0.62, grime);  // 踩實的雪：半濕半糊
 	rough = mix(rough, 0.08, rut.x);  // 輪溝裡積水
@@ -308,8 +333,10 @@ void fragment() {
 		}
 		outward *= sign(lp);
 		outward = outward.x * along_dir + outward.y * across_dir;
-		float bevel = 1.0 - smoothstep(0.0, bevel_width, -sdf - gap_half);
-		vec2 lean = vec2(hash(sid + vec2(1.9, 6.1)), hash(sid + vec2(7.3, 2.9))) - 0.5;
+		// 縫被砂土填平的地方，石板邊緣也被埋住、倒角不明顯（D-144）
+		float bevel = (1.0 - smoothstep(0.0, bevel_width, -sdf - gap_half)) * mix(1.0, 0.35, grit_fill);
+		// D-144 每顆傾斜的幅度也不同（有的幾乎平、有的翹得多）：燈光下每顆亮度不一樣
+		vec2 lean = (vec2(hash(sid + vec2(1.9, 6.1)), hash(sid + vec2(7.3, 2.9))) - 0.5) * mix(0.4, 1.9, hash(sid + vec2(6.3, 4.4)));
 		vec2 bump = vec2(noise(world_pos.xz * 6.0 + 31.0), noise(world_pos.xz * 6.0 + 57.0)) - 0.5;
 		vec2 tilt = (outward * bevel * bevel_strength + lean * stone_lean + bump * 0.06) * stone * (1.0 - puddle) * (1.0 - snow) * (1.0 - grime) * (1.0 - aa);
 		// 輪溝兩壁往溝裡斜（燈光在溝邊拉出一條細亮線）：只在溝壁（遮罩的過渡帶），法線朝溝的中心

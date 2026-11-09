@@ -104,6 +104,8 @@ func glow(color: Color, energy: float) -> StandardMaterial3D:
 
 
 const WET_COBBLE_SHADER: String = "res://src/world/wet_cobble.gdshader"
+## 弧形鋪（廣場）遠處石塊淡成平均值的速度（wet_cobble 的 far_fade；直排街道用 shader 預設 1.2，D-144）
+const ARC_FAR_FADE: float = 1.9
 const HALF_TIMBER_SHADER: String = "res://src/world/half_timber.gdshader"
 const WINDOW_SHADER: String = "res://src/world/window_glass.gdshader"
 const SNOW_SHADER: String = "res://src/world/snow.gdshader"
@@ -250,6 +252,8 @@ func wet_ground_arc(color: Color, stone_size: float, puddles: float, center: Vec
 	m.set_shader_parameter("arc_paving", true)
 	m.set_shader_parameter("arc_center", center)
 	m.set_shader_parameter("clear_disc", Vector3(center.x, center.y, clear_radius))
+	# D-144：一圈圈的縫在中距離就淡掉（從遊玩高度看不像靶心）
+	m.set_shader_parameter("far_fade", ARC_FAR_FADE)
 	_mats[key] = m
 	return m
 

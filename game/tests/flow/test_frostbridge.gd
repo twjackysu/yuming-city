@@ -833,6 +833,14 @@ func test_plaza_arc_paving() -> void:
 	var ring_r: float = level.get("PLAZA_RING_R")
 	assert_true(disc.z > 2.0 and disc.z < ring_r, "石框裡不蓋殘雪，範圍在石緣以內（%.2f）" % disc.z)
 	assert_true(plaza == level.call("plaza_ground"), "同一個材質（快取）")
+	# D-144：廣場一圈圈的縫在中距離就淡掉（比街道快）；每顆石板不一樣（下陷積水、深色補石、砂土填縫）
+	assert_true(float(plaza.get_shader_parameter("far_fade")) > 1.5, "廣場的圈遠處淡得比街道快")
+	var cobble: Shader = plaza.shader
+	for u: String in ["sunken_share", "dark_share", "grit_amount", "far_fade"]:
+		var found: bool = false
+		for p: Dictionary in cobble.get_shader_uniform_list():
+			found = found or str(p["name"]) == u
+		assert_true(found, "濕石板 shader 有 %s" % u)
 	var arc: int = 0
 	var straight: int = 0
 	for mi: Node in level.get_node("Town").find_children("*", "MeshInstance3D", true, false):
