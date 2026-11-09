@@ -14,7 +14,7 @@
 
 - `scripts/check.sh` 全綠：344 個測試（新：流程 `_chapter3_cart` 兩條路線——照走路時機割壓住／先割太早→掙脫→回 `ch3_lured`→按住重現讓牠停在正下方再割；單元 `test_canal_sluice` 3 個）。
 - 本機截圖看過 `--canal-at=pinned`（西岸往東北：煤堆上一點反光、牠的鐵架露在閘道石牆上；整體很暗，見 NEXT）。
-- CI：c25654f、fed7ddd（結果見 NEXT「開工先確認」）。
+- CI：c25654f run 42638607537 **全綠**；fed7ddd run 42638892653「Import、測試、匯出」已綠，截圖、smoke test、打包收尾時還在跑（含新的盤點截圖 `30-ch3-pinned`）。
 
 **問題**
 

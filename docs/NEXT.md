@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 48 輪）的程式 commit：c25654f 段落 4 煤車、fed7ddd 煤的顏色＋截圖構圖＋CI 盤點截圖 `30-ch3-pinned`（**最後一個；收尾時的 CI 狀態見 PROGRESS 第 48 輪——開工先看整個綠燈**，紅了看 log 修）。screens 的 `30-ch3-pinned` 還沒在 CI 上看過（本機看過：很暗，見第 5 節「還可以」）。開工照常先跑 `scripts/check.sh`（最後 344 個測試）。
+- 上一輪（第 48 輪）的程式 commit：c25654f 段落 4 煤車、fed7ddd 煤的顏色＋截圖構圖＋CI 盤點截圖 `30-ch3-pinned`（c25654f run 42638607537 全綠；**fed7ddd run 42638892653 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包還在跑——開工先看整個綠燈**，紅了看 log 修；盤點截圖 job 紅了多半是 `--canal-at=pinned` 拍不出來）。screens 的 `30-ch3-pinned` 還沒在 CI 上看過（本機看過：很暗，見第 5 節「還可以」）。開工照常先跑 `scripts/check.sh`（最後 344 個測試）。
 - 第 47 輪的程式 commit：b2319e1 段落 3 假心臟、d21f055 假心臟的心跳聲、aed5964 `CoalDrop`、9a84a8c 送葬者的白盒步伐（**最後一個，run 42630485948：「Import、測試、匯出」已綠，截圖、smoke test、打包收尾時還在跑——開工先看整個綠燈**，紅了看 log 修）。d21f055、aed5964 的 run 被取代；b2319e1 的 run 42628885777 在 import 時 Godot 偶發崩潰（`double free or corruption`，重新匯入 `strings.csv` 時），同樣內容在 9a84a8c 已經過了——**再遇到就重跑那個 run**，常發生再查。screens 的 `29-ch3-heart` 還沒在 CI 上看過（本機截圖看過：從西岸往下看，東牆腳一條繩子、一點銅光，送葬者在河床上走過去）。開工照常先跑 `scripts/check.sh`（最後 341 個測試）。
 - 第 46 輪：9250c8d run 42619710473 全綠、b8ffaf1 run 42620873283 全綠（第 47 輪開工確認）。
 - **測試結束時的「2 ObjectDB instances were leaked at exit」警告**：只在 `TEST_FILTER=slice_playthrough` 與整套測試出現（9ef5632 上就有，第 45 輪之前沒查）；加 `--verbose` 跑同一組**沒有重現**（跟時間有關，懷疑是結束時還沒播完的 Sfx 播放器或 Tween）。不算失敗、不要卡住。
