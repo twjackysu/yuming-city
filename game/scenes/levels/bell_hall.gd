@@ -1392,7 +1392,9 @@ func _build_carvings() -> void:
 	root.name = "WallCarvings"
 	root.position = Vector3(CARVING_X, 0.0, (CARVING_ZS[0] + CARVING_ZS[CARVING_ZS.size() - 1]) * 0.5)
 	add_child(root)
-	var slab_mat: StandardMaterial3D = _mat(Color(0.56, 0.5, 0.43), 0.9)
+	# D-172：嵌在方石牆裡的石板（比牆石淺一點、不要像貼在牆上的紙）＋一圈深色的石框
+	var slab_mat: StandardMaterial3D = _mat(Color(0.47, 0.42, 0.36), 0.93)
+	var frame_mat: StandardMaterial3D = _mat(Color(0.27, 0.235, 0.2), 0.9)
 	for i: int in CARVING_ZS.size():
 		# 每塊自己的刻痕材質：看過的那塊刻痕亮起暖光（跟細管一樣的顏色）
 		var groove: StandardMaterial3D = _mat(Color(0.26, 0.22, 0.19), 0.95)
@@ -1406,6 +1408,21 @@ func _build_carvings() -> void:
 		panel.material_override = slab_mat
 		panel.position = Vector3(0.0, 1.7, CARVING_ZS[i] - root.position.z)
 		root.add_child(panel)
+		# 石框：上下左右四條，比石板再突出一點
+		for fs: Array in [
+			[Vector3(0.14, 0.1, 1.35), Vector3(-0.01, 0.8, 0.0)],
+			[Vector3(0.14, 0.1, 1.35), Vector3(-0.01, -0.8, 0.0)],
+			[Vector3(0.14, 1.5, 0.1), Vector3(-0.01, 0.0, 0.625)],
+			[Vector3(0.14, 1.5, 0.1), Vector3(-0.01, 0.0, -0.625)],
+		]:
+			var fr := MeshInstance3D.new()
+			fr.name = "Frame"
+			var fm := BoxMesh.new()
+			fm.size = fs[0] as Vector3
+			fr.mesh = fm
+			fr.material_override = frame_mat
+			fr.position = fs[1] as Vector3
+			panel.add_child(fr)
 		for g: int in 3:
 			var line := MeshInstance3D.new()
 			var lm := BoxMesh.new()
