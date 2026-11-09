@@ -159,6 +159,19 @@ func mat(color: Color, roughness: float = 0.9) -> StandardMaterial3D:
 
 
 ## 發光材質（窗、燈泡）。
+## 白天熄燈（D-151）：這個顏色的發光材質全部不發光、玻璃變暗（材質是共用的，合併後的 mesh 跟著變）。回傳改了幾個。
+func unlight(color: Color) -> int:
+	var n: int = 0
+	var prefix: String = "glow/%s/" % color.to_html()
+	for key: String in _mats:
+		if key.begins_with(prefix):
+			var m: StandardMaterial3D = _mats[key] as StandardMaterial3D
+			m.emission_enabled = false
+			m.albedo_color = color.darkened(0.55)
+			n += 1
+	return n
+
+
 func glow(color: Color, energy: float) -> StandardMaterial3D:
 	var key: String = "glow/%s/%.2f" % [color.to_html(), energy]
 	if _mats.has(key):

@@ -38,7 +38,7 @@ const CHECKPOINT_SPAWNS: Dictionary = {
 	"undertaker": Vector3(0.0, 0.05, 6.0),
 	# 第 1 章段落 4（D-151）：從廣場西邊的酒館出來；拿到油燈後在地窖門口
 	"ch1_day_town": Vector3(-8.6, 0.05, 2.0),
-	"ch1_lamp": Vector3(6.0, 0.05, -2.6),
+	"ch1_lamp": Vector3(5.0, 0.05, -1.2),
 }
 ## `--at=` 開發用出生位置
 const DEV_SPAWNS: Dictionary = {
@@ -217,6 +217,8 @@ func dev_face_target(who: String) -> Node3D:
 			return encounter.thrown_frame if encounter != null and is_instance_valid(encounter.thrown_frame) else null
 		"arch":
 			return arch_site
+		"ada":
+			return get_node_or_null("Ada") as Node3D
 	return null
 
 
@@ -463,6 +465,8 @@ func _build_day() -> void:
 		if player != null and player.is_ancestor_of(n):
 			continue
 		(n as OmniLight3D).visible = false
+	# 路燈與門燈的玻璃也不亮（白天亮著像忘了關）
+	look.unlight(FrostbridgeLook.LAMP)
 	if arch_site != null:
 		arch_site.set_physics_process(false)
 	var spot := Marker3D.new()
@@ -1902,9 +1906,11 @@ func _build_pear_stall(pos: Vector3) -> void:
 	var pear := look.mat(Color(0.78, 0.66, 0.3), 0.6)
 	for i: int in 6:
 		_batch.add_sphere(0.09, pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15), pear)
-	var cloak := look.mat(Color(0.12, 0.12, 0.14))
-	_batch.add_cylinder(0.05, 0.32, 1.55, pos + Vector3(0.3, 0.78, -0.75), cloak, false, 12)
-	_batch.add_sphere(0.15, pos + Vector3(0.3, 1.62, -0.75), cloak)
+	# 攤子後面的艾妲（剪影）；白天她站到地窖門口（Puppet，_build_day），攤子後面空著
+	if not day:
+		var cloak := look.mat(Color(0.12, 0.12, 0.14))
+		_batch.add_cylinder(0.05, 0.32, 1.55, pos + Vector3(0.3, 0.78, -0.75), cloak, false, 12)
+		_batch.add_sphere(0.15, pos + Vector3(0.3, 1.62, -0.75), cloak)
 	var l := OmniLight3D.new()
 	l.light_color = FrostbridgeLook.LAMP
 	l.light_energy = 1.4
