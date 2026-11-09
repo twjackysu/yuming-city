@@ -79,3 +79,5 @@ CMU 官方 swordplay 已用於席菈握劍及動作研究，見 [研究紀錄](a
 [原版 MIT TRELLIS 本機試跑](art-trials/trellis/README.md) 已在 RTX 2080 SUPER 8GB 上實測生成網格與頂點顏色。這是未綁定、未減面的研究，不能當成正式角色。[CC0 羊毛與 xatlas 研究](art-trials/wool-uv/README.md) 已提高 UV 利用率，但材質近景及手部遮罩仍待改善，未替換角色候選。
 
 Hunyuan3D 2.0 雖能在本機試跑，官方 [LICENSE](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/blob/main/LICENSE) 第 5(c) 將輸出也納入地域限制，定義的區域排除歐盟、英國及韓國；因此沒有將它的輸出推送或納入預計全球發行的遊戲。不能只因免費下載就記成 MIT 或全球無限制。
+
+諾恩工作版本已改為右臂骨折保護步態，修正袖口權重，並新增 35 幀夾板剛性、FBX 往返及 Godot 接地檢查；影片與夜景圖見 [諾恩候選](../art-inbox/studies/noen/README.md)。這仍不是正式驗收或完整動畫組。

@@ -41,3 +41,6 @@ V2 additions: fitted inner wool shirt and raised neckline derived from the CC0
 body surface, with project-created procedural wool materials. Boot front/back
 texture references were generated with OpenAI image generation and projected
 onto the mesh. Character total: 39,866 triangles. Review version only.
+
+
+2026-11-09 guarded-walk update: right forearm held in front of abdomen using a two-bone pose solve; right fingers relaxed, ordinary right-arm swing removed. Cuff weights assigned to hand/finger bones were moved to forearm (144 affected coat vertices). Wooden splint remains 100% RightForeArm and passes all-frame edge-length rigidity checks. Existing ACCAD credit/license remains applicable. This is still an unaccepted character study.

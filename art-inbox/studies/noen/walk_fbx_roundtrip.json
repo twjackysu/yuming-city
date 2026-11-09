@@ -1,33 +1,12 @@
 {
-  "fps": 30,
-  "frames": [
-    2,
-    36
-  ],
   "bones": 60,
-  "mesh_count": 0,
-  "maximum_loop_matrix_error": 8.344650268554688e-07,
-  "largest_errors": [
-    [
-      "mixamorig:RightHandRing2",
-      8.344650268554688e-07
-    ],
-    [
-      "mixamorig:LeftHandMiddle3",
-      7.748603820800781e-07
-    ],
-    [
-      "mixamorig:LeftHandPinky2",
-      7.748603820800781e-07
-    ],
-    [
-      "mixamorig:RightHandRing3",
-      7.748603820800781e-07
-    ],
-    [
-      "mixamorig:LeftHandThumb2",
-      7.227063179016113e-07
-    ]
-  ],
-  "status": "structural_trial_only_visual_and_gameplay_checks_pending"
+  "meshes": 0,
+  "fps": 30,
+  "frame_start": 2,
+  "frame_end": 36,
+  "loop_max_matrix_error": 7.748603820800781e-07,
+  "without_skin": true,
+  "in_place": true,
+  "horizontal_hip_range_m": 9.685754776000977e-08,
+  "passed": true
 }

@@ -61,3 +61,11 @@ V2 單獨以 `inputs/boot_front.png` 執行 TripoSG，網格由 2,059,936 三角
 V2 修正：烘焙前清除低面數靴子的舊自訂法線，減少配合小腿形狀後的三角形明暗；使用 Blender 官方 `create_settings_group` 建立完整 glTF 材質設定群組，避免將另一個 GLB 匯入現有場景時缺少擴充插槽。
 
 `godot_review_v2/` 保存本次 Forward+ 檢視腳本，需放入 `noen_walk_preview.glb`；擷取 34 張標有 WORK IN PROGRESS 的畫面。這不是遊戲角色整合或正式動畫品質驗收。
+
+## 骨折保護步態（2026-11-09）
+
+設定 YUMING_NOEN_WORK 指向新的工作目錄，將 V2 的 tailored_noen.blend、tailored_candidate.glb 複製進去，再執行 fix_noen_cuff_weights.py → retarget_guarded_walk.py → export_walk_rest_bind.py → check_noen_guarded_fbx.py → review_walk_export.py → check_noen_guarded_pose.py（Blender 命令格式同前）。
+
+右手不再使用一般步行擺臂：兩骨姿勢解算讓前臂護在腹前，手指微彎。冬衣袖口 144 頂點從手／指骨重配給前臂，避免轉腕拉扯；夾板及綁帶仍固定於 RightForeArm。檢查記錄涵蓋 FBX 無模型／30 fps／原地／循環、35 幀夾板邊長與肩腕距離，以及 glTF 夾板的單一骨權重。不是所有動作的碰撞或美術驗收。
+
+新的 Godot 檢視在 godot_review_guarded；放入輸出的 noen_walk_preview.glb，先 import，再執行 check_ground.gd。這版接地檢查覆蓋全部 35 幀，另有實際引擎影片。night_review.tscn 可重用遊戲共用夜空／月光／霧／濕石板；先執行 prepare_lighting_review.py（需要時設定 YUMING_REPO 為專案根目錄），再 import。這是材質光照檢視，尚未把候選角色換進正式關卡。

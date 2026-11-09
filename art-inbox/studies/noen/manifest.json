@@ -6,28 +6,34 @@
   "textures": 30,
   "files": [
     {
+      "file": "night_preview.png",
+      "bytes": 432201,
+      "sha256": "8674bab40d2a8f22f6de2d2936c595246dcb54a80dee5fcb774b2c9d95a3a431"
+    },
+    {
       "file": "noen_walk_candidate.glb",
       "bytes": 36797952,
-      "sha256": "06a755516159c23e2c618c9deef193a48c5a49a9bd0f1627b6c81c5685e1f457"
+      "sha256": "bfa6075d6b24e7aae5832c574e5bdedea44f940426dc61406e4c5f270b6b6a31"
     },
     {
       "file": "preview.png",
-      "bytes": 309583,
-      "sha256": "6a8eedb68f8b7f0b9b98ddcb95b45045375c5535e560539cf54be39675a7b397"
+      "bytes": 727333,
+      "sha256": "0032dc6e73728934670a55932a57369c81138a49bed9ac031c46b57c01ed3ef2"
     },
     {
       "file": "walk_candidate.fbx",
-      "bytes": 516060,
-      "sha256": "6026b380eb88c964d006dd08fdad8a7cea0572c283a513946dee6b5275b1e830"
+      "bytes": 516460,
+      "sha256": "8f08fd9415d552fe193f634c653a3b3e3923ed21503e01c001d16b78458697d8"
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 1450657,
-      "sha256": "376f6e077db98d977484d796469dff383adedefd6ce07b3c4330bb586863def0"
+      "bytes": 409669,
+      "sha256": "743f792cd728c5745cd658f5ec64115b27aeeab44b968bb54aad4bd271934513"
     }
   ],
   "maximum_texture_dimension": 2048,
   "animation_names": [
     "walk_loop"
-  ]
+  ],
+  "motion_variant": "fractured_right_forearm_guarded_walk"
 }
