@@ -487,7 +487,54 @@ func _chapter1_daylight(city: StoryLevel) -> void:
 	city.call("touch_stele")
 	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_STELE_NO_NAME", "上面沒有你的名字")
 	await _step_into(_player(city), city.get("KORD_HOME") as Vector3 + Vector3(0.6, 0.0, 0.0), 3)
-	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "柯德家門口 → 待續（晚餐下一輪做）")
+	await _chapter1_dinner(city)
+
+
+## 段落 8（D-155）：柯德家的晚餐——走到門口進屋、五片麵包、小女兒的問題、席菈放乾糧（兩條路線各選一邊）、
+## 吃完回到街上（檢查點 ch1_after_dinner）→ 跟著柯德到鐘院門口（待續）。
+func _chapter1_dinner(city: StoryLevel) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_true(bool(city.get("in_house")), "走到柯德家門口 → 進屋")
+	assert_true(_game.call("is_in_dialogue"), "→ 晚餐對話")
+	var house: Vector3 = city.get("HOUSE_ORIGIN") as Vector3
+	assert_true(_flat_dist(_player(city).global_position, house) < 3.0, "諾恩在屋裡的桌邊")
+	for n: String in ["KordWife", "KordDaughter", "KordSon", "DinnerTable", "KordWater"]:
+		assert_true(city.has_node(n), "屋裡有 " + n)
+	assert_true(_flat_dist((city.get_node("Kord") as Node3D).global_position, house) < 3.0, "柯德也在桌邊")
+	assert_true(_flat_dist((city.get_node("Sheila") as Node3D).global_position, house) < 3.0, "席菈也在桌邊")
+	assert_false((city.get_node("RationsSheila") as Node3D).visible, "席菈還沒放乾糧")
+	await _assert_daylight(city, "[柯德家]")
+	# 丟石頭那條路線（柯德的第一印象 hands）：回答＋跟著放乾糧；另一條：不回答＋不放
+	var share: bool = s.state.get_flag("ch1.kord_first") == "hands"
+	var most: int = await _run_dialogue(city, 0 if share else 1)
+	assert_eq(most, 2, "晚餐的選項各兩個")
+	assert_eq(s.state.get_flag("ch1.answered_daughter"), share, "回答／不回答小女兒記下來")
+	assert_eq(s.state.get_flag("ch1.shared_rations"), share, "放不放乾糧記下來（第 4 章柯德的台詞）")
+	assert_eq(s.state.get_flag("ch1.sheila_shared"), true, "席菈一定放")
+	assert_false(bool(city.get("in_house")), "吃完 → 回到街上")
+	assert_true(_flat_dist(_player(city).global_position, city.get("KORD_HOME") as Vector3) < 3.0, "站在柯德家門口")
+	assert_eq(s.quests.stage_of("ch1_main"), "bell_yard", "→ 跟著柯德去鐘院")
+	assert_eq(s.state.checkpoint, "ch1_after_dinner")
+	for i: int in 2:
+		await tree.physics_frame
+	assert_true((city.get_node("RationsSheila") as Node3D).visible, "桌上有席菈的乾糧")
+	assert_eq((city.get_node("RationsNoen") as Node3D).visible, share, "諾恩的乾糧跟著選項")
+	city = await _retry()
+	assert_eq(str(city.name), "Daylight", "[ch1_after_dinner] 重來還在白晝城")
+	assert_eq(_objective(city), "Q_CH1_OBJ_BELL_YARD", "[ch1_after_dinner] HUD 目標")
+	assert_false(bool(city.get("in_house")), "[ch1_after_dinner] 在街上")
+	assert_true(_flat_dist(_player(city).global_position, city.get("KORD_HOME") as Vector3) < 3.0, "[ch1_after_dinner] 出生在柯德家門口")
+	await _assert_daylight(city, "[ch1_after_dinner]")
+	for i: int in 3:
+		await tree.physics_frame
+	assert_false(_game.call("is_in_dialogue"), "[ch1_after_dinner] 不會又開晚餐")
+	assert_eq(s.state.get_flag("ch1.shared_rations"), share, "[ch1_after_dinner] 乾糧的選項保留")
+	await _step_into(_player(city), city.get("BELL_YARD_POS") as Vector3, 3)
+	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "鐘院門口 → 待續（段落 9 兔子下一輪做）")
+
+
+static func _flat_dist(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 ## 白晝城：只有諾恩的油燈投影子（07 的場景斷言）；沒有太陽；接地陰影也拿掉；柯德、席菈、彌夏、瑪菈都在。

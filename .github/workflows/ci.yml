@@ -205,6 +205,7 @@ jobs:
           shot 13-ch1-day-north 30 --level=frostbridge --day --at=north --locale=zh_TW
           shot 14-ch1-stairs 30 --level=stairs --stairs-at=trap --locale=zh_TW
           shot 15-ch1-daylight 30 --level=daylight --daylight-at=stele --locale=zh_TW
+          shot 16-ch1-dinner 30 --level=daylight --daylight-at=dinner --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

@@ -5,12 +5,15 @@ extends StoryLevel
 ## 穹頂鑲著數千盞白燈（一個 MultiMesh），沒有太陽、環境光很高：整座城沒有影子，
 ## **只有諾恩手上的油燈會投影子**（場景斷言測試擋住之後加的燈）。人物腳下的接地陰影也拿掉。
 ## 路口立著壽命石碑（Residents）：名字＋「還能活 N 天」；看到瑪菈用一天換半壺水（19 → 18）。
-## 諾恩按在石碑上只會得到「上面沒有你的名字」。柯德帶路，走到他家門口顯示「待續」（段落 8 晚餐下一輪做）。
+## 諾恩按在石碑上只會得到「上面沒有你的名字」。柯德帶路，走到他家門口 → 黑一下換到屋裡（段落 8 晚餐，D-155）：
+## 柯德把自己那份切成五片、自己喝水；小女兒問「你們買東西不會變老？」；席菈把乾糧放到桌子中央，玩家可以跟著放。
+## 吃完回到街上，柯德往街尾的鐘院走，走到鐘院門口顯示「待續」（段落 9 兔子下一輪做）。
+## 柯德家的屋內蓋在街區外面（HOUSE_ORIGIN，x = 40），不另開關卡：同一個環境（沒有影子）、同一盞油燈。
 ##
 ## 座標：門在南邊（z = GATE_Z），街往 -Z 走到底（z = END_Z）；兩個路口各一塊石碑。
 
 const QUEST: String = "ch1_main"
-const STAGES: PackedStringArray = ["daylight_furnace", "daylight_stele", "kord_home"]
+const STAGES: PackedStringArray = ["daylight_furnace", "daylight_stele", "kord_home", "bell_yard"]
 const GATE_Z: float = 20.5
 const SQUARE_Z: float = 10.0
 const SQUARE_HALF: float = 7.5
@@ -40,6 +43,7 @@ const KORD_STOPS: Dictionary = {
 	"daylight_furnace": Vector3(2.4, 0.0, 15.2),
 	"daylight_stele": Vector3(0.9, 0.0, 4.6),
 	"kord_home": Vector3(-1.6, 0.0, -23.2),
+	"bell_yard": Vector3(1.1, 0.0, -28.4),
 }
 const KORD_SPEED: float = 2.4
 const MISHA_GAP: float = 3.0
@@ -47,6 +51,32 @@ const MISHA_SPEED: float = 4.0
 ## 油燈：這一章唯一投影子的光。四周很亮，要夠強才看得出影子
 const LAMP_RANGE: float = 7.0
 const LAMP_ENERGY: float = 3.0
+## 吃完飯走出門站的地方（柯德家門口往街中央一點，面向街尾）
+const AFTER_DINNER_OFFSET: Vector3 = Vector3(1.7, 0.0, 0.3)
+## 鐘院門口（街尾）：走到這裡顯示「待續」
+const BELL_YARD_POS: Vector3 = Vector3(0.0, 0.0, -29.0)
+const BELL_YARD_RANGE: float = 3.2
+
+## 柯德家（段落 8，D-155）：一間小室內，蓋在街區外面；屋內 x ±HOUSE_HALF.x、z ±HOUSE_HALF.y，門在南牆
+const HOUSE_ORIGIN: Vector3 = Vector3(40.0, 0.0, -24.0)
+const HOUSE_HALF: Vector2 = Vector2(4.0, 3.5)
+const HOUSE_HEIGHT: float = 3.2
+## 桌子（相對 HOUSE_ORIGIN）：桌面中心、大小、高度
+const TABLE_POS: Vector3 = Vector3(0.0, 0.0, -0.7)
+const TABLE_SIZE: Vector2 = Vector2(1.8, 1.0)
+const TABLE_TOP: float = 0.76
+## 每個人在桌邊站的地方（相對 HOUSE_ORIGIN）。席菈、彌夏站在諾恩前面兩側（站在後面會擋住過肩鏡頭）
+const SEATS: Dictionary = {
+	"noen": Vector3(0.15, 0.0, 0.6),
+	"sheila": Vector3(-1.1, 0.0, 0.2),
+	"misha": Vector3(1.2, 0.0, 0.2),
+	"kord": Vector3(-1.45, 0.0, -0.75),
+	"wife": Vector3(1.45, 0.0, -0.75),
+	"daughter": Vector3(-0.4, 0.0, -1.6),
+	"son": Vector3(0.4, 0.0, -1.6),
+}
+const DINNER: String = "ch1_kord_dinner"
+const CUT_FADE_SEC: float = 0.7
 
 const PLASTER: Color = Color(0.83, 0.82, 0.78)
 const STONE: Color = Color(0.56, 0.54, 0.5)
@@ -63,6 +93,11 @@ var _misha: Puppet
 var _mara: Puppet
 var _water: MeshInstance3D
 var _home_inside: bool = false
+var _yard_inside: bool = false
+## 諾恩現在在柯德家屋裡（晚餐）
+var in_house: bool = false
+var _rations_sheila: Node3D
+var _rations_noen: Node3D
 var _plaster_mat: StandardMaterial3D
 var _stone_mat: StandardMaterial3D
 var _shutter_mat: StandardMaterial3D
@@ -82,11 +117,11 @@ func _ready() -> void:
 		dev_start_daylight(Game.session)
 	# 截圖用：`--daylight-at=stele` 看完爐子、站在第一塊石碑前（瑪菈換水之前）
 	var at: String = str(dev_args.get("daylight-at", ""))
-	if at in ["stele", "home"]:
+	if at in ["stele", "home", "dinner"]:
 		Game.session.state.set_flag("ch1.daylight_intro", true)
 		Game.session.set_flag("ch1.saw_empty_furnace", true)
 		Game.session.state.set_flag("ch1.furnace_talked", true)
-	if at == "home":
+	if at in ["home", "dinner"]:
 		Game.session.set_flag("ch1.saw_stele_trade", true)
 		Game.session.state.set_flag("ch1.mara_traded", true)
 		Game.session.set_flag(Residents.FLAG_PREFIX + TRADE_RESIDENT, residents.days_left(Game.session.state, TRADE_RESIDENT) - 1)
@@ -95,6 +130,7 @@ func _ready() -> void:
 	_build_square()
 	_build_street()
 	_build_steles()
+	_build_house()
 	_init_story()
 	_place_player(at)
 	_set_up_lamp()
@@ -104,6 +140,9 @@ func _ready() -> void:
 	Game.dialogue_started.connect(_on_dialogue_started)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
 	add_to_group("interact_prompts")
+	# 截圖用：`--daylight-at=dinner` 直接坐到柯德家的桌邊（晚餐對話第一句）
+	if at == "dinner" and Game.session.quests.stage_of(QUEST) == "kord_home":
+		enter_home.call_deferred(false)
 
 
 ## 開發旗標與測試用：照正式流程推到「走進白晝城」（段落 7 開頭）。已經在白晝城的階段就不動。
@@ -135,10 +174,18 @@ func _place_player(at: String) -> void:
 	elif at == "home":
 		p = KORD_HOME + Vector3(2.4, 0.0, 4.5)
 		yaw = deg_to_rad(28.0)
+	elif Game.session.quests.stage_of(QUEST) == "bell_yard":
+		# 吃完飯（檢查點 ch1_after_dinner）：站在柯德家門口，面向街尾的鐘院
+		p = KORD_HOME + AFTER_DINNER_OFFSET
+	_put_player(player, p, yaw)
+
+
+func _put_player(player: Node3D, p: Vector3, yaw: float) -> void:
 	player.global_position = p + Vector3(0, 0.05, 0)
 	player.rotation.y = yaw
 	if player is PlayerController:
 		(player as PlayerController).yaw = yaw
+		(player as PlayerController).velocity = Vector3.ZERO
 		(player as PlayerController).snap_camera()
 
 
@@ -187,6 +234,7 @@ func _physics_process(delta: float) -> void:
 	if player == null:
 		return
 	_update_people(delta, player)
+	_update_table()
 	if Game.is_player_locked():
 		return
 	var st: GameState = Game.session.state
@@ -206,9 +254,15 @@ func _physics_process(delta: float) -> void:
 				Game.start_dialogue("ch1_daylight_stele")
 				return
 	var at_home: bool = _flat(pos, KORD_HOME) <= HOME_RANGE
-	if at_home and not _home_inside and stage == "kord_home":
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+	if at_home and not _home_inside and stage == "kord_home" and not in_house:
+		enter_home()
+		return
 	_home_inside = at_home
+	# 吃完飯：跟著柯德走到街尾的鐘院門口 → 待續（段落 9 兔子下一輪做）
+	var at_yard: bool = _flat(pos, BELL_YARD_POS) <= BELL_YARD_RANGE
+	if at_yard and not _yard_inside and stage == "bell_yard":
+		_banner("CH1_TO_BE_CONTINUED", 6.0)
+	_yard_inside = at_yard
 	if Input.is_action_just_pressed("interact") and nearest_stele() != "":
 		touch_stele()
 
@@ -273,6 +327,203 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 	# 跳過對話時沒有那一句：照樣換掉
 	if dialogue_id == "ch1_daylight_stele":
 		mara_trade()
+	elif dialogue_id == DINNER and in_house:
+		leave_home()
+
+
+# ---------------------------------------------------------------- 段落 8：柯德家的晚餐（D-155）
+
+## 走到柯德家門口（測試也用）：黑一下 → 屋裡，每個人站到桌邊 → 晚餐對話。
+func enter_home(fade: bool = true) -> void:
+	if in_house:
+		return
+	in_house = true
+	_seat_everyone()
+	if fade:
+		_cut_from_black(CUT_FADE_SEC)
+	Game.start_dialogue(DINNER)
+
+
+## 吃完飯（晚餐對話結束時；測試也用）：黑一下 → 回到柯德家門口，柯德往鐘院走。
+func leave_home() -> void:
+	if not in_house:
+		return
+	in_house = false
+	var s: GameSession = Game.session
+	# 跳過對話也照樣有：席菈放了乾糧、晚餐吃完了
+	s.state.set_flag("ch1.sheila_shared", true)
+	if not bool(s.state.get_flag("ch1.kord_dinner_done", false)):
+		s.set_flag("ch1.kord_dinner_done", true)
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var out: Vector3 = KORD_HOME + AFTER_DINNER_OFFSET
+	if player != null:
+		_put_player(player, out, 0.0)
+	_home_inside = true
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		ally.global_position = out + Vector3(-1.5, 0.05, -0.9)
+	if _misha != null:
+		_misha.global_position = out + Vector3(1.0, -0.05, -1.3)
+	if _kord != null:
+		_kord.global_position = KORD_HOME + Vector3(0.6, 0.0, -0.4)
+	_cut_from_black(CUT_FADE_SEC)
+
+
+func _seat_everyone() -> void:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null:
+		_put_player(player, HOUSE_ORIGIN + (SEATS["noen"] as Vector3), 0.0)
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		ally.global_position = HOUSE_ORIGIN + (SEATS["sheila"] as Vector3) + Vector3(0, 0.05, 0)
+	if _misha != null:
+		_misha.global_position = HOUSE_ORIGIN + (SEATS["misha"] as Vector3) + Vector3(0, -0.05, 0)
+		_face_table(_misha)
+	if _kord != null:
+		_kord.global_position = HOUSE_ORIGIN + (SEATS["kord"] as Vector3)
+		_face_table(_kord)
+
+
+## 人偶轉向桌子中央。
+func _face_table(p: Node3D) -> void:
+	var to: Vector3 = HOUSE_ORIGIN + TABLE_POS - p.global_position
+	p.rotation.y = atan2(-to.x, -to.z)
+
+
+## 換地方時黑一下再亮回來（白盒的轉場，不擋輸入）。
+func _cut_from_black(seconds: float) -> void:
+	var old: Node = get_node_or_null("CutFade")
+	if old != null:
+		old.free()
+	var layer := CanvasLayer.new()
+	layer.name = "CutFade"
+	layer.layer = 5
+	var rect := ColorRect.new()
+	rect.color = Color.BLACK
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	add_child(layer)
+	# tween 綁在這一層上：連續換兩次地方時舊的一層連同 tween 一起拿掉
+	var tw: Tween = layer.create_tween()
+	tw.tween_interval(seconds * 0.3)
+	tw.tween_property(rect, "modulate:a", 0.0, seconds * 0.7)
+	tw.tween_callback(layer.queue_free)
+
+
+## 桌上的乾糧跟著旗標出現：席菈放的（`ch1.sheila_shared`）、諾恩跟著放的（`ch1.shared_rations`）。
+func _update_table() -> void:
+	var st: GameState = Game.session.state
+	if _rations_sheila != null:
+		_rations_sheila.visible = bool(st.get_flag("ch1.sheila_shared", false))
+	if _rations_noen != null:
+		_rations_noen.visible = st.get_flag("ch1.shared_rations", false) == true
+
+
+## 柯德家的屋內：木地板、白灰牆、關著的窗板、一盞不投影子的白燈；桌上五片麵包（孩子各兩片、太太一片）、柯德面前只有一杯水。
+func _build_house() -> void:
+	var o: Vector3 = HOUSE_ORIGIN
+	var hx: float = HOUSE_HALF.x
+	var hz: float = HOUSE_HALF.y
+	var floor_mat := _mat(Color(0.42, 0.33, 0.24), 0.9)
+	_solid("HouseFloor", Vector3(hx * 2.0 + 0.6, 0.4, hz * 2.0 + 0.6), o + Vector3(0, -0.2, 0), floor_mat)
+	_solid("HouseCeiling", Vector3(hx * 2.0 + 0.6, 0.3, hz * 2.0 + 0.6), o + Vector3(0, HOUSE_HEIGHT + 0.15, 0), _plaster_mat)
+	_solid("HouseWallN", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, -hz - 0.15), _plaster_mat)
+	_solid("HouseWallS", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, hz + 0.15), _plaster_mat)
+	_solid("HouseWallW", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(-hx - 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
+	_solid("HouseWallE", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(hx + 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
+	# 牆腳一圈石砌、南牆的門（關著）、西牆關著的窗板、東牆的櫥櫃
+	for side: int in [-1, 1]:
+		_solid("HousePlinth", Vector3(0.06, 0.5, hz * 2.0), o + Vector3(side * (hx - 0.03), 0.25, 0), _stone_mat, false)
+	_solid("HouseInnerDoor", Vector3(1.0, 2.1, 0.08), o + Vector3(-1.6, 1.05, hz - 0.04), _wood_mat, false)
+	_solid("HouseShutter", Vector3(0.08, 1.0, 1.2), o + Vector3(-hx + 0.04, 1.6, -1.2), _shutter_mat, false)
+	_solid("HouseCupboard", Vector3(0.6, 1.8, 1.4), o + Vector3(hx - 0.3, 0.9, -1.8), _wood_mat)
+	# 白晝城的燈：天花板上一顆小白燈（不是光源；屋裡一樣沒有影子，只有油燈）
+	var bulb := MeshInstance3D.new()
+	bulb.name = "HouseLamp"
+	var bm := SphereMesh.new()
+	bm.radius = 0.12
+	bm.height = 0.2
+	bulb.mesh = bm
+	bulb.material_override = _glow_mat(DOME_WHITE, 5.0)
+	bulb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	bulb.position = o + Vector3(0, HOUSE_HEIGHT - 0.12, TABLE_POS.z)
+	add_child(bulb)
+	# 桌子：桌面＋四隻腳
+	var t: Vector3 = o + TABLE_POS
+	_solid("DinnerTable", Vector3(TABLE_SIZE.x, 0.08, TABLE_SIZE.y), t + Vector3(0, TABLE_TOP - 0.04, 0), _wood_mat)
+	for leg: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+		var lp := Vector3(leg.x * (TABLE_SIZE.x * 0.5 - 0.08), (TABLE_TOP - 0.08) * 0.5, leg.y * (TABLE_SIZE.y * 0.5 - 0.08))
+		_solid("DinnerTableLeg", Vector3(0.07, TABLE_TOP - 0.08, 0.07), t + lp, _wood_mat, false)
+	var top: float = TABLE_TOP
+	# 麵包：孩子各兩片、太太一片（每個人面前一塊木盤）；柯德面前只有一杯水
+	var crumb := _mat(Color(0.78, 0.64, 0.42), 0.95)
+	var crust := _mat(Color(0.5, 0.33, 0.18), 0.9)
+	var plate_mat := _mat(Color(0.5, 0.4, 0.3), 0.8)
+	var slices: Dictionary = {"daughter": 2, "son": 2, "wife": 1}
+	for who: String in slices.keys():
+		var seat: Vector3 = o + (SEATS[who] as Vector3)
+		var at: Vector3 = Vector3(t.x + (seat.x - t.x) * 0.55, 0.0, t.z + (seat.z - t.z) * 0.55)
+		at.x = clampf(at.x, t.x - TABLE_SIZE.x * 0.5 + 0.18, t.x + TABLE_SIZE.x * 0.5 - 0.18)
+		at.z = clampf(at.z, t.z - TABLE_SIZE.y * 0.5 + 0.16, t.z + TABLE_SIZE.y * 0.5 - 0.16)
+		_solid("Plate_" + who, Vector3(0.26, 0.02, 0.2), Vector3(at.x, top + 0.01, at.z), plate_mat, false)
+		for k: int in int(slices[who]):
+			var sl := _solid("BreadSlice_" + who, Vector3(0.09, 0.025, 0.08), Vector3(at.x - 0.05 + 0.1 * float(k), top + 0.035, at.z), crumb, false)
+			sl.rotation.y = 0.3 * float(k) - 0.15
+	var kord_seat: Vector3 = o + (SEATS["kord"] as Vector3)
+	var cup := MeshInstance3D.new()
+	cup.name = "KordWater"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.045
+	cm.bottom_radius = 0.04
+	cm.height = 0.1
+	cup.mesh = cm
+	cup.material_override = _mat(Color(0.6, 0.6, 0.58), 0.4)
+	cup.position = Vector3(t.x - TABLE_SIZE.x * 0.5 + 0.2, top + 0.05, kord_seat.z)
+	add_child(cup)
+	# 切剩的麵包頭（切成五片的那一條）
+	var loaf := _solid("BreadLoafEnd", Vector3(0.12, 0.09, 0.1), Vector3(t.x - 0.45, top + 0.045, t.z - 0.1), crust, false)
+	loaf.rotation.y = 0.4
+	# 乾糧：席菈掰開放到桌子中央的兩半；諾恩跟著放的一塊（旗標控制，_update_table）
+	var hardtack := _mat(Color(0.46, 0.36, 0.24), 0.95)
+	_rations_sheila = Node3D.new()
+	_rations_sheila.name = "RationsSheila"
+	_rations_sheila.position = t + Vector3(-0.08, top, 0.02)
+	add_child(_rations_sheila)
+	for k: int in 2:
+		var half := MeshInstance3D.new()
+		var hb := BoxMesh.new()
+		hb.size = Vector3(0.1, 0.04, 0.12)
+		half.mesh = hb
+		half.material_override = hardtack
+		half.position = Vector3(-0.06 + 0.13 * float(k), 0.02, 0.0)
+		half.rotation.y = -0.2 + 0.5 * float(k)
+		_rations_sheila.add_child(half)
+	_rations_noen = Node3D.new()
+	_rations_noen.name = "RationsNoen"
+	_rations_noen.position = t + Vector3(0.2, top, 0.12)
+	add_child(_rations_noen)
+	var mine := MeshInstance3D.new()
+	var mb := BoxMesh.new()
+	mb.size = Vector3(0.2, 0.045, 0.12)
+	mine.mesh = mb
+	mine.material_override = hardtack
+	mine.position = Vector3(0, 0.0225, 0)
+	mine.rotation.y = 0.25
+	_rations_noen.add_child(mine)
+	_update_table()
+	# 柯德的太太、兩個孩子（小女兒、兒子：縮小的程序人偶）
+	var family: Dictionary = {
+		"KordWife": ["wife", Color(0.44, 0.38, 0.34), 1.0],
+		"KordDaughter": ["daughter", Color(0.55, 0.4, 0.36), 0.58],
+		"KordSon": ["son", Color(0.32, 0.38, 0.44), 0.64],
+	}
+	for node_name: String in family.keys():
+		var row: Array = family[node_name] as Array
+		var member: Puppet = _puppet(node_name, row[1] as Color, Color(0.74, 0.72, 0.68))
+		member.scale = Vector3.ONE * float(row[2])
+		member.global_position = o + (SEATS[str(row[0])] as Vector3)
+		_face_table(member)
 
 
 # ---------------------------------------------------------------- 人：柯德帶路、彌夏跟著、瑪菈在石碑前
@@ -338,6 +589,9 @@ func _update_people(delta: float, player: Node3D) -> void:
 	if _kord != null:
 		var stage: String = Game.session.quests.stage_of(QUEST)
 		var want: Vector3 = KORD_STOPS.get(stage, _kord.global_position) as Vector3
+		# 屋裡：站在桌邊不動（KORD_STOPS 是街上的位置）
+		if in_house:
+			want = HOUSE_ORIGIN + (SEATS["kord"] as Vector3)
 		var to: Vector3 = Vector3(want.x - _kord.global_position.x, 0.0, want.z - _kord.global_position.z)
 		var step: float = minf(to.length(), KORD_SPEED * delta)
 		if step > 0.01:

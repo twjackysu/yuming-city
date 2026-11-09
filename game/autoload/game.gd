@@ -35,6 +35,8 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_stairs_bottom": "stairs",
 	# 段落 7：沒有影子的城（D-154）
 	"ch1_daylight": "daylight",
+	# 段落 8：柯德家的晚餐吃完（D-155，屋內也在 daylight 關卡裡）
+	"ch1_after_dinner": "daylight",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

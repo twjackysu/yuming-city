@@ -104,6 +104,15 @@
       "done_when": {
         "flag": "ch1.kord_dinner_done"
       }
+    },
+    {
+      "id": "bell_yard",
+      "objective": "Q_CH1_OBJ_BELL_YARD",
+      "checkpoint": "ch1_after_dinner",
+      "marker": "node:BellYardGate",
+      "done_when": {
+        "flag": "ch1.reached_bell_yard"
+      }
     }
   ]
 }

@@ -340,3 +340,52 @@ func test_daylight_stages_residents_and_furnace() -> void:
 	s.state.set_flag("life.mara", 18)
 	assert_eq(res.line(s.state, "mara"), "瑪菈　還能活 18 天", "石碑上的一行")
 	TranslationServer.set_locale("en")
+
+
+## 段落 8（D-155）：柯德家的晚餐——兩邊的選項都記下來、席菈一定放乾糧、吃完 → 鐘院（檢查點 ch1_after_dinner）、翻譯。
+func test_kord_dinner_choices_and_checkpoint() -> void:
+	var Daylight: GDScript = load("res://scenes/levels/daylight.gd") as GDScript
+	for route: int in 2:
+		var s := GameSession.new(QuestDB.load_default(), _dir)
+		s.new_game()
+		_play_slice(s)
+		s.set_flag("slice.cellar_entered", true)
+		Daylight.call("dev_start_daylight", s)
+		s.set_flag("ch1.saw_empty_furnace", true)
+		s.set_flag("ch1.saw_stele_trade", true)
+		assert_eq(s.quests.stage_of("ch1_main"), "kord_home", "看完石碑 → 到柯德家吃飯")
+		var r := DialogueRunner.new(Game.dialogues, s.state)
+		assert_true(r.start("ch1_kord_dinner"), "有晚餐對話")
+		var lines: PackedStringArray = []
+		var choice_counts: Array[int] = []
+		for i: int in 30:
+			if not r.is_running():
+				break
+			lines.append(r.current_text())
+			if not r.visible_choices.is_empty():
+				choice_counts.append(r.visible_choices.size())
+				r.choose(route)
+			else:
+				r.advance()
+		assert_false(r.is_running(), "走得完")
+		assert_eq(str(choice_counts), "[2, 2]", "回答／不回答、放／不放")
+		for key: String in ["DLG_CH1_HOME_001", "DLG_CH1_HOME_003", "DLG_CH1_HOME_005", "DLG_CH1_HOME_006", "DLG_CH1_HOME_007"]:
+			assert_true(key in lines, "兩條路線都有 " + key)
+		var answered: bool = route == 0
+		assert_eq(s.state.get_flag("ch1.answered_daughter"), answered)
+		assert_eq(s.state.get_flag("ch1.shared_rations"), answered, "第一個選項＝跟著放")
+		assert_true(("DLG_CH1_HOME_R_ANSWER" if answered else "DLG_CH1_HOME_R_SILENT") in lines, "回答 → 小女兒再問一句；不回答 → 張了張嘴")
+		assert_true(("DLG_CH1_HOME_R_SHARE" if answered else "DLG_CH1_HOME_R_KEEP") in lines, "放了 → 柯德叫孩子說謝謝")
+		assert_eq(s.state.get_flag("ch1.sheila_shared"), true, "席菈一定放")
+		assert_eq(s.state.get_flag("ch1.kord_dinner_done"), true)
+		s.advance()
+		assert_eq(s.quests.stage_of("ch1_main"), "bell_yard", "吃完 → 跟著柯德去鐘院")
+		assert_eq(s.state.checkpoint, "ch1_after_dinner")
+		assert_eq(Game.level_for_checkpoint("ch1_after_dinner"), "daylight", "屋內也在白晝城關卡裡")
+		assert_eq(s.objective_key(), "Q_CH1_OBJ_BELL_YARD")
+	for loc: String in ["en", "zh_TW"]:
+		TranslationServer.set_locale(loc)
+		for key: String in ["SPK_KORD_DAUGHTER", "Q_CH1_OBJ_BELL_YARD", "DLG_CH1_HOME_C_ANSWER", "DLG_CH1_HOME_C_SILENT",
+				"DLG_CH1_HOME_C_SHARE", "DLG_CH1_HOME_C_KEEP", "DLG_CH1_HOME_R_ANSWER2", "DLG_CH1_HOME_R_SHARE2", "DLG_CH1_HOME_R_KEEP"]:
+			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
+	TranslationServer.set_locale("en")

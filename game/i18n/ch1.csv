@@ -146,3 +146,22 @@ RES_KORD,Kord,柯德
 RES_NIKA,Nika,妮卡
 RES_LOTT,Lott,洛特
 RES_KARL,Karl,卡爾
+SPK_KORD_DAUGHTER,Kord's daughter,柯德的小女兒
+Q_CH1_OBJ_BELL_YARD,Follow Kord to the bell yard,跟著柯德去鐘院
+DLG_CH1_HOME_001,(Kord cut his own share of bread into five slices.),（柯德把自己那份麵包切成五片。）
+DLG_CH1_HOME_002,"(Two for each child, one for his wife. He drank water.)",（兩個孩子各兩片，留一片給他太太。他自己喝水。）
+DLG_CH1_HOME_003,Do they use this kind of money outside too?,外面也用這種錢嗎？
+DLG_CH1_HOME_004,It's different.,不一樣。
+DLG_CH1_HOME_005,So when you buy things… you don't get older?,那你們買東西，不會變老？
+DLG_CH1_HOME_C_ANSWER,No. We pay with coins.,不會。我們用銅板。
+DLG_CH1_HOME_C_SILENT,(Open your mouth. Say nothing.),（張了張嘴，什麼都沒說。）
+DLG_CH1_HOME_R_ANSWER,What do you do when the coins run out?,那銅板用完了怎麼辦？
+DLG_CH1_HOME_R_ANSWER2,(I had no answer for that.),（這一題我答不出來。）
+DLG_CH1_HOME_R_SILENT,(I opened my mouth. Nothing came out.),（我張了張嘴。）
+DLG_CH1_HOME_006,(Sheila broke her rations in half and set them in the middle of the table.),（席菈把自己的乾糧掰開，放到桌子中央。）
+DLG_CH1_HOME_C_SHARE,Put your rations next to hers,把自己的乾糧也放上去
+DLG_CH1_HOME_C_KEEP,Leave them in your pack,不動
+DLG_CH1_HOME_R_SHARE,…Say thank you.,……說謝謝。
+DLG_CH1_HOME_R_SHARE2,Thank you.,謝謝。
+DLG_CH1_HOME_R_KEEP,Eat. Bread goes hard once it's cold.,吃吧。麵包冷了就硬了。
+DLG_CH1_HOME_007,"When you're done, I'll take you to the bell yard.",吃完我帶你們去鐘院。
