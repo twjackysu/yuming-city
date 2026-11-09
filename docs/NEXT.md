@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 38 輪）的程式 commit：2b3337a 段落 4 白天的霜橋鎮＋艾妲的油燈（run 42563263623）、ff36041 白天熄燈＋`--face=ada`（run 42563570316）、f1e42f9 CI 盤點截圖加 `12-ch1-tavern`／`13-ch1-day-north`（最後一個）——結果見 PROGRESS 第 38 輪收尾補記；**開工先看最新 run 整個綠燈，盤點截圖 job 的兩張新圖有沒有拍出來**（screens release）。開工照常先跑 `scripts/check.sh`（最後 319 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 38 輪）的程式 commit：2b3337a 段落 4 白天的霜橋鎮＋艾妲的油燈（run 42563263623）、ff36041 白天熄燈＋`--face=ada`（run 42563570316）、f1e42f9 CI 盤點截圖加 `12-ch1-tavern`／`13-ch1-day-north`（最後一個，run 42563697609「Import、測試、匯出」已綠，截圖／smoke test／打包收尾時還在跑）。2b3337a 的 run 42563263623 全綠；ff36041 的 run 被取消（內容在 f1e42f9）。**開工先看最新 run 整個綠燈，盤點截圖 job 的兩張新圖有沒有拍出來**（screens release）。開工照常先跑 `scripts/check.sh`（最後 319 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 37 輪的 run 42558987949（cf5283f）已全綠（第 38 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 38 輪已把第 29～33 輪合併成每日摘要）；超過約 300 行時把第 34～37 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。

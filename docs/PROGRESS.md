@@ -21,6 +21,9 @@
 
 - 排程 session 照舊沒有 `add_repo` 工具，repo 已經 clone 好、push 正常。
 - `dev_start_day` 一開始只在「第 1 章還沒開始」時補走酒館流程，切片已完成、停在酒館開頭的 session 推不過去（單元測試抓到）；改成看第 1 章目前在哪個階段。
+- 想把一個還沒 push 的 commit 用 `--amend` 補進 README，被權限擋下；改成另一個 commit（之後一律不用 amend）。
+
+**收尾補記（13:09）**：2b3337a run 42563263623 全部綠燈（測試與匯出、截圖、smoke test、打包、latest、盤點截圖）。ff36041 的 run 42563570316 被下一個 push 取消（concurrency），程式包含在 f1e42f9 裡：f1e42f9 run 42563697609「Import、測試、匯出」已綠（319 個測試、Windows／Linux 匯出），截圖、smoke test、打包與盤點截圖（含兩張新的第 1 章截圖）收尾時還在跑；下一輪開工先確認整個 run 綠燈、screens 有 `12-ch1-tavern`／`13-ch1-day-north`。
 
 ## 2026-11-09 11:26–12:12　第 37 輪：切片結尾接上第 1 章（章節卡 → 酒館白盒段落 1～3）；段落 3 的標記畫面
 
