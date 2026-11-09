@@ -11,13 +11,16 @@ extends StoryLevel
 ## 對話 ch3_rhythm：席菈用布包著小石頭隔著銅片敲，**玩家選節奏**（很慢／慢一點／不快不慢／快一點／很快／忽快忽慢，試過的消失）→
 ## 「敲」那一句出現時判定（RhythmTrial）、送葬者照結果演：不動／偏頭／轉頭（轉頭之前鏈子先響＝觀察提示音，設定可關）→
 ## 不快不慢＝人的心跳 → 轉頭 →「就是這個速度。」→ 攻略筆記的空白條目變成證實（自己看到的）→ 檢查點 ch3_rhythm →
-## 段落 3 假心臟待續。
+## 段落 3「假心臟」（D-165）：（第五夜）彌夏把做好的假心臟交給我們（對話 ch3_decoy_make）→ 東岸三個點（`DecoySpot0～2`）：
+## 站在點上按互動鍵，把假心臟綁著繩子垂到河床上 → 送葬者聽到（HeartTargets：9 m 內）就鬆開鏈子掉下來、往心跳走 →
+## 走到旁邊停下來聽 → 收上來、換下一個點（太遠牠聽不到、不會動；所以只能一段一段帶）→ 走到閘道口 → 檢查點 ch3_lured →
+## 段落 4 煤車待續。**重現會讓諾恩的心跳變快**：在這裡按住重現鍵，牠會停下來轉向諾恩（不是禁止，是自己會發現的規則）。
 ##
 ## 座標：運河沿 Z（南 Z_SOUTH → 北 Z_NORTH），河道 x -CANAL_HALF_W～CANAL_HALF_W，兩岸各寬 BANK_W、岸頂 y＝0；
 ## 諾恩從東岸南端進來，岸邊有矮牆（不會掉下去）。北邊有一座閘道（段落 3 把送葬者引進去的地方，現在只是剪影）。
 
 const QUEST: String = "ch3_main"
-const STAGES: PackedStringArray = ["canal_bank", "observe", "decoy"]
+const STAGES: PackedStringArray = ["canal_bank", "observe", "decoy", "lure", "coal_cart"]
 const BED_Y: float = -4.5
 const CANAL_HALF_W: float = 3.0
 const BANK_W: float = 6.0
@@ -72,6 +75,27 @@ const TURN_DEG: float = 62.0
 const CUE_LEAD: float = 0.7
 ## 北邊的閘道（段落 3 用）
 const SLUICE_Z: float = -29.0
+## 段落 3：彌夏交假心臟（找到速度之後等 DECOY_TALK_DELAY 秒、諾恩在她 MISHA_TALK_RANGE 內）
+const DECOY_TALK: String = "ch3_decoy_make"
+const DECOY_TALK_DELAY: float = 4.3
+const MISHA_TALK_RANGE: float = 3.2
+## 東岸放假心臟的三個點：人站在 (DECOY_BANK_X, 0, z)，假心臟垂到河床的 (DECOY_BED_X, BED_Y, z)。
+## 第 0 點離吊樑 3.5 m（聽得到）；第 1、2 點從吊樑都超過 HeartTargets.HEAR_RANGE——只能一段一段帶（第 0 點不在石橋底下）
+const DECOY_ZS: PackedFloat32Array = [-17.5, -24.0, -27.6]
+const DECOY_BANK_X: float = 3.6
+const DECOY_BED_X: float = 2.4
+const DECOY_RANGE: float = 1.6
+## 醒過來的送葬者：在河床上走多快（m/s）、轉身多快、走到假心臟多近就停下來聽、河道裡能走到的 x
+const WALK_SPEED: float = 1.15
+const TURN_RATE: float = 2.6
+const HEART_REACH: float = 0.9
+const BED_LIMIT_X: float = 2.2
+## 鏈子鬆開、掉到河床上要多久
+const DROP_SEC: float = 0.6
+## 走到這裡（z 小於等於）＝進了閘道
+const SLUICE_REACH_Z: float = SLUICE_Z + 2.5
+## 檢查點 ch3_lured 重來時送葬者站的位置
+const LURED_POS: Vector3 = Vector3(2.0, BED_Y, SLUICE_Z + 2.4)
 ## 頭頂的石樑：一排排橫跨運河，縫裡透下鐘院的光
 const SLAT_Y: float = 13.0
 const SLAT_PITCH: float = 2.4
@@ -115,6 +139,23 @@ var _torso: Node3D
 var _plate: Node3D
 ## 截圖用（`--canal-at=edge`）：站在岸邊不開對話、彌夏不跟
 var _dev_hold_edge: bool = false
+## 段落 3：假心臟垂在哪一點（-1＝在手上）、送葬者走到過哪些點、醒了沒（掉到河床上）、正在掉
+var heart_spot: int = -1
+var reached: Array[bool] = [false, false, false]
+var awake: bool = false
+var _dropping: bool = false
+## 送葬者現在跟著什麼（HeartTargets.NONE／DECOY／NOEN；測試讀）
+var follow_kind: String = ""
+var _decoy_wait: float = 0.8
+var _heart: Node3D
+var _heart_light: OmniLight3D
+var _heart_mat: StandardMaterial3D
+var _heart_cord: MeshInstance3D
+var _spots: Array[DecoySpot] = []
+## 測試用：當作按住重現鍵
+var force_restoring: bool = false
+## 測試用：送葬者走路的速度倍數（流程測試不用真的等十幾秒）
+var walk_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -129,7 +170,9 @@ func _ready() -> void:
 	_build_ceiling()
 	_build_undertaker()
 	_build_drain()
+	_build_decoy()
 	_init_story()
+	add_to_group("interact_prompts")
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
 		_put(player, SPAWN, 0.0)
@@ -164,7 +207,25 @@ func _ready() -> void:
 			_lie_down()
 			_play_reaction("steady", RhythmTrial.TURN)
 			skip_reaction()
-	if Game.session.quests.stage_of(QUEST) == "decoy":
+	# 截圖用：`--canal-at=heart` 假心臟垂在第 0 點、送葬者已經掉到河床上往那裡走了一半
+	if at == "heart" and player != null:
+		dev_start_lure(Game.session)
+		# 站在西岸往東、往下看：東牆腳垂著的假心臟、走過來的送葬者（從東岸看會被岸緣擋住）
+		_put(player, Vector3(-3.7, 0.0, -16.0), 0.0)
+		lower_heart(0)
+		finish_drop()
+		_undertaker.global_position = Vector3(1.3, BED_Y, -15.6)
+		_undertaker.rotation.y = atan2(-(DECOY_BED_X - 1.3), -(DECOY_ZS[0] + 15.6))
+		_dev_hold_edge = true
+		var look: Vector3 = Vector3(1.9, 0.0, -16.4) - player.global_position
+		(player as PlayerController).yaw = atan2(-look.x, -look.z)
+		(player as PlayerController).pitch = -0.95
+		(player as PlayerController).snap_camera()
+	# 檢查點 ch3_lured（段落 3 做完）：送葬者已經在閘道口的河床上
+	if Game.session.quests.stage_of(QUEST) == "coal_cart":
+		_wake_undertaker(false)
+		_undertaker.global_position = LURED_POS
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
 		_continued_shown = true
 		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
 
@@ -185,6 +246,18 @@ static func dev_start_chapter3(s: GameSession) -> void:
 	s.set_flag("ch2.curtain_talked", true)
 	s.set_flag("ch2.curtain_opened", true)
 	s.attach_achievements(ach)
+
+
+## 開發旗標與測試用：照正式流程推到段落 3（拿到假心臟，檢查點 ch3_decoy）。
+static func dev_start_lure(s: GameSession) -> void:
+	dev_start_chapter3(s)
+	if s.quests.stage_of(QUEST) == "canal_bank":
+		StoryLogic.apply({"guide_blank": [BLANK_ENTRY]}, s.state)
+		s.set_flag("ch3.bank_talked", true)
+	if s.quests.stage_of(QUEST) == "observe":
+		s.set_flag(RhythmTrial.FLAG_FOUND, true)
+	if s.quests.stage_of(QUEST) == "decoy":
+		s.set_flag("ch3.decoy_received", true)
 
 
 func _put(node: Node3D, p: Vector3, yaw: float) -> void:
@@ -249,6 +322,15 @@ func _physics_process(delta: float) -> void:
 			_drain_armed = true
 		elif d <= DRAIN_RANGE and _drain_armed:
 			enter_drain()
+	elif stage == "decoy":
+		_decoy_wait -= delta
+		if _decoy_wait <= 0.0 and _misha != null and _flat(player.global_position, _misha.global_position) <= MISHA_TALK_RANGE:
+			talk_misha()
+	elif stage == "lure":
+		if Input.is_action_just_pressed("interact") and nearest_spot() >= 0:
+			use_spot(nearest_spot())
+	if awake and not _dropping:
+		_update_follow(player, delta)
 
 
 func _process(delta: float) -> void:
@@ -261,6 +343,7 @@ func _process(delta: float) -> void:
 		_clapper_light.light_energy = CLAPPER_ENERGY * (0.35 + 0.65 * beat)
 	if _clapper_mat != null:
 		_clapper_mat.emission_energy_multiplier = 1.2 + 4.0 * beat
+	_update_heart()
 
 
 ## 鐘舌的光：一次心跳兩拍（咚、咚——停），0～1。
@@ -294,6 +377,10 @@ func _look_into_canal() -> void:
 func _on_dialogue_ended(dialogue_id: String) -> void:
 	if dialogue_id == RHYTHM_TALK:
 		_on_rhythm_ended()
+		return
+	if dialogue_id == DECOY_TALK:
+		# 跳過也一樣：拿到假心臟 → 段落 3 正式開始（檢查點 ch3_decoy）
+		Game.session.set_flag("ch3.decoy_received", true)
 		return
 	if dialogue_id != BANK_TALK or bool(Game.session.state.get_flag("ch3.bank_talked", false)):
 		return
@@ -475,9 +562,7 @@ func _on_rhythm_ended() -> void:
 	if not bool(Game.session.state.get_flag(RhythmTrial.FLAG_FOUND, false)):
 		return
 	_banner("GUIDE_SELF_NOTE", 4.0)
-	if not _continued_shown:
-		_continued_shown = true
-		get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+	_decoy_wait = DECOY_TALK_DELAY
 
 
 ## 水溝：東岸上一道沿 Z 的淺溝（兩側低低的石緣、底下爛泥），前端插著一片銅片。
@@ -538,6 +623,231 @@ func undertaker() -> Undertaker:
 
 func clapper_light() -> OmniLight3D:
 	return _clapper_light
+
+
+# ---------------------------------------------------------------- 段落 3：假心臟（D-165）
+
+## 找到速度、提示過攻略筆記之後（測試也用）：（第五夜）彌夏交出假心臟。只開一次。
+func talk_misha() -> void:
+	if Game.is_in_dialogue() or Game.session.quests.stage_of(QUEST) != "decoy":
+		return
+	Game.start_dialogue(DECOY_TALK)
+
+
+## 東岸的三個點（矮牆上一根小木樁）、假心臟（小銅盒＋一下一下亮的銅光）、垂下去的繩子。
+func _build_decoy() -> void:
+	var wood: StandardMaterial3D = _mat(WOOD, 0.9)
+	for i: int in DECOY_ZS.size():
+		var spot := DecoySpot.new()
+		spot.name = "DecoySpot%d" % i
+		spot.index = i
+		spot.level = self
+		spot.position = Vector3(DECOY_BANK_X, 0.0, DECOY_ZS[i])
+		add_child(spot)
+		_spots.append(spot)
+		_solid("Peg", Vector3(0.08, 0.34, 0.08), Vector3(CANAL_HALF_W + 0.22 - DECOY_BANK_X, PARAPET_H + 0.17, 0.0), wood, false, spot)
+	_heart = Node3D.new()
+	_heart.name = "FakeHeart"
+	_heart.visible = false
+	add_child(_heart)
+	_heart_mat = _mat(Color(0.5, 0.3, 0.16), 0.4)
+	_heart_mat.metallic = 0.8
+	_heart_mat.emission_enabled = true
+	_heart_mat.emission = COPPER
+	_solid("Box", Vector3(0.2, 0.16, 0.18), Vector3(0.0, 0.08, 0.0), _heart_mat, false, _heart)
+	_heart_light = OmniLight3D.new()
+	_heart_light.name = "HeartLight"
+	_heart_light.light_color = COPPER
+	_heart_light.omni_range = 3.2
+	_heart_light.shadow_enabled = false
+	_heart_light.light_volumetric_fog_energy = 1.2
+	_heart_light.position = Vector3(0.0, 0.3, 0.0)
+	_heart.add_child(_heart_light)
+	_heart_cord = MeshInstance3D.new()
+	_heart_cord.name = "HeartCord"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.008
+	cm.bottom_radius = 0.008
+	cm.height = 1.0
+	_heart_cord.mesh = cm
+	_heart_cord.material_override = _mat(Color(0.3, 0.27, 0.22), 1.0)
+	_heart_cord.visible = false
+	add_child(_heart_cord)
+
+
+## 第 i 點的假心臟垂到河床上的位置。
+func heart_bed_pos(i: int) -> Vector3:
+	return Vector3(DECOY_BED_X, BED_Y, DECOY_ZS[i])
+
+
+## 這一點現在能不能動手（目標指引也用）：假心臟在手上 → 送葬者還沒走到過的點；垂下去了 → 只有垂著的那一點。
+func spot_actionable(i: int) -> bool:
+	if Game.session.quests.stage_of(QUEST) != "lure" or _dropping:
+		return false
+	if heart_spot < 0:
+		return not reached[i]
+	return heart_spot == i
+
+
+## 諾恩站在哪一點旁邊（而且能動手）；沒有回傳 -1。
+func nearest_spot() -> int:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player == null:
+		return -1
+	for i: int in DECOY_ZS.size():
+		if spot_actionable(i) and _flat(player.global_position, Vector3(DECOY_BANK_X, 0.0, DECOY_ZS[i])) <= DECOY_RANGE:
+			return i
+	return -1
+
+
+func interact_hint() -> Dictionary:
+	var i: int = nearest_spot()
+	if i < 0:
+		return {}
+	var key: String = "CH3_DECOY_RAISE_HINT" if heart_spot == i else "CH3_DECOY_LOWER_HINT"
+	return {"fmt": TranslationServer.translate(key), "action": "interact", "progress": -1.0}
+
+
+## 在第 i 點按互動鍵（測試也用）：垂下去／收上來。
+func use_spot(i: int) -> void:
+	if not spot_actionable(i):
+		return
+	if heart_spot == i:
+		raise_heart()
+	elif heart_spot < 0:
+		lower_heart(i)
+
+
+## 把假心臟垂到第 i 點的河床上：送葬者聽得到（HeartTargets.HEAR_RANGE）就醒過來／往這裡走；聽不到就提示太遠。
+func lower_heart(i: int) -> void:
+	heart_spot = i
+	var at: Vector3 = heart_bed_pos(i)
+	_heart.global_position = at
+	_heart.visible = true
+	var top: Vector3 = Vector3(CANAL_HALF_W + 0.22, PARAPET_H + 0.3, DECOY_ZS[i])
+	var bottom: Vector3 = at + Vector3(0.0, 0.16, 0.0)
+	var d: Vector3 = top - bottom
+	_heart_cord.visible = true
+	_heart_cord.scale = Vector3(1.0, d.length(), 1.0)
+	_heart_cord.global_position = (top + bottom) * 0.5
+	_heart_cord.rotation = Vector3(0.0, 0.0, -atan2(d.x, d.y))
+	Sfx.play_at(self, "cloth_knock", at + Vector3(0, 0.2, 0), -8.0, 0.05)
+	if _undertaker == null:
+		return
+	if _flat(_undertaker.global_position, at) > HeartTargets.HEAR_RANGE:
+		_banner("CH3_DECOY_TOO_FAR", 3.5)
+	elif not awake:
+		_wake_undertaker(true)
+		_banner("CH3_DECOY_WOKE", 3.5)
+
+
+func raise_heart() -> void:
+	heart_spot = -1
+	_heart.visible = false
+	_heart_cord.visible = false
+
+
+## 鏈子鬆開：送葬者從吊樑下掉到河床上（drop＝false 直接站在河床上，重來用）。之後每幀跟著心跳走。
+func _wake_undertaker(drop: bool) -> void:
+	if awake or _undertaker == null:
+		return
+	awake = true
+	var gt: Transform3D = _undertaker.global_transform
+	_pivot.remove_child(_undertaker)
+	add_child(_undertaker)
+	_undertaker.global_transform = gt
+	_undertaker.rotation = Vector3(0.0, _undertaker.rotation.y, 0.0)
+	if _torso != null:
+		_torso.rotation = Vector3.ZERO
+	for c: Node in _pivot.get_children():
+		if str(c.name).begins_with("Chain"):
+			(c as Node3D).visible = false
+	if not drop:
+		_undertaker.global_position.y = BED_Y
+		return
+	_dropping = true
+	_cue()
+	var tw := create_tween()
+	tw.tween_property(_undertaker, "global_position:y", BED_Y, DROP_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_on_landed)
+
+
+func _on_landed() -> void:
+	_dropping = false
+	if _undertaker != null:
+		Sfx.play_at(self, "blunt", _undertaker.global_position + Vector3(0, 0.3, 0), -4.0, 0.03)
+
+
+## 測試用：掉下來的補間直接跳到結果。
+func finish_drop() -> void:
+	if _dropping and _undertaker != null:
+		_undertaker.global_position.y = BED_Y
+		_on_landed()
+
+
+## 重現時諾恩的心跳變快（切片裡重現有心跳聲）：在這裡按住重現鍵就算。
+func noen_restoring() -> bool:
+	if force_restoring:
+		return true
+	return not Game.is_player_locked() and Input.is_action_pressed("nine_breath")
+
+
+## 醒著的送葬者：問 HeartTargets 現在聽起來最近的心跳 → 轉過去；是假心臟就走過去、走到旁邊停下來聽；
+## 是重現中的諾恩就停下來轉向他（第一次提示「牠聽得到」）；走到閘道口 → 段落 3 完成。
+func _update_follow(player: PlayerController, delta: float) -> void:
+	var from: Vector3 = _undertaker.global_position
+	var decoys: Array[Vector3] = []
+	if heart_spot >= 0:
+		decoys.append(heart_bed_pos(heart_spot))
+	var pick: Dictionary = HeartTargets.pick(from, decoys, player.global_position, noen_restoring())
+	var kind: String = str(pick["kind"])
+	if kind == HeartTargets.NOEN and not bool(Game.session.state.get_flag("ch3.heard_noen", false)):
+		Game.session.state.set_flag("ch3.heard_noen", true)
+		_banner("CH3_HEARS_NOEN", 4.5)
+	follow_kind = kind
+	if kind == HeartTargets.NONE:
+		return
+	var target: Vector3 = pick["pos"] as Vector3
+	var to: Vector3 = Vector3(target.x - from.x, 0.0, target.z - from.z)
+	var dist: float = to.length()
+	if dist > 0.01:
+		_undertaker.rotation.y = rotate_toward(_undertaker.rotation.y, atan2(-to.x, -to.z), TURN_RATE * delta)
+	if kind != HeartTargets.DECOY:
+		return
+	# x 被河道寬度夾住時只會無限逼近 HEART_REACH，留一點餘裕
+	if dist <= HEART_REACH + 0.05:
+		if not reached[heart_spot]:
+			reached[heart_spot] = true
+			Game.session.state.set_flag("ch3.decoy_reached_%d" % heart_spot, true)
+		_check_lured()
+		return
+	var np: Vector3 = from + to / dist * minf(WALK_SPEED * walk_scale * delta, dist - HEART_REACH)
+	np.x = clampf(np.x, -BED_LIMIT_X, BED_LIMIT_X)
+	_undertaker.global_position = np
+	_check_lured()
+
+
+## 走到閘道口：段落 3 完成（ch3.decoy_done → 檢查點 ch3_lured）→ 段落 4 煤車待續。
+func _check_lured() -> void:
+	if _undertaker.global_position.z > SLUICE_REACH_Z or Game.session.quests.stage_of(QUEST) != "lure":
+		return
+	if heart_spot >= 0:
+		reached[heart_spot] = true
+	raise_heart()
+	Game.session.set_flag("ch3.decoy_done", true)
+	_banner("CH3_LURED_NOTE", 4.0)
+	if not _continued_shown:
+		_continued_shown = true
+		get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+
+
+func _update_heart() -> void:
+	if _heart == null or not _heart.visible:
+		return
+	var hb: float = heartbeat(_t, RhythmTrial.TARGET_BPM)
+	_heart_light.light_energy = 0.5 + 3.5 * hb
+	_heart_mat.emission_energy_multiplier = 1.0 + 6.0 * hb
+	_heart.scale = Vector3.ONE * (1.0 + 0.1 * hb)
 
 
 # ---------------------------------------------------------------- 場景

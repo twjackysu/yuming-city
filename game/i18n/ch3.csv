@@ -49,3 +49,17 @@ DLG_CH3_RHY_F1,...Same as a person's heartbeat.,……跟人的心跳一樣快�
 DLG_CH3_RHY_F2,"(When Sheila stopped, it kept staring at the copper plate for a long time.)",（席菈停手之後，牠還對著銅片看了很久。）
 DLG_CH3_RHY_F3,Give me one night. I'll make one that beats at that speed.,給我一晚。我照這個速度，做一顆會跳的。
 DLG_CH3_RHY_F4,"(Under the blank line in my guide notes, I wrote one line myself. The first one I didn't remember. We saw it ourselves.)",（我在攻略筆記那條空白底下，自己寫了一行。這是第一條不是我記得的，是我們自己看到的。）
+Q_CH3_OBJ_LURE,"Lower the fake heart from the bank, one spot at a time, and lead it into the sluice",從岸上把假心臟垂到河床，一段一段把牠引進閘道
+Q_CH3_OBJ_CART,It's in the sluice. The coal cart is up above,牠進了閘道。煤車就在上面
+DLG_CH3_DECOY_001,(The fifth night. Misha hadn't slept. Her fingers were covered in copper filings.),（第五夜。彌夏一整晚沒睡，手指上全是銅屑。）
+DLG_CH3_DECOY_002,Done.,做好了。
+DLG_CH3_DECOY_003,"(She opened her hand. A small copper box was beating in her palm, thud by thud, as fast as Sheila had knocked last night.)",（她攤開手。一個小銅盒在她掌心裡一下一下地跳，跟昨晚席菈敲的一樣快。）
+DLG_CH3_DECOY_004,Tie it to a cord and lower it from the bank. It can't hear far. Too far and it won't move.,綁在繩子上，從岸上垂下去。牠聽得到的距離不遠，太遠牠不會動。
+DLG_CH3_DECOY_005,"Once it reaches it, pull it up and move on. A stretch at a time, all the way into the sluice.",牠走到了，就收起來，換下一個地方。一段一段，帶進閘道。
+DLG_CH3_DECOY_006,There's only the one. Don't lose it.,只有這一顆。別弄丟了。
+CH3_DECOY_LOWER_HINT,Press {key} — lower the fake heart,按 {key}　把假心臟垂下去
+CH3_DECOY_RAISE_HINT,Press {key} — pull the fake heart up,按 {key}　把假心臟收上來
+CH3_DECOY_TOO_FAR,(It didn't move. Too far. It can't hear it.),（牠沒有動。太遠了，牠聽不到。）
+CH3_DECOY_WOKE,(The chains gave. It dropped onto the canal bed and turned toward the beating.),（鏈子鬆了。牠掉到河床上，轉向那個心跳。）
+CH3_HEARS_NOEN,(It turned toward me. Restoring makes my heart race. It can hear that.),（牠轉向我了。重現的時候我的心跳會變快——牠聽得到。）
+CH3_LURED_NOTE,"(It stopped at the mouth of the sluice, head bowed, listening.)",（牠停在閘道口，低著頭，在聽。）

@@ -31,7 +31,25 @@
       "checkpoint": "ch3_rhythm",
       "marker": "node:Misha",
       "done_when": {
+        "flag": "ch3.decoy_received"
+      }
+    },
+    {
+      "id": "lure",
+      "objective": "Q_CH3_OBJ_LURE",
+      "checkpoint": "ch3_decoy",
+      "marker": "nearest:DecoySpot",
+      "done_when": {
         "flag": "ch3.decoy_done"
+      }
+    },
+    {
+      "id": "coal_cart",
+      "objective": "Q_CH3_OBJ_CART",
+      "checkpoint": "ch3_lured",
+      "marker": "node:SluiceBeam",
+      "done_when": {
+        "flag": "ch3.cart_dropped"
       }
     }
   ]

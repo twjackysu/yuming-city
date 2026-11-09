@@ -1,0 +1,35 @@
+{
+  "id": "ch3_decoy_make",
+  "start": "d0",
+  "nodes": {
+    "d0": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_DECOY_001",
+      "next": "d1"
+    },
+    "d1": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_DECOY_002",
+      "next": "d2"
+    },
+    "d2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_DECOY_003",
+      "next": "d3"
+    },
+    "d3": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_DECOY_004",
+      "next": "d4"
+    },
+    "d4": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_DECOY_005",
+      "next": "d5"
+    },
+    "d5": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_DECOY_006"
+    }
+  }
+}

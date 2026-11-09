@@ -932,8 +932,95 @@ func _chapter3_observe(canal: StoryLevel, alt: bool) -> void:
 	await _step_into(_player(canal), canal.get("DRAIN_POS") as Vector3, 3)
 	assert_false(_game.call("is_in_dialogue"), "[ch3_rhythm] 水溝的觀察不會再開")
 	_assert_canal(canal, "[ch3_rhythm]")
+	await _chapter3_decoy(canal, alt)
+
+
+## 段落 3 假心臟（D-165）：彌夏交出假心臟 → 東岸三個點一段一段垂下去，把送葬者引進閘道 → 檢查點 ch3_lured → 段落 4 待續。
+## alt：先垂在第 1 點（太遠，牠聽不到）；牠醒過來之後按住重現鍵 → 牠停下來轉向諾恩。
+func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.quests.stage_of("ch3_main"), "decoy")
+	canal.set("_decoy_wait", 0.0)
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(_game.call("is_in_dialogue"), "找到速度之後、彌夏在旁邊 → 她交出假心臟")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_decoy_make")
+	for i: int in 10:
+		if not runner.is_running():
+			break
+		runner.advance()
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_rhythm] 段落 3 待續")
+	assert_false(_game.call("is_in_dialogue"), "彌夏說完")
+	assert_eq(s.quests.stage_of("ch3_main"), "lure", "→ 把假心臟垂下去，引進閘道")
+	assert_eq(s.state.checkpoint, "ch3_decoy", "檢查點 ch3_decoy")
+	if not alt:
+		canal = await _retry()
+		assert_eq(str(canal.name), "Canal", "[ch3_decoy] 重來還在乾運河")
+		assert_eq(_objective(canal), "Q_CH3_OBJ_LURE", "[ch3_decoy] HUD 目標：把假心臟垂下去")
+		_assert_canal(canal, "[ch3_decoy]")
+	assert_true(canal.has_node("DecoySpot0") and canal.has_node("DecoySpot2"), "東岸有三個放假心臟的點")
+	assert_false(bool(canal.get("awake")), "還掛在吊樑下")
+	var hud: Hud = canal.get_node("Hud") as Hud
+	var player: PlayerController = _player(canal)
+	if alt:
+		await _step_into(player, Vector3(canal.get("DECOY_BANK_X"), 0.0, (canal.get("DECOY_ZS") as PackedFloat32Array)[1]), 2)
+		assert_eq(int(canal.call("nearest_spot")), 1, "站在第 1 點旁邊")
+		assert_eq(str((canal.call("interact_hint") as Dictionary).get("fmt", "")), str(TranslationServer.translate("CH3_DECOY_LOWER_HINT")), "提示：把假心臟垂下去")
+		canal.call("use_spot", 1)
+		assert_eq(int(canal.get("heart_spot")), 1, "垂在第 1 點")
+		assert_false(bool(canal.get("awake")), "第 1 點太遠：牠聽不到、不會動")
+		assert_eq(hud.banner_text(), "CH3_DECOY_TOO_FAR", "提示：太遠了，牠聽不到")
+		assert_false(bool(canal.call("spot_actionable", 0)), "假心臟垂著的時候，別的點不能放")
+		canal.call("use_spot", 1)
+		assert_eq(int(canal.get("heart_spot")), -1, "收上來")
+	canal.set("walk_scale", 6.0)
+	canal.call("use_spot", 0)
+	assert_true(bool(canal.get("awake")), "第 0 點聽得到：鏈子鬆開")
+	assert_eq(hud.banner_text(), "CH3_DECOY_WOKE")
+	var u: Node3D = canal.call("undertaker") as Node3D
+	canal.call("finish_drop")
+	assert_true(absf(u.global_position.y - float(canal.get("BED_Y"))) < 0.01, "掉到河床上")
+	assert_false(u.is_in_group("enemies"), "牠不是來打的：還是不在敵人名單裡")
+	if alt:
+		await _step_into(player, Vector3(canal.get("DECOY_BANK_X"), 0.0, (canal.get("DECOY_ZS") as PackedFloat32Array)[0]), 2)
+		canal.set("force_restoring", true)
+		var before: Vector3 = u.global_position
+		for i: int in 6:
+			await tree.physics_frame
+		assert_eq(str(canal.get("follow_kind")), HeartTargets.NOEN, "按住重現：牠轉向諾恩")
+		assert_true(Vector2(u.global_position.x - before.x, u.global_position.z - before.z).length() < 0.01, "轉向諾恩時停下來，不往假心臟走")
+		assert_eq(s.state.get_flag("ch3.heard_noen"), true)
+		assert_eq(hud.banner_text(), "CH3_HEARS_NOEN", "提示：重現時心跳變快，牠聽得到")
+		canal.set("force_restoring", false)
+	for spot: int in 3:
+		if spot > 0:
+			assert_true(bool(canal.call("spot_actionable", spot)), "第 %d 點可以放" % spot)
+			canal.call("use_spot", spot)
+		assert_eq(int(canal.get("heart_spot")), spot)
+		for i: int in 240:
+			if (canal.get("reached") as Array)[spot] or s.quests.stage_of("ch3_main") != "lure":
+				break
+			await tree.physics_frame
+		assert_true(bool((canal.get("reached") as Array)[spot]), "牠走到第 %d 點旁邊、停下來聽" % spot)
+		if s.quests.stage_of("ch3_main") != "lure":
+			break
+		assert_eq(str(canal.get("follow_kind")), HeartTargets.DECOY, "牠跟著假心臟")
+		assert_false(bool(canal.call("spot_actionable", spot + 1)), "假心臟還垂在第 %d 點：要先收上來" % spot)
+		canal.call("use_spot", spot)
+	assert_eq(s.state.get_flag("ch3.decoy_done"), true, "牠進了閘道")
+	assert_true(u.global_position.z <= float(canal.get("SLUICE_REACH_Z")), "送葬者走到閘道口")
+	assert_eq(s.quests.stage_of("ch3_main"), "coal_cart", "→ 段落 4 煤車")
+	assert_eq(s.state.checkpoint, "ch3_lured", "檢查點 ch3_lured")
+	assert_eq(hud.banner_text(), "CH3_LURED_NOTE")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_lured] 重來還在乾運河")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_CART", "[ch3_lured] HUD 目標：煤車")
+	var u2: Node3D = canal.call("undertaker") as Node3D
+	assert_true(bool(canal.get("awake")), "[ch3_lured] 牠已經在河床上")
+	assert_true(u2.global_position.z <= float(canal.get("SLUICE_REACH_Z")) and absf(u2.global_position.y - float(canal.get("BED_Y"))) < 0.01, "[ch3_lured] 站在閘道口")
+	await tree.process_frame
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_lured] 段落 4 待續")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。
