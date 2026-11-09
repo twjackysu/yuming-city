@@ -1,11 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 36 輪完成成就系統＋圖示替代版（D-147）、第 1 章的攻略筆記邏輯層＋日記裡的「攻略筆記」一段、存檔 v2（D-148）。下一輪接第 5 節：章節切換（切片結尾 → 第 1 章）與第 1 章任務骨架，再做段落 3 的標記畫面**。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 37 輪完成章節切換（切片結尾 → 章節卡 → 酒館，D-149）、酒館白盒段落 1～3（中午、晚餐灑湯、畫地圖）、段落 3 的標記畫面（D-150）。下一輪接第 5 節：段落 4（白天的霜橋鎮＋艾妲的油燈）→ 段落 5（長階梯、丟石頭試探陷阱）**。
 
 ## 0. 開工先確認
 
-- 上一輪（第 36 輪）最後一次程式 push 是 2140c8f（日記的攻略筆記一段），run 42553368535 的測試與匯出已綠、截圖／打包／latest 收尾時還在跑——**開工先看這個 run 整個綠燈**（紅了多半是截圖或打包步驟，看 log）；開工照常先跑 `scripts/check.sh`（最後 312 個測試）。第 36 輪的程式 commit：9b8e2ac 成就（run 42552114522 全綠）、a25cc45 攻略筆記邏輯層＋存檔 v2、855b1da 成就圖示替代版（CI 步驟）、2140c8f 日記的攻略筆記。紅了就看 log 修，修不好 `git revert`。
-- **latest 有新的建置後**看：`achievement-icons.zip`（16 張，`<ID>_ACHIEVED.png`／`_UNACHIEVED.png`）與 `achievements_sheet.png` 有沒有附上（CI「Steam 膠囊圖替代版」步驟是 continue-on-error，沒附就看 log 有沒有「[achievement-icons] 8 個成就 × 2 張」）。
+- 上一輪（第 37 輪）的程式 commit：2816522 章節切換＋酒館白盒＋第 1 章對話、05d4b45 酒館開發旗標與入夜窗光、58ae5f4 標記畫面（最後一個，CI 結果見 PROGRESS 第 37 輪）。**開工先看最新 run 整個綠燈**；開工照常先跑 `scripts/check.sh`（最後 318 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 第 36 輪的 run 42553368535（2140c8f）已全綠（第 37 輪開工確認）；latest 的 `achievement-icons.zip` 第 37 輪沒有回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
@@ -69,11 +69,19 @@
 
 - 照 `docs/design/07-chapter1-door.md` 的段落順序，**先白盒＋對話＋任務＋流程測試，美術後補**（D-143：白天霜橋鎮重用切片關卡、攻略筆記是日記分頁、做不完時的保留順序）。新名詞照 `06-terminology.md`（D-142）。新章節的任務每個階段要有 `marker`（D-040）、主線流程測試補一段（`tests/flow/test_slice_playthrough.gd` 的寫法）。第 1 章的文字一律放 `i18n/ch1.csv`（已登記在 project.godot、verify_package）。
 - **已完成（第 36 輪，D-148）**：攻略筆記邏輯層 `GuideNotes`（`data/guide/notes.json`、`GameState.guide`、條件 `{"guide": id, "is": "sure|unsure|wrong|confirmed|unwritten", "was_unsure": bool}`、效果 `{"guide_write": [...]}`、`GameSession.guide_changed`）、存檔 v2、日記裡的「攻略筆記」一段（`JournalView._add_guide_section`、截圖 `--guide-demo`）。推翻旗標：`ch1.stair_trap_sprung`、`ch1.met_kord`、`ch1.door_opened`、`ch1.saw_empty_furnace`、`ch2.usurper_crossed_out`、`ch2.read_wall_carvings`——關卡做到時照這些名字設。
+- **已完成（第 37 輪，D-149／D-150）**：
+  - 章節銜接：`slice_main` 的 `on_complete` 開 `ch1_main`＋效果 `{"chapter": "ch1"}`；`GameSession.MAIN_QUESTS`／`main_quest()`（HUD、目標指引跟著最後開始的主線）、`CHAPTER_CHAIN`＋`upgrade_chapters()`（舊存檔補開）；`Game.CHECKPOINT_LEVELS` 第 1 章三個檢查點 → `tavern`。**新章節照做**：主線加進 `MAIN_QUESTS`、前一章的 `on_complete` 加 `start_quest`＋`chapter`、`CHAPTER_CHAIN` 加一列、檢查點對到關卡。
+  - `ChapterCard.play(關卡, number_key, title_key, 結束時呼叫)`（`src/ui/chapter_card.gd`）：掛在關卡底下；之後每章開頭照用（第 2 章 `CH2_CARD_*`）。
+  - 酒館白盒 `scenes/levels/tavern.gd`：`STAGE_TALKS`（階段 → 說話點節點名＋對話 id）、`talk_spot()`、`is_night()`、`open_guide_marking()`；開發旗標 `--level=tavern`（照正式流程走完切片）＋`--ch1-stage=dinner|draw_map|to_cellar`＋`--guide-mark`。房間 x -7～7、z -5～5，門在南牆正中（`DOOR_POS`），出門在 `to_cellar` 階段顯示「待續」（`CH1_TO_BE_CONTINUED`）。
+  - 對話 `ch1_noon`／`ch1_dinner`（灑湯 → `ch1.sheila_soup_helped`）／`ch1_map`（開頭 `guide_write` 6 條、最後設 `ch1.guide_marking`）／`ch1_map_end`（依標了幾條換最後一句、設 `ch1.map_drawn`）。
+  - 標記畫面 `GuideMarkView`（`scenes/ui/guide_mark_view.gd`）：`open_on(父節點, state, notes)`、`rows[id]`、`toggle`／`set_unsure`、`done_button`、`confirm()`、訊號 `confirmed(unsure_ids)`；打開時暫停。
+  - 主線流程測試 `_chapter1()`（`test_slice_playthrough.gd`）：章節卡 → 酒館 → 中午 → 重來 → 晚餐 → 畫地圖＋標記 → 重來。新段落在這裡往後接。
 - **下一步（依序）**：
-  1. **章節切換**：切片完成（`slice.complete`）後地窖觸發 → 第 1 章。做法建議：`ch1_main` 任務（`data/quests/ch1_main.json`，`slice_main` 的 `on_complete` 加 `start_quest: ["ch1_main"]`；舊存檔讀進來時 `QuestRunner` 不會自動補開，所以在 `GameSession.load_slot` 後檢查「slice 完成但 ch1 沒開始」就補 `quests.start`，加測試）；`GameState.chapter` 改 `ch1`；`Game.CHECKPOINT_LEVELS` 加第 1 章檢查點 → 新關卡 id（例如 `tavern`）。切片結尾目前是什麼畫面（地窖觸發後）要先看 `frostbridge.gd` 的 `_on_cellar`，決定是接一個「第一章　攻略之外的門」章節卡再換場景。
-  2. **段落 1～3 酒館白盒**（`scenes/levels/tavern.tscn`，繼承 `StoryLevel` 或更輕的室內基底）：酒館老闆、傷者、席菈、彌夏的對話骨架（`data/dialogue/ch1_*.json`），段落 2 的灑湯選項旗標 `ch1_sheila_soup_helped`。
-  3. **段落 3 的標記畫面**：桌上的地圖 UI，`guide_write` 寫下 6 條後讓玩家逐條切換「我不確定」（`GuideNotes.set_unsure`），確認後結束；手把＋鍵鼠都能操作（照設定頁的 `_add_toggle` 樣式）。
-  4. 流程測試：從切片結尾接到第 1 章段落 3 結束，每個檢查點 `Game.retry()`。
+  1. **段落 4：白天的霜橋鎮＋艾妲的油燈**（D-143：重用切片關卡）。`to_cellar` 階段走出酒館門 → 換到 `frostbridge`（`Game.CHECKPOINT_LEVELS` 加一個第 1 章的檢查點，例如 `ch1_day_town` → `frostbridge`；酒館的門口觸發改成設 `ch1.left_tavern` 再換關卡）；`FrostbridgeLook` 加 `day` 變體（白天陰天的冷光、沒有月光與路燈、雪地反光），`frostbridge.gd` 依 `GameState.chapter == "ch1"` 切換（北街照舊是陷落後的樣子、死者名單牆、沒有送葬者／車隊／灰巡者）；艾妲在地窖門口交油燈的對話（`ch1_ada_lamp`，`text_if arch_father_last_talk` 那句「你連你爸都忘了，別把我忘了」），油燈取代提燈（`PlayerController` 的提燈換一個圓肚油燈的外形、光更暖更小）。**霜橋鎮很多程式用 `stage_of(MAIN_QUEST)` 判斷切片階段，切片完成後那些判斷都不成立——先 grep `MAIN_QUEST` 確認白天版本不會生出切片的敵人或觸發**。
+  2. **段落 5：一百七十二階**（新關卡 `stairs`，線性）：螺旋往下的石階（霧＋油燈範圍只看得到前後十幾級）、中間平台的髒水桶陷阱、新互動「丟石頭試探」（設 `ch1.stair_trap_sprung` → 攻略筆記第 1 條被推翻；標了我不確定的諾恩說「果然」，沒標的席菈看他一眼——用 `{"guide": "stair_arrows", "is": "wrong", "was_unsure": true}` 的 `text_if`）、往下聽到小孩笑聲。
+  3. 段落 6～9（白晝城入口、柯德、上層街區、壽命石碑、柯德家晚餐、兔子）照 07 的表。
+  4. 酒館美術（階段 2 後段）：現在是 CSG 白盒＋程序人偶；彌夏抱的鐘是小木箱。
+- 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。
 
 ## 6. 角色模型（等 Jacky 交件）
 

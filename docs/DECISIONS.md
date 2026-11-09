@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-150　2026-11-09　第 1 章段落 3「標記畫面」：一張舊紙、逐條點選，按「就這樣」才寫進攻略筆記
+
+- 決策：`GuideMarkView`（`scenes/ui/guide_mark_view.gd`）是 CanvasLayer：暗底上一張舊紙（明體標題「桌上的地圖」＋席菈的那句話），列出已寫下、還沒有結果的攻略條目，每列是 flat Button（全域 Theme 的暖金色焦點）＋子節點 Label（條目文字、右邊「確定／我不確定」），點一下切換、標了我不確定的整列淡一點、換值有選單的「叮」；按「就這樣」才用 `GuideNotes.set_unsure` 寫進狀態並發 `confirmed`。打開時暫停（跟日記一樣），被釋放時解除暫停。流程：`ch1_map` 對話最後一句（席菈）設 `ch1.guide_marking` → 酒館在 `draw_map` 階段看到這個旗標就打開畫面（同一階段不再重講畫地圖的對話）→ 確認後開 `ch1_map_end`，最後一句照標了幾條換：六條全標＝原作「整張地圖都被圈起來」、一條都沒標＝「一個圈也沒畫」、其他＝「圈了幾個地方，席菈什麼也沒說」，並設 `ch1.map_drawn`。
+- 理由：07 設計的系統 1。原作的這一刻是諾恩「最後整張地圖都被我圈了起來」；讓玩家自己決定圈幾條，最後一句誠實反映玩家的選擇（不懲罰），之後被推翻時「果然」／席菈看一眼的差異才有意義。用按鈕＋Label 而不是設定頁的「‹ 值 ›」，因為這裡是兩個值的切換、要能用滑鼠直接點一整列。
+- 影響：截圖旗標 `--level=tavern --ch1-stage=draw_map --guide-mark`；`test_chapter1::test_guide_mark_view_toggles_and_confirms`；主線流程測試兩條路線各走一種標法、重來後標記保留。新字串 `GUIDE_MARK_*`、`DLG_CH1_MAP_007_SOME／_NONE`（ch1.csv）。
+
+## D-149　2026-11-09　章節銜接：切片完成 → 第 1 章主線；章節卡；酒館白盒
+
+- 決策：①切片主線 `slice_main` 的 `on_complete` 加 `{"chapter": "ch1", "start_quest": ["ch1_main"]}`；StoryLogic 新效果 `chapter`（改 `GameState.chapter`）。②`GameSession.MAIN_QUESTS`（依章節順序）與 `main_quest()`（最後一個已開始的）：HUD 目標、目標指引、暫停選單跟著它；切片專屬的程式照舊用 `MAIN_QUEST`（slice_main）。③舊存檔（切片完成、沒有第 1 章）讀檔時 `upgrade_chapters()` 依 `CHAPTER_CHAIN` 補開下一章並換章節（不另升存檔版本：這是任務資料改版，不是格式改版）。④`Game.CHECKPOINT_LEVELS`：第 1 章的 `ch1_tavern`／`ch1_dinner`／`ch1_map_done` → 新關卡 `tavern`。⑤走進地窖後 `ChapterCard`（淡黑 → 「第一章」＋明體章名「攻略之外的門」→ 約 4.8 秒後換關卡，確認鍵可提早結束）掛在關卡底下：關卡被釋放時不會換場景。⑥酒館（`scenes/levels/tavern.gd`，繼承 StoryLevel）先做白盒：CSG 房間、壁爐／窗／吧台油燈、程序人偶（席菈、彌夏、老闆、兩個傷者）；劇情照霜橋鎮席菈的做法依任務階段輪詢「說話點」距離開對話（中午：席菈旁邊；入夜：晚餐桌；畫地圖：小桌子；出門：顯示「待續」）。中午／入夜由窗光、窗玻璃、壁爐亮度切換。⑦英文名：彌夏 **Misha**、黎歐 **Leo**、酒館老闆 Innkeeper；第 1 章旗標一律 `ch1.` 開頭（07 草稿寫的 `ch1_sheila_soup_helped` 改成 `ch1.sheila_soup_helped`）。
+- 理由：NEXT 第 5 節的順序；D-143 已定酒館先白盒＋對話（對話是重點）。章節卡讓「切片結束」變成「故事繼續」，也是之後每章開頭共用的元件。舊存檔補開避免玩家讀到一個沒有目標的完成存檔。
+- 影響：主線流程測試從切片結尾接到第 1 章出門（中間在酒館重來兩次）；新測試 `test_chapter1`（6 個）；開發旗標 `--level=tavern`（直接進來時照正式流程把切片走完）＋`--ch1-stage=dinner|draw_map|to_cellar`。對話 `ch1_noon`／`ch1_dinner`（灑湯選項）／`ch1_map`／`ch1_map_end`，文字在 `i18n/ch1.csv`。
+
 ## D-148　2026-11-09　攻略筆記先做邏輯層；存檔版本 2
 
 - 決策：第 1 章系統 1「攻略筆記」先做不依賴關卡與 UI 的部分。條目定義 `game/data/guide/notes.json`（6 條：射箭陷阱、全城是怪物、不可互動的門、入口的淨化爐——第 1 章推翻；食歲的僭王、焚城路線——第 2 章推翻），每條 `wrong_when`／`confirmed_when` 用 StoryLogic 條件。狀態存在新欄位 `GameState.guide`（id → `{"unsure", "result"}`）：可信度 確定／我不確定／被推翻／證實（`GuideNotes.SURE`…），被推翻後仍記得當初有沒有標「我不確定」（台詞「果然」vs 席菈看他一眼）。StoryLogic 加條件 `{"guide": id, "is": ..., "was_unsure": bool}` 與效果 `{"guide_write": [...]}`；`GameSession.advance()` 在任務推進前後各檢查一次推翻，發 `guide_changed`。存檔 `CURRENT_VERSION` 1 → 2，遷移補空的 `guide`（切片存檔照樣停在原檢查點）。文字放新的 `i18n/ch1.csv`（`GUIDE_<ID>`／`GUIDE_<ID>_WRONG`、可信度、日記分頁名）。
