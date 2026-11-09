@@ -62,4 +62,5 @@
 .\YumingCity.exe ++ --level=canal                           # 第 3 章開頭：乾運河
 .\YumingCity.exe ++ --level=canal --canal-at=drain          # 第 3 章段落 2：趴在水溝裡選節奏
 .\YumingCity.exe ++ --level=canal --canal-at=heart          # 第 3 章段落 3：假心臟垂在河床上、送葬者走過來
+.\YumingCity.exe ++ --level=canal --canal-at=pinned         # 第 3 章段落 4：煤剛倒下去壓住送葬者（從段落 4 開頭玩：照正式流程走到閘道口）
 ```
