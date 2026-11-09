@@ -30,3 +30,11 @@ idle, walk, run, sprint, dodge_roll, sword_idle, light_attack_01, light_attack_0
 敵人動作：undertaker_walk, undertaker_sweep, undertaker_slam, undertaker_charge, undertaker_wall_kneel, undertaker_chain_break；ashwalker_walk, ashwalker_claw（0.8 秒前兆）, ashwalker_kneel, ashwalker_death。
 
 每次外部匯入須附 SOURCE.txt：工具、來源連結、授權條件、是否 AI 生成；不能把服務條款標為 CC0。
+
+## 可檢查的工作版本（尚未正式驗收）
+
+- [諾恩](studies/noen/README.md)：角色及 walk。
+- [席菈](studies/sheila/README.md)：角色及 walk，尚待戰鬥握姿與斗篷修整。
+- [送葬者](studies/undertaker/README.md)：角色、walk、鎖鏈接地與獨立弱點發光檢查。
+
+上述候選不能將正式需求標為完成；遊戲內程序角色仍保留。

@@ -1,0 +1,5 @@
+.godot/
+frames/
+*.glb
+*.mp4
+*.import

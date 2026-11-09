@@ -68,4 +68,6 @@ TripoSR 已在本機 GPU 成功生成諾恩試驗網格並完成多角度渲染�
 
 可直接開啟的 V2 GLB、FBX 與 Godot Forward+ 影片已另存為 [諾恩工作版本](../art-inbox/studies/noen/README.md)。此目錄明確標為未驗收，不取代正式交件或遊戲角色。
 
-席菈的 GLB、walk FBX、Godot Forward+ 影片與來源紀錄已加入 [工作版本](../art-inbox/studies/sheila/README.md)，製作腳本見 [席菈試作](art-trials/sheila-rigging/README.md)。送葬者已完成袍身重建試跑，仍待建模、綁定及動畫。這些均尚未通過正式美術驗收，整份需求尚未完成。
+席菈的 GLB、walk FBX、Godot Forward+ 影片與來源紀錄已加入 [工作版本](../art-inbox/studies/sheila/README.md)，製作腳本見 [席菈試作](art-trials/sheila-rigging/README.md)。送葬者已建立 53,259 面的綁骨架候選、鐵架與鎖鏈、walk FBX／GLB，以及 Godot 逐幀接地與獨立弱點發光檢查，見 [送葬者工作版本](../art-inbox/studies/undertaker/README.md) 與 [製作紀錄](art-trials/undertaker-rigging/README.md)。送葬者其他五個動作仍缺，模型材質與變形品質仍待改善。這些均尚未通過正式美術驗收，整份需求尚未完成。
+
+CMU 官方 swordplay 已用於席菈握劍及動作研究，見 [研究紀錄](art-trials/cmu-sword/README.md)。已試做動作但仍有衣物與手部接觸缺陷，未列為完成的攻擊動畫。

@@ -1,0 +1,40 @@
+{
+  "status": "work_in_progress_not_final_art",
+  "triangles": 53259,
+  "bones": 71,
+  "materials": [
+    "M_FrameJoint",
+    "M_FrameRust_PBR",
+    "M_Robes"
+  ],
+  "embedded_images": 9,
+  "maximum_texture_dimension": 2048,
+  "glb_presentation_clearance_m": 0.0005,
+  "files": [
+    {
+      "file": "preview.png",
+      "bytes": 723971,
+      "sha256": "1a150f8be8bf100f943cb17a2e406d7b74ffdf0a7c3a24e7b44bf54d25822b64"
+    },
+    {
+      "file": "undertaker_walk_candidate.glb",
+      "bytes": 19884532,
+      "sha256": "c3d771e8110557260d5033657d9253503d23427c2f9ef764b441a80108334c13"
+    },
+    {
+      "file": "walk_candidate.fbx",
+      "bytes": 722092,
+      "sha256": "5cb6cc586dc204525a437f5d11d9b2e24a1717691fae31cd584ef4c52a75be6e"
+    },
+    {
+      "file": "walk_preview.mp4",
+      "bytes": 719734,
+      "sha256": "0f85b091de15d927e8e263bdee24b44e821faa649a3628a25817dcb33128e9d8"
+    },
+    {
+      "file": "weakpoint_preview.png",
+      "bytes": 703254,
+      "sha256": "b48896082c2aec9f5a84ad96301dc7e86a63efca86b3e0801f97ac816d044716"
+    }
+  ]
+}

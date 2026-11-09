@@ -1,0 +1,40 @@
+{
+  "status": "work_in_progress_not_accepted",
+  "source": "CMU subject 02 trial 07",
+  "source_start": 1400,
+  "source_end": 1512,
+  "source_fps": 120,
+  "output_fps": 30,
+  "frames": 43,
+  "playback_speed": 0.6666666666666666,
+  "grip_angles": {
+    "Index": [
+      75,
+      85,
+      30
+    ],
+    "Middle": [
+      95,
+      80,
+      55
+    ],
+    "Ring": [
+      80,
+      90,
+      40
+    ],
+    "Pinky": [
+      80,
+      50,
+      40
+    ]
+  },
+  "pending": [
+    "combat timing",
+    "cape collision",
+    "left hand clearance",
+    "finger contact",
+    "FBX roundtrip",
+    "Godot review"
+  ]
+}

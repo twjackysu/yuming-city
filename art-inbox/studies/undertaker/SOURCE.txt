@@ -1,0 +1,22 @@
+Undertaker character and walk study — NOT ACCEPTED FINAL ART
+Original isolated body and rear material plates: OpenAI image generation, project-owned references.
+AI geometry reconstruction: TripoSG, MIT code and model weights.
+https://github.com/VAST-AI-Research/TripoSG
+Code fc5c40990181e2a756c4e0b1c2f4d6b5202faf8c
+Weights VAST-AI/TripoSG@2c1c516d22d58db486a058d98d31bb6177344e06
+Local CPU-offloaded FP16 inference; simplified and selected-to-active PBR baked in Blender.
+Rig/weight-transfer driver: MakeHuman/MPFB core anatomy, CC0 assets (code is separately GPL).
+https://static.makehumancommunity.org/about/license.html
+MPFB revision 6ff1eb358f6c1959ced77e79e6dd2406d9a71f49.
+Iron frame, plates, bolts, chain geometry and rust material: project-created in Blender.
+Walk source: ACCAD Open Motion Project / The Ohio State University, CC BY 3.0.
+https://accad.ohio-state.edu/research/motion-lab/mocap-system-and-data
+https://creativecommons.org/licenses/by/3.0/
+Male1_B3_Walk.bvh from Male1_bvh.zip.
+Archive SHA256 1cd26aeac2ee7f20e3c0fe5082e633201bb136a714ae8f684a4f34c4421f4627.
+Modified: slower in-place retarget, hunch, independent robe bones, closed cycle,
+body-floor correction, articulated chain ground-contact solve. No endorsement implied.
+No Hunyuan model or generated output is used in this asset.
+Only walk is included. Other boss attacks, transitions and game integration are unfinished.
+Material seams, embedded lighting, hands and cloth deformation need further work.
+Technical gates do not certify AAA art quality.
