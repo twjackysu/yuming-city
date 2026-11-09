@@ -62,6 +62,11 @@ func _insight_height() -> float:
 	return 3.1
 
 
+## 背上的鐵架橫桿伸到 0.55 m、手臂到約 0.75 m：小卡要讓開整個鐵架（第八輪盤點第 8 項，D-146）
+func insight_side() -> float:
+	return 0.85
+
+
 func _on_strike() -> void:
 	var fwd: Vector3 = forward()
 	var origin: Vector3 = global_position

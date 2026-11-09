@@ -173,6 +173,11 @@ func _insight_height() -> float:
 	return 2.0
 
 
+## 身體（含背上的東西）往右多寬（公尺）：看穿小卡不蓋進這個範圍（D-146）。體型大的敵人覆寫。
+func insight_side() -> float:
+	return 0.45
+
+
 # ---- 共用 ----
 
 func _on_settings_changed() -> void:
@@ -313,7 +318,7 @@ func _update_insight() -> void:
 		var move: String = brain.intel_move()
 		_insight_text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, move))
 		_insight_card.set_rows(EnemyIntel.rows(intel_id(), intel_overrides, move))
-		_insight_card.place(get_viewport().get_camera_3d(), global_position + Vector3(0.0, _insight_height(), 0.0))
+		_insight_card.place(get_viewport().get_camera_3d(), global_position + Vector3(0.0, _insight_height(), 0.0), insight_side())
 		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
 		_weak_mat.albedo_color.a = 0.45 + 0.4 * pulse
 	if on != _insight_shown:

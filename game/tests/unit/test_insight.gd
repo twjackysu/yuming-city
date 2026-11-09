@@ -195,9 +195,39 @@ func test_insight_card_on_screen_in_scene() -> void:
 	var cam: Camera3D = card.get_viewport().get_camera_3d()
 	var head: Vector2 = cam.unproject_position(walker.global_position + Vector3(0, 2.0, 0))
 	assert_true(card.position.x > head.x - 1.0, "小卡在敵人頭的右邊（%.0f vs %.0f）" % [card.position.x, head.x])
+	# D-146：小卡左緣不蓋進敵人身體右緣（insight_side 公尺沿鏡頭右方的投影）
+	var edge: Vector2 = cam.unproject_position(walker.global_position + Vector3(0, 2.0, 0) + cam.global_transform.basis.x * walker.insight_side())
+	assert_true(card.position.x >= edge.x + InsightCard.EDGE_GAP - 1.0, "小卡讓開身體右緣（%.0f vs %.0f）" % [card.position.x, edge.x])
 	Input.action_release("insight")
 	for i: int in 2:
 		await tree.physics_frame
 	assert_false(card.visible, "放開就收起")
+	root3d.queue_free()
+	await tree.process_frame
+
+
+## 第八輪盤點第 8 項（D-146）：小卡的位置不只是頭頂＋固定位移——敵人越寬（送葬者背上的鐵架）、離鏡頭越近，
+## 卡片越往右讓開；寬度 0 時跟原本一樣。送葬者比灰巡者寬。
+func test_card_anchor_clears_wide_body() -> void:
+	var root3d := Node3D.new()
+	tree.root.add_child(root3d)
+	var cam := Camera3D.new()
+	root3d.add_child(cam)
+	cam.current = true
+	var head := Vector3(0.0, 0.0, -2.5)
+	var plain: Vector2 = InsightCard.card_anchor(cam, head, 0.0)
+	assert_eq(plain, cam.unproject_position(head) + InsightCard.OFFSET, "寬度 0：頭頂＋OFFSET")
+	var wide: Vector2 = InsightCard.card_anchor(cam, head, 0.85)
+	var edge: Vector2 = cam.unproject_position(head + Vector3.RIGHT * 0.85)
+	assert_true(wide.x > plain.x, "寬的敵人在近處：卡片往右讓（%.0f > %.0f）" % [wide.x, plain.x])
+	assert_true(absf(wide.x - (edge.x + InsightCard.EDGE_GAP)) < 0.5, "卡片左緣貼在身體右緣外 EDGE_GAP")
+	assert_eq(wide.y, plain.y, "只往右讓，高度不變")
+	var far: Vector2 = InsightCard.card_anchor(cam, Vector3(0.0, 0.0, -60.0), 0.85)
+	assert_eq(far, cam.unproject_position(Vector3(0.0, 0.0, -60.0)) + InsightCard.OFFSET, "很遠時身體比 OFFSET 窄，照原本")
+	var u := Undertaker.new()
+	var w := Ashwalker.new()
+	assert_true(u.insight_side() > w.insight_side(), "送葬者（鐵架）比灰巡者寬")
+	u.free()
+	w.free()
 	root3d.queue_free()
 	await tree.process_frame

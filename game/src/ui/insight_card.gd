@@ -15,6 +15,9 @@ const NAME_COL: Color = Color(0.97, 0.94, 0.88)
 const MARGIN: float = 16.0
 ## 卡片左上角相對於頭頂投影點的位移：在敵人右邊、從頭的高度往下長（頭頂上方常是過場字幕與目標橫幅）
 const OFFSET: Vector2 = Vector2(44.0, -14.0)
+## 卡片左緣至少離敵人身體右緣（side_m 公尺，沿鏡頭右方投影）這麼多像素：送葬者背上的鐵架很寬，
+## 只用固定位移會蓋到鐵架（第八輪盤點第 8 項，D-146）
+const EDGE_GAP: float = 14.0
 
 ## 目前顯示的列（測試用）
 var rows_shown: Array[Dictionary] = []
@@ -77,19 +80,29 @@ func set_rows(rows: Array[Dictionary]) -> void:
 
 
 ## 每幀：把卡片放到 world（敵人頭頂）投影點的右邊、從頭的高度往下，夾在畫面內；在鏡頭後面就藏起來。
-func place(cam: Camera3D, world: Vector3) -> void:
+## side_m：敵人身體（含背上的東西）往右多寬，卡片左緣不會蓋進這個範圍。
+func place(cam: Camera3D, world: Vector3, side_m: float = 0.0) -> void:
 	if cam == null or cam.is_position_behind(world):
 		visible = false
 		return
 	visible = true
 	var rect: Rect2 = get_viewport_rect()
 	var s: Vector2 = get_combined_minimum_size()
-	var p: Vector2 = cam.unproject_position(world) + OFFSET
+	var p: Vector2 = card_anchor(cam, world, side_m)
 	var pos := p
 	pos.x = clampf(pos.x, MARGIN, maxf(MARGIN, rect.size.x - s.x - MARGIN))
 	pos.y = clampf(pos.y, MARGIN, maxf(MARGIN, rect.size.y - s.y - MARGIN))
 	position = pos
 	size = s
+
+
+## 卡片左上角（夾進畫面之前）：頭頂投影點＋OFFSET，但不蓋進身體右緣 side_m 公尺的投影。
+static func card_anchor(cam: Camera3D, world: Vector3, side_m: float) -> Vector2:
+	var p: Vector2 = cam.unproject_position(world) + OFFSET
+	if side_m > 0.0:
+		var edge: Vector2 = cam.unproject_position(world + cam.global_transform.basis.x * side_m)
+		p.x = maxf(p.x, edge.x + EDGE_GAP)
+	return p
 
 
 ## 已證實的小勾有幾個（測試用）。
