@@ -392,7 +392,13 @@ func _on_cellar() -> void:
 	if not Game.session.state.get_flag("slice.ada_talked_aftermath", false):
 		return
 	Game.session.set_flag("slice.cellar_entered", true)
-	_banner("SLICE_COMPLETE", 8.0)
+	# 切片完成 → 第 1 章開始（D-149）：章節卡之後換到酒館；第 1 章關卡不存在時照舊顯示切片結束
+	var next_level: String = Game.level_for_checkpoint(Game.session.state.checkpoint)
+	if next_level != "frostbridge" and Game.LEVELS.has(next_level):
+		if not has_node("ChapterCard"):
+			ChapterCard.play(self, "CH1_CARD_NUMBER", "CH1_CARD_TITLE", Game.go_to_level.bind(next_level))
+	else:
+		_banner("SLICE_COMPLETE", 8.0)
 
 
 func _build_cellar_hatch() -> void:

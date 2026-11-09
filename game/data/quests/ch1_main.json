@@ -1,0 +1,33 @@
+{
+  "id": "ch1_main",
+  "title": "Q_CH1_MAIN_TITLE",
+  "stages": [
+    {
+      "id": "tavern_noon",
+      "objective": "Q_CH1_OBJ_NOON",
+      "checkpoint": "ch1_tavern",
+      "marker": "node:Sheila",
+      "done_when": {"flag": "ch1.noon_talked"}
+    },
+    {
+      "id": "dinner",
+      "objective": "Q_CH1_OBJ_DINNER",
+      "checkpoint": "ch1_dinner",
+      "marker": "node:DinnerTable",
+      "done_when": {"flag": "ch1.dinner_done"}
+    },
+    {
+      "id": "draw_map",
+      "objective": "Q_CH1_OBJ_MAP",
+      "marker": "node:MapTable",
+      "done_when": {"flag": "ch1.map_drawn"}
+    },
+    {
+      "id": "to_cellar",
+      "objective": "Q_CH1_OBJ_CELLAR",
+      "checkpoint": "ch1_map_done",
+      "marker": "node:TavernDoor",
+      "done_when": {"flag": "ch1.left_tavern"}
+    }
+  ]
+}

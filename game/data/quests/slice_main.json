@@ -48,5 +48,5 @@
       "done_when": {"flag": "slice.cellar_entered"}
     }
   ],
-  "on_complete": {"set": {"slice.complete": true}}
+  "on_complete": {"set": {"slice.complete": true}, "chapter": "ch1", "start_quest": ["ch1_main"]}
 }

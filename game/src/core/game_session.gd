@@ -12,6 +12,12 @@ signal quest_completed(quest_id: String)
 signal guide_changed(changes: Array[Dictionary])
 
 const MAIN_QUEST: String = "slice_main"
+## 主線任務依章節順序；HUD 目標、目標指引跟著最後一個已開始的走（D-149）
+const MAIN_QUESTS: PackedStringArray = ["slice_main", "ch1_main"]
+## 章節銜接：前一章的主線完成後要開始的主線與章節 id（舊存檔讀進來時補開，D-149）
+const CHAPTER_CHAIN: Array[Dictionary] = [
+	{"after": "slice_main", "start": "ch1_main", "chapter": "ch1"},
+]
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
 const DEFAULT_SAVE_DIR: String = "user://saves"
@@ -108,6 +114,7 @@ func load_slot(slot: String) -> SaveCodec.Status:
 	_bind(r["state"] as GameState)
 	# 讀檔不重新觸發自動存檔；若存檔後資料改版、條件已成立，照常推進。
 	quests.evaluate()
+	upgrade_chapters()
 	_autosave_pending = false
 	return status
 
@@ -118,7 +125,30 @@ func retry_from_checkpoint() -> SaveCodec.Status:
 
 
 func objective_key() -> String:
-	return quests.objective_key(MAIN_QUEST)
+	return quests.objective_key(main_quest())
+
+
+## 目前的主線任務：MAIN_QUESTS 裡最後一個已經開始（或完成）的。
+func main_quest() -> String:
+	var current: String = MAIN_QUEST
+	for qid: String in MAIN_QUESTS:
+		if state.quests.has(qid):
+			current = qid
+	return current
+
+
+## 舊存檔（D-149 之前）：前一章完成了、下一章卻沒開始 → 補開，並換章節。回傳補開了幾個。
+func upgrade_chapters() -> int:
+	var started: int = 0
+	for link: Dictionary in CHAPTER_CHAIN:
+		var next_id: String = str(link["start"])
+		if quests.is_done(str(link["after"])) and not state.quests.has(next_id) and db.has_quest(next_id):
+			state.chapter = str(link["chapter"])
+			quests.start(next_id)
+			started += 1
+	if started > 0:
+		quests.evaluate()
+	return started
 
 
 func is_slice_complete() -> bool:

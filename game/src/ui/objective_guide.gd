@@ -67,7 +67,7 @@ static func resolve_target(level: Node, spec: Variant, from: Vector3) -> Vector3
 func refresh(level: Node, player: Node3D, cam: Camera3D, in_combat: bool, delta: float) -> void:
 	var want: bool = false
 	if Settings.objective_marker and player != null and cam != null and not Game.is_player_locked() and not in_combat:
-		var target: Vector3 = resolve_target(level, Game.session.quests.marker_spec(GameSession.MAIN_QUEST), player.global_position)
+		var target: Vector3 = resolve_target(level, Game.session.quests.marker_spec(Game.session.main_quest()), player.global_position)
 		if target.is_finite():
 			var flat: Vector3 = target - player.global_position
 			flat.y = 0.0

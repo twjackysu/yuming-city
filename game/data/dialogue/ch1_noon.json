@@ -1,0 +1,40 @@
+{
+  "id": "ch1_noon",
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_NOON_001",
+      "next": "n2"
+    },
+    "n2": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_NOON_002",
+      "next": "n3"
+    },
+    "n3": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_NOON_003",
+      "next": "n4"
+    },
+    "n4": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_NOON_004",
+      "next": "n5"
+    },
+    "n5": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_NOON_005",
+      "next": "n6"
+    },
+    "n6": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_NOON_006",
+      "do": {
+        "set": {
+          "ch1.noon_talked": true
+        }
+      }
+    }
+  }
+}

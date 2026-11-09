@@ -13,11 +13,12 @@ extends RefCounted
 ## 效果：
 ##   {"set": {"k": v, ...}, "add": {"k": n, ...}}
 ##   {"guide_write": ["id", ...]}           寫下攻略筆記條目（已寫過的不動）
+##   {"chapter": "ch1"}                    換章節（GameState.chapter；存檔與標題的「繼續」用）
 ##   （"start_quest" 由 QuestRunner 處理）
 
 const QUEST_DONE: String = "_done"
 const COMPARE_OPS: PackedStringArray = ["eq", "ne", "gte", "lte", "gt", "lt"]
-const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest", "guide_write"]
+const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest", "guide_write", "chapter"]
 
 
 static func check(cond: Dictionary, state: GameState) -> bool:
@@ -70,6 +71,8 @@ static func apply(effects: Dictionary, state: GameState) -> void:
 			state.set_flag(key, int(roundf(total)))
 		else:
 			state.set_flag(key, total)
+	if effects.has("chapter"):
+		state.chapter = str(effects["chapter"])
 	var written: Variant = effects.get("guide_write", [])
 	if written is Array:
 		GuideNotes.write(state, PackedStringArray(written as Array))

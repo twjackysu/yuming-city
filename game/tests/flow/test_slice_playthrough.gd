@@ -259,6 +259,60 @@ func _playthrough(use_nine_breath: bool) -> void:
 	assert_eq(got, want, "成就（%s）" % ("石拱路線" if use_nine_breath else "燃燒劍路線"))
 	assert_false(ach.is_unlocked("ACH_SEEN_THROUGH"), "灰巡者是直接打倒的（沒打弱點）")
 
+	# --- 第 1 章（D-149）：章節卡 → 酒館：中午 → 晚餐（灑湯）→ 攻略地圖 → 出門
+	await _chapter1(level, use_nine_breath)
+
+
+## 走到說話點旁邊（TALK_RANGE 以內），等對話開始後走完。
+func _talk_at(level: StoryLevel, node_name: String, choice: int) -> void:
+	var n: Node3D = level.get_node(node_name) as Node3D
+	var p: PlayerController = _player(level)
+	p.global_position = Vector3(n.global_position.x + 1.0, 0.05, n.global_position.z + 0.9)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(_game.call("is_in_dialogue"), "走到%s旁邊 → 對話" % node_name)
+	await _run_dialogue(level, choice)
+
+
+func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.main_quest(), "ch1_main", "切片完成 → 主線換成第 1 章")
+	assert_eq(s.state.chapter, "ch1", "章節換成 ch1")
+	assert_eq(s.state.checkpoint, "ch1_tavern", "第 1 章的第一個檢查點")
+	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card, "走進地窖 → 章節卡")
+	if card == null:
+		return
+	assert_eq(card.title_text(), tr("CH1_CARD_TITLE"), "章節卡的章名")
+	card.finish()
+	var tavern: StoryLevel = await _wait_scene()
+	assert_eq(str(tavern.name), "Tavern", "章節卡之後換到酒館")
+	assert_eq(_objective(tavern), "Q_CH1_OBJ_NOON", "[ch1_tavern] HUD 目標")
+	assert_false(bool(tavern.call("is_night")), "中午")
+	await _talk_at(tavern, "Sheila", 0)
+	assert_eq(s.state.get_flag("ch1.noon_talked"), true, "中午跟席菈、彌夏說完話")
+	assert_eq(s.quests.stage_of("ch1_main"), "dinner")
+	assert_true(bool(tavern.call("is_night")), "晚餐：入夜")
+	# 重來：回到晚餐的檢查點，還在酒館
+	tavern = await _retry()
+	assert_eq(str(tavern.name), "Tavern", "[ch1_dinner] 重來還在酒館")
+	assert_eq(s.quests.stage_of("ch1_main"), "dinner", "[ch1_dinner] 階段恢復")
+	assert_eq(_objective(tavern), "Q_CH1_OBJ_DINNER", "[ch1_dinner] HUD 目標")
+	await _talk_at(tavern, "DinnerTable", 0 if help_with_soup else 1)
+	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "灑湯的選擇記下來")
+	assert_eq(s.quests.stage_of("ch1_main"), "draw_map")
+	for id: String in s.guide.ids():
+		assert_eq(GuideNotes.status(s.state, id), GuideNotes.UNWRITTEN, "畫地圖之前還沒寫下 %s" % id)
+	await _talk_at(tavern, "MapTable", 0)
+	assert_eq(s.state.get_flag("ch1.map_drawn"), true, "攻略畫成地圖")
+	for id: String in s.guide.ids():
+		assert_eq(GuideNotes.status(s.state, id), GuideNotes.SURE, "攻略筆記寫下 %s" % id)
+	assert_eq(s.quests.stage_of("ch1_main"), "to_cellar")
+	tavern = await _retry()
+	assert_eq(s.quests.stage_of("ch1_main"), "to_cellar", "[ch1_map_done] 階段恢復")
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.SURE, "[ch1_map_done] 攻略筆記保留")
+	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "[ch1_map_done] 灑湯的選擇保留")
+
 
 func _cleanup() -> void:
 	var scene: Node = tree.current_scene

@@ -20,9 +20,14 @@ const LEVELS: Dictionary = {
 	"frostbridge": "res://scenes/levels/frostbridge.tscn",
 	"sandbox": "res://scenes/dev/sandbox.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
+	"tavern": "res://scenes/levels/tavern.tscn",
 }
-## 檢查點 -> 關卡 id
-const CHECKPOINT_LEVELS: Dictionary = {}
+## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
+const CHECKPOINT_LEVELS: Dictionary = {
+	"ch1_tavern": "tavern",
+	"ch1_dinner": "tavern",
+	"ch1_map_done": "tavern",
+}
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 

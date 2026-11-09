@@ -16,3 +16,42 @@ GUIDE_USURPER,The lord of the city is the Year-Eating Usurper. Weak point: the h
 GUIDE_USURPER_WRONG,"Isa, the city's lord. A metal brace on his right leg. He asked about Sheila's hand.",伊薩，城主。右腿金屬支架。問了席菈的手。
 GUIDE_BURN_ROUTE,"Fastest route: light the furnace, burn the lower streets, kill the lord. Six seconds.",最快路線：點燃淨化爐，燒光下層街區，再殺城主。六秒。
 GUIDE_BURN_ROUTE_WRONG,The monsters were never burned by players. The whole city paid for that strike.,怪物不是被玩家燒死的。是整座城替玩家付了那一擊的費用。
+SPK_MISHA,Misha,彌夏
+SPK_KEEPER,Innkeeper,酒館老闆
+SPK_LEO_LETTER,Leo's letter,黎歐的信
+CH1_CARD_NUMBER,Chapter One,第一章
+CH1_CARD_TITLE,The Door Beyond the Guide,攻略之外的門
+CH1_TO_BE_CONTINUED,To be continued — the cellar and Daylight City are still being built.,待續——地窖與白晝城還在製作中。
+Q_CH1_MAIN_TITLE,The Door Beyond the Guide,攻略之外的門
+Q_CH1_OBJ_NOON,Find Sheila by the wounded,去傷者那邊找席菈
+Q_CH1_OBJ_DINNER,Night has fallen. Sit down to dinner with Sheila and Misha,入夜了，跟席菈、彌夏一起吃飯
+Q_CH1_OBJ_MAP,Draw the guide you remember at the small table,到小桌子把記得的攻略畫成地圖
+Q_CH1_OBJ_CELLAR,Go to the cellar under the pear seller's house,去梨販家的地窖
+DLG_CH1_NOON_001,The wounded are all settled. Thirty-one people didn't come back.,傷者都安置好了。三十一個人沒有回來。
+DLG_CH1_NOON_002,(A woman in an oversized dark-green coat sets a clock with no hands on the table.) Don't ring it.,（一個穿著過長墨綠外衣的女人，把一台沒有指針的鐘放上桌。）不要敲它。
+DLG_CH1_NOON_003,Do I look like someone who loves ringing bells?,我看起來很愛敲鐘嗎？
+DLG_CH1_NOON_004,"(She opens the case. No spring inside — a white stone, slowly beating.) There's a city underground. The kingdom sealed it off seventeen years ago.",（她拆開鐘殼。裡面不是發條，是一塊慢慢跳動的白石。）地下有座城，被王國封起來十七年了。
+DLG_CH1_NOON_005,Daylight City.,白晝城。
+DLG_CH1_NOON_006,"So the patrol does know. I'm Misha. Eat with me tonight, and I'll tell you the rest.",巡邏隊果然知道。我叫彌夏。今晚一起吃飯，我把話說完。
+DLG_CH1_DIN_001,"(She takes out a letter, worn thin, patched at the corners four times.) My brother Leo sent this last year. It came down the underground river, inside a fish.",（她拿出一封信，紙磨得快透明，邊角補了四次。）我弟弟黎歐去年寄來的。走地下河，裝在魚肚子裡。
+DLG_CH1_DIN_002,"Sis, I'm taller than you now. Don't send sugar, it melts. Send salt. Also, the clock has been running slow lately.",姊，我現在比你高了。別寄糖，會化。寄鹽。還有，鐘最近走得很慢。
+DLG_CH1_DIN_003,What do you want from us?,你要我們做什麼？
+DLG_CH1_DIN_004,"Put the clapper back. The town up here is the seal; the city down there is its fuel. Once the bell rings nine times, the seal starts burning them up. Within seven days, everyone on the register down there will die.",把鐘舌裝回去。上面的鎮是封印，下面的城是燃料。鐘敲滿九下，封印就開始把下面的人當柴燒。七天之內，下面登記過的人全都會死。
+DLG_CH1_DIN_005,(Her left hand slowly covers the silver badge on her chest.) How do you know that?,（她的左手慢慢壓住胸前的銀徽章。）你怎麼知道？
+DLG_CH1_DIN_006,I used to build bells like this for the kingdom.,我替王國造過這種鐘。
+DLG_CH1_DIN_007,"(He sets down three bowls of soup with no meat. When he sees you he pauses, then puts yours down hard.) Soup.",（他端來三碗沒有肉的湯。看見你的時候停了一下，把你那碗放得很重。）湯。
+DLG_CH1_DIN_008,(Once he's gone.) I took the clapper out. Then it fell into a crack.,（等老闆走遠。）鐘舌被我拆了。後來掉進裂縫。
+DLG_CH1_DIN_009,Good news: it belongs down there anyway. Bad news: I'd planned three months to smuggle the tools in. Now we have six and a half days.,好消息，它本來就該回下面。壞消息——我原本打算花三個月偷運工具。現在我們只有六天半。
+DLG_CH1_DIN_SOUP,(Sheila picks up the spoon with her left hand. Two tries. The soup ends up all over the table.),（席菈用左手拿起湯匙，試了兩次，湯全灑在桌上。）
+DLG_CH1_DIN_C_HELP,Hold the spoon for her,替她拿湯匙
+DLG_CH1_DIN_C_WAIT,Don't move. Let her be.,不動，等她自己來
+DLG_CH1_DIN_RAPPED,(She raps the back of your hand with the spoon handle.) A hurt right hand doesn't mean both of them are useless.,（她用湯匙柄敲了一下你的手背。）右手受傷，不代表兩隻都廢了。
+DLG_CH1_DIN_CUP,(Misha swaps Sheila's bowl for a cup with a handle and slides it in front of her.),（彌夏把席菈的湯碗換成有把手的杯子，推到她面前。）
+DLG_CH1_DIN_THANKS,(Sheila looks at her.) ...Thank you.,（席菈看了她一眼，低聲說。）……謝謝。
+DLG_CH1_MAP_001,"(That night you draw every route you know onto paper — the traps, the monsters, every supply you could find.)",（那晚你把知道的路線全畫在紙上：陷阱、怪物、能找到的補給。）
+DLG_CH1_MAP_002,Where did you learn all this?,你從哪裡知道這些？
+DLG_CH1_MAP_003,From another life.,另一段人生。
+DLG_CH1_MAP_004,"(She doesn't laugh.) In that life, how many people died today?",（她沒有笑。）那段人生裡，今天死了多少人？
+DLG_CH1_MAP_005,None. It was only a game there.,沒有。那裡只是遊戲。
+DLG_CH1_MAP_006,"(She's quiet for a long time.) Mark the parts you're not sure about, too.",（她很久沒說話。）把你不確定的地方也標出來。
+DLG_CH1_MAP_007,"(You pick up the pen. In the end, you circle the whole map.)",（你拿起筆。最後，整張地圖都被你圈了起來。）

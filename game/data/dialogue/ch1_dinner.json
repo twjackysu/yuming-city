@@ -1,0 +1,94 @@
+{
+  "id": "ch1_dinner",
+  "start": "d1",
+  "nodes": {
+    "d1": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_DIN_001",
+      "next": "d2"
+    },
+    "d2": {
+      "speaker": "SPK_LEO_LETTER",
+      "text": "DLG_CH1_DIN_002",
+      "next": "d3"
+    },
+    "d3": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_DIN_003",
+      "next": "d4"
+    },
+    "d4": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_DIN_004",
+      "next": "d5"
+    },
+    "d5": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_DIN_005",
+      "next": "d6"
+    },
+    "d6": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_DIN_006",
+      "next": "d7"
+    },
+    "d7": {
+      "speaker": "SPK_KEEPER",
+      "text": "DLG_CH1_DIN_007",
+      "next": "d8"
+    },
+    "d8": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DIN_008",
+      "next": "d9"
+    },
+    "d9": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_DIN_009",
+      "next": "soup"
+    },
+    "soup": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DIN_SOUP",
+      "choices": [
+        {
+          "text": "DLG_CH1_DIN_C_HELP",
+          "next": "rapped",
+          "do": {
+            "set": {
+              "ch1.sheila_soup_helped": true
+            }
+          }
+        },
+        {
+          "text": "DLG_CH1_DIN_C_WAIT",
+          "next": "cup",
+          "do": {
+            "set": {
+              "ch1.sheila_soup_helped": false
+            }
+          }
+        }
+      ]
+    },
+    "rapped": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_DIN_RAPPED",
+      "next": "cup"
+    },
+    "cup": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH1_DIN_CUP",
+      "next": "thanks"
+    },
+    "thanks": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_DIN_THANKS",
+      "do": {
+        "set": {
+          "ch1.dinner_done": true
+        }
+      }
+    }
+  }
+}
