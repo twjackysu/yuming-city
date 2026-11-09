@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 55 輪）的程式 commit：60e7d64 乾運河的美術（河道牆、岸頂、河床 `dry_mud`、木架）、094ffa4 摔下來的泥、6345f64 頭頂石樑、301d343 河床碎石（前面幾個的 run 會被下一個 push 取消；**301d343 的 run 包含全部，CI 狀態見 PROGRESS 第 55 輪**——開工先看那個 run 與盤點截圖的綠燈，盤點截圖 `26`～`36` 都在乾運河、這輪都換了樣子，在 CI 上看一眼）。第 54 輪的 78ffda4 run 42697532754 已全綠（含盤點截圖）。開工照常先跑 `scripts/check.sh`（最後 371 個測試）。`docs/PROGRESS.md` 約 220 行；超過約 300 行再合併第 49～53 輪。
+- 上一輪（第 55 輪）的程式 commit：60e7d64 乾運河的美術（河道牆、岸頂、河床 `dry_mud`、木架）、094ffa4 摔下來的泥、6345f64 頭頂石樑、301d343 河床碎石、af4a7f2 水溝底的泥（中間幾個的 run 被取消；**af4a7f2 的 run 包含全部，CI 狀態見 PROGRESS 第 55 輪的收尾補記**——開工先看那個 run 與盤點截圖的綠燈，盤點截圖 `26`～`36` 都在乾運河、這輪都換了樣子，在 CI 上看一眼）。第 54 輪的 78ffda4 run 42697532754 已全綠（含盤點截圖）。開工照常先跑 `scripts/check.sh`（最後 371 個測試）。`docs/PROGRESS.md` 約 220 行；超過約 300 行再合併第 49～53 輪。
 - 第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。第 53 輪起 c17d3ad 之前的程式 run 都已全綠（c17d3ad run 42689054966 全綠含盤點截圖）。CI 的 import 崩潰再出現（`check.sh` 重試也崩）就要查：兩次都在第一次 import 重新匯入翻譯 CSV（`strings.csv`／`slice.csv`）時。`33-ch3-map` 上方多一行煤車那段的橫幅跟對話疊在一起，多半只是截圖旗標直接跳過去造成的，有空確認。
 - **測試結束時的「2 ObjectDB instances were leaked at exit」警告**：只在 `TEST_FILTER=slice_playthrough` 與整套測試出現（9ef5632 上就有，第 45 輪之前沒查）；加 `--verbose` 跑同一組**沒有重現**（跟時間有關，懷疑是結束時還沒播完的 Sfx 播放器或 Tween）。不算失敗、不要卡住。
 - **第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
@@ -178,10 +178,11 @@
 - **已完成（第 55 輪，D-173）**：乾運河的美術（`scenes/levels/canal.gd` 的「材質」一節）。
   - 材質函式：`canal_wall_mat()`（方石 `block_scale` 1.7＋舊水位線 `tide_amount`／`tide_y`＝`TIDE_Y`；閘道矮牆、橋墩、轉角牆、河床碎石也用）、`bank_top_mat()`（岸頂石板，`along_z`；橋面也用）、`coping_mat()`（淺色條石：壓頂石、矮牆、橋欄、閘道矮牆頂、水溝邊、護角石）、`outer_wall_mat()`（最外側高牆、南北端牆、頭頂石樑：很大的暗色石塊）、`bed_mat()`（`dry_mud.gdshader`：`mud_color`／`crack_color`／`cell_size`／`crack_width`／`wet_x`（＝`PUDDLE_X`）／`wet_half`）、`timber_mat()`（木架、吊樑、碎木）、`deck_mat()`（煤車底下的木板、木閘門）、`cart_mat()`（車身）。
   - 岸拆成 `BankE/W`（河道牆，頂在 -`BANK_TOP_T`）＋`BankTopE/W`（石板）＋碰撞 `BankE/WBody`（一整塊，跟以前同名）。牆上的 `Seam*` 方塊拿掉了。
+  - 段落 2 的水溝底 `Drain/DrainMud` 也是 `dry_mud`（整片濕）。
   - 段落 5 的泥：`MudPatch`（`MUD_PATCH_CENTER`／`MUD_PATCH_RADIUS`，`Main`＋`Splat0～5`），`mud_blob_mesh(半徑, seed)`（static，平的扇形、朝上）。
   - 測試 `test_canal_art.gd`、流程 `_assert_canal_art`（接在 `_assert_canal` 最後）。
   - 本機截圖前後對照：`--canal-at=edge`、`heart`、`pinned`、`struggle`、`mud`、`corner`、`hang`（倒吊那張河床的龜裂最清楚）。
-  - 還可以：舊水位線在 lavapipe 上不太明顯（實機看，要更明顯就把 `half_timber` 的 `stained` 乘數再壓低或 `TIDE_Y` 調高到矮牆的高度）；煤堆還是黑色球體＋方塊（可以做成 `SnowMound` 那種高度場、用低粗糙度的煤色）；彌夏的水溝 `DrainMud` 還是素色（可以換 `dry_mud` 整片濕）；吊樑下的鏈子、閘道木架的鐵件是素色；從東岸往下看會被岸緣擋住（第 47 輪就記過）。
+  - 還可以：舊水位線在 lavapipe 上不太明顯（實機看，要更明顯就把 `half_timber` 的 `stained` 乘數再壓低或 `TIDE_Y` 調高到矮牆的高度）；煤堆還是黑色球體＋方塊（可以做成 `SnowMound` 那種高度場、用低粗糙度的煤色）；吊樑下的鏈子、閘道木架的鐵件是素色；從東岸往下看會被岸緣擋住（第 47 輪就記過）。
 - **下一步（依序）**：
   1. **白晝城街道的美術**（`scenes/levels/daylight.gd` 的街、淨化爐、石碑；第 1 章段落 7～9 都在這裡，柯德家的屋內第 53 輪已做）。先拍現況（CI 盤點截圖 `15-ch1-daylight`、`17-ch1-bell-yard-road`，開發旗標 `--level=daylight [--daylight-at=stele|home|yard]`），玩家停最久的那一角先做（多半是石碑前）：房子現在是素色方塊＋灰藍窗板 → 石塊＋白灰（`InteriorLook.wall` 的牆腳石塊＋灰泥，`exterior` 0）、街道 `flagstone`、穹頂的燈加幾道拱肋。**白晝城的規則：只有油燈投影子**（D-154）要保留。每做一塊前後對照截圖。
   2. 樓梯（一百七十二階，`stairs.gd`）的美術：牆面現在是素色方塊 → 方石（可以直接用 `canal_wall_mat` 的參數，不要水位線）。彌夏抱的鐘還是小木箱。
