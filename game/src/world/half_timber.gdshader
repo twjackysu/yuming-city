@@ -28,6 +28,11 @@ uniform vec2 arch_center = vec2(0.0, 2.0);
 uniform float arch_inner = 1.6;
 uniform float arch_outer = 2.15;
 uniform float arch_key_extra = 0.0;
+// 室內牆（第 53 輪，酒館）：exterior＝0 不積雪、牆腳不濕；soot＞0 天花板下燻黑（soot_top 以下 soot_depth 公尺漸淡）
+uniform float exterior : hint_range(0.0, 1.0) = 1.0;
+uniform float soot : hint_range(0.0, 1.0) = 0.0;
+uniform float soot_top = 3.4;
+uniform float soot_depth = 1.2;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -150,7 +155,7 @@ void fragment() {
 		arch_tilt *= detail;
 		// 石牆頂端一條薄雪（窗台般的突出）
 		float ledge = smoothstep(stone_height - 0.07, stone_height - 0.03, y) * step(stone_height, 50.0);
-		albedo = mix(albedo, snow_color * 0.9, ledge * 0.8);
+		albedo = mix(albedo, snow_color * 0.9, ledge * 0.8 * exterior);
 	} else {
 		float yy = y - stone_height;
 		float fy = mod(yy, floor_height);
@@ -179,22 +184,27 @@ void fragment() {
 		rough = mix(0.93, 0.72, timber);
 		// 橫梁上緣積雪
 		float sill = smoothstep(beam_width - 0.015, beam_width + 0.005, fy) * (1.0 - smoothstep(beam_width + 0.01, beam_width + 0.05, fy));
-		albedo = mix(albedo, snow_color, sill * 0.65 * detail);
+		albedo = mix(albedo, snow_color, sill * 0.65 * detail * exterior);
 	}
 
 	// 牆腳：濕（暗、亮面）＋一點積雪
-	float damp = 1.0 - smoothstep(0.1, 0.7, y + (noise(wp * vec2(2.0, 1.0)) - 0.5) * 0.3);
+	float damp = (1.0 - smoothstep(0.1, 0.7, y + (noise(wp * vec2(2.0, 1.0)) - 0.5) * 0.3)) * exterior;
 	albedo *= mix(1.0, 0.6, damp);
 	rough = mix(rough, 0.35, damp);
-	float drift = 1.0 - smoothstep(0.08, 0.2, y - fbm(vec2(u * 0.9, 1.3)) * 0.28);
+	float drift = (1.0 - smoothstep(0.08, 0.2, y - fbm(vec2(u * 0.9, 1.3)) * 0.28)) * exterior;
 	albedo = mix(albedo, snow_color, drift * 0.9);
 	rough = mix(rough, 0.85, drift);
 
 	// 朝上的面（屋簷下沒被蓋住的牆頂、城牆頂）＝雪
-	float top = smoothstep(0.6, 0.8, n.y);
+	float top = smoothstep(0.6, 0.8, n.y) * exterior;
 	albedo = mix(albedo, snow_color, top);
 	rough = mix(rough, 0.85, top);
 
+	// 室內：天花板下的煙燻（不均勻，往下漸淡）
+	if (soot > 0.0) {
+		float sd = smoothstep(soot_top - soot_depth, soot_top, y + (fbm(vec2(u * 0.6, y * 0.8) + 9.0) - 0.5) * 0.6);
+		albedo *= 1.0 - sd * soot;
+	}
 	ALBEDO = albedo;
 	ROUGHNESS = rough;
 	if (glow_energy > 0.0) {

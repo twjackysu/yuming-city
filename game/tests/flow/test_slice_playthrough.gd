@@ -275,6 +275,20 @@ func _talk_at(level: StoryLevel, node_name: String, choice: int) -> void:
 	await _run_dialogue(level, choice)
 
 
+## 酒館的美術（第 53 輪，D-171）：地板是木板 shader、牆是半木構的室內版（不積雪）、窗有窗框、蠟燭入夜才點。
+func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
+	var tag: String = "[ch1_dinner]" if night else "[ch1_tavern]"
+	var floor_mat: ShaderMaterial = (tavern.get_node("Floor") as CSGBox3D).material as ShaderMaterial
+	assert_true(floor_mat != null and floor_mat.shader.resource_path == str(tavern.get("PLANK_SHADER")), "%s 地板是木板" % tag)
+	var wall_mat: ShaderMaterial = (tavern.get_node("WallN") as CSGBox3D).material as ShaderMaterial
+	assert_true(wall_mat != null and wall_mat.shader.resource_path == FrostbridgeLook.HALF_TIMBER_SHADER, "%s 牆是半木構" % tag)
+	if wall_mat != null:
+		assert_eq(float(wall_mat.get_shader_parameter("exterior")), 0.0, "%s 室內牆不積雪" % tag)
+	for n: String in ["WindowFrameTop", "WindowSill", "WindowMullion", "Bowl0", "Candle", "BackShelf0", "DinnerBenchN", "LampGlass"]:
+		assert_true(tavern.has_node(n), "%s 有 %s" % [tag, n])
+	assert_eq(bool(tavern.call("candle_lit")), night, "%s 蠟燭%s" % [tag, "點著" if night else "沒點"])
+
+
 func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	var s: GameSession = _game.get("session") as GameSession
 	assert_eq(s.main_quest(), "ch1_main", "切片完成 → 主線換成第 1 章")
@@ -290,6 +304,7 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	assert_eq(str(tavern.name), "Tavern", "章節卡之後換到酒館")
 	assert_eq(_objective(tavern), "Q_CH1_OBJ_NOON", "[ch1_tavern] HUD 目標")
 	assert_false(bool(tavern.call("is_night")), "中午")
+	_assert_tavern_art(tavern, false)
 	await _talk_at(tavern, "Sheila", 0)
 	assert_eq(s.state.get_flag("ch1.noon_talked"), true, "中午跟席菈、彌夏說完話")
 	assert_eq(s.quests.stage_of("ch1_main"), "dinner")
@@ -298,6 +313,7 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	tavern = await _retry()
 	assert_eq(str(tavern.name), "Tavern", "[ch1_dinner] 重來還在酒館")
 	assert_eq(s.quests.stage_of("ch1_main"), "dinner", "[ch1_dinner] 階段恢復")
+	_assert_tavern_art(tavern, true)
 	assert_eq(_objective(tavern), "Q_CH1_OBJ_DINNER", "[ch1_dinner] HUD 目標")
 	await _talk_at(tavern, "DinnerTable", 0 if help_with_soup else 1)
 	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "灑湯的選擇記下來")
