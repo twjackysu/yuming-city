@@ -163,12 +163,18 @@ const ROCK: Color = Color(0.1, 0.1, 0.11)
 const WOOD: Color = Color(0.25, 0.19, 0.13)
 const IRON: Color = Color(0.17, 0.16, 0.16)
 const COPPER: Color = Color(0.95, 0.55, 0.28)
+const DRY_MUD_SHADER: String = "res://src/world/dry_mud.gdshader"
+## 河床中間還沒乾的那一條（水窪＋濕泥）的中心 x
+const PUDDLE_X: float = -0.3
 
 var _misha: Puppet
 var _pivot: Node3D
 var _undertaker: Undertaker
 var _clapper_light: OmniLight3D
 var _clapper_mat: StandardMaterial3D
+## 美術（第 55 輪，D-173）：河道牆、岸頂石板、矮牆、木架都用 InteriorLook；河床 dry_mud.gdshader。
+var interior := InteriorLook.new()
+var _bed_mat: ShaderMaterial
 var _t: float = 0.0
 var _continued_shown: bool = false
 ## 段落 2：趴在水溝裡（觀察中）、上一次敲的反應（測試讀）、反應的補間
@@ -964,7 +970,7 @@ func _build_drain() -> void:
 	drain.name = "Drain"
 	drain.position = DRAIN_POS
 	add_child(drain)
-	var curb: StandardMaterial3D = _mat(STONE_LIGHT, 0.9)
+	var curb: ShaderMaterial = coping_mat()
 	for side: float in [-1.0, 1.0]:
 		_solid("DrainCurb%d" % int(side), Vector3(DRAIN_W + 0.32, 0.18, 0.16), Vector3(0.0, 0.09, side * (DRAIN_LEN * 0.5 + 0.08)), curb, false, drain)
 		_solid("DrainSide%d" % int(side), Vector3(0.16, 0.12, DRAIN_LEN), Vector3(side * (DRAIN_W * 0.5 + 0.08), 0.06, 0.0), curb, false, drain)
@@ -1703,15 +1709,15 @@ func talk_misha_map() -> void:
 
 ## 東岸回程路上的一道舊牆（從外側岩壁伸出來、擋住半個岸）＋牆頂的壓頂石＋端面上的小油燈；席菈等的點（目標指引跟著她）。
 func _build_corner() -> void:
-	var stone: StandardMaterial3D = _mat(STONE, 0.9)
+	var stone: ShaderMaterial = canal_wall_mat()
 	var x1: float = CANAL_HALF_W + BANK_W
 	var w: float = x1 - CORNER_WALL_X0
 	_solid("CornerWall", Vector3(w, CORNER_WALL_H, CORNER_WALL_T), Vector3(CORNER_WALL_X0 + w * 0.5, CORNER_WALL_H * 0.5, CORNER_WALL_Z), stone)
-	_solid("CornerCoping", Vector3(w + 0.1, 0.14, CORNER_WALL_T + 0.12), Vector3(CORNER_WALL_X0 + w * 0.5 - 0.05, CORNER_WALL_H + 0.07, CORNER_WALL_Z), _mat(STONE_LIGHT, 0.85), false)
+	_solid("CornerCoping", Vector3(w + 0.1, 0.14, CORNER_WALL_T + 0.12), Vector3(CORNER_WALL_X0 + w * 0.5 - 0.05, CORNER_WALL_H + 0.07, CORNER_WALL_Z), coping_mat(), false)
 	# 牆角磨圓的護角石（一塊塊疊上去，看得出是轉角）
 	for i: int in 4:
 		var h: float = CORNER_WALL_H / 4.0
-		var q: MeshInstance3D = _solid("CornerQuoin%d" % i, Vector3(0.28, h - 0.04, CORNER_WALL_T + (0.08 if i % 2 == 0 else 0.0)), Vector3(CORNER_WALL_X0 + 0.12, h * (i + 0.5), CORNER_WALL_Z), _mat(STONE_LIGHT, 0.9), false)
+		var q: MeshInstance3D = _solid("CornerQuoin%d" % i, Vector3(0.28, h - 0.04, CORNER_WALL_T + (0.08 if i % 2 == 0 else 0.0)), Vector3(CORNER_WALL_X0 + 0.12, h * (i + 0.5), CORNER_WALL_Z), coping_mat(), false)
 		q.position.x -= 0.02
 	# 油燈：鐵臂＋小燈罩（自發光）＋一盞暖色的點光（投影子：席菈的影子落在牆上）
 	var iron: StandardMaterial3D = _mat(IRON, 0.6)
@@ -2284,32 +2290,92 @@ func _blocker(node_name: String, size: Vector3, pos: Vector3) -> void:
 	add_child(body)
 
 
-## 兩岸（岸頂 y＝0）、河床（爛泥＋中間一條還沒乾的淺水）、岸邊的壓頂石與矮牆、最外側的岩壁、南北兩端的牆。
+# ---------------------------------------------------------------- 材質（第 55 輪，D-173）
+
+const WALL_STONE: Color = Color(0.3, 0.29, 0.275)
+const WALL_MORTAR: Color = Color(0.07, 0.066, 0.062)
+## 河道牆上的舊水位線（離河床多高）：線下暗、偏綠灰、往下一道道水痕
+const TIDE_Y: float = BED_Y + 2.3
+const BANK_TOP_T: float = 0.06
+const MUD_DRY: Color = Color(0.17, 0.142, 0.118)
+const DECK_WOOD: Color = Color(0.23, 0.175, 0.12)
+
+
+## 河道牆：大方石（一排約 0.6 m）、深灰縫、舊水位線。閘道的矮石牆、橋墩也用這個。
+func canal_wall_mat() -> ShaderMaterial:
+	return interior.wall("canal_wall", WALL_STONE, WALL_STONE, 99.0, {
+		"block_scale": 1.7, "mortar_color": WALL_MORTAR, "soot": 0.0,
+		"tide_amount": 1.0, "tide_y": TIDE_Y,
+	})
+
+
+## 最外側的高牆與南北兩端：很大、很粗的暗色石塊（一排約 1.2 m），只有縫裡的光掃過的地方看得出來。
+func outer_wall_mat() -> ShaderMaterial:
+	return interior.wall("canal_outer", ROCK * 1.5, ROCK * 1.5, 99.0, {
+		"block_scale": 3.3, "mortar_color": Color(0.035, 0.035, 0.04), "soot": 0.0,
+	})
+
+
+## 岸頂：沿著運河鋪的石板，常走的地方磨亮一點。
+func bank_top_mat() -> ShaderMaterial:
+	return interior.flagstone("canal_bank", Color(0.25, 0.24, 0.23), 0.75, {"along_z": true, "wear": 0.35, "seam_dark": 0.72})
+
+
+## 壓頂石、矮牆、橋欄：比牆石淺一點的整塊條石（沿運河一塊塊接起來）。
+func coping_mat() -> ShaderMaterial:
+	return interior.flagstone("canal_coping", Color(0.4, 0.385, 0.36), 0.5, {"along_z": true, "seam_dark": 0.8, "base_roughness": 0.8})
+
+
+## 河床：龜裂的乾泥＋中間一條還沒乾的濕泥（跟水窪同一條）。
+func bed_mat() -> ShaderMaterial:
+	var key: String = "canal_bed"
+	if _bed_mat == null:
+		_bed_mat = ShaderMaterial.new()
+		_bed_mat.shader = load(DRY_MUD_SHADER) as Shader
+		_bed_mat.set_shader_parameter("mud_color", MUD_DRY)
+		_bed_mat.set_shader_parameter("wet_x", PUDDLE_X)
+		_bed_mat.set_shader_parameter("wet_half", 1.05)
+		_bed_mat.resource_name = key
+	return _bed_mat
+
+
+## 木架、吊樑：整根舊木頭。
+func timber_mat() -> ShaderMaterial:
+	return interior.timber(WOOD, 0.88)
+
+
+## 煤車底下的木板、拉起來的木閘門、車身：一片片木板。
+func deck_mat() -> ShaderMaterial:
+	return interior.plank("canal_deck", DECK_WOOD, 0.22, 2.4, {"seam_dark": 0.85, "base_roughness": 0.86})
+
+
+func cart_mat() -> ShaderMaterial:
+	return interior.plank("canal_cart", Color(0.2, 0.155, 0.11), 0.125, 1.2, {"seam_dark": 0.9, "base_roughness": 0.84})
+
+
+## 兩岸（岸頂 y＝0）、河床（龜裂的乾泥＋中間一條還沒乾的淺水）、岸邊的壓頂石與矮牆、最外側的岩壁、南北兩端的牆。
+## 岸分成看得到的兩塊：河道牆（方石，頂在 -BANK_TOP_T）＋岸頂一層石板；碰撞是一整塊。
 func _build_canal() -> void:
 	var length: float = Z_SOUTH - Z_NORTH
 	var mid_z: float = (Z_SOUTH + Z_NORTH) * 0.5
-	var stone: StandardMaterial3D = _mat(STONE, 0.9)
-	var coping: StandardMaterial3D = _mat(STONE_LIGHT, 0.85)
-	var rock: StandardMaterial3D = _mat(ROCK, 1.0)
+	var rock: ShaderMaterial = outer_wall_mat()
 	var bank_depth: float = -BED_Y + 0.5
+	var wall_h: float = bank_depth - BANK_TOP_T
 	for side: float in [-1.0, 1.0]:
 		var cx: float = side * (CANAL_HALF_W + BANK_W * 0.5)
 		var tag: String = "E" if side > 0.0 else "W"
-		_solid("Bank" + tag, Vector3(BANK_W, bank_depth, length), Vector3(cx, -bank_depth * 0.5, mid_z), stone)
-		_solid("Coping" + tag, Vector3(0.5, 0.12, length), Vector3(side * (CANAL_HALF_W + 0.25), 0.06, mid_z), coping, false)
-		_solid("Parapet" + tag, Vector3(0.35, PARAPET_H, length), Vector3(side * (CANAL_HALF_W + 0.22), PARAPET_H * 0.5, mid_z), stone, false)
+		_solid("Bank" + tag, Vector3(BANK_W, wall_h, length), Vector3(cx, -BANK_TOP_T - wall_h * 0.5, mid_z), canal_wall_mat(), false)
+		_blocker("Bank" + tag + "Body", Vector3(BANK_W, bank_depth, length), Vector3(cx, -bank_depth * 0.5, mid_z))
+		_solid("BankTop" + tag, Vector3(BANK_W, BANK_TOP_T, length), Vector3(cx, -BANK_TOP_T * 0.5, mid_z), bank_top_mat(), false)
+		_solid("Coping" + tag, Vector3(0.5, 0.12, length), Vector3(side * (CANAL_HALF_W + 0.25), 0.06, mid_z), coping_mat(), false)
+		_solid("Parapet" + tag, Vector3(0.35, PARAPET_H, length), Vector3(side * (CANAL_HALF_W + 0.22), PARAPET_H * 0.5, mid_z), coping_mat(), false)
 		_blocker("Parapet" + tag + "Block", Vector3(0.35, PARAPET_BLOCK_H, length), Vector3(side * (CANAL_HALF_W + 0.22), PARAPET_BLOCK_H * 0.5, mid_z))
 		_solid("OuterWall" + tag, Vector3(1.0, OUTER_WALL_H - BED_Y, length + 2.0), Vector3(side * (CANAL_HALF_W + BANK_W + 0.5), (OUTER_WALL_H + BED_Y) * 0.5, mid_z), rock)
-		# 河道兩側的石牆上一道道接縫（看得出是砌的）
-		for i: int in int(length / 3.2):
-			var z: float = Z_SOUTH - 1.6 - i * 3.2
-			_solid("Seam%s%d" % [tag, i], Vector3(0.04, -BED_Y - 0.2, 0.06), Vector3(side * (CANAL_HALF_W - 0.005), BED_Y * 0.5, z), _mat(ROCK, 1.0), false)
-	var mud: StandardMaterial3D = _mat(MUD, 0.95)
-	_solid("CanalBed", Vector3(CANAL_HALF_W * 2.0, 0.4, length), Vector3(0.0, BED_Y - 0.2, mid_z), mud)
-	# 河床中間一條還沒乾的淺水：低粗糙度，接得到從縫裡下來的光
+	_solid("CanalBed", Vector3(CANAL_HALF_W * 2.0, 0.4, length), Vector3(0.0, BED_Y - 0.2, mid_z), bed_mat())
+	# 河床中間一條還沒乾的淺水：低粗糙度，接得到從縫裡下來的光（四周的濕泥是河床 shader 畫的）
 	var water := _mat(Color(0.05, 0.055, 0.06), 0.08)
 	water.metallic_specular = 0.8
-	_solid("Puddle", Vector3(1.1, 0.02, length * 0.8), Vector3(-0.3, BED_Y + 0.01, mid_z - 2.0), water, false)
+	_solid("Puddle", Vector3(1.1, 0.02, length * 0.8), Vector3(PUDDLE_X, BED_Y + 0.01, mid_z - 2.0), water, false)
 	# 河床上的碎石與爛木頭
 	for i: int in 26:
 		var size := Vector3(_rng.randf_range(0.2, 0.7), _rng.randf_range(0.1, 0.35), _rng.randf_range(0.2, 0.8))
@@ -2324,34 +2390,33 @@ func _build_canal() -> void:
 	add_child(edge)
 
 
-## 石橋：橋面、兩側欄杆、兩座橋墩貼在河道牆上。
+## 石橋：橋面（石板）、兩側欄杆（條石）、兩座橋墩貼在河道牆上（方石）。
 func _build_bridge() -> void:
-	var stone: StandardMaterial3D = _mat(STONE, 0.9)
 	var span: float = CANAL_HALF_W * 2.0 + 0.8
-	_solid("BridgeDeck", Vector3(span, DECK_T, BRIDGE_W), Vector3(0.0, -DECK_T * 0.5, BRIDGE_Z), stone)
+	_solid("BridgeDeck", Vector3(span, DECK_T, BRIDGE_W), Vector3(0.0, -DECK_T * 0.5, BRIDGE_Z), bank_top_mat())
 	for side: float in [-1.0, 1.0]:
-		_solid("BridgeRail%d" % int(side), Vector3(span, 0.7, 0.25), Vector3(0.0, 0.35, BRIDGE_Z + side * (BRIDGE_W * 0.5 - 0.125)), stone)
-		_solid("BridgeHaunch%d" % int(side), Vector3(0.6, 0.9, BRIDGE_W), Vector3(side * (CANAL_HALF_W - 0.3), -DECK_T - 0.45, BRIDGE_Z), stone, false)
+		_solid("BridgeRail%d" % int(side), Vector3(span, 0.7, 0.25), Vector3(0.0, 0.35, BRIDGE_Z + side * (BRIDGE_W * 0.5 - 0.125)), coping_mat())
+		_solid("BridgeHaunch%d" % int(side), Vector3(0.6, 0.9, BRIDGE_W), Vector3(side * (CANAL_HALF_W - 0.3), -DECK_T - 0.45, BRIDGE_Z), canal_wall_mat(), false)
 
 
 ## 北邊的閘道：河道裡兩道矮石牆把河道收窄（比送葬者矮，從岸上看得到牠露出上半身）；
 ## 上方一座木架（兩岸各兩根立柱、兩根橫樑、樑上鋪木板），木板上停著一台堆滿煤的車，往南邊的邊緣斜著，
 ## 車尾一條繩子拉到東岸北側的木柱上綁著（段落 4，D-166）。拉起來的木閘門掛在北邊的橫樑下。
 func _build_sluice() -> void:
-	var stone: StandardMaterial3D = _mat(STONE, 0.9)
-	var wood: StandardMaterial3D = _mat(WOOD, 0.9)
+	var stone: ShaderMaterial = canal_wall_mat()
+	var wood: ShaderMaterial = timber_mat()
 	var iron: StandardMaterial3D = _mat(IRON, 0.6)
 	iron.metallic = 0.6
 	for side: float in [-1.0, 1.0]:
 		_solid("SluicePier%d" % int(side), Vector3(0.9, SLUICE_PIER_H, SLUICE_PIER_HALF_Z * 2.0), Vector3(side * 1.7, BED_Y + SLUICE_PIER_H * 0.5, SLUICE_Z), stone, false)
-		_solid("SluiceCap%d" % int(side), Vector3(1.0, 0.12, SLUICE_PIER_HALF_Z * 2.0 + 0.1), Vector3(side * 1.7, BED_Y + SLUICE_PIER_H + 0.06, SLUICE_Z), _mat(STONE_LIGHT, 0.85), false)
+		_solid("SluiceCap%d" % int(side), Vector3(1.0, 0.12, SLUICE_PIER_HALF_Z * 2.0 + 0.1), Vector3(side * 1.7, BED_Y + SLUICE_PIER_H + 0.06, SLUICE_Z), coping_mat(), false)
 		for zz: float in [SLUICE_Z + 0.1, SLUICE_Z - 1.2]:
 			_solid("GantryPost%d_%d" % [int(side), int(absf(zz) * 10.0)], Vector3(0.26, GANTRY_Y, 0.26), Vector3(side * (CANAL_HALF_W + 0.22), GANTRY_Y * 0.5, zz), wood, false)
 	var span: float = (CANAL_HALF_W + 0.35) * 2.0
 	_solid("SluiceBeam", Vector3(span, 0.3, 0.3), Vector3(0.0, GANTRY_Y + 0.15, SLUICE_Z + 0.1), wood, false)
 	_solid("SluiceBeamN", Vector3(span, 0.3, 0.3), Vector3(0.0, GANTRY_Y + 0.15, SLUICE_Z - 1.2), wood, false)
-	_solid("CartDeck", Vector3(2.2, 0.08, 1.6), Vector3(SLUICE_PASS_X, GANTRY_Y + 0.34, SLUICE_Z - 0.55), wood, false)
-	_solid("SluiceGate", Vector3(2.5, 1.2, 0.12), Vector3(0.0, GANTRY_Y - 0.6, SLUICE_Z - 1.4), wood, false)
+	_solid("CartDeck", Vector3(2.2, 0.08, 1.6), Vector3(SLUICE_PASS_X, GANTRY_Y + 0.34, SLUICE_Z - 0.55), deck_mat(), false)
+	_solid("SluiceGate", Vector3(2.5, 1.2, 0.12), Vector3(0.0, GANTRY_Y - 0.6, SLUICE_Z - 1.4), deck_mat(), false)
 	# 煤車：轉軸在木板南緣（往南傾倒），車身在轉軸北邊；一開始就微微往南斜，靠繩子拉住
 	var deck_top: float = GANTRY_Y + 0.38
 	_cart = Node3D.new()
@@ -2359,7 +2424,7 @@ func _build_sluice() -> void:
 	_cart.position = Vector3(SLUICE_PASS_X, deck_top, SLUICE_Z + 0.2)
 	_cart.rotation.x = 0.1
 	add_child(_cart)
-	_solid("CartBody", Vector3(1.0, 0.5, 0.9), Vector3(0.0, 0.42, -0.5), _mat(Color(0.2, 0.16, 0.12), 0.85), false, _cart)
+	_solid("CartBody", Vector3(1.0, 0.5, 0.9), Vector3(0.0, 0.42, -0.5), cart_mat(), false, _cart)
 	_solid("CartBand", Vector3(1.04, 0.06, 0.94), Vector3(0.0, 0.62, -0.5), iron, false, _cart)
 	var coal: StandardMaterial3D = _mat(COAL, 0.38)
 	coal.metallic_specular = 0.7
@@ -2480,7 +2545,7 @@ func _build_ceiling() -> void:
 ## 掛著的送葬者：重用 Undertaker 的外觀，但不動、不打、不在敵人名單裡（段落 2 才醒）。
 ## 兩條鐵鏈從鐵架掛到吊樑；整個掛點慢慢晃。胸口一點銅光＝鐘舌（像心跳一樣亮）。
 func _build_undertaker() -> void:
-	var wood: StandardMaterial3D = _mat(WOOD, 0.9)
+	var wood: ShaderMaterial = timber_mat()
 	_solid("HangBeam", Vector3(CANAL_HALF_W * 2.0 + 1.4, 0.32, 0.36), Vector3(0.0, BEAM_Y + 0.16, HANG_Z), wood, false)
 	for side: float in [-1.0, 1.0]:
 		_solid("HangBeamPost%d" % int(side), Vector3(0.3, BEAM_Y - PARAPET_H, 0.3), Vector3(side * (CANAL_HALF_W + 0.22), PARAPET_H + (BEAM_Y - PARAPET_H) * 0.5, HANG_Z), wood, false)

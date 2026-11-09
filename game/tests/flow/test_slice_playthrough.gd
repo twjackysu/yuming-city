@@ -1411,6 +1411,30 @@ func _assert_canal(canal: StoryLevel, tag: String) -> void:
 	assert_not_null(amb, tag + " 地底的環境音")
 	if amb != null:
 		assert_eq((amb.stream as AudioStreamWAV).loop_mode, AudioStreamWAV.LOOP_FORWARD, tag + " 環境音會循環")
+	_assert_canal_art(canal, tag)
+
+
+## 乾運河的美術（第 55 輪，D-173）：河道牆＝方石＋舊水位線、岸頂＝石板（頂面在 y＝0、碰撞一整塊）、河床＝龜裂乾泥、木架＝整根木頭。
+func _assert_canal_art(canal: StoryLevel, tag: String) -> void:
+	var half_timber: String = FrostbridgeLook.HALF_TIMBER_SHADER
+	for side: String in ["E", "W"]:
+		var wall: MeshInstance3D = canal.get_node("Bank" + side) as MeshInstance3D
+		var wm: ShaderMaterial = wall.material_override as ShaderMaterial
+		assert_not_null(wm, tag + " 河道牆 " + side + " 是 shader 材質")
+		if wm != null:
+			assert_eq(wm.shader.resource_path, half_timber, tag + " 河道牆是方石")
+			assert_true(float(wm.get_shader_parameter("tide_amount")) > 0.0, tag + " 河道牆有舊水位線")
+			assert_eq(float(wm.get_shader_parameter("exterior")), 0.0, tag + " 河道牆不積雪")
+		var top: MeshInstance3D = canal.get_node("BankTop" + side) as MeshInstance3D
+		assert_true(absf(top.global_position.y + (top.mesh as BoxMesh).size.y * 0.5) < 0.001, tag + " 岸頂石板的頂面在 y＝0")
+		assert_eq(((top.material_override as ShaderMaterial).shader as Shader).resource_path, InteriorLook.PLANK_SHADER, tag + " 岸頂是石板")
+		assert_true(canal.has_node("Bank" + side + "Body"), tag + " 岸的碰撞還在")
+		assert_false(canal.has_node("Seam%s0" % side), tag + " 接縫改成 shader 畫，不再是一條條方塊")
+	var bed: MeshInstance3D = canal.get_node("CanalBed") as MeshInstance3D
+	assert_eq(((bed.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/dry_mud.gdshader", tag + " 河床是龜裂的乾泥")
+	for n: String in ["SluiceBeam", "HangBeam", "CoalCart/CartBody", "CartDeck", "SluicePier1"]:
+		var mi: MeshInstance3D = canal.get_node(n) as MeshInstance3D
+		assert_true(mi.material_override is ShaderMaterial, tag + " " + n + " 換上了美術材質")
 
 
 ## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。

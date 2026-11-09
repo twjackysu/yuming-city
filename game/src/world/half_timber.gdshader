@@ -33,6 +33,9 @@ uniform float exterior : hint_range(0.0, 1.0) = 1.0;
 uniform float soot : hint_range(0.0, 1.0) = 0.0;
 uniform float soot_top = 3.4;
 uniform float soot_depth = 1.2;
+// 舊水位線（第 55 輪，乾運河的河道牆）：tide_y 以下比較暗、偏綠灰，往下幾道水痕；0＝沒有（鎮上、室內不變）
+uniform float tide_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float tide_y = 0.0;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -204,6 +207,17 @@ void fragment() {
 	if (soot > 0.0) {
 		float sd = smoothstep(soot_top - soot_depth, soot_top, y + (fbm(vec2(u * 0.6, y * 0.8) + 9.0) - 0.5) * 0.6);
 		albedo *= 1.0 - sd * soot;
+	}
+	// 舊水位線：邊緣不規則（雜訊抖動），線下暗、偏綠灰，往下一道道垂直水痕
+	if (tide_amount > 0.0) {
+		float edge = tide_y + (noise(vec2(u * 1.7, 3.0)) - 0.5) * 0.16 + (noise(vec2(u * 7.0, 5.0)) - 0.5) * 0.04;
+		float below = 1.0 - smoothstep(edge - 0.03, edge + 0.03, y);
+		float rim = (1.0 - smoothstep(0.0, 0.06, abs(y - edge))) * 0.5;
+		float drip = smoothstep(0.55, 0.85, noise(vec2(u * 5.0, y * 0.35))) * below;
+		vec3 stained = albedo * vec3(0.56, 0.6, 0.54) * mix(1.0, 0.8, drip);
+		albedo = mix(albedo, stained, below * tide_amount);
+		albedo *= 1.0 - rim * tide_amount * 0.35;
+		rough = mix(rough, 0.97, below * tide_amount * 0.5);
 	}
 	ALBEDO = albedo;
 	ROUGHNESS = rough;
