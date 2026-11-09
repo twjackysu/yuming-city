@@ -1023,7 +1023,8 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 
 
 ## 段落 4 煤車（D-166）：抬頭看見閘道上面的煤車（對話）→ 把假心臟垂到閘道另一邊 → 牠從煤車底下走過去 → 站在繩子旁割斷 →
-## 壓住 → 檢查點 ch3_pinned → 段落 5 倒吊（_chapter3_hang）。alt：先割太早（牠掙脫 → 回到 ch3_lured、不再重講對話），再按住重現讓牠停在正下方割；
+## 壓住 → 檢查點 ch3_pinned → 段落 5 倒吊（_chapter3_hang）。alt：先割太早（牠掙脫、爬上岸 → 掙脫戰打到跪下 → 回到 ch3_lured、
+## 不再重講對話，D-169），再按住重現讓牠停在正下方割；
 ## 否則看牠走路的時機割（提早 FALL_SEC 秒的路程）。
 func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 	var s: GameSession = _game.get("session") as GameSession
@@ -1056,15 +1057,46 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 		canal.call("finish_cut")
 		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_CART_EARLY", "提示：太早了，牠掙脫了")
 		assert_eq(s.quests.stage_of("ch3_main"), "coal_cart", "沒壓住：還在段落 4")
-		for i: int in 60:
+		# 掙脫戰（D-169）：爬上東岸 → 變回敵人（少一招、不會進第二階段）→ 打到失衡跪下 → 撞回運河 → 回到 ch3_lured
+		var freed: Undertaker = canal.call("undertaker") as Undertaker
+		canal.call("finish_climb")
+		assert_true(bool(canal.get("struggling")), "掙脫戰開始")
+		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_STRUGGLE_START", "提示：牠爬上岸了，打到牠跪下")
+		assert_true(absf(freed.global_position.y) < 0.05 and freed.global_position.x > float(canal.get("CANAL_HALF_W")), "站在東岸上")
+		assert_true(Vector2(freed.global_position.x - player.global_position.x, freed.global_position.z - player.global_position.z).length() >= float(canal.get("STRUGGLE_MIN_GAP")) - 0.5, "沒有直接落在諾恩臉上")
+		assert_true(freed.is_in_group("enemies") and freed.is_in_group("damageable"), "變回敵人：席菈會打、諾恩打得到")
+		assert_true(freed.is_physics_processing() and freed.can_process(), "自己的戰鬥邏輯在跑")
+		assert_false(freed.brain.pattern.has("charge"), "少一招：沒有衝撞")
+		var misha: Node3D = canal.get_node("Misha") as Node3D
+		var hide0: Vector3 = canal.call("misha_hide_spot", player.global_position, freed.global_position) as Vector3
+		var misha_far: float = Vector2(misha.global_position.x - hide0.x, misha.global_position.z - hide0.z).length()
+		for i: int in 20:
+			await tree.physics_frame
+		assert_true(freed.brain.state != EnemyBrain.State.IDLE, "牠盯上了心跳（%s）" % freed.brain.state_name())
+		assert_eq(freed.phase, 1, "還是第一階段")
+		var hide: Vector3 = canal.call("misha_hide_spot", player.global_position, freed.global_position) as Vector3
+		assert_true(Vector2(misha.global_position.x - hide.x, misha.global_position.z - hide.z).length() < misha_far - 0.3, "彌夏往諾恩背後躲")
+		canal.set("kneel_hold_sec", 0.0)
+		canal.set("push_sec", 0.05)
+		canal.set("fail_retry_sec", 0.05)
+		freed.brain.force_kneel(2.0)
+		await tree.physics_frame
+		await tree.physics_frame
+		assert_true(bool(canal.get("struggle_won")) and not bool(canal.get("struggling")), "打到失衡跪下：掙脫戰結束")
+		assert_false(freed.is_in_group("enemies"), "跪下之後不再是敵人（席菈停手）")
+		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_STRUGGLE_KNEEL", "提示：席菈把牠撞回運河")
+		for i: int in 240:
 			await tree.process_frame
 			if _level() != canal:
 				break
 		canal = await _wait_scene()
-		assert_eq(str(canal.name), "Canal", "[ch3_lured] 掙脫 → 重來還在乾運河")
+		assert_eq(str(canal.name), "Canal", "[ch3_lured] 掙脫戰打贏 → 重來還在乾運河")
 		assert_eq(s.state.checkpoint, "ch3_lured", "[ch3_lured] 回到段落 3 的檢查點")
 		assert_false(bool(canal.get("cart_cut")), "[ch3_lured] 煤車回到原位")
+		assert_false(bool(canal.get("struggling")) or bool(canal.get("struggle_won")), "[ch3_lured] 重來不在掙脫戰裡")
+		assert_false((canal.call("undertaker") as Node).is_in_group("enemies"), "[ch3_lured] 牠又只是跟著心跳走")
 		assert_true(float(canal.get("_cart_talk_wait")) < 0.0, "[ch3_lured] 失敗重來不再重講一次")
+		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_STRUGGLE_RESET", "[ch3_lured] 提示：煤車重新裝好了，再來一次")
 		player = _player(canal)
 	var u: Node3D = canal.call("undertaker") as Node3D
 	canal.call("use_spot", 3)

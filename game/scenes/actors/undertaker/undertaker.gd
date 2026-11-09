@@ -44,6 +44,9 @@ var _grabbed: PlayerController
 ## 第二下的觀察距離：諾恩在這個範圍內沒被打到才算「看過」
 const WITNESS_RANGE: float = 8.0
 
+## 第 3 章的掙脫戰（D-169）：只有第一階段、少一招（不衝撞：運河岸太窄）、失衡上限比較低，不會進第二階段。
+var struggle_mode: bool = false
+
 var _decals: Dictionary = {}
 var _charge_hit: Array[Node3D] = []
 var _hit_wall: bool = false
@@ -278,8 +281,21 @@ func _on_damaged(amount: float, info: Dictionary) -> void:
 	# 抓著諾恩時被打中弱點（席菈「打弱點」）就鬆手
 	if str(info.get("weak", "")) != "" and _grabbed != null and is_instance_valid(_grabbed) and _grabbed.grabbed_by == self:
 		_grabbed.release_grab(true)
-	if phase == 1 and health.hp <= CombatTuning.num("undertaker.phase2_hp", 450.0) and not health.is_dead():
+	if phase == 1 and not struggle_mode and health.hp <= CombatTuning.num("undertaker.phase2_hp", 450.0) and not health.is_dead():
 		enter_phase_two()
+
+
+## 掙脫戰（D-169）：招式輪替換成 pattern_struggle（沒有衝撞）、失衡上限 struggle_stagger_max；之後不會進第二階段。
+func begin_struggle() -> void:
+	struggle_mode = true
+	_apply_struggle_brain()
+
+
+func _apply_struggle_brain() -> void:
+	var pat: Variant = CombatTuning.value("undertaker.pattern_struggle", [])
+	if pat is Array:
+		brain.set_pattern(PackedStringArray(pat as Array))
+	brain.stagger_max = CombatTuning.num("undertaker.struggle_stagger_max", brain.stagger_max)
 
 
 ## 第二階段：扯斷一條鐵鏈；看穿裡「下砸」變成未證實，下砸前兆縮短；換招式輪替、出現攻略沒寫的招。
@@ -309,6 +325,8 @@ func _on_settings_changed() -> void:
 	brain.unreadable = unread
 	if phase == 2:
 		_apply_phase_two_brain()
+	elif struggle_mode:
+		_apply_struggle_brain()
 
 
 func _shake_player(amount: float) -> void:

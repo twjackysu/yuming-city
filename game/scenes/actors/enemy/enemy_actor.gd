@@ -94,6 +94,12 @@ func forward() -> Vector3:
 	return -_body.global_basis.z
 
 
+## 直接轉向（水平角度，跟節點自己的 rotation.y 疊加）：關卡把劇情中的敵人交給戰鬥時用（D-169）。
+func set_facing(yaw: float) -> void:
+	if _body != null:
+		_body.rotation.y = yaw
+
+
 ## 攻擊者從這個位置打，打得到哪個弱點（沒有就回傳空字串）。跪地時弱點全露。
 func weakpoint_exposed_to(attacker_pos: Vector3) -> String:
 	if brain.state == EnemyBrain.State.DEAD:

@@ -18,7 +18,8 @@ extends StoryLevel
 ## 段落 4：閘道（河道裡兩道矮石牆收窄的一段）上方的木架上停著一台堆滿煤的車，車尾的繩子綁在東岸的木柱上（對話 ch3_cart_plan）→
 ## 把假心臟垂到閘道另一邊（第 3 點，或牠走過頭之後用第 2 點拉回來）→ 牠從煤車底下走過去 → 站在木柱旁按互動鍵割斷繩子 →
 ## CoalDrop 判定「煤落下那一刻牠在哪」：壓住 → 黑色粉塵、油燈晃 → ch3.cart_dropped → 檢查點 ch3_pinned → 段落 5 倒吊待續；
-## 太早／太晚 → 牠掙脫 → 回到檢查點 ch3_lured（掙脫後的戰鬥分支還沒做）。按住重現讓牠停在正下方再割，一定壓得住。
+## 太早／太晚 → 牠掙脫、爬上東岸 → 掙脫戰（D-169：切片送葬者少一招、不會進第二階段）→ 打到牠失衡跪下 → 席菈把牠撞回運河 →
+## 回到檢查點 ch3_lured 再來一次（不再重講對話）；戰鬥中倒下也回到 ch3_lured。按住重現讓牠停在正下方再割，一定壓得住。
 ## 段落 5 倒吊、段落 6 彌夏的圖（D-167）→ 檢查點 ch3_map：彌夏先走、席菈走到東岸回程路上的牆角等 →
 ## 段落 7 轉角（D-168）：走到牆角 → 對話 ch3_corner（固定鏡頭；抓住領口、換班的鐘聲）→ 日記「轉角的衣領」→
 ## ch3.corner_talked → 第 3 章完成（自動存檔）→ 結尾卡「第一部　死去的攻略／前半　完」→ 回標題。讀檔回來站在牆角、「下一章還在製作中」。
@@ -205,8 +206,8 @@ var cut_result: String = ""
 var pinned: bool = false
 var _freed: bool = false
 var _coal_landed: bool = false
-## 失敗（太早／太晚）後幾秒回到檢查點（測試會調小）
-var fail_retry_sec: float = 4.5
+## 掙脫戰打贏、牠摔回運河之後幾秒回到檢查點（測試會調小）
+var fail_retry_sec: float = 2.0
 var _cart_talk_wait: float = -1.0
 var _cart: Node3D
 var _cart_rope: MeshInstance3D
@@ -218,6 +219,31 @@ var _task_rope: MarkerPoint
 ## 割太早／太晚之後重來（回到 ch3_lured）：不再重講一次煤車的對話（檢查點之後設的旗標會被重讀的存檔蓋掉，
 ## 所以記在 GameSession 物件的 meta 上，不進存檔；static var 會讓整個腳本在結束時漏掉）
 const RETRY_META: StringName = &"ch3_cart_failed"
+# 掙脫戰（D-169）：割太早／太晚 → 牠甩開煤、爬上東岸 → 打到失衡跪下 → 席菈把牠撞回運河 → 回到 ch3_lured 再來一次
+## 甩開煤之後多久開始爬（秒）、爬上岸要多久
+const CLIMB_DELAY: float = 1.1
+const CLIMB_SEC: float = 1.5
+## 爬上來站在東岸的哪條線（x）、離諾恩至少多遠（沿運河）
+const STRUGGLE_LAND_X: float = 5.6
+const STRUGGLE_MIN_GAP: float = 3.2
+## 跪下之後停多久、被撞回運河要多久
+const KNEEL_HOLD_SEC: float = 1.0
+const PUSH_SEC: float = 0.8
+## 打贏掙脫戰之後重來（回到 ch3_lured）：新關卡開頭提示「煤車重新裝好了」（跟 RETRY_META 一樣記在 GameSession 的 meta）
+const STRUGGLE_META: StringName = &"ch3_struggle_won"
+## 掙脫戰中彌夏躲在諾恩背後多遠（離牠那一側的反方向）
+const MISHA_HIDE_GAP: float = 4.0
+## 截圖（`--canal-at=struggle`）時諾恩站的地方
+const STRUGGLE_SHOT_NOEN: Vector3 = Vector3(5.0, 0.0, SLUICE_Z - 2.6)
+## 掙脫戰中、打贏了（跪下）、正在爬上岸
+var struggling: bool = false
+var struggle_won: bool = false
+var climbing: bool = false
+## 測試會調小：跪下之後停多久、撞回運河要多久
+var kneel_hold_sec: float = KNEEL_HOLD_SEC
+var push_sec: float = PUSH_SEC
+var _climb_tween: Tween
+var _climb_land: Vector3 = Vector3.ZERO
 
 # ---------------------------------------------------------------- 段落 5：倒吊（D-167）
 const HANG_TALK: String = "ch3_hang_plan"
@@ -379,6 +405,9 @@ func _ready() -> void:
 		_undertaker.rotation = Vector3(0.0, PI, 0.0)
 		_cart_talk_wait = -1.0 if Game.session.has_meta(RETRY_META) else 1.0
 		Game.session.remove_meta(RETRY_META)
+		if Game.session.has_meta(STRUGGLE_META):
+			Game.session.remove_meta(STRUGGLE_META)
+			_banner("CH3_STRUGGLE_RESET", 5.5)
 	# 檢查點 ch3_pinned（段落 4 做完）：煤已經倒下去、牠被壓在閘道裡 → 段落 5 倒吊待續
 	elif stage == "hang":
 		_wake_undertaker(false)
@@ -442,6 +471,29 @@ func _ready() -> void:
 		if at == "pinned":
 			cut_rope()
 			finish_cut()
+	# 截圖用：`--canal-at=struggle` 割太早 → 牠爬上東岸、掙脫戰剛開始（站在繩子旁往南看牠，D-169）
+	if at == "struggle" and player != null:
+		dev_start_cart(Game.session)
+		_wake_undertaker(false)
+		Game.session.set_flag("ch3.cart_planned", true)
+		_cart_talk_wait = -1.0
+		_undertaker.global_position = Vector3(1.0, BED_Y, SLUICE_Z + 1.2)
+		lower_heart(3)
+		# 割完往岸中間退開幾步（站在木柱旁邊，過肩鏡頭會被木柱推進諾恩的頭裡）
+		_put(player, STRUGGLE_SHOT_NOEN, 0.0)
+		cut_rope()
+		finish_cut()
+		finish_climb()
+		var ally_s: Node3D = get_node_or_null("Sheila") as Node3D
+		if ally_s != null:
+			ally_s.global_position = STRUGGLE_SHOT_NOEN + Vector3(1.6, 0.05, 1.4)
+		if _misha != null:
+			_misha.global_position = misha_hide_spot(STRUGGLE_SHOT_NOEN, _undertaker.global_position)
+		var look_s: Vector3 = _undertaker.global_position - player.global_position
+		# 往左多轉一點，牠落在諾恩右邊（不被他擋住）
+		(player as PlayerController).yaw = atan2(-look_s.x, -look_s.z) + 0.3
+		(player as PlayerController).pitch = -0.12
+		(player as PlayerController).snap_camera()
 	# 截圖用：`--canal-at=hang` 段落 5：席菈倒吊在閘道裡、往右晃一點（鏡頭從東岸往下看）；
 	# `--canal-at=mud` 抓到鐘舌、三個人摔在泥裡（對話第一句）
 	if at in ["hang", "mud"] and player != null:
@@ -588,6 +640,8 @@ func _physics_process(delta: float) -> void:
 	if player == null:
 		return
 	_follow_misha(player, delta)
+	if struggling:
+		_update_struggle()
 	if Game.is_player_locked() or _dev_hold_edge:
 		return
 	var stage: String = Game.session.quests.stage_of(QUEST)
@@ -941,6 +995,9 @@ func _follow_misha(player: Node3D, delta: float) -> void:
 		if misha_gone and _misha != null and _misha.visible and not Game.is_player_locked():
 			_misha_walk_off(delta)
 		return
+	if (struggling or climbing) and _undertaker != null:
+		_misha_hide(player, delta)
+		return
 	var gap: Vector3 = Vector3(_misha.global_position.x - player.global_position.x, 0.0, _misha.global_position.z - player.global_position.z)
 	var dist: float = gap.length()
 	var mstep: float = clampf(dist - MISHA_GAP, 0.0, MISHA_SPEED * delta)
@@ -950,6 +1007,26 @@ func _follow_misha(player: Node3D, delta: float) -> void:
 		_misha.global_position -= gap / dist * mstep
 		_misha.rotation.y = atan2(gap.x, gap.z)
 	_misha.set_move_speed(mstep / maxf(delta, 0.0001))
+
+
+## 掙脫戰中彌夏躲開（D-169）：跑到諾恩背後（離牠那一側的反方向）、貼著外側岩壁，看著牠。
+func _misha_hide(player: Node3D, delta: float) -> void:
+	var target: Vector3 = misha_hide_spot(player.global_position, _undertaker.global_position)
+	var to: Vector3 = Vector3(target.x - _misha.global_position.x, 0.0, target.z - _misha.global_position.z)
+	var step: float = minf(to.length(), MISHA_SPEED * 1.2 * delta)
+	if step > 0.001:
+		_misha.global_position += to.normalized() * step
+		_misha.rotation.y = atan2(-to.x, -to.z)
+	else:
+		var look: Vector3 = _undertaker.global_position - _misha.global_position
+		_misha.rotation.y = atan2(-look.x, -look.z)
+	_misha.set_move_speed(step / maxf(delta, 0.0001))
+
+
+## 彌夏躲的地方：諾恩背後 MISHA_HIDE_GAP 公尺（牠在哪一側就往另一側）、外側岩壁邊。
+static func misha_hide_spot(noen: Vector3, undertaker_pos: Vector3) -> Vector3:
+	var side: float = 1.0 if noen.z >= undertaker_pos.z else -1.0
+	return Vector3(CANAL_HALF_W + BANK_W - 0.7, 0.0, clampf(noen.z + side * MISHA_HIDE_GAP, Z_NORTH + 1.0, CORNER_WALL_Z - 1.5))
 
 
 func undertaker() -> Undertaker:
@@ -1333,8 +1410,8 @@ func _on_coal_landed() -> void:
 		_banner("CH3_CART_PINNED", 4.0)
 		return
 	_shake_free()
-	_banner("CH3_CART_EARLY" if cut_result == CoalDrop.EARLY else "CH3_CART_LATE", fail_retry_sec)
-	get_tree().create_timer(fail_retry_sec).timeout.connect(_fail_retry)
+	_banner("CH3_CART_EARLY" if cut_result == CoalDrop.EARLY else "CH3_CART_LATE", CLIMB_DELAY + CLIMB_SEC)
+	get_tree().create_timer(CLIMB_DELAY).timeout.connect(_climb_out)
 
 
 func _show_heap() -> void:
@@ -1877,7 +1954,7 @@ func _cut_black(seconds: float) -> void:
 	tw.tween_callback(layer.queue_free)
 
 
-## 太早／太晚：煤沒有壓住，牠甩了一下、轉向諾恩（掙脫後的戰鬥分支還沒做，D-166）。
+## 太早／太晚：煤沒有壓住，牠甩了一下、轉向諾恩；CLIMB_DELAY 秒後爬上東岸（掙脫戰，D-169）。
 func _shake_free() -> void:
 	_freed = true
 	follow_kind = ""
@@ -1895,11 +1972,136 @@ func _shake_free() -> void:
 	Sfx.play_at(self, "chain_creak", _undertaker.global_position + Vector3(0, 1.5, 0), 0.0, 0.05)
 
 
-## 失敗回到段落 3 的檢查點（ch3_lured）。關卡已經換掉（測試先重來）就不動。
-func _fail_retry() -> void:
-	if not is_inside_tree() or cut_result == CoalDrop.PINNED or Game.session.quests.stage_of(QUEST) != "coal_cart":
+## 爬上東岸（D-169）：從河床攀上岸邊的矮牆、翻過來站在 STRUGGLE_LAND_X 那條線上（沿運河照牠所在的位置，
+## 離諾恩太近就往外讓開 STRUGGLE_MIN_GAP），爬完開始掙脫戰。
+func _climb_out() -> void:
+	if not is_inside_tree() or not _freed or climbing or struggling or struggle_won or _undertaker == null:
+		return
+	if Game.session.quests.stage_of(QUEST) != "coal_cart":
+		return
+	climbing = true
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var noen_z: float = player.global_position.z if player != null else ROPE_POS.z
+	_climb_land = Vector3(STRUGGLE_LAND_X, 0.0, struggle_land_z(_undertaker.global_position.z, noen_z))
+	var from: Vector3 = _undertaker.global_position
+	_undertaker.rotation = Vector3(0.0, -PI * 0.5, 0.0)  # 面朝東（岸壁）
+	var wall: Vector3 = Vector3(CANAL_HALF_W - 0.55, BED_Y + 1.6, lerpf(from.z, _climb_land.z, 0.4))
+	var lip: Vector3 = Vector3(CANAL_HALF_W + 0.5, PARAPET_H + 0.25, lerpf(from.z, _climb_land.z, 0.8))
+	Sfx.play_at(self, "rubble_scrape", wall, -2.0, 0.05)
+	_climb_tween = create_tween()
+	_climb_tween.tween_property(_undertaker, "global_position", wall, CLIMB_SEC * 0.45).set_trans(Tween.TRANS_SINE)
+	_climb_tween.tween_property(_undertaker, "global_position", lip, CLIMB_SEC * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_climb_tween.tween_callback(func() -> void: Sfx.play_at(self, "iron_clang", lip + Vector3(0, 1.0, 0), -3.0, 0.05))
+	_climb_tween.tween_property(_undertaker, "global_position", _climb_land, CLIMB_SEC * 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_climb_tween.tween_callback(_begin_struggle)
+
+
+## 爬上來站在哪裡（沿運河）：照牠爬的位置，離諾恩不到 STRUGGLE_MIN_GAP 就往牠那一側讓開；夾在東岸的範圍內。
+static func struggle_land_z(undertaker_z: float, noen_z: float) -> float:
+	var z: float = undertaker_z
+	if absf(z - noen_z) < STRUGGLE_MIN_GAP:
+		var side: float = 1.0 if z >= noen_z else -1.0
+		z = noen_z + side * STRUGGLE_MIN_GAP
+	return clampf(z, Z_NORTH + 3.0, CORNER_WALL_Z - 3.0)
+
+
+## 測試用：直接爬上來。
+func finish_climb() -> void:
+	if not climbing:
+		_climb_out()
+	if not climbing:
+		return
+	if _climb_tween != null and _climb_tween.is_valid():
+		_climb_tween.kill()
+	_undertaker.global_position = _climb_land
+	_begin_struggle()
+
+
+## 掙脫戰開始：牠變回一般的敵人（加回 enemies／damageable、自己的物理），席菈跟著打；
+## Undertaker.begin_struggle()：少一招、不會進第二階段。倒下就回到 ch3_lured（不再重講對話）。
+func _begin_struggle() -> void:
+	if struggling or struggle_won or _undertaker == null:
+		return
+	climbing = false
+	struggling = true
+	Game.session.set_meta(RETRY_META, true)
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var yaw: float = _undertaker.rotation.y
+	if player != null:
+		var to: Vector3 = player.global_position - _undertaker.global_position
+		yaw = atan2(-to.x, -to.z)
+	_undertaker.rotation = Vector3.ZERO
+	_undertaker.global_position.y = 0.0
+	_undertaker.set_facing(yaw)
+	_undertaker.add_to_group("enemies")
+	_undertaker.add_to_group("damageable")
+	_undertaker.process_mode = Node.PROCESS_MODE_INHERIT
+	_undertaker.set_physics_process(true)
+	_undertaker.velocity = Vector3.ZERO
+	_undertaker.begin_struggle()
+	if player is PlayerController:
+		(player as PlayerController).shake(0.35)
+	_banner("CH3_STRUGGLE_START", 4.5)
+
+
+## 掙脫戰中每物理幀：打到失衡跪下（或打掉一半的生命）就算贏。
+func _update_struggle() -> void:
+	if _undertaker == null:
+		return
+	var low: bool = _undertaker.health.hp <= CombatTuning.num("undertaker.phase2_hp", 450.0)
+	if _undertaker.brain.state == EnemyBrain.State.STAGGERED or low:
+		_struggle_kneel()
+
+
+## 跪下了：不再是敵人（席菈停手、戰鬥 HUD 收起來）、一直跪著；停一下 → 席菈把牠撞回運河 → 回到 ch3_lured。
+func _struggle_kneel() -> void:
+	struggling = false
+	struggle_won = true
+	_undertaker.remove_from_group("enemies")
+	_undertaker.remove_from_group("damageable")
+	_undertaker.brain.force_kneel(60.0)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player != null and player.lock_target == _undertaker:
+		player.lock_target = null
+	Game.session.set_flag("ch3.struggle_won", true)
+	_banner("CH3_STRUGGLE_KNEEL", kneel_hold_sec + push_sec + fail_retry_sec)
+	var tw := create_tween()
+	tw.tween_interval(maxf(kneel_hold_sec, 0.001))
+	tw.tween_callback(_push_back_into_canal)
+
+
+## 席菈用肩膀把牠撞回運河：翻過矮牆、摔回河床（撞地聲、鏡頭小震）→ fail_retry_sec 秒後回到 ch3_lured。
+func _push_back_into_canal() -> void:
+	if not is_inside_tree() or _undertaker == null:
+		return
+	_undertaker.set_physics_process(false)
+	_undertaker.process_mode = Node.PROCESS_MODE_DISABLED
+	var from: Vector3 = _undertaker.global_position
+	var lip: Vector3 = Vector3(CANAL_HALF_W + 0.3, PARAPET_H + 0.6, from.z)
+	var bed: Vector3 = Vector3(CANAL_HALF_W - 1.1, BED_Y, from.z)
+	Sfx.play_at(self, "whoosh", from + Vector3(0, 1.2, 0), -4.0, 0.05)
+	var tw := create_tween()
+	tw.tween_property(_undertaker, "global_position", lip, push_sec * 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(_undertaker, "rotation:z", 0.5, push_sec * 0.4)
+	tw.tween_property(_undertaker, "global_position", bed, push_sec * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_on_pushed_down)
+
+
+func _on_pushed_down() -> void:
+	Sfx.play_at(self, "blunt", _undertaker.global_position + Vector3(0, 0.4, 0), -2.0, 0.03)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player != null:
+		player.shake(0.4)
+	get_tree().create_timer(maxf(fail_retry_sec, 0.001)).timeout.connect(_struggle_retry)
+
+
+## 打贏掙脫戰 → 回到段落 3 的檢查點（ch3_lured）再來一次：不再重講對話、新關卡開頭提示「煤車重新裝好了」。
+## 關卡已經換掉（測試先重來）就不動。
+func _struggle_retry() -> void:
+	if not is_inside_tree() or not struggle_won or Game.session.quests.stage_of(QUEST) != "coal_cart":
 		return
 	Game.session.set_meta(RETRY_META, true)
+	Game.session.set_meta(STRUGGLE_META, true)
 	Game.retry()
 
 

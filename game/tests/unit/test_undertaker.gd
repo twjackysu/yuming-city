@@ -318,6 +318,32 @@ func test_difficulty_change_keeps_phase_two() -> void:
 	await tree.process_frame
 
 
+## 第 3 章的掙脫戰（D-169）：少一招（沒有衝撞）、失衡上限比較低、打到一半也不會進第二階段；換難度後照樣。
+func test_struggle_mode_drops_charge_and_phase_two() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	boss.global_position = Vector3(0, 0, -30)
+	await tree.physics_frame
+	boss.begin_struggle()
+	assert_false(boss.brain.pattern.has("charge"), "掙脫戰沒有衝撞：%s" % [boss.brain.pattern])
+	assert_true(boss.brain.pattern.has("sweep") and boss.brain.pattern.has("slam"), "橫掃與下砸都在")
+	assert_true(boss.brain.stagger_max < CombatTuning.num("undertaker.stagger_max", 200.0), "失衡上限比較低")
+	boss.health.apply_damage(500.0, {"stagger": 0.0})
+	assert_eq(boss.phase, 1, "掙脫戰不會進第二階段")
+	var before: String = Settings.difficulty
+	Settings.difficulty = "story" if before != "story" else "hard"
+	boss._on_settings_changed()
+	assert_false(boss.brain.pattern.has("charge"), "換難度後還是沒有衝撞")
+	assert_true(boss.brain.stagger_max < CombatTuning.num("undertaker.stagger_max", 200.0), "換難度後失衡上限照舊")
+	Settings.difficulty = before
+	boss._on_settings_changed()
+	assert_true(boss.brain.add_stagger(boss.brain.stagger_max / boss.brain.stagger_mult() + 0.01), "打滿失衡就跪下")
+	assert_eq(boss.brain.state_name(), "staggered")
+	root.queue_free()
+	await tree.process_frame
+
+
 func test_grab_player_struggle_and_release() -> void:
 	var a: Array = _arena()
 	var root: Node3D = a[0]

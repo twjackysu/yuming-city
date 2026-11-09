@@ -225,6 +225,7 @@ jobs:
           shot 33-ch3-map 34 --level=canal --canal-at=map --locale=zh_TW
           shot 34-ch3-corner 34 --level=canal --canal-at=corner --locale=zh_TW
           shot 35-part1-end 20 --level=canal --canal-at=end --locale=zh_TW
+          shot 36-ch3-struggle 30 --level=canal --canal-at=struggle --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

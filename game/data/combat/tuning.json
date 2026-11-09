@@ -24,6 +24,7 @@
     "telegraph_stagger_mult": 0.3, "recover_stagger_mult": 2.0,
     "pattern": ["sweep", "slam", "sweep", "charge"],
     "pattern_phase2": ["double_slam", "sweep", "grab", "charge"],
+    "pattern_struggle": ["sweep", "slam"], "struggle_stagger_max": 140,
     "frame_throw_hp": 300, "frame_throw_caravan_progress": 0.5,
     "moves": {
       "sweep": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.2, "arc_deg": 150, "damage": 28},
