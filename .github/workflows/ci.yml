@@ -227,6 +227,7 @@ jobs:
           shot 35-part1-end 20 --level=canal --canal-at=end --locale=zh_TW
           shot 36-ch3-struggle 30 --level=canal --canal-at=struggle --locale=zh_TW
           shot 37-ch1-dead-list 30 --level=frostbridge --day=ada_lamp --at=list --face=list --locale=zh_TW
+          shot 38-ch1-tavern-table 30 --level=tavern --ch1-stage=draw_map --pos=1.4,-0.6 --face=DinnerTable --face-off=12 --nohud --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

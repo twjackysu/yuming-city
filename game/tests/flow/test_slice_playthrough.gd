@@ -287,6 +287,12 @@ func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
 	for n: String in ["WindowFrameTop", "WindowSill", "WindowMullion", "Bowl0", "Candle", "BackShelf0", "DinnerBenchN", "LampGlass"]:
 		assert_true(tavern.has_node(n), "%s 有 %s" % [tag, n])
 	assert_eq(bool(tavern.call("candle_lit")), night, "%s 蠟燭%s" % [tag, "點著" if night else "沒點"])
+	if not night:
+		# 截圖旗標 --pos（第 53 輪）：格式不對不動，對的話把諾恩移過去
+		assert_false(bool(tavern.call("dev_place_player", "1.0")), "%s --pos 格式不對" % tag)
+		assert_true(bool(tavern.call("dev_place_player", "2.0,2.0")), "%s --pos=2,2" % tag)
+		var at: Vector3 = _player(tavern).global_position
+		assert_true(absf(at.x - 2.0) < 0.01 and absf(at.z - 2.0) < 0.01, "%s 諾恩移到 (2, 2)" % tag)
 
 
 func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:

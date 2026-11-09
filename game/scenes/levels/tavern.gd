@@ -49,6 +49,8 @@ var _window_mat: StandardMaterial3D
 var _mats: Dictionary = {}
 var _candle_light: OmniLight3D
 var _candle_flame: MeshInstance3D
+var _dev_face: String = ""
+var _dev_face_off: float = 0.0
 
 
 func _ready() -> void:
@@ -71,6 +73,13 @@ func _ready() -> void:
 	if player != null:
 		player.global_position = SPAWN_POS
 		player.rotation.y = 0.0
+	# 截圖用（第 53 輪）：`--pos=x,z` 把諾恩移到這裡；`--face=<節點名>`（DinnerTable、Hearth、Counter、BackShelf0、
+	# WindowSill、Cot2…）諾恩與鏡頭每幀轉向那個節點；`--face-off=度` 再往左轉（目標落到畫面右側）
+	if dev_args.has("pos"):
+		dev_place_player(str(dev_args["pos"]))
+	if dev_args.has("face"):
+		_dev_face = str(dev_args["face"])
+		_dev_face_off = float(str(dev_args.get("face-off", "0")))
 	_apply_time_of_day()
 	Game.session.stage_changed.connect(_on_stage_changed)
 
@@ -100,6 +109,8 @@ func _physics_process(_delta: float) -> void:
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player == null:
 		return
+	if _dev_face != "":
+		_update_dev_face()
 	var stage: String = Game.session.quests.stage_of(QUEST)
 	var marking: bool = bool(Game.session.state.get_flag("ch1.guide_marking", false))
 	# 畫地圖的對話講完（等著標記）之後不要再從頭講一次
@@ -116,6 +127,32 @@ func _physics_process(_delta: float) -> void:
 	if at_door and not _door_inside and stage == "to_cellar" and not Game.is_player_locked():
 		leave_tavern()
 	_door_inside = at_door
+
+
+## 截圖用：諾恩移到 spec（"x,z"）。格式不對回傳 false。
+func dev_place_player(spec: String) -> bool:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	var xz: PackedStringArray = spec.split(",")
+	if player == null or xz.size() != 2 or not xz[0].is_valid_float() or not xz[1].is_valid_float():
+		return false
+	player.global_position = Vector3(float(xz[0]), 0.05, float(xz[1]))
+	player.snap_camera()
+	return true
+
+
+## 諾恩面向 `--face` 的節點（只轉水平角度），鏡頭跟著轉到他正後方。
+func _update_dev_face() -> void:
+	var target: Node3D = get_node_or_null(_dev_face) as Node3D
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if target == null or player == null:
+		return
+	var d: Vector3 = target.global_position - player.global_position
+	d.y = 0.0
+	if d.length() < 0.3:
+		return
+	player.rotation.y = atan2(-d.x, -d.z) + deg_to_rad(_dev_face_off)
+	player.yaw = player.rotation.y
+	player.snap_camera()
 
 
 ## 走出酒館門（測試也用）：設 ch1.left_tavern，換到檢查點對應的關卡（白天的霜橋鎮）。
