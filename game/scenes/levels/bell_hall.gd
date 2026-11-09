@@ -3,13 +3,14 @@ extends StoryLevel
 ## 第 1 章在白晝城街尾的鐘院門口結束 → 第 2 章章節卡 → 這裡。鐘院另開一個關卡：
 ## 第 2 章幾乎都在這座建築裡（城主的飯廳 → 鐘院內室的主椅與鐘盤 → 牆上的紋路 → 窗簾後面的眼睛），之後的段落往北接。
 ## 段落 1 飯桌：三盤煮豆、一鍋稀粥、四個缺口不一樣的碗。走到桌邊 → 伊薩替諾恩拉椅子（右腿的金屬支架吱一聲）→
-## 他先問席菈的手、再問彌夏的弟弟 →「他為什麼進了鐘院？」伊薩沒有立刻回答 → 下一段（「他自願的。」）待續。
+## 他先問席菈的手、再問彌夏的弟弟 →「他為什麼進了鐘院？」伊薩沒有立刻回答 → 對伊薩按住看穿：攻略的稱號一個字一個字被劃掉（D-158）→
+## 段落 2「他自願的。」「那你讓他現在出來。」「我做不到。」（諾恩可以先開口道歉，記 ch2.noen_apologized）→ 湯慢慢涼了 → 鐘院內室待續。
 ## 還在白晝城裡：照第 1 章的規則，屋裡一盞不投影子的白燈，只有諾恩的油燈投影子；接地陰影也拿掉。
 ##
 ## 房間：東西 10 m（x -5～5）、南北 10 m（z -5～5），從南牆的門進來；北牆正中是通往鐘院內室的門（之後的段落）。
 
 const QUEST: String = "ch2_main"
-const STAGES: PackedStringArray = ["isa_table", "isa_volunteer"]
+const STAGES: PackedStringArray = ["isa_table", "isa_volunteer", "inner_room"]
 const ROOM_HALF: Vector2 = Vector2(5.0, 5.0)
 const WALL_H: float = 3.8
 const WALL_T: float = 0.3
@@ -36,6 +37,9 @@ const SEATS: Dictionary = {
 ## 伊薩一開始站的地方（拉椅子之前）
 const ISA_START: Vector3 = Vector3(0.1, 0.0, 0.2)
 const TABLE_TALK: String = "ch2_table"
+## 段落 2「他自願的」（D-158）：看穿伊薩劃完、放開之後開始；沒去看穿的話，坐著沉默這麼久也會開始（伊薩沒有立刻回答）
+const VOLUNTEER_TALK: String = "ch2_volunteer"
+const SILENCE_SEC: float = 12.0
 const INNER_DOOR_POS: Vector3 = Vector3(0.0, 0.0, -4.9)
 ## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
 const ISA_INSIGHT_RANGE: float = 9.0
@@ -56,6 +60,8 @@ var _chair: Node3D
 var _seated: bool = false
 var _continued_shown: bool = false
 var _strike: StrikeCard
+## 坐下之後、沒按看穿的沉默秒數
+var silence: float = 0.0
 ## 截圖用：小卡停在指定的按住秒數
 var _dev_insight: bool = false
 
@@ -142,16 +148,22 @@ func _hide_contact_shadows() -> void:
 
 # ---------------------------------------------------------------- 流程
 
-func _physics_process(_delta: float) -> void:
-	var player: Node3D = get_node_or_null("Player") as Node3D
+func _physics_process(delta: float) -> void:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
 	if player == null or Game.is_player_locked():
 		return
 	var stage: String = Game.session.quests.stage_of(QUEST)
 	if stage == "isa_table" and not _seated and _flat(player.global_position, CHAIR_POS) <= SEAT_RANGE:
 		take_seat()
 		return
-	# 段落 2（「他自願的。」）還沒做：飯桌的對話講完顯示「待續」
-	if stage == "isa_volunteer" and not _continued_shown:
+	# 段落 2：看穿劃完、放開看穿 → 伊薩開口；沒去看穿就等一段沉默
+	if stage == "isa_volunteer" and not player.insight_active:
+		silence += delta
+		if bool(Game.session.state.get_flag("ch2.usurper_crossed_out", false)) or silence >= SILENCE_SEC:
+			Game.start_dialogue(VOLUNTEER_TALK)
+			return
+	# 段落 3（鐘院內室）還沒做：伊薩說「跟我來」之後顯示「待續」
+	if stage == "inner_room" and not _continued_shown:
 		_continued_shown = true
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
 
@@ -254,6 +266,8 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 	# 跳過對話也照樣算坐下吃過了
 	if dialogue_id == TABLE_TALK and not bool(Game.session.state.get_flag("ch2.table_seated", false)):
 		Game.session.set_flag("ch2.table_seated", true)
+	elif dialogue_id == VOLUNTEER_TALK and not bool(Game.session.state.get_flag("ch2.volunteer_talked", false)):
+		Game.session.set_flag("ch2.volunteer_talked", true)
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:

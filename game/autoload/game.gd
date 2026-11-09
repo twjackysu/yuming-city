@@ -40,6 +40,7 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_after_dinner": "daylight",
 	# 第 2 章：城主的飯桌（D-157，鐘院另開關卡）
 	"ch2_start": "bell_hall",
+	"ch2_volunteer": "bell_hall",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

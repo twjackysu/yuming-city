@@ -558,7 +558,8 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	await _chapter2(city)
 
 
-## 第 2 章（D-157）：章節卡 → 鐘院（城主的飯廳）→ 伊薩拉椅子、支架吱一聲 → 飯桌的對話 → 待續（段落 2 下一輪做）。
+## 第 2 章（D-157／D-158）：章節卡 → 鐘院（城主的飯廳）→ 伊薩拉椅子、支架吱一聲 → 飯桌的對話 → 看穿伊薩（或沉默）→
+## 他自願的（道歉／不說話）→ 檢查點 ch2_volunteer → 鐘院內室待續。
 func _chapter2(city: StoryLevel) -> void:
 	var s: GameSession = _game.get("session") as GameSession
 	assert_eq(s.main_quest(), "ch2_main", "第 1 章完成 → 主線換成第 2 章")
@@ -592,25 +593,46 @@ func _chapter2(city: StoryLevel) -> void:
 	assert_true("DLG_CH2_TABLE_007" in lines, "他為什麼進了鐘院？")
 	await _run_dialogue(hall, 0)
 	assert_eq(s.state.get_flag("ch2.table_seated"), true)
-	# 段落 1（D-158）：對伊薩按住看穿 → 攻略的稱號一個字一個字被劃掉 → 攻略筆記「城主＝食歲的僭王」被推翻
+	# 兩條路線：丟石頭那條（柯德的第一印象 hands）看穿伊薩＋先開口道歉；另一條不看穿（沉默一段時間伊薩自己開口）＋不說話
+	var see_through: bool = s.state.get_flag("ch1.kord_first") == "hands"
 	var strike: StrikeCard = hall.call("strike_card") as StrikeCard
 	assert_not_null(strike, "看穿伊薩的小卡")
 	hall.call("update_isa_insight", 0.1, false)
 	assert_false(strike.visible, "沒按看穿：不顯示")
 	assert_eq(str((hall.call("interact_hint") as Dictionary).get("action", "")), "insight", "提示：按住看穿伊薩")
 	assert_ne(GuideNotes.status(s.state, "usurper"), GuideNotes.WRONG, "還沒看穿：攻略筆記照舊")
-	for i: int in 60:
-		hall.call("update_isa_insight", 0.1, true)
-		if strike.is_done():
+	if see_through:
+		# 段落 1（D-158）：對伊薩按住看穿 → 攻略的稱號一個字一個字被劃掉 → 攻略筆記「城主＝食歲的僭王」被推翻
+		for i: int in 60:
+			hall.call("update_isa_insight", 0.1, true)
+			if strike.is_done():
+				break
+		assert_true(strike.is_done(), "按住看穿 → 劃完")
+		assert_eq(s.state.get_flag("ch2.usurper_crossed_out"), true)
+		assert_eq(GuideNotes.status(s.state, "usurper"), GuideNotes.WRONG, "攻略筆記「城主＝食歲的僭王」被推翻")
+		assert_true((hall.call("interact_hint") as Dictionary).is_empty(), "看穿過了：不再提示")
+	else:
+		hall.set("silence", float(hall.get("SILENCE_SEC")) - 0.05)
+	for i: int in 6:
+		await tree.physics_frame
+		if _game.call("is_in_dialogue"):
 			break
-	assert_true(strike.is_done(), "按住看穿 → 劃完")
-	assert_eq(s.state.get_flag("ch2.usurper_crossed_out"), true)
-	assert_eq(GuideNotes.status(s.state, "usurper"), GuideNotes.WRONG, "攻略筆記「城主＝食歲的僭王」被推翻")
-	assert_true((hall.call("interact_hint") as Dictionary).is_empty(), "看穿過了：不再提示")
-	assert_eq(s.quests.stage_of("ch2_main"), "isa_volunteer", "→ 問伊薩彌夏的弟弟在哪裡")
+	assert_true(_game.call("is_in_dialogue"), "看穿劃完放開／沉默一段時間 → 伊薩開口：他自願的")
+	var most: int = await _run_dialogue(hall, 0 if see_through else 1)
+	assert_eq(most, 2, "道歉／不說話")
+	assert_eq(s.state.get_flag("ch2.noen_apologized"), see_through, "諾恩有沒有先開口道歉記下來（第 5 章伊薩的台詞）")
+	assert_eq(s.quests.stage_of("ch2_main"), "inner_room", "→ 跟著伊薩走進鐘院內室")
+	assert_eq(s.state.checkpoint, "ch2_volunteer")
+	hall = await _retry()
+	assert_eq(str(hall.name), "BellHall", "[ch2_volunteer] 重來還在鐘院")
+	assert_eq(_objective(hall), "Q_CH2_OBJ_INNER", "[ch2_volunteer] HUD 目標")
+	assert_true(bool(hall.call("is_seated")), "[ch2_volunteer] 在桌邊")
+	assert_eq((hall.call("strike_card") as StrikeCard).is_done(), see_through, "[ch2_volunteer] 看穿過的小卡維持劃完的樣子")
+	await _assert_bell_hall(hall, "[ch2_volunteer]")
 	for i: int in 3:
 		await tree.physics_frame
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 2（他自願的）待續")
+	assert_false(_game.call("is_in_dialogue"), "[ch2_volunteer] 不會又開對話")
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 3（鐘院內室）待續")
 
 
 ## 鐘院：還在白晝城裡——只有油燈投影子、沒有太陽、接地陰影拿掉；桌上三盤煮豆、一鍋稀粥、四個碗；伊薩右腿有支架。

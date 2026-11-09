@@ -1,0 +1,69 @@
+{
+  "id": "ch2_volunteer",
+  "start": "v1",
+  "nodes": {
+    "v1": {
+      "speaker": "SPK_ISA",
+      "text": "DLG_CH2_VOL_001",
+      "next": "v2"
+    },
+    "v2": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH2_VOL_002",
+      "next": "v3"
+    },
+    "v3": {
+      "speaker": "SPK_ISA",
+      "text": "DLG_CH2_VOL_003",
+      "choices": [
+        {
+          "text": "DLG_CH2_VOL_C_SORRY",
+          "next": "r_sorry",
+          "do": {
+            "set": {
+              "ch2.noen_apologized": true
+            }
+          }
+        },
+        {
+          "text": "DLG_CH2_VOL_C_SILENT",
+          "next": "r_silent",
+          "do": {
+            "set": {
+              "ch2.noen_apologized": false
+            }
+          }
+        }
+      ]
+    },
+    "r_sorry": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH2_VOL_R_SORRY",
+      "next": "r_sorry2"
+    },
+    "r_sorry2": {
+      "speaker": "SPK_ISA",
+      "text": "DLG_CH2_VOL_R_SORRY2",
+      "next": "v4"
+    },
+    "r_silent": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH2_VOL_R_SILENT",
+      "next": "v4"
+    },
+    "v4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH2_VOL_004",
+      "next": "v5"
+    },
+    "v5": {
+      "speaker": "SPK_ISA",
+      "text": "DLG_CH2_VOL_005",
+      "do": {
+        "set": {
+          "ch2.volunteer_talked": true
+        }
+      }
+    }
+  }
+}

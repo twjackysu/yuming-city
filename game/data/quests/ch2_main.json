@@ -18,6 +18,15 @@
       "done_when": {
         "flag": "ch2.volunteer_talked"
       }
+    },
+    {
+      "id": "inner_room",
+      "objective": "Q_CH2_OBJ_INNER",
+      "checkpoint": "ch2_volunteer",
+      "marker": "node:InnerDoor",
+      "done_when": {
+        "flag": "ch2.inner_room_entered"
+      }
     }
   ]
 }

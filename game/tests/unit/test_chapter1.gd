@@ -118,13 +118,13 @@ func test_chapter_card_calls_done_once() -> void:
 
 func test_chapter1_dialogues_are_valid_and_translated() -> void:
 	var db: DialogueDB = DialogueDB.load_default()
-	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map", "ch1_map_end", "ch2_table"]:
+	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map", "ch1_map_end", "ch2_table", "ch2_volunteer"]:
 		assert_true(db.has_dialogue(id), "有對話 %s" % id)
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
 		for key: String in ["SPK_MISHA", "SPK_KEEPER", "SPK_LEO_LETTER", "CH1_CARD_NUMBER", "CH1_CARD_TITLE",
 				"CH1_TO_BE_CONTINUED", "GUIDE_MARK_TITLE", "GUIDE_MARK_HINT", "GUIDE_MARK_DONE", "Q_CH1_MAIN_TITLE", "Q_CH1_OBJ_NOON", "Q_CH1_OBJ_DINNER", "Q_CH1_OBJ_MAP", "Q_CH1_OBJ_CELLAR",
-				"CH2_CARD_NUMBER", "CH2_CARD_TITLE", "Q_CH2_MAIN_TITLE", "Q_CH2_OBJ_TABLE", "Q_CH2_OBJ_VOLUNTEER", "SPK_ISA"]:
+				"CH2_CARD_NUMBER", "CH2_CARD_TITLE", "Q_CH2_MAIN_TITLE", "Q_CH2_OBJ_TABLE", "Q_CH2_OBJ_VOLUNTEER", "Q_CH2_OBJ_INNER", "SPK_ISA", "CH2_ISA_INSIGHT_HINT", "INSIGHT_USURPER_NAME"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")
 
