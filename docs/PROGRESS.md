@@ -14,7 +14,7 @@
 
 - `scripts/check.sh` 全綠（379 個測試，多 8 個：`test_daylight_art` 6 個、`test_stairs_art` 2 個）；流程測試的 `_assert_daylight_art` 擋住街上再出現素色白灰牆／窗板、檢查地面與盡頭牆的材質、`StreetTrim`、淨化爐的細節。
 - 本機截圖（lavapipe Vulkan）前後對照：`--daylight-at=stele`、`--daylight-at=yard`、`--level=daylight`（淨化爐）、`--level=stairs --stairs-at=trap`。中途修了三處：窗板板縫太深像鐵窗（`seam_dark` 0.85 → 0.45）、盡頭的牆淺縫小塊像水泥空心磚（改深縫大塊）、牆腳石頂面被 shader 畫成深色斜紋（加壓頂石、門的地方斷開）。
-- CI：見下方收尾補記。
+- CI：d47f59c run 42713815858 **全綠**（import、測試、Windows／Linux 匯出、smoke test、打包、盤點截圖）；690828b、4b5efaf 的 run 被下一個 push 取消；**e3d2f72 run 42715653221（包含全部）收尾時「Import、測試、匯出」已綠**，截圖、smoke test、打包、盤點截圖還在跑——下一輪開工先看。
 
 **問題**
 
