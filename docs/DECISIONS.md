@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-163　2026-11-09　第 3 章開頭：新關卡乾運河（只有這裡有影子）、送葬者掛在吊樑下、攻略筆記的「空白」條目
+
+- 決策：
+  - 第 2 章看完眼睛 → `ch2_main` 的 on_complete 開 `ch3_main`（章節 `ch3`、檢查點 `ch3_start` 自動存檔）→ 鐘院播第 3 章章節卡（`bell_hall.to_chapter3()`）→ 新關卡 `canal`。第 2 章完成之後重來是在乾運河，不再回鐘院。
+  - **乾運河的光**：頭頂一排排石樑（間距 2.4 m、縫 0.85 m），一盞**投影子的方向光**從縫裡斜斜照下來（俯角 57°），光切成一條條。這是地底城「只有油燈投影子」（D-154）的**第一個例外**——原作的理由：這裡離穹頂最遠，光是斜的。體積霧、SSAO 開著。
+  - **掛著的送葬者**：重用 `Undertaker` 的外觀，但 `PROCESS_MODE_DISABLED`、移出 `enemies`／`damageable` 群組（不會被鎖定、不打），掛在一根橫跨運河的舊吊樑下（樑高 2.6 m、鏈子 1 m，腳懸在河床上方三公尺多），整個掛點慢慢晃。胸口的鐘舌＝一根自己發光的銅棒＋小銅光，**亮度照心跳（一次兩拍，每分鐘 46 下）**——伏筆段落 2「牠跟著心跳走」。另加一盞跟斜光同方向、不投影子的窄聚光，讓牠剛好落在一道縫的光裡。原作是「掛在乾涸的運河下」；本來放在橋底，截圖整隻在橋的影子裡、又被河道牆緣擋住，從岸上完全看不到，改成吊樑。
+  - **攻略筆記的空白條目**：`notes.json` 新欄位 `"blank": true`、新效果 `guide_blank`、新狀態 `blank`（日記小標「攻略沒有寫」）。空白條目不能標我不確定、不會被推翻，只照 `confirmed_when` 變成證實，證實後日記多一行 `GUIDE_<ID>_CONFIRMED`（自己觀察到的）。第 1 章畫地圖時寫下的是 `GuideNotes.remembered_ids()`（不含空白）。第一條：`clapper_heartbeat`「鐘舌在一隻送葬者的胸口。牠跟著什麼走？多快？」，證實條件 `ch3.rhythm_found`（段落 2 設）。
+  - 段落 1 的選項只有「不行。」與「……」（記 `ch3.refused_lure`），沉默時席菈多一句「你不說話，我就當你在想。」；兩條都接「那你有什麼方案？」→（我說不出來。）。跳過對話也照樣寫下空白條目、進下一階段。
+  - 岸邊的矮牆 0.45 m（擋人的碰撞 1.8 m）：0.8 m 時從岸上看不到河道裡的東西。對話開始時鏡頭轉向吊樑、往下看（pitch -0.55）。
+- 理由：08 的段落 1 寫「攻略筆記這一條是空白」，原本的狀態（確定／我不確定／被推翻／證實）都是「攻略寫了什麼」，沒有「攻略沒寫」；段落 2 要讓玩家自己寫下第一條證實的事，空白條目就是那個位置。光的例外照原作，也讓第 3 章的第一眼跟白晝城完全不同。
+- 影響：`canal.gd`／`canal.tscn`、`ch3_main.json`、`ch3_bank.json`、`i18n/ch3.csv`（登記在 project.godot 與 verify_package）、`GuideNotes`（`BLANK`、`write_blank`、`remembered_ids`、`is_blank_entry`、`confirmed_key`）、`StoryLogic`（`guide_blank`）、`JournalView`、`GameSession.MAIN_QUESTS`／`CHAPTER_CHAIN`、`Game.LEVELS`／`CHECKPOINT_LEVELS`、bell_hall 的過場結束、CI 盤點截圖 `26-ch3-canal`、`27-ch3-bank`、測試（單元＋主線流程延伸到第 3 章段落 1）。
+
 ## D-162　2026-11-09　諾恩的幾何只放在 SELF_LAYER（修正 D-118）；一百七十二階的油燈影子打開
 
 - 決策：`PlayerController._mark_self_layer()` 與之後加到身上的幾何改成 `layers = SELF_LAYER`（取代原本的 `|=`）。一百七十二階 `_brighten_lamp()` 的 `shadow_enabled` 改回 true。
