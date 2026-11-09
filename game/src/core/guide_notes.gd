@@ -6,13 +6,16 @@ extends RefCounted
 ## 狀態存在 GameState.guide：id -> {"unsure": bool, "result": "" | "wrong" | "confirmed"}；還沒寫下的條目不在裡面。
 ## 玩家看到的可信度（06-terminology）：確定（sure）／我不確定（unsure）／被推翻（wrong）／證實（confirmed）。
 ## 「我不確定」只影響之後的台詞（標了的被推翻時諾恩說「果然」），不懲罰。
+## 空白條目（第 3 章起，D-163）：攻略沒有寫的事（`"blank": true`）。用效果 guide_blank 寫下，狀態是 blank（「攻略沒有寫」），
+## 不能標我不確定、不會被推翻；之後玩家自己觀察到的時候照 confirmed_when 變成證實（文字 GUIDE_<ID>_CONFIRMED）。
 
 const UNWRITTEN: String = "unwritten"
 const SURE: String = "sure"
 const UNSURE: String = "unsure"
 const WRONG: String = "wrong"
 const CONFIRMED: String = "confirmed"
-const STATUSES: PackedStringArray = [UNWRITTEN, SURE, UNSURE, WRONG, CONFIRMED]
+const BLANK: String = "blank"
+const STATUSES: PackedStringArray = [UNWRITTEN, SURE, UNSURE, WRONG, CONFIRMED, BLANK]
 const DEFAULT_PATH: String = "res://data/guide/notes.json"
 
 static var _default: GuideNotes = null
@@ -63,6 +66,22 @@ func ids() -> PackedStringArray:
 	return out
 
 
+## 諾恩前世記得的條目（第 1 章畫地圖時寫下的那些）：不含空白條目。
+func remembered_ids() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for e: Dictionary in entries:
+		if not bool(e.get("blank", false)):
+			out.append(str(e["id"]))
+	return out
+
+
+func is_blank_entry(entry_id: String) -> bool:
+	for e: Dictionary in entries:
+		if str(e["id"]) == entry_id:
+			return bool(e.get("blank", false))
+	return false
+
+
 func ids_for_chapter(chapter: String) -> PackedStringArray:
 	var out: PackedStringArray = []
 	for e: Dictionary in entries:
@@ -79,12 +98,27 @@ static func wrong_key(entry_id: String) -> String:
 	return text_key(entry_id) + "_WRONG"
 
 
+## 空白條目證實之後的文字（玩家自己觀察到的）。
+static func confirmed_key(entry_id: String) -> String:
+	return text_key(entry_id) + "_CONFIRMED"
+
+
 ## 寫下條目（已經寫過的不動）。回傳這次新寫下的 id。
 static func write(state: GameState, entry_ids: PackedStringArray) -> PackedStringArray:
 	var out: PackedStringArray = []
 	for id: String in entry_ids:
 		if not state.guide.has(id):
 			state.guide[id] = {"unsure": false, "result": ""}
+			out.append(id)
+	return out
+
+
+## 寫下空白條目（「攻略沒有寫」；已經寫過的不動）。回傳這次新寫下的 id。
+static func write_blank(state: GameState, entry_ids: PackedStringArray) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for id: String in entry_ids:
+		if not state.guide.has(id):
+			state.guide[id] = {"unsure": false, "result": "", "blank": true}
 			out.append(id)
 	return out
 
@@ -97,6 +131,8 @@ static func status(state: GameState, entry_id: String) -> String:
 	var result: String = str(d.get("result", ""))
 	if result != "":
 		return result
+	if bool(d.get("blank", false)):
+		return BLANK
 	return UNSURE if bool(d.get("unsure", false)) else SURE
 
 
@@ -121,10 +157,10 @@ func evaluate(state: GameState) -> Array[Dictionary]:
 	for e: Dictionary in entries:
 		var id: String = str(e["id"])
 		var s: String = status(state, id)
-		if s != SURE and s != UNSURE:
+		if s != SURE and s != UNSURE and s != BLANK:
 			continue
 		var result: String = ""
-		if e.has("wrong_when") and StoryLogic.check(e["wrong_when"] as Dictionary, state):
+		if s != BLANK and e.has("wrong_when") and StoryLogic.check(e["wrong_when"] as Dictionary, state):
 			result = WRONG
 		elif e.has("confirmed_when") and StoryLogic.check(e["confirmed_when"] as Dictionary, state):
 			result = CONFIRMED

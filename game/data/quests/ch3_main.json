@@ -1,0 +1,29 @@
+{
+  "id": "ch3_main",
+  "title": "Q_CH3_MAIN_TITLE",
+  "on_complete": {
+    "set": {
+      "ch3.complete": true
+    }
+  },
+  "stages": [
+    {
+      "id": "canal_bank",
+      "objective": "Q_CH3_OBJ_BANK",
+      "checkpoint": "ch3_start",
+      "marker": "node:BankEdge",
+      "done_when": {
+        "flag": "ch3.bank_talked"
+      }
+    },
+    {
+      "id": "observe",
+      "objective": "Q_CH3_OBJ_OBSERVE",
+      "checkpoint": "ch3_bank",
+      "marker": "node:HangPivot/ClapperUndertaker",
+      "done_when": {
+        "flag": "ch3.rhythm_found"
+      }
+    }
+  ]
+}

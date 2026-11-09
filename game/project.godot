@@ -53,7 +53,7 @@ window/stretch/aspect="expand"
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://i18n/strings.en.translation", "res://i18n/strings.zh_TW.translation", "res://i18n/slice.en.translation", "res://i18n/slice.zh_TW.translation", "res://i18n/ch1.en.translation", "res://i18n/ch1.zh_TW.translation", "res://i18n/ch2.en.translation", "res://i18n/ch2.zh_TW.translation")
+locale/translations=PackedStringArray("res://i18n/strings.en.translation", "res://i18n/strings.zh_TW.translation", "res://i18n/slice.en.translation", "res://i18n/slice.zh_TW.translation", "res://i18n/ch1.en.translation", "res://i18n/ch1.zh_TW.translation", "res://i18n/ch2.en.translation", "res://i18n/ch2.zh_TW.translation", "res://i18n/ch3.en.translation", "res://i18n/ch3.zh_TW.translation")
 locale/fallback="en"
 
 [rendering]

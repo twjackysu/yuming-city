@@ -425,6 +425,37 @@ func test_chapter1_complete_starts_chapter2() -> void:
 	assert_eq(up.state.chapter, "ch2")
 
 
+## 第 3 章銜接（D-163）：第 2 章看完眼睛 → ch2_main 完成 → 第 3 章主線、章節、檢查點在乾運河；舊存檔補開第 3 章。
+func test_chapter2_complete_starts_chapter3() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	s.new_game()
+	load("res://scenes/levels/canal.gd").call("dev_start_chapter3", s)
+	assert_true(s.quests.is_done("ch2_main"), "第 2 章完成")
+	assert_eq(s.state.get_flag("ch2.complete"), true)
+	assert_eq(s.main_quest(), "ch3_main", "主線換成第 3 章")
+	assert_eq(s.quests.stage_of("ch3_main"), "canal_bank")
+	assert_eq(s.state.chapter, "ch3")
+	assert_eq(s.state.checkpoint, "ch3_start")
+	assert_eq(s.objective_key(), "Q_CH3_OBJ_BANK")
+	assert_eq(Game.level_for_checkpoint("ch3_start"), "canal", "第 3 章的檢查點在乾運河")
+	s.set_flag("ch3.bank_talked", true)
+	assert_eq(s.quests.stage_of("ch3_main"), "observe", "岸邊講完 → 觀察")
+	assert_eq(s.state.checkpoint, "ch3_bank")
+	assert_eq(Game.level_for_checkpoint("ch3_bank"), "canal")
+	# 舊存檔：第 2 章完成了、沒有第 3 章 → 補開
+	var old := GameState.new()
+	old.checkpoint = "ch2_carvings"
+	old.quests = {"slice_main": StoryLogic.QUEST_DONE, "ch1_main": StoryLogic.QUEST_DONE, "ch2_main": StoryLogic.QUEST_DONE}
+	old.chapter = "ch2"
+	DirAccess.make_dir_recursive_absolute(_dir)
+	assert_eq(SaveCodec.write_file(_dir.path_join("slot3.json"), old), OK)
+	var up := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(up.load_slot("slot3"), SaveCodec.Status.OK)
+	assert_eq(up.main_quest(), "ch3_main", "舊存檔補開第 3 章")
+	assert_eq(up.state.chapter, "ch3")
+	assert_eq(Game.level_for_checkpoint(up.state.checkpoint), "canal", "補開之後從乾運河開始")
+
+
 ## 看穿伊薩（D-158）：先讀到攻略的字（按住一秒內不劃）→ 一個字一個字劃掉 → 劃完才出現真話、只發一次 finished；放開不會倒退。
 func test_strike_card_crosses_out_then_shows_truth() -> void:
 	var host := Control.new()

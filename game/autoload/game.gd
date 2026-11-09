@@ -24,6 +24,7 @@ const LEVELS: Dictionary = {
 	"stairs": "res://scenes/levels/stairs.tscn",
 	"daylight": "res://scenes/levels/daylight.tscn",
 	"bell_hall": "res://scenes/levels/bell_hall.tscn",
+	"canal": "res://scenes/levels/canal.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
 const CHECKPOINT_LEVELS: Dictionary = {
@@ -43,6 +44,9 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch2_volunteer": "bell_hall",
 	"ch2_inner": "bell_hall",
 	"ch2_carvings": "bell_hall",
+	# 第 3 章：乾運河（D-163）
+	"ch3_start": "canal",
+	"ch3_bank": "canal",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

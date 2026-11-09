@@ -74,7 +74,7 @@ static func dev_start_chapter(s: GameSession, stage: String) -> void:
 		s.set_flag(flags[i], true)
 	# 畫地圖的對話一開始就寫下攻略筆記
 	if target >= 2:
-		StoryLogic.apply({"guide_write": Array(s.guide.ids())}, s.state)
+		StoryLogic.apply({"guide_write": Array(s.guide.remembered_ids())}, s.state)
 	s.attach_achievements(ach)
 
 

@@ -226,10 +226,12 @@ func _ready() -> void:
 		if Game.session.quests.stage_of(QUEST) == "meet_leo":
 			_play_leo_cutscene.call_deferred(int(str(dev_args.get("hall-shot", "0"))))
 	# 窗簾：已經看過眼睛（第 2 章完成、重來、讀檔）→ 窗簾開著、眼睛睜開、待續；對話講完但過場沒看完 → 重新播
+	# （第 2 章完成之後的檢查點在乾運河，正式流程不會再回到這裡；只有開發旗標 `--hall-at=eye-after` 會）
 	if bool(Game.session.state.get_flag("ch2.curtain_opened", false)):
 		_reveal_eye()
 		_continued_shown = true
-		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
+		if not _next_chapter_ready():
+			_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
 	elif Game.session.quests.stage_of(QUEST) == "curtain" and bool(Game.session.state.get_flag("ch2.curtain_talked", false)):
 		_play_eye_cutscene.call_deferred(int(str(dev_args.get("hall-shot", "0"))))
 	if dev_args.has("hall-insight") and _strike != null and not _strike.is_done():
@@ -901,11 +903,27 @@ func _on_cutscene_ended(cutscene_id: String, skipped: bool) -> void:
 	if cutscene_id == LEO_CUTSCENE:
 		_place_inner(true)
 	elif cutscene_id == EYE_CUTSCENE:
-		# 跳過也一樣：窗簾開著、眼睛睜開看著我們 → 第 2 章完成（ch2.curtain_opened 由過場的 on_end 設）→ 第 3 章待續
+		# 跳過也一樣：窗簾開著、眼睛睜開看著我們 → 第 2 章完成（ch2.curtain_opened 由過場的 on_end 設；ch2_main 的 on_complete
+		# 開第 3 章、檢查點 ch3_start 自動存檔）→ 第 3 章章節卡 → 乾運河（D-163）
 		_reveal_eye()
 		if not _continued_shown:
 			_continued_shown = true
-			_banner("CH1_TO_BE_CONTINUED", 6.0)
+			to_chapter3()
+
+
+## 第 2 章看完眼睛之後（測試也用）：第 3 章章節卡 → 換到檢查點對應的關卡（乾運河）。只做一次；第 3 章還沒有關卡就是待續。
+func to_chapter3() -> void:
+	if has_node("ChapterCard"):
+		return
+	if _next_chapter_ready():
+		ChapterCard.play(self, "CH3_CARD_NUMBER", "CH3_CARD_TITLE", Game.go_to_level.bind(Game.level_for_checkpoint(Game.session.state.checkpoint)))
+	else:
+		_banner("CH1_TO_BE_CONTINUED", 6.0)
+
+
+func _next_chapter_ready() -> bool:
+	var next_level: String = Game.level_for_checkpoint(Game.session.state.checkpoint)
+	return next_level != "bell_hall" and Game.LEVELS.has(next_level)
 
 
 func _cut_from_black(seconds: float) -> void:

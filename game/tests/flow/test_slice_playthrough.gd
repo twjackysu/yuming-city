@@ -305,7 +305,7 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	for id: String in s.guide.ids():
 		assert_eq(GuideNotes.status(s.state, id), GuideNotes.UNWRITTEN, "畫地圖之前還沒寫下 %s" % id)
 	await _talk_at(tavern, "MapTable", 0)
-	for id: String in s.guide.ids():
+	for id: String in s.guide.remembered_ids():
 		assert_eq(GuideNotes.status(s.state, id), GuideNotes.SURE, "攻略筆記寫下 %s（預設確定）" % id)
 	assert_ne(s.state.get_flag("ch1.map_drawn", false), true, "還沒標完")
 	for i: int in 3:
@@ -799,15 +799,81 @@ func _chapter2_curtain(hall: StoryLevel, alt: bool) -> void:
 	assert_true(s.quests.is_done("ch2_main"), "第 2 章完成")
 	assert_eq(s.state.get_flag("ch2.complete"), true)
 	await _assert_window(hall, "[看過眼睛]", true)
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "第 3 章待續")
-	hall = await _retry()
-	assert_eq(str(hall.name), "BellHall", "[第 2 章完成] 重來還在鐘院")
-	assert_false(_game.call("is_in_cutscene"), "[第 2 章完成] 不會又播過場")
-	assert_true(s.quests.is_done("ch2_main"), "[第 2 章完成] 章節完成有自動存檔：重來不會回到窗簾之前")
-	await _assert_window(hall, "[第 2 章完成]", true)
-	await _assert_bell_hall(hall, "[第 2 章完成]")
+	await _chapter3(hall, alt)
+
+
+## 第 3 章（D-163）：章節卡 → 乾運河（斜光切成條、只有這裡有影子、吊樑下掛著胸口有鐘舌的送葬者）→ 走到岸邊 →
+## 「我去引開牠。」→「不行。」／沉默 →「那你有什麼方案？」→ 攻略筆記多一條空白 →「牠跟著什麼走？」「心跳。」「多快？」→
+## 檢查點 ch3_bank → 段落 2 待續。
+func _chapter3(hall: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.main_quest(), "ch3_main", "第 2 章完成 → 主線換成第 3 章")
+	assert_eq(s.state.chapter, "ch3", "章節換成 ch3")
+	assert_eq(s.state.checkpoint, "ch3_start", "第 3 章的第一個檢查點")
+	var card: ChapterCard = hall.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card, "看完眼睛 → 第 3 章章節卡")
+	if card == null:
+		return
+	assert_eq(card.title_text(), tr("CH3_CARD_TITLE"), "章節卡的章名：不准替我答應")
+	card.finish()
+	var canal: StoryLevel = await _wait_scene()
+	assert_eq(str(canal.name), "Canal", "章節卡之後換到乾運河")
+	_assert_canal(canal, "[ch3_start]")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_start] 重來還在乾運河（第 2 章完成有自動存檔，不會回到窗簾之前）")
+	assert_false(_game.call("is_in_cutscene"), "[ch3_start] 不會又播眼睛的過場")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_BANK", "[ch3_start] HUD 目標：走到岸邊")
+	_assert_canal(canal, "[ch3_start] 重來")
+	assert_false(_game.call("is_in_dialogue"), "還沒走到岸邊")
+	await _step_into(_player(canal), canal.get("BANK_POS") as Vector3 + Vector3(0.4, 0.0, 0.6), 3)
+	assert_true(_game.call("is_in_dialogue"), "走到岸邊 → 對話")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_bank")
+	var lines: PackedStringArray = []
+	for i: int in 6:
+		if not runner.is_running() or runner.visible_choices.size() > 0:
+			break
+		lines.append(runner.current_text())
+		runner.advance()
+	assert_true("DLG_CH3_BANK_004" in lines, "鐘舌：鐘裡面那根撞鐘的鐵棒（第一次出現時說明）")
+	assert_eq(runner.current_text(), "DLG_CH3_BANK_005", "我去引開牠。")
+	assert_eq(runner.visible_choices.size(), 2, "選項只有「不行。」與沉默")
+	var most: int = await _run_dialogue(canal, 1 if alt else 0)
+	assert_eq(most, 2)
+	assert_eq(s.state.get_flag("ch3.refused_lure"), not alt, "「不行。」記 ch3.refused_lure")
+	assert_eq(s.state.get_flag("ch3.bank_talked"), true)
+	assert_eq(GuideNotes.status(s.state, "clapper_heartbeat"), GuideNotes.BLANK, "攻略筆記：這一條是空白（攻略沒有寫）")
+	assert_eq(s.quests.stage_of("ch3_main"), "observe", "→ 段落 2 觀察")
+	assert_eq(s.state.checkpoint, "ch3_bank", "檢查點 ch3_bank")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "GUIDE_BLANK_NOTE", "提示：攻略筆記這一條是空白")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_bank] 重來還在乾運河")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_OBSERVE", "[ch3_bank] HUD 目標：看清楚牠跟著什麼走")
+	assert_eq(GuideNotes.status(s.state, "clapper_heartbeat"), GuideNotes.BLANK, "[ch3_bank] 空白條目有存到")
+	await _step_into(_player(canal), canal.get("BANK_POS") as Vector3, 3)
+	assert_false(_game.call("is_in_dialogue"), "[ch3_bank] 岸邊的對話不會再開")
+	_assert_canal(canal, "[ch3_bank]")
 	await tree.process_frame
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[第 2 章完成] 第 3 章待續")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_bank] 段落 2 待續")
+
+
+## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。
+func _assert_canal(canal: StoryLevel, tag: String) -> void:
+	var sun: DirectionalLight3D = canal.get_node_or_null("SlitLight") as DirectionalLight3D
+	assert_not_null(sun, tag + " 有從縫裡斜照下來的光")
+	if sun != null:
+		assert_true(sun.shadow_enabled, tag + " 這裡有影子")
+		assert_true(sun.rotation_degrees.x < -30.0 and sun.rotation_degrees.x > -80.0, tag + " 光是斜的")
+	assert_true((canal.get_node("CeilingSlats") as Node3D).get_child_count() >= 15, tag + " 頭頂一排排石樑")
+	var u: Node3D = canal.call("undertaker") as Node3D
+	assert_not_null(u, tag + " 吊樑下掛著送葬者")
+	assert_false(u.is_in_group("enemies"), tag + " 掛著的送葬者不會被鎖定、不會開打")
+	assert_eq(u.process_mode, Node.PROCESS_MODE_DISABLED, tag + " 牠一動也不動")
+	assert_true(u.global_position.y < 0.0 and u.global_position.y > float(canal.get("BED_Y")) + 1.0, tag + " 掛在吊樑下、腳懸在河床上方")
+	var light: OmniLight3D = canal.call("clapper_light") as OmniLight3D
+	assert_false(light.shadow_enabled, tag + " 鐘舌的銅光不投影子")
+	assert_true(light.light_color.r > light.light_color.b, tag + " 鐘舌是銅色的光")
+	assert_true(canal.has_node("BankEdge") and canal.has_node("Sheila") and canal.has_node("Misha"), tag + " 說話點、席菈、彌夏")
 
 
 ## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。

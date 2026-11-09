@@ -1,0 +1,26 @@
+keys,en,zh_TW
+CH3_CARD_NUMBER,Chapter Three,第三章
+CH3_CARD_TITLE,Don't Answer for Me,不准替我答應
+Q_CH3_MAIN_TITLE,Don't Answer for Me,不准替我答應
+Q_CH3_OBJ_BANK,The clapper is somewhere along the dry canal. Go to the edge and look,鐘舌在乾運河那邊。走到岸邊看看
+Q_CH3_OBJ_OBSERVE,Find out what it follows,看清楚牠跟著什麼走
+GUIDE_STATUS_BLANK,Not in the guide,攻略沒有寫
+GUIDE_CLAPPER_HEARTBEAT,The clapper is in an undertaker's chest. What does it follow? How fast?,鐘舌在一隻送葬者的胸口。牠跟著什麼走？多快？
+GUIDE_CLAPPER_HEARTBEAT_CONFIRMED,It follows a heartbeat. On the seventh try it turned its head. We found that speed ourselves.,牠跟著心跳走。第七次，牠轉了頭——那個速度是我們自己找出來的。
+GUIDE_BLANK_NOTE,Guide notes: one line left blank,攻略筆記：這一條是空白
+DLG_CH3_BANK_001,There.,在那裡。
+DLG_CH3_BANK_002,"(The canal ran dry long ago. From an old hoist beam hung an undertaker, feet dangling over the drop, perfectly still. Something copper glowed in its chest.)",（運河早就乾了。一根舊吊樑下掛著一隻送葬者，腳懸在半空，一動也不動。牠胸口有一點銅色的光。）
+DLG_CH3_BANK_003,The clapper.,是鐘舌。
+DLG_CH3_BANK_004,"(The iron rod inside a bell, the one that strikes it. The one I pulled out. It fell into the crack, and that thing swallowed it.)",（鐘裡面那根撞鐘的鐵棒。我拆下來的那根。掉進裂縫之後，被牠吞了。）
+DLG_CH3_BANK_005,I'll draw it off.,我去引開牠。
+DLG_CH3_BANK_C_NO,No.,不行。
+DLG_CH3_BANK_C_SILENT,……,……
+DLG_CH3_BANK_SILENT_1,"If you're not saying anything, I'll take it you're thinking.",你不說話，我就當你在想。
+DLG_CH3_BANK_006,Then what's your plan?,那你有什麼方案？
+DLG_CH3_BANK_007,(I had nothing.),（我說不出來。）
+DLG_CH3_BANK_008,(I went through the whole guide in my head. Not one word about this undertaker.),（我把攻略從頭翻了一遍。這隻送葬者，攻略裡一個字都沒有。）
+DLG_CH3_BANK_009,"(Misha crouched at the edge, measured with a length of wire for a long time, then took the bell box apart into six pieces.)",（彌夏蹲在渠邊，用鐵絲量了半天，把鐘箱拆成六片。）
+DLG_CH3_BANK_010,What does it follow?,牠跟著什麼走？
+DLG_CH3_BANK_011,Heartbeats.,心跳。
+DLG_CH3_BANK_012,How fast?,多快？
+DLG_CH3_BANK_013,(The guide didn't say.),（攻略沒有寫。）

@@ -28,6 +28,8 @@ REQUIRED = [
     "i18n/ch1.zh_TW.translation",
     "i18n/ch2.en.translation",
     "i18n/ch2.zh_TW.translation",
+    "i18n/ch3.en.translation",
+    "i18n/ch3.zh_TW.translation",
     "data/guide/notes.json",
     "data/daylight/residents.json",
     "data/quests/slice_main.json",

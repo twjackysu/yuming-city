@@ -6,14 +6,18 @@ extends TestCase
 func test_data_is_valid_and_translated() -> void:
 	var g: GuideNotes = GuideNotes.load_default()
 	assert_eq(g.errors.size(), 0, "資料沒有錯：%s" % ", ".join(g.errors))
-	assert_eq(g.ids().size(), 6, "第 3 段寫下 6 條")
+	assert_eq(g.remembered_ids().size(), 6, "第 3 段寫下 6 條（諾恩記得的攻略）")
+	assert_eq(g.ids().size(), 7, "再加第 3 章的空白條目")
 	assert_eq(g.ids_for_chapter("ch1").size(), 4, "第 1 章推翻 4 條")
+	assert_true(g.is_blank_entry("clapper_heartbeat"), "攻略沒有寫：送葬者跟著什麼走")
+	assert_false("clapper_heartbeat" in g.remembered_ids(), "空白條目不在畫地圖時寫下的那些裡")
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
 		for id: String in g.ids():
-			for key: String in [GuideNotes.text_key(id), GuideNotes.wrong_key(id)]:
+			var second: String = GuideNotes.confirmed_key(id) if g.is_blank_entry(id) else GuideNotes.wrong_key(id)
+			for key: String in [GuideNotes.text_key(id), second]:
 				assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
-		for s: String in ["SURE", "UNSURE", "WRONG", "CONFIRMED"]:
+		for s: String in ["SURE", "UNSURE", "WRONG", "CONFIRMED", "BLANK"]:
 			assert_ne(tr("GUIDE_STATUS_" + s), "GUIDE_STATUS_" + s, "%s 可信度文字 %s" % [loc, s])
 	TranslationServer.set_locale("en")
 
@@ -23,8 +27,8 @@ func test_write_mark_and_refute() -> void:
 	var s := GameState.new()
 	assert_eq(GuideNotes.status(s, "stair_arrows"), GuideNotes.UNWRITTEN, "還沒寫下")
 	assert_false(GuideNotes.set_unsure(s, "stair_arrows", true), "沒寫下的不能標")
-	assert_eq(GuideNotes.write(s, g.ids()).size(), 6, "寫下 6 條")
-	assert_eq(GuideNotes.write(s, g.ids()).size(), 0, "寫過的不會重寫")
+	assert_eq(GuideNotes.write(s, g.remembered_ids()).size(), 6, "寫下 6 條")
+	assert_eq(GuideNotes.write(s, g.remembered_ids()).size(), 0, "寫過的不會重寫")
 	assert_eq(GuideNotes.status(s, "stair_arrows"), GuideNotes.SURE, "預設確定")
 	assert_true(GuideNotes.set_unsure(s, "stair_arrows", true))
 	assert_eq(GuideNotes.status(s, "stair_arrows"), GuideNotes.UNSURE, "標了我不確定")
@@ -53,6 +57,30 @@ func test_confirmed_when() -> void:
 	var bad := GuideNotes.new()
 	bad.entries = [{"id": "a", "wrong_when": {"bogus": 1}}, {"id": "a"}]
 	assert_eq(bad.validate().size(), 2, "壞條件、重複 id 都被擋")
+
+
+## 空白條目（D-163）：guide_blank 寫下 → 狀態 blank、不能標我不確定、不會被推翻；自己觀察到之後照 confirmed_when 證實。
+func test_blank_entry_written_then_confirmed() -> void:
+	var g: GuideNotes = GuideNotes.load_default()
+	var s := GameState.new()
+	assert_eq(GuideNotes.status(s, "clapper_heartbeat"), GuideNotes.UNWRITTEN)
+	StoryLogic.apply({"guide_blank": ["clapper_heartbeat"]}, s)
+	assert_eq(GuideNotes.status(s, "clapper_heartbeat"), GuideNotes.BLANK, "攻略沒有寫")
+	assert_false(GuideNotes.set_unsure(s, "clapper_heartbeat", true), "空白的不能標我不確定")
+	StoryLogic.apply({"guide_write": ["clapper_heartbeat"]}, s)
+	assert_eq(GuideNotes.status(s, "clapper_heartbeat"), GuideNotes.BLANK, "寫過的不會被改成攻略寫的")
+	assert_true(StoryLogic.check({"guide": "clapper_heartbeat", "is": "blank"}, s), "條件可以判斷空白")
+	assert_eq(g.evaluate(s).size(), 0, "還沒觀察到")
+	s.set_flag("ch3.rhythm_found", true)
+	var changes: Array[Dictionary] = g.evaluate(s)
+	assert_eq(changes.size(), 1)
+	assert_eq(changes[0]["result"], "confirmed", "自己觀察到 → 證實")
+	assert_eq(GuideNotes.status(s, "clapper_heartbeat"), GuideNotes.CONFIRMED)
+	var back := GameState.from_dict(s.to_dict())
+	assert_eq(GuideNotes.status(back, "clapper_heartbeat"), GuideNotes.CONFIRMED, "存讀檔之後一樣")
+	var fresh := GameState.new()
+	StoryLogic.apply({"guide_blank": ["clapper_heartbeat"]}, fresh)
+	assert_eq(GuideNotes.status(GameState.from_dict(fresh.to_dict()), "clapper_heartbeat"), GuideNotes.BLANK, "空白也存得住")
 
 
 func test_story_logic_condition_and_effect() -> void:
@@ -139,6 +167,24 @@ func test_journal_shows_guide_section() -> void:
 	assert_eq((view.find_child("Guide_purifier", true, false).find_child("Status", true, false) as Label).text, "GUIDE_STATUS_UNSURE")
 	var strike: ColorRect = stair.find_child("Strike", true, false) as ColorRect
 	assert_true(strike.size.x > 40.0, "墨線跟著字的寬度")
+	view.close()
+	# 第 3 章：空白條目（D-163）——小標「攻略沒有寫」，沒有墨線；證實之後下面多一行自己看到的事
+	StoryLogic.apply({"guide_blank": ["clapper_heartbeat"]}, s.state)
+	view.open()
+	await tree.process_frame
+	assert_eq(view.guide_rows_shown.size(), 7, "多一條空白")
+	var blank: Node = view.find_child("Guide_clapper_heartbeat", true, false)
+	assert_not_null(blank)
+	assert_eq((blank.find_child("Status", true, false) as Label).text, "GUIDE_STATUS_BLANK")
+	assert_true(blank.find_child("Strike", true, false) == null, "空白的不劃")
+	assert_true(blank.find_child("Real", true, false) == null, "還沒觀察到：沒有下一行")
+	view.close()
+	s.set_flag("ch3.rhythm_found", true)
+	view.open()
+	await tree.process_frame
+	blank = view.find_child("Guide_clapper_heartbeat", true, false)
+	assert_eq((blank.find_child("Status", true, false) as Label).text, "GUIDE_STATUS_CONFIRMED")
+	assert_eq((blank.find_child("Real", true, false) as Label).text, "GUIDE_CLAPPER_HEARTBEAT_CONFIRMED", "自己觀察到的那一行")
 	view.close()
 	view.queue_free()
 	game.set("session", original)

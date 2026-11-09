@@ -13,11 +13,12 @@ signal guide_changed(changes: Array[Dictionary])
 
 const MAIN_QUEST: String = "slice_main"
 ## 主線任務依章節順序；HUD 目標、目標指引跟著最後一個已開始的走（D-149）
-const MAIN_QUESTS: PackedStringArray = ["slice_main", "ch1_main", "ch2_main"]
+const MAIN_QUESTS: PackedStringArray = ["slice_main", "ch1_main", "ch2_main", "ch3_main"]
 ## 章節銜接：前一章的主線完成後要開始的主線與章節 id（舊存檔讀進來時補開，D-149）
 const CHAPTER_CHAIN: Array[Dictionary] = [
 	{"after": "slice_main", "start": "ch1_main", "chapter": "ch1"},
 	{"after": "ch1_main", "start": "ch2_main", "chapter": "ch2"},
+	{"after": "ch2_main", "start": "ch3_main", "chapter": "ch3"},
 ]
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]

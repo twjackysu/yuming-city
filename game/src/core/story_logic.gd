@@ -7,18 +7,19 @@ extends RefCounted
 ##   {"flag": "k", "eq"|"ne"|"gte"|"lte"|"gt"|"lt": v}
 ##   {"memory_paid": "id"}
 ##   {"quest": "id", "stage": "s"} 或 {"quest": "id", "done": true}
-##   {"guide": "id", "is": "unwritten|sure|unsure|wrong|confirmed"}（可加 "was_unsure": true/false：寫下時有沒有標我不確定）
+##   {"guide": "id", "is": "unwritten|sure|unsure|wrong|confirmed|blank"}（可加 "was_unsure": true/false：寫下時有沒有標我不確定）
 ##   {"all": [...]}／{"any": [...]}／{"not": {...}}
 ##   空字典＝永遠成立
 ## 效果：
 ##   {"set": {"k": v, ...}, "add": {"k": n, ...}}
 ##   {"guide_write": ["id", ...]}           寫下攻略筆記條目（已寫過的不動）
+##   {"guide_blank": ["id", ...]}           寫下空白條目「攻略沒有寫」（D-163；已寫過的不動）
 ##   {"chapter": "ch1"}                    換章節（GameState.chapter；存檔與標題的「繼續」用）
 ##   （"start_quest" 由 QuestRunner 處理）
 
 const QUEST_DONE: String = "_done"
 const COMPARE_OPS: PackedStringArray = ["eq", "ne", "gte", "lte", "gt", "lt"]
-const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest", "guide_write", "chapter"]
+const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest", "guide_write", "guide_blank", "chapter"]
 
 
 static func check(cond: Dictionary, state: GameState) -> bool:
@@ -76,6 +77,9 @@ static func apply(effects: Dictionary, state: GameState) -> void:
 	var written: Variant = effects.get("guide_write", [])
 	if written is Array:
 		GuideNotes.write(state, PackedStringArray(written as Array))
+	var blank: Variant = effects.get("guide_blank", [])
+	if blank is Array:
+		GuideNotes.write_blank(state, PackedStringArray(blank as Array))
 
 
 ## 回傳錯誤訊息；空字串代表格式正確。

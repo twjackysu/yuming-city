@@ -4,7 +4,11 @@
   "on_complete": {
     "set": {
       "ch2.complete": true
-    }
+    },
+    "chapter": "ch3",
+    "start_quest": [
+      "ch3_main"
+    ]
   },
   "stages": [
     {

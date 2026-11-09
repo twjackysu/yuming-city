@@ -47,7 +47,7 @@ func _ready() -> void:
 
 ## 截圖與測試用：寫下全部攻略筆記，標兩條「我不確定」，推翻其中一條標了的、一條沒標的。
 static func guide_demo(s: GameSession) -> void:
-	GuideNotes.write(s.state, s.guide.ids())
+	GuideNotes.write(s.state, s.guide.remembered_ids())
 	GuideNotes.set_unsure(s.state, "stair_arrows", true)
 	GuideNotes.set_unsure(s.state, "purifier", true)
 	s.state.set_flag("ch1.stair_trap_sprung", true)
@@ -166,10 +166,11 @@ func _add_guide_section(state: GameState, guide: GuideNotes) -> void:
 	head.add_theme_color_override("font_color", PAPER_WARM)
 	_list.add_child(head)
 	for r: Dictionary in rows:
-		_list.add_child(_guide_row(str(r["id"]), str(r["status"])))
+		_list.add_child(_guide_row(str(r["id"]), str(r["status"]), guide.is_blank_entry(str(r["id"]))))
 
 
-func _guide_row(id: String, status: String) -> VBoxContainer:
+## blank_entry：攻略沒有寫的條目（D-163）——證實之後下面多一行自己觀察到的事。
+func _guide_row(id: String, status: String, blank_entry: bool = false) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.name = "Guide_" + id
 	box.add_theme_constant_override("separation", 2)
@@ -192,8 +193,17 @@ func _guide_row(id: String, status: String) -> VBoxContainer:
 	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	line.custom_minimum_size = Vector2(620, 0)
 	box.add_child(line)
-	if status == GuideNotes.UNSURE:
+	if status == GuideNotes.UNSURE or status == GuideNotes.BLANK:
 		line.add_theme_color_override("font_color", PAPER_INK_DIM)
+	if status == GuideNotes.CONFIRMED and blank_entry:
+		var seen := Label.new()
+		seen.name = "Real"
+		seen.text = GuideNotes.confirmed_key(id)
+		seen.add_theme_font_size_override("font_size", 19)
+		seen.add_theme_color_override("font_color", PAPER_INK)
+		seen.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		seen.custom_minimum_size = Vector2(620, 0)
+		box.add_child(seen)
 	if status == GuideNotes.WRONG:
 		# 一條稍微斜的墨線劃過整句（跟著字的實際寬度）
 		var strike := ColorRect.new()
