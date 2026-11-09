@@ -1,0 +1,18 @@
+keys,en,zh_TW
+JOURNAL_TAB_GUIDE,Guide Notes,攻略筆記
+GUIDE_STATUS_SURE,Sure,確定
+GUIDE_STATUS_UNSURE,Not sure,我不確定
+GUIDE_STATUS_WRONG,Proven wrong,被推翻
+GUIDE_STATUS_CONFIRMED,Confirmed,證實
+GUIDE_STAIR_ARROWS,172 steps down. The first trap is arrows.,地下一百七十二階，第一個陷阱是射箭。
+GUIDE_STAIR_ARROWS_WRONG,No arrows. A bucket of dirty water fell from the ceiling.,沒有箭。天花板掉下一桶髒水。
+GUIDE_CITY_OF_MONSTERS,Daylight City is dead. The plague turned everyone into monsters.,白晝城是被瘟疫吞沒的死城，所有人都成了怪物。
+GUIDE_CITY_OF_MONSTERS_WRONG,They are alive down here. They buy water with days of their lives.,下面的人還活著。他們用壽命買水。
+GUIDE_SEALED_DOOR,That door cannot be opened. Nothing behind it.,那扇門不可互動，後面什麼都沒有。
+GUIDE_SEALED_DOOR_WRONG,"Behind it: a table, two children, and onions growing in a broken helmet.",門後面是一張桌、兩個孩子，和一盆種在碎頭盔裡的蔥。
+GUIDE_PURIFIER,There is a purifying furnace at the entrance.,入口有一座淨化爐。
+GUIDE_PURIFIER_WRONG,The furnace is empty and long cold. Someone hangs laundry on it.,爐子是空的，冷了很多年。有人在上面晾衣服。
+GUIDE_USURPER,The lord of the city is the Year-Eating Usurper. Weak point: the heart.,城主是「食歲的僭王」。弱點：心臟。
+GUIDE_USURPER_WRONG,"Isa, the city's lord. A metal brace on his right leg. He asked about Sheila's hand.",伊薩，城主。右腿金屬支架。問了席菈的手。
+GUIDE_BURN_ROUTE,"Fastest route: light the furnace, burn the lower streets, kill the lord. Six seconds.",最快路線：點燃淨化爐，燒光下層街區，再殺城主。六秒。
+GUIDE_BURN_ROUTE_WRONG,The monsters were never burned by players. The whole city paid for that strike.,怪物不是被玩家燒死的。是整座城替玩家付了那一擊的費用。

@@ -7,15 +7,17 @@ extends RefCounted
 ##   {"flag": "k", "eq"|"ne"|"gte"|"lte"|"gt"|"lt": v}
 ##   {"memory_paid": "id"}
 ##   {"quest": "id", "stage": "s"} 或 {"quest": "id", "done": true}
+##   {"guide": "id", "is": "unwritten|sure|unsure|wrong|confirmed"}（可加 "was_unsure": true/false：寫下時有沒有標我不確定）
 ##   {"all": [...]}／{"any": [...]}／{"not": {...}}
 ##   空字典＝永遠成立
 ## 效果：
 ##   {"set": {"k": v, ...}, "add": {"k": n, ...}}
+##   {"guide_write": ["id", ...]}           寫下攻略筆記條目（已寫過的不動）
 ##   （"start_quest" 由 QuestRunner 處理）
 
 const QUEST_DONE: String = "_done"
 const COMPARE_OPS: PackedStringArray = ["eq", "ne", "gte", "lte", "gt", "lt"]
-const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest"]
+const EFFECT_KEYS: PackedStringArray = ["set", "add", "start_quest", "guide_write"]
 
 
 static func check(cond: Dictionary, state: GameState) -> bool:
@@ -35,6 +37,11 @@ static func check(cond: Dictionary, state: GameState) -> bool:
 		return not check(cond["not"] as Dictionary, state)
 	if cond.has("memory_paid"):
 		return state.has_paid_memory(str(cond["memory_paid"]))
+	if cond.has("guide"):
+		var gid: String = str(cond["guide"])
+		if cond.has("was_unsure") and GuideNotes.was_unsure(state, gid) != bool(cond["was_unsure"]):
+			return false
+		return GuideNotes.status(state, gid) == str(cond.get("is", GuideNotes.SURE))
 	if cond.has("quest"):
 		var stage: String = str(state.quests.get(str(cond["quest"]), ""))
 		if cond.has("done"):
@@ -63,6 +70,9 @@ static func apply(effects: Dictionary, state: GameState) -> void:
 			state.set_flag(key, int(roundf(total)))
 		else:
 			state.set_flag(key, total)
+	var written: Variant = effects.get("guide_write", [])
+	if written is Array:
+		GuideNotes.write(state, PackedStringArray(written as Array))
 
 
 ## 回傳錯誤訊息；空字串代表格式正確。
@@ -87,6 +97,8 @@ static func validate_condition(cond: Variant) -> String:
 		return "" if str(d["memory_paid"]) != "" else "memory_paid 不可為空"
 	if d.has("quest"):
 		return "" if d.has("stage") or d.has("done") else "quest 條件需要 stage 或 done"
+	if d.has("guide"):
+		return "" if GuideNotes.STATUSES.has(str(d.get("is", ""))) else "guide 條件的 is 必須是 %s" % "／".join(GuideNotes.STATUSES)
 	if d.has("flag"):
 		var ops: int = 0
 		for op: String in COMPARE_OPS:

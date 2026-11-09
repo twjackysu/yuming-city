@@ -12,6 +12,8 @@ var flags: Dictionary = {}
 var quests: Dictionary = {}
 ## 已付出的記憶 id（九息代價），依付出順序
 var memories_paid: PackedStringArray = []
+## 攻略筆記（GuideNotes，存檔 v2 起）：id -> {"unsure": bool, "result": "" | "wrong" | "confirmed"}
+var guide: Dictionary = {}
 
 
 func set_flag(key: String, value: Variant) -> void:
@@ -42,6 +44,7 @@ func to_dict() -> Dictionary:
 		"flags": flags.duplicate(true),
 		"quests": quests.duplicate(true),
 		"memories_paid": Array(memories_paid),
+		"guide": guide.duplicate(true),
 	}
 
 
@@ -56,6 +59,9 @@ static func from_dict(d: Dictionary) -> GameState:
 	var q: Variant = d.get("quests", {})
 	if q is Dictionary:
 		s.quests = (q as Dictionary).duplicate(true)
+	var g: Variant = d.get("guide", {})
+	if g is Dictionary:
+		s.guide = (g as Dictionary).duplicate(true)
 	var m: Variant = d.get("memories_paid", [])
 	if m is Array:
 		for item: Variant in (m as Array):

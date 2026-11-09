@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    {"id": "stair_arrows", "chapter": "ch1", "wrong_when": {"flag": "ch1.stair_trap_sprung"}},
+    {"id": "city_of_monsters", "chapter": "ch1", "wrong_when": {"flag": "ch1.met_kord"}},
+    {"id": "sealed_door", "chapter": "ch1", "wrong_when": {"flag": "ch1.door_opened"}},
+    {"id": "purifier", "chapter": "ch1", "wrong_when": {"flag": "ch1.saw_empty_furnace"}},
+    {"id": "usurper", "chapter": "ch2", "wrong_when": {"flag": "ch2.usurper_crossed_out"}},
+    {"id": "burn_route", "chapter": "ch2", "wrong_when": {"flag": "ch2.read_wall_carvings"}}
+  ]
+}

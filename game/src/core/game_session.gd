@@ -8,6 +8,8 @@ extends RefCounted
 signal checkpoint_reached(checkpoint_id: String)
 signal stage_changed(quest_id: String, from_stage: String, to_stage: String)
 signal quest_completed(quest_id: String)
+## 攻略筆記有條目被推翻或證實：[{id, result, was_unsure}]（D-148）
+signal guide_changed(changes: Array[Dictionary])
 
 const MAIN_QUEST: String = "slice_main"
 const AUTO_SLOT: String = "auto"
@@ -15,6 +17,8 @@ const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
 const DEFAULT_SAVE_DIR: String = "user://saves"
 
 var db: QuestDB
+## 攻略筆記的條目定義（共用一份）
+var guide: GuideNotes = GuideNotes.load_default()
 var save_dir: String
 var state: GameState
 var quests: QuestRunner
@@ -55,7 +59,13 @@ func add_stat(key: String, amount: int = 1) -> void:
 
 ## 重新檢查任務條件；有進入新檢查點就自動存檔。
 func advance() -> Array[Dictionary]:
+	# 攻略筆記先推翻：任務與對話可以用 {"guide": id, "is": "wrong"} 判斷
+	var guide_changes: Array[Dictionary] = guide.evaluate(state)
 	var changes: Array[Dictionary] = quests.evaluate()
+	# 任務效果可能剛寫下條目（guide_write），而推翻條件早就成立
+	guide_changes.append_array(guide.evaluate(state))
+	if not guide_changes.is_empty():
+		guide_changed.emit(guide_changes)
 	check_achievements()
 	if _autosave_pending:
 		_flush_autosave()

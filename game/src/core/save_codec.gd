@@ -4,7 +4,7 @@ extends RefCounted
 ## 每次改格式：CURRENT_VERSION +1，並在 _migrate_step 加一段舊版 → 新版的轉換與測試。
 ## 寫檔先寫 .tmp 再改名，舊檔保留為 .bak，避免當機時毀掉存檔。
 
-const CURRENT_VERSION: int = 1
+const CURRENT_VERSION: int = 2
 
 enum Status { OK, NOT_FOUND, CORRUPT, TOO_NEW }
 
@@ -58,6 +58,11 @@ static func _migrate_step(from_version: int, data: Dictionary) -> Dictionary:
 					state[key] = data[key]
 					data.erase(key)
 			data["state"] = state
+		1:
+			# v1 → v2（第 36 輪，D-148）：多了攻略筆記 state.guide。切片的存檔還沒寫下任何條目。
+			var st: Variant = data.get("state", null)
+			if st is Dictionary and not (st as Dictionary).has("guide"):
+				(st as Dictionary)["guide"] = {}
 	return data
 
 
