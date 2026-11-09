@@ -103,6 +103,8 @@ const ISA_WINDOW: Vector3 = Vector3(3.7, 0.0, -7.6)
 const CURTAIN_TALK_RANGE: float = 2.2
 ## 過場時諾恩站在窗的北邊一點（從大家背後看窗的鏡頭不會被他擋住）
 const NOEN_WINDOW: Vector3 = Vector3(2.4, 0.0, -10.6)
+## 席菈站在諾恩的北邊（不擋從大家背後看窗的鏡頭、也不擋看完之後的過肩鏡頭）
+const SHEILA_WINDOW: Vector3 = Vector3(1.5, 0.0, -12.0)
 const CURTAIN_TALK: String = "ch2_curtain"
 const EYE_CUTSCENE: String = "ch2_eye"
 ## 窗外：屏障的冷光網格、後面那面「黑牆」（眼睛）；都不受燈光影響
@@ -114,7 +116,7 @@ const BARRIER_PLANE: Vector2 = Vector2(12.0, 9.0)
 ## 瞳孔收到多窄（0＝一道縫）
 const PUPIL_NARROW: float = 0.15
 const COLD: Color = Color(0.55, 0.78, 1.0)
-const BARRIER_LIGHT_ENERGY: float = 1.3
+const BARRIER_LIGHT_ENERGY: float = 2.2
 const CURTAIN_CLOTH: Color = Color(0.3, 0.11, 0.09)
 ## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
 const ISA_INSIGHT_RANGE: float = 9.0
@@ -1447,6 +1449,10 @@ func _noen_to_window() -> void:
 	if player != null:
 		var to: Vector3 = Vector3(EYE_X, 0.0, WINDOW_Z) - NOEN_WINDOW
 		_put(player, NOEN_WINDOW, atan2(-to.x, -to.z))
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		ally.global_position = SHEILA_WINDOW + Vector3(0, 0.05, 0)
+		_face(ally, Vector3(EYE_X, 0.0, WINDOW_Z))
 
 
 ## 伊薩走到窗邊（面向窗）；walk＝慢慢走過去（紋路看完那時），否則直接站好。
