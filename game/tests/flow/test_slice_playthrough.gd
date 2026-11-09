@@ -359,6 +359,18 @@ func _chapter1_day(tavern: StoryLevel, paid_arch: bool) -> void:
 	await _run_dialogue(town, 0)
 	assert_eq(s.state.get_flag("ch1.saw_north_day"), true, "北街的對話講完")
 	assert_eq(s.quests.stage_of("ch1_main"), "ada_lamp")
+	# D-170：回廣場的路上看死者名單（可以不看）
+	var board: DeadListBoard = town.get_node("DeadList") as DeadListBoard
+	await _step_into(_player(town), board.global_position + board.global_basis.z * 1.3, 3)
+	assert_true(board.is_near(), "走到名單前 → 提示")
+	assert_false(board.interact_hint().is_empty(), "提示「看名單」")
+	board.read()
+	assert_true(_game.call("is_in_dialogue"), "看名單 → 對話")
+	var count: int = DeadListBoard.dead_count(s.state)
+	assert_eq((_game.get("dialogue") as DialogueRunner).current_text(), "DLG_CH1_LIST_COUNT_%d" % count, "數到的張數跟切片結果一樣")
+	await _run_dialogue(town, 0)
+	assert_eq(s.state.get_flag("ch1.read_dead_list"), true, "看完名單")
+	assert_eq(s.quests.stage_of("ch1_main"), "ada_lamp", "看名單不影響主線")
 	var ada: Node3D = town.get_node("Ada") as Node3D
 	await _step_into(_player(town), ada.global_position + Vector3(0.0, 0.0, 1.6), 3)
 	assert_true(_game.call("is_in_dialogue"), "走到地窖門口 → 艾妲")
@@ -1480,6 +1492,16 @@ func _assert_day_town(town: StoryLevel, tag: String) -> void:
 	assert_eq(lit, 0, tag + " 路燈與攤子的燈不點")
 	for site: RescueSite in _rescue_sites(town):
 		assert_false(site.is_available(), tag + " 受困者不能再救")
+		# D-170：救出來的只剩碎石；沒救出來的蓋著布
+		assert_eq(site.is_covered(), not site.is_rescued(), tag + " 沒救出來的 %s 蓋著布" % site.site_id)
+	# D-170：梨販攤旁的死者名單，張數＝切片結果的死亡人數
+	var s: GameSession = _game.get("session") as GameSession
+	assert_true(town.has_node("DeadList"), tag + " 有死者名單")
+	var board: DeadListBoard = town.get_node("DeadList") as DeadListBoard
+	assert_eq(board.paper_count, DeadListBoard.dead_count(s.state), tag + " 名單的張數")
+	# 白天大部分的窗熄了
+	assert_true(int(town.get("day_unlit_windows")) > int(town.get("lit_window_count")), tag + " 白天大部分的窗熄了")
+	assert_true(int(town.get("lit_window_count")) > 0, tag + " 還有幾扇窗亮著")
 
 
 func _cleanup() -> void:

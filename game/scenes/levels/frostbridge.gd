@@ -48,6 +48,8 @@ const DEV_SPAWNS: Dictionary = {
 	"north": Vector3(0.0, RISE + 0.05, -32.0),
 	"south": Vector3(0.0, 0.05, 12.0),
 	"cross": Vector3(0.0, 0.05, 36.0),
+	# 白天：死者名單前（D-170）
+	"list": Vector3(2.6, 0.05, -5.3),
 }
 
 var look := FrostbridgeLook.new()
@@ -70,6 +72,10 @@ var roof_snow_lips: int = 0
 const ROOF_SNOW: float = 0.7
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
+## 白天的霜橋鎮（D-170）：晚上亮著的窗只留這個比例（屋裡有人點燈；其他人起床熄燈或出門了）
+const DAY_LIT_KEEP: float = 0.3
+## 白天熄掉的窗數（測試用）
+var day_unlit_windows: int = 0
 
 
 func _ready() -> void:
@@ -219,6 +225,12 @@ func dev_face_target(who: String) -> Node3D:
 			return arch_site
 		"ada":
 			return get_node_or_null("Ada") as Node3D
+		"list":
+			return get_node_or_null("DeadList") as Node3D
+		"shroud":
+			for n: Node in get_children():
+				if n is RescueSite and (n as RescueSite).is_covered():
+					return n as Node3D
 	return null
 
 
@@ -435,6 +447,9 @@ const NORTH_DAY_Z: float = -30.6
 const NORTH_DAY_SPOT: Vector3 = Vector3(0.0, RISE, -33.0)
 ## 艾妲站在地窖門旁（地窖口的南邊，面向廣場）
 const ADA_POS: Vector3 = Vector3(6.6, 0.0, -2.9)
+## 死者名單（D-170）：梨販攤西北邊的木板（廣場中央石圈外），正面朝北偏西（從北街走回廣場時迎面看到）
+const DEAD_LIST_POS: Vector3 = Vector3(3.1, 0.0, -3.6)
+const DEAD_LIST_YAW_DEG: float = 197.0
 
 ## 第 1 章的白天版本（不生切片的敵人、車隊與觸發；路燈不點）
 var day: bool = false
@@ -488,6 +503,15 @@ func _build_day() -> void:
 	var hammer: Node = ada.hand("R").get_node_or_null("BellHammer") if ada.hand("R") != null else null
 	if hammer != null:
 		hammer.queue_free()
+	# 死者名單（D-170）＋北街昨晚的現場：沒救出來的人蓋著布
+	var board := DeadListBoard.new()
+	board.name = "DeadList"
+	board.position = DEAD_LIST_POS
+	board.rotation_degrees.y = DEAD_LIST_YAW_DEG
+	add_child(board)
+	for n: Node in get_tree().get_nodes_in_group("rescue_sites"):
+		if is_ancestor_of(n):
+			(n as RescueSite).set_aftermath()
 	# 從入夜的酒館走出來是隔天早上
 	if Game.session.quests.stage_of(CH1_QUEST) == "day_north":
 		_banner.call_deferred("CH1_NEXT_MORNING", 3.5)
@@ -1220,7 +1244,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 			if f == 0 and absf(along - door_off) < 1.2:
 				continue
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4, 0)
-			var lit: bool = _rng.randf() < 0.4
+			var lit: bool = _day_window(_rng.randf() < 0.4, pos)
 			batch.add_box_tinted(_axis_size(dir, face, 0.7, 0.08, 0.9), pos, window_mat,
 				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
 			window_count += 1
@@ -1261,7 +1285,7 @@ func _upper_windows(batch: StaticBatch, front: Vector3, w: float, h: float, dir:
 		var size: Vector2 = Vector2(0.6, 0.75) if small else Vector2(0.7, 0.9)
 		for along: float in spots:
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4 - (0.08 if small else 0.0), 0)
-			var lit: bool = _house_hash(pos, 7.7) < 0.32
+			var lit: bool = _day_window(_house_hash(pos, 7.7) < 0.32, pos)
 			batch.add_box_tinted(_axis_size(dir, face, size.x, 0.08, size.y), pos, window_mat,
 				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
 			window_count += 1
@@ -1381,6 +1405,16 @@ func _roof_snow_lip(batch: StaticBatch, roof_basis: Basis, origin: Vector3, cent
 
 
 ## 房子裝飾用的位置雜湊（0～1，不動 _rng）。
+## 白天的窗（D-170）：晚上亮的窗只留 DAY_LIT_KEEP 的比例（位置雜湊，不動 _rng，整個鎮的配置不變）。
+func _day_window(lit_at_night: bool, pos: Vector3) -> bool:
+	if not day or not lit_at_night:
+		return lit_at_night
+	if _house_hash(pos, 5.3) < DAY_LIT_KEEP:
+		return true
+	day_unlit_windows += 1
+	return false
+
+
 static func _house_hash(p: Vector3, salt: float) -> float:
 	return fposmod(sin(p.x * 12.9898 + p.y * 4.1414 + p.z * 78.233 + salt * 37.719) * 43758.5453, 1.0)
 
@@ -1727,11 +1761,12 @@ func _build_bell_tower(pos: Vector3) -> void:
 	# 塔門與塔窗的暖光
 	_batch.add_box_at(Vector3(1.4, 2.4, 0.1), pos + Vector3(0, 1.2, 2.52), look.glow(FrostbridgeLook.LAMP, 2.5), false)
 	var tower_window: Vector3 = pos + Vector3(0, 9.5, 2.52)
-	var tower_tint: Color = FrostbridgeLook.window_tint(true, tower_window, 4.0)
+	var tower_tint: Color = FrostbridgeLook.window_tint(_day_window(true, tower_window), tower_window, 4.0)
 	tower_tint.b = 0.0  # 塔窗不拉窗簾
 	_batch.add_box_tinted(Vector3(1.0, 1.6, 0.1), tower_window, look.window(), tower_tint)
 	window_count += 1
-	lit_window_count += 1
+	if tower_tint.r > 0.5:
+		lit_window_count += 1
 	var l := OmniLight3D.new()
 	l.name = "BellLight"
 	l.light_color = FrostbridgeLook.LAMP

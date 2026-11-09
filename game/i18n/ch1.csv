@@ -175,3 +175,17 @@ DLG_CH1_RABBIT_007,"(The corner of her mouth moved, just a little. Under the whi
 DLG_CH1_RABBIT_008,"Eyes on the road, Mr. Guidebook.",看路，攻略先生。
 DLG_CH1_PILLAR_001,(I walked straight into a pillar.),（我撞上了柱子。）
 DLG_CH1_PILLAR_002,"(Behind me, Misha laughed so hard she had to hold on to the clock case.)",（彌夏在後面笑得扶住鐘箱。）
+CH1_DEAD_LIST_HINT,Press {key} — read the names,按 {key}　看名單
+DLG_CH1_LIST_COUNT_31,"The board beside the pear stall is covered in paper, one name to a sheet. I count them. Thirty-one.",梨販攤旁邊的木板貼滿了紙，一張一個名字。我數了一下，三十一張。
+DLG_CH1_LIST_COUNT_30,"The board beside the pear stall is covered in paper, one name to a sheet. I count them. Thirty.",梨販攤旁邊的木板貼滿了紙，一張一個名字。我數了一下，三十張。
+DLG_CH1_LIST_COUNT_29,"The board beside the pear stall is covered in paper, one name to a sheet. I count them. Twenty-nine.",梨販攤旁邊的木板貼滿了紙，一張一個名字。我數了一下，二十九張。
+DLG_CH1_LIST_COUNT_33,"The board beside the pear stall is covered in paper, one name to a sheet. I count them. Thirty-three.",梨販攤旁邊的木板貼滿了紙，一張一個名字。我數了一下，三十三張。
+DLG_CH1_LIST_GUIDE,"In the guide it was one line: ""Frostbridge Incident — 31 dead.""",攻略上只有一行：「霜橋鎮事件，死亡三十一人。」
+DLG_CH1_LIST_DIFF_31,Same as the guide. Not one off.,跟攻略寫的一樣。一個不差。
+DLG_CH1_LIST_DIFF_30,One fewer than the guide. That one was still alive this morning.,比攻略少一張。那個人今天早上還活著。
+DLG_CH1_LIST_DIFF_29,Two fewer than the guide. Those two were still alive this morning.,比攻略少兩張。那兩個人今天早上還活著。
+DLG_CH1_LIST_DIFF_33,Two more than the guide. The two from the cart.,比攻略多兩張。是車上那兩個人。
+DLG_CH1_LIST_NORTH_NONE,Not one sheet says North Street.,寫著「北街」的，一張都沒有。
+DLG_CH1_LIST_NORTH_ONE,The last sheet says North Street. The one I didn't get out last night.,最下面那張寫著「北街」。昨晚我沒拉出來的那個人。
+DLG_CH1_LIST_NORTH_MANY,The last few sheets say North Street. The ones I didn't get out last night.,最下面那幾張寫著「北街」。昨晚我沒拉出來的人。
+DLG_CH1_LIST_SHEILA,Ada says a name has to be written down by someone. Otherwise all that's left is a number.,艾妲說，名字要有人寫下來。不然最後只剩一個數字。

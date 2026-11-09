@@ -19,6 +19,9 @@ var hold: float = 0.0
 var _player: PlayerController
 var _rubble: Node3D
 var _person: Node3D
+var _lamp: Node3D
+var _glow: OmniLight3D
+var _shroud: MeshInstance3D
 var _prompt_on: bool = false
 var _done: bool = false
 ## 搬瓦礫的刮石聲間隔與次數（測試用）
@@ -121,6 +124,88 @@ func rescue() -> void:
 	rescued.emit(site_id)
 
 
+## 第 1 章白天的霜橋鎮（D-170）：昨晚的現場隔天早上的樣子。掉在一旁的提燈熄了、收走了；
+## 沒救出來的人已經被挖出來，躺在原地、蓋著一塊布（瓦礫推到旁邊）。救出來的點照舊只剩散開的碎石。
+func set_aftermath() -> void:
+	_lamp.visible = false
+	_glow.visible = false
+	if _done or _shroud != null:
+		return
+	_show_cleared()
+	_shroud = MeshInstance3D.new()
+	_shroud.name = "Shroud"
+	_shroud.mesh = shroud_mesh()
+	var cloth := StandardMaterial3D.new()
+	# 舊毛毯的暗紅褐（米白的布在雪地上幾乎看不見）
+	cloth.albedo_color = Color(0.4, 0.29, 0.24)
+	cloth.roughness = 0.97
+	_shroud.material_override = cloth
+	# 每個人擺的方向不太一樣（±25°）
+	_shroud.rotation.y = deg_to_rad(float(absi(hash(site_id)) % 50) - 25.0)
+	# 挖出來之後往街中間挪一點（離開塌下來的牆腳，從街上看得到）
+	if is_inside_tree():
+		_shroud.position.x = -signf(global_position.x) * 0.7
+	add_child(_shroud)
+
+
+func is_covered() -> bool:
+	return _shroud != null and _shroud.visible
+
+
+## 蓋在人身上的布（高度場，本地座標：長邊沿 Z，頭在 -Z）：身體用幾個橢球的包絡（頭、胸、腰、兩條腿、腳尖）
+## 撐起來，布往外多垂一圈、慢慢落到地面，落地的地方有幾道皺褶。
+static func shroud_mesh() -> ArrayMesh:
+	const HALF_X: float = 0.55
+	const HALF_Z: float = 1.12
+	const NX: int = 22
+	const NZ: int = 44
+	# [中心 x, 中心 z, 半寬, 半長, 高]
+	var parts: Array[PackedFloat32Array] = [
+		PackedFloat32Array([0.0, -0.78, 0.12, 0.13, 0.2]),
+		PackedFloat32Array([0.0, -0.36, 0.23, 0.3, 0.24]),
+		PackedFloat32Array([0.0, 0.02, 0.2, 0.16, 0.2]),
+		PackedFloat32Array([-0.1, 0.45, 0.09, 0.36, 0.14]),
+		PackedFloat32Array([0.1, 0.45, 0.09, 0.36, 0.14]),
+		PackedFloat32Array([-0.1, 0.86, 0.06, 0.06, 0.17]),
+		PackedFloat32Array([0.1, 0.86, 0.06, 0.06, 0.17]),
+	]
+	var heights := PackedFloat32Array()
+	heights.resize((NX + 1) * (NZ + 1))
+	for j: int in NZ + 1:
+		for i: int in NX + 1:
+			var x: float = lerpf(-HALF_X, HALF_X, float(i) / NX)
+			var z: float = lerpf(-HALF_Z, HALF_Z, float(j) / NZ)
+			var h: float = 0.0
+			var near: float = 0.0
+			for p: PackedFloat32Array in parts:
+				# 布比身體寬一圈（+0.09 m），用平滑的鐘形落下，兩腿之間被布撐平
+				var dx: float = (x - p[0]) / (p[2] + 0.09)
+				var dz: float = (z - p[1]) / (p[3] + 0.09)
+				var r: float = sqrt(dx * dx + dz * dz)
+				var k: float = 1.0 - smoothstep(0.0, 1.0, r)
+				h = maxf(h, p[4] * sqrt(maxf(k, 0.0)))
+				near = maxf(near, 1.0 - smoothstep(0.8, 1.6, r))
+			# 落地的布：幾道皺褶，邊緣貼地
+			var fold: float = (sin(x * 23.0 + z * 6.0) * 0.5 + 0.5) * 0.012 + (sin(z * 17.0 - x * 9.0) * 0.5 + 0.5) * 0.008
+			var edge: float = minf(minf(HALF_X - absf(x), HALF_Z - absf(z)) / 0.12, 1.0)
+			heights[j * (NX + 1) + i] = maxf(h, fold * (1.0 - near * 0.6) * edge) + 0.012
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for j: int in NZ:
+		for i: int in NX:
+			var quad: Array[Vector3] = []
+			for o: Vector2i in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1)]:
+				var ii: int = i + o.x
+				var jj: int = j + o.y
+				quad.append(Vector3(lerpf(-HALF_X, HALF_X, float(ii) / NX), heights[jj * (NX + 1) + ii],
+					lerpf(-HALF_Z, HALF_Z, float(jj) / NZ)))
+			# 從上往下看是順時針（Godot 的正面）
+			for v: Vector3 in [quad[0], quad[1], quad[2], quad[0], quad[2], quad[3]]:
+				st.add_vertex(v)
+	st.generate_normals()
+	return st.commit()
+
+
 func _show_cleared() -> void:
 	_person.visible = false
 	for c: Node in _rubble.get_children():
@@ -185,7 +270,9 @@ func _build() -> void:
 	lamp.material_override = lamp_mat
 	lamp.position = Vector3(0.9, 0.1, 0.5)
 	_rubble.add_child(lamp)
+	_lamp = lamp
 	var glow := OmniLight3D.new()
+	_glow = glow
 	glow.light_color = Color(0.95, 0.72, 0.42)
 	glow.light_energy = 1.5
 	glow.omni_range = 3.6
