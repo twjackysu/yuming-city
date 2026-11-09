@@ -8,7 +8,7 @@
 - 段落 2「他自願的」：看穿劃完、放開之後開始；**沒去看穿的玩家**坐著沉默 12 秒也會開始（原作「伊薩沒有立刻回答」的停頓，不讓人卡住）。選項「鐘的事……是我做的。對不起。」／（什麼都沒說）記 `ch2.noen_apologized`（08 說的第 5 章伊薩交出城主印時的台詞）；伊薩回「……先吃吧。湯要涼了。」→「桌上的湯慢慢涼了。」→「跟我來。妳該見他一面。」→ 檢查點 `ch2_volunteer` → 鐘院內室待續。
 - 刪除線自己畫（Label＋ColorRect）：RichTextLabel 的 `[s]` 在截圖裡畫不出線（字型子集的刪除線粗細大概是 0），第一次截圖只看到字變淡。
 - 理由：08 定的「看穿第一次看錯」是第 2 章唯一的新玩法，要在按住的手感裡發生（不是過場）；D-143 說不給「我殺過你四百多次」的選項，所以原作那句獨白也不放進飯桌的對話，讓劃字自己說。
-- 影響：`src/ui/strike_card.gd`；`bell_hall.gd` 的 `update_isa_insight()`、`interact_hint()`、`SILENCE_SEC`、`silence`；對話 `ch2_volunteer`；開發旗標 `--hall-at=seated`、`--hall-insight=秒`；CI 盤點截圖 `20-ch2-isa-insight`。桌上的湯冒煙變少（08 的「時間流逝的演出」）還沒做。
+- 影響：`src/ui/strike_card.gd`；`bell_hall.gd` 的 `update_isa_insight()`、`interact_hint()`、`SILENCE_SEC`、`silence`；對話 `ch2_volunteer`；開發旗標 `--hall-at=seated`、`--hall-insight=秒`；CI 盤點截圖 `20-ch2-isa-insight`。「桌上的湯慢慢涼了」：粥鍋上幾縷熱氣（`PorridgeSteam`），坐下之後 24 秒內淡到 0.12，「他自願的」講完就是涼的（03b132a）。
 
 ## D-157　2026-11-09　第 1 章在鐘院門口結束；第 2 章「城主的飯桌」另開關卡「鐘院」（bell_hall）
 

@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 42 輪）的程式 commit：79ed43e 第 1 章結尾＋第 2 章飯桌（run 42587923930 全綠）、25219e8 看穿伊薩（run 42589085968）、533ca34 段落 2（run 42589500676）——後兩個的結果見 PROGRESS 第 42 輪的收尾補記，**開工先看整個綠燈**；screens 的 `18-ch2-table`、`19-ch2-hall`、`20-ch2-isa-insight` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 324 個測試）。
+- 上一輪（第 42 輪）的程式 commit：79ed43e 第 1 章結尾＋第 2 章飯桌（run 42587923930 全綠）、25219e8 看穿伊薩（run 42589085968：「測試與匯出」全綠，盤點截圖收尾時還在跑）、533ca34 段落 2（run 被下一個取代）、03b132a 湯慢慢涼（**run 42590378750 收尾時還在排隊——開工先看整個綠燈**，紅了看 log 修）；screens 的 `18-ch2-table`、`19-ch2-hall`、`20-ch2-isa-insight` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 324 個測試）。
 - 第 41 輪的程式 commit：84389e8 段落 8 晚餐（run 42580729105）、3ad9e6e 屋裡的構圖（run 被取消，內容在下一個裡）、d41419f 段落 9 兔子（**run 42581764946：測試、匯出、盤點截圖已綠，smoke test 與打包收尾時還在跑——開工先看整個綠燈**；screens 的 `16-ch1-dinner`、`17-ch1-bell-yard-road` 第 41 輪已看過）。開工照常先跑 `scripts/check.sh`（最後 322 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 40 輪的 run 都被 Jacky 的 c3059c8 run 42576367758 取代、已全綠（第 41 輪開工確認）。latest 的 `achievement-icons.zip` 第 41 輪看過：8 個成就 × 已解鎖／未解鎖，256×256，圖案都清楚。**第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
 - 第 39 輪的 d497b9d run 42570417322、2089466 run 42569871509 已全綠（第 40 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
@@ -95,7 +95,8 @@
   - 看穿伊薩：`StrikeCard`（`src/ui/strike_card.gd`：`setup(lines, truth, done)`、`advance(delta)`、`struck_count()`、`is_done()`、訊號 `finished`、`split_struck()`；刪除線是 Label 底下的 ColorRect，不要用 RichTextLabel 的 `[s]`）；關卡的 `update_isa_insight(delta, active)`、`strike_card()`、`interact_hint()`（「按住 V　看穿伊薩」）。劃完設 `ch2.usurper_crossed_out`。
   - 段落 2：`ch2_volunteer`（看穿劃完放開，或沉默 `SILENCE_SEC` 12 秒；`silence` 可以在測試裡直接設）；選項記 `ch2.noen_apologized`；講完 `ch2.volunteer_talked` → 階段 `inner_room`（done_when `ch2.inner_room_entered` 還沒有人設；現在顯示「待續」）。
   - 截圖 `--level=bell_hall [--hall-at=table|seated] [--hall-insight=秒]`（一張約 30 秒）。流程測試 `_chapter2()`＋`_assert_bell_hall()`（兩條路線：看穿＋道歉／沉默＋不說話）。
-  - 還可以：桌上的湯冒煙變少（08「湯慢慢涼了」的時間流逝演出：粥鍋上加 `ParticleLook` 的白煙，段落 2 開始後慢慢變淡）；程序人偶沒有坐姿（大家站在桌邊）；伊薩拉椅子只有椅子往後滑，沒有手的動作。
+  - 湯慢慢涼了（03b132a）：粥鍋 `PorridgeSteam`（`ParticleLook` 白煙），坐下之後 `COOL_SEC` 24 秒內淡到 `STEAM_COLD`，`ch2.volunteer_talked` 之後就是涼的；`steam_level` 可以在測試裡讀。白牆前的白煙不太明顯，美術後補時可以考慮深一點的背景。
+  - 還可以：程序人偶沒有坐姿（大家站在桌邊）；伊薩拉椅子只有椅子往後滑，沒有手的動作。
 - **下一步（依序）**：
   1. **第 2 章段落 3 鐘院內室**（照 08）：走到 `InnerDoor`（marker）→ 設 `ch2.inner_room_entered` → 內室（建議蓋在同一個關卡的北邊，門打開走進去，或照柯德家的做法黑一下換到 x=40 的室內）。黎歐坐在銅椅（主椅）上、背後十幾條細管接進牆上的巨大鐘盤；**全章唯一的暖光**（銅椅與鐘盤反光、細管裡慢慢流動的微光＝被抽走的壽命，可以用 emission＋UV 捲動的 shader）。過場（可跳過，`CutsceneRunner`）：「妳剪頭髮了。」→「我信裡說別來，魚是不是把那段吃掉了？」→ 彌夏一巴掌、捧住他的臉。新名詞「主椅」已在 06。檢查點建議 `ch2_inner`。之後段落 4 牆上的紋路（4 塊浮雕，`ch2.read_wall_carvings` 推翻 `burn_route`）、段落 5 窗簾與眼睛（吞日獸）。
   2. 第 2 章段落 4、5（牆上的紋路、窗簾後的眼睛），然後第 3 章（08）。
