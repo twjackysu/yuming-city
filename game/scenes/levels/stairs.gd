@@ -651,9 +651,10 @@ func _build_bottom() -> void:
 	_door_pivot.name = "GateDoorPivot"
 	_door_pivot.position = door_at + Vector3(-0.05, 0.0, -0.55)
 	add_child(_door_pivot)
-	var leaf := _box_at("GateDoorLeaf", Vector3(0.08, 2.1, 1.1), Vector3.ZERO, _mat(WOOD, 0.8), false)
+	var leaf := _box_at("GateDoorLeaf", Vector3(0.08, 2.1, 1.1), Vector3.ZERO, gate_door_mat(), false)
 	leaf.reparent(_door_pivot, false)
 	leaf.position = Vector3(0.0, 1.05, 0.55)
+	_gate_door_detail(door_at)
 	var leaf_body := StaticBody3D.new()
 	leaf_body.name = "GateDoorLeafBody"
 	var leaf_shape := CollisionShape3D.new()
@@ -722,3 +723,49 @@ func step_mat(flight: int, step: int) -> StandardMaterial3D:
 		for d: float in STEP_SHADES:
 			_step_mats.append(_mat(STONE.lightened(d) if d > 0.0 else STONE.darkened(-d), 0.92))
 	return _step_mats[(flight * 7 + step * 3 + (step / 5)) % _step_mats.size()]
+
+
+# ---------------------------------------------------------------- 樓梯底的門（第 57 輪，D-175）
+# 之前是一塊素色木板：換成直排木板（跟白晝城的門同一種）、兩道帶鏽的鐵帶＋一個鐵環把手（跟著門板一起轉），
+# 門洞兩側深色木門框＋上面一塊石門楣（樓梯井這一側）。白晝城那一側的門洞、通道與靠牆的門板在 daylight.gd（同一扇門）。
+
+const GATE_IRON: Color = Color(0.3, 0.23, 0.18)
+## 鐵帶的高度（門板底起算）
+const GATE_STRAPS: PackedFloat32Array = [0.35, 1.75]
+## 門框中心離門洞中心（門板寬 1.1；門打開時門板貼著 -Z 那根門框內側）
+const GATE_CASING_HALF: float = 0.66
+
+
+func gate_door_mat() -> ShaderMaterial:
+	return interior.plank("stairs_gate_door", WOOD, 0.2, 4.0, {"vertical_planks": true, "seam_dark": 0.8})
+
+
+func _gate_door_detail(door_at: Vector3) -> void:
+	var iron := _mat(GATE_IRON, 0.7)
+	iron.metallic = 0.45
+	for i: int in GATE_STRAPS.size():
+		var strap := MeshInstance3D.new()
+		strap.name = "GateDoorStrap%d" % i
+		var sm := BoxMesh.new()
+		sm.size = Vector3(0.02, 0.07, 1.0)
+		strap.mesh = sm
+		strap.material_override = iron
+		strap.position = Vector3(-0.05, GATE_STRAPS[i], 0.55)
+		_door_pivot.add_child(strap)
+	var ring := MeshInstance3D.new()
+	ring.name = "GateDoorRing"
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.045
+	tm.outer_radius = 0.065
+	tm.rings = 12
+	tm.ring_segments = 6
+	ring.mesh = tm
+	ring.material_override = iron
+	ring.position = Vector3(-0.07, 1.0, 0.92)
+	ring.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+	_door_pivot.add_child(ring)
+	# 門框（樓梯井這一側）：兩根深色木柱＋石門楣
+	var frame := _mat(WOOD.darkened(0.35), 0.85)
+	for k: int in [-1, 1]:
+		_box_at("GateDoorFrame", Vector3(0.12, 2.2, 0.12), door_at + Vector3(-0.07, 1.1, float(k) * GATE_CASING_HALF), frame, false)
+	_box_at("GateDoorLintel", Vector3(0.18, 0.28, 1.6), door_at + Vector3(-0.09, 2.34, 0.0), landing_mat(), false)

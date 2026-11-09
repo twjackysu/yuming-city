@@ -23,3 +23,15 @@ func test_steps_vary_without_rng() -> void:
 	assert_eq(seen.size(), 3, "同一段樓梯裡三種深淺都有")
 	assert_true(lv.call("step_mat", 2, 5) == lv.call("step_mat", 2, 5), "同一階永遠同一個材質（不靠 _rng）")
 	lv.free()
+
+
+## 第 57 輪（D-175）：樓梯底的門是直排木板＋鐵帶（之前是素色木板）；鐵帶在門板高度裡、門框在門板外
+func test_gate_door_planks_and_straps() -> void:
+	var lv: Node = (load(STAIRS) as GDScript).new() as Node
+	var m: ShaderMaterial = lv.call("gate_door_mat") as ShaderMaterial
+	assert_true(bool(m.get_shader_parameter("vertical_planks")), "門是直排木板")
+	var consts: Dictionary = (load(STAIRS) as GDScript).get_script_constant_map()
+	for y: float in consts["GATE_STRAPS"] as PackedFloat32Array:
+		assert_true(y > 0.1 and y < 2.0, "鐵帶 %.2f 在門板上" % y)
+	assert_true(float(consts["GATE_CASING_HALF"]) > 0.55 + 0.06, "門框在門板（半寬 0.55）外面，開門時不穿過門框")
+	lv.free()
