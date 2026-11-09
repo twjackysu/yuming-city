@@ -4,7 +4,8 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 35 輪）最後一次程式 push 40fb598 的 run 42547679767（收尾時見 PROGRESS 收尾補記）；開工照常先跑 `scripts/check.sh`。第 35 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 295 個測試）與截圖：30c0a49 廣場石板（D-144）、bccfbc9 商店截圖（D-145）、40fb598 看穿小卡（D-146，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 35 輪）最後一次程式 push 40fb598 的 run 42547679767 **已經整個綠燈**（收尾時確認，screens／latest 都是 40fb598）；開工照常先跑 `scripts/check.sh`。第 35 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 295 個測試）與截圖：30c0a49 廣場石板（D-144）、bccfbc9 商店截圖（D-145）、40fb598 看穿小卡（D-146，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- **小修（下一個程式 commit 順手）**：`scripts/store-shots.ps1` 裡 `$flags = $parts[2..($parts.Length - 1)]` 要包成陣列 `@(...)`——清單某行只有一個旗標時 PowerShell 會變成字串，後面的 `+=` 會把旗標黏成一串。現在每行都有兩個以上旗標，不會出事。
 - **screens 有新的建置後**看：`03`、`04` 廣場前景的石板亮暗不一、有幾顆整顆暗（下陷積水）、一圈圈的縫在中距離就淡掉，不像靶心（D-144；太花就調 `wet_cobble.gdshader` 的 `sunken_share` 0.16、`dark_share` 0.1、`grit_amount` 0.45，圈太糊就調 `FrostbridgeLook.ARC_FAR_FADE` 1.9）；`11` 看穿小卡在送葬者鐵架右柱的右邊（D-146）。latest 的 Windows zip 裡要有 `store-shots.ps1` 與 `store_shots.txt`（D-145；CI「打包」步驟會先用 pwsh 檢查 ps1 語法，log 裡有「store-shots.ps1 語法 OK」）。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
