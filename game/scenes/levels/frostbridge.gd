@@ -469,6 +469,11 @@ func _build_day() -> void:
 	look.unlight(FrostbridgeLook.LAMP)
 	if arch_site != null:
 		arch_site.set_physics_process(false)
+	# 目標指引（stairs 階段）：地窖口；一百七十二階裡同名的點在樓梯底
+	var down := Marker3D.new()
+	down.name = "StairsDown"
+	down.position = CELLAR_POS + Vector3(0, 1.0, 0)
+	add_child(down)
 	var spot := Marker3D.new()
 	spot.name = "NorthDaySpot"
 	spot.position = NORTH_DAY_SPOT + Vector3(0, 1.0, 0)
@@ -502,10 +507,10 @@ func _update_day() -> void:
 				Game.start_dialogue("ch1_ada_lamp")
 
 
-## 拿著油燈走進地窖：段落 5（一百七十二階）還沒做——先顯示「待續」。
+## 拿著油燈走進地窖 → 段落 5：一百七十二階（D-152）。
 func _on_day_cellar() -> void:
 	if Game.session.quests.stage_of(CH1_QUEST) == "stairs":
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+		Game.go_to_level.call_deferred("stairs")
 
 
 # ---------------------------------------------------------------- 送葬者戰

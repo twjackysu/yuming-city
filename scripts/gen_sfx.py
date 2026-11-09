@@ -8,6 +8,8 @@
 - slash：席菈斷劍。帶通噪音＋金屬泛音。
 - whoosh：閃避風聲。慢起慢落的低通噪音。
 - ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
+- water_splash：一桶髒水從天花板倒下來（第 1 章一百七十二階）。木桶「咚」＋一陣低通噪音的嘩啦，尾巴是幾聲滴水。
+- child_laugh：樓梯深處小孩的笑聲（第 1 章）。高音的「哈、哈、哈」：脈衝串經過兩個母音共振峰，加長的回音當作「很遠、在石階下面」。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -201,6 +203,74 @@ def ui_tick(seconds=0.14, seed=17):
     return out
 
 
+def water_splash(seconds=1.6, seed=19):
+    """一桶髒水倒下來：木桶翻倒的悶響＋嘩啦（低通噪音，快起慢落）＋幾滴水。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    gush = onepole_lp(hp(noise(n, rng), 120), 2600)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = min(t / 0.03, 1.0) * math.exp(-max(t - 0.15, 0.0) * 3.2)
+        # 水一波一波落下：慢速的幅度起伏
+        wob = 0.75 + 0.25 * math.sin(2 * math.pi * 7.0 * t + rng.uniform(-0.2, 0.2))
+        out.append(gush[i] * env * wob * 1.2)
+    knock = thump(0.25, 110, 60, seed=seed + 1)
+    for i, v in enumerate(knock):
+        out[i] += 0.5 * v
+    for k in range(6):
+        start = int(rng.uniform(0.7, seconds - 0.08) * RATE)
+        f = rng.uniform(900, 1500)
+        for j in range(int(0.05 * RATE)):
+            if start + j < n:
+                tt = j / RATE
+                out[start + j] += 0.18 * math.sin(2 * math.pi * (f + 2400 * tt) * tt) * math.exp(-tt * 70)
+    return out
+
+
+def child_laugh(seconds=1.9, seed=23):
+    """遠處小孩的笑聲：五聲「哈」（音高略往下）、聲門脈衝經過 /a/ 的兩個共振峰，加三道回音（石階深處）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    dry = [0.0] * n
+    beats = [0.0, 0.17, 0.33, 0.5, 0.7]
+    for b, start_t in enumerate(beats):
+        f0 = 430.0 - b * 18.0 + rng.uniform(-8, 8)
+        length = 0.12 + rng.uniform(0.0, 0.03)
+        phase = 0.0
+        start = int(start_t * RATE)
+        for j in range(int(length * RATE)):
+            i = start + j
+            if i >= n:
+                break
+            t = j / RATE
+            env = math.sin(math.pi * t / length) ** 1.5
+            phase += f0 * (1.0 - 0.15 * t / length) / RATE
+            # 聲門脈衝：幾個諧波，強度往高頻遞減
+            v = sum(math.sin(2 * math.pi * h * phase) / h for h in range(1, 9))
+            dry[i] += v * env + 0.25 * rng.uniform(-1, 1) * env  # 一點氣音
+    # 母音 /a/ 共振峰（約 1000 Hz、1600 Hz）：兩個簡單的帶通疊起來
+    def bandpass(xs, f, q):
+        w = 2 * math.pi * f / RATE
+        r = math.exp(-w / (2 * q))
+        a1, a2 = -2 * r * math.cos(w), r * r
+        y1 = y2 = 0.0
+        out = []
+        for x in xs:
+            y = (1 - r) * x - a1 * y1 - a2 * y2
+            y2, y1 = y1, y
+            out.append(y)
+        return out
+    voiced = [a + 0.6 * b for a, b in zip(bandpass(dry, 1000, 5), bandpass(dry, 1600, 6))]
+    voiced = onepole_lp(voiced, 3000)
+    out = [v * 0.35 for v in voiced]
+    for delay, gain in [(0.11, 0.45), (0.23, 0.3), (0.37, 0.18)]:
+        d = int(delay * RATE)
+        for i in range(n - d):
+            out[i + d] += voiced[i] * gain * 0.35
+    return onepole_lp(out, 2400)
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -215,6 +285,8 @@ def main():
         write("iron_clang", clang()),
         write("ignite", ignite()),
         write("ui_tick", ui_tick()),
+        write("water_splash", water_splash()),
+        write("child_laugh", child_laugh()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

@@ -21,15 +21,17 @@ const LEVELS: Dictionary = {
 	"sandbox": "res://scenes/dev/sandbox.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
 	"tavern": "res://scenes/levels/tavern.tscn",
+	"stairs": "res://scenes/levels/stairs.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
 const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_tavern": "tavern",
 	"ch1_dinner": "tavern",
 	"ch1_map_done": "tavern",
-	# 段落 4：白天的霜橋鎮（D-151）；ch1_lamp 等一百七十二階做好後換成那個關卡
+	# 段落 4：白天的霜橋鎮（D-151）；拿到油燈之後是一百七十二階（D-152）
 	"ch1_day_town": "frostbridge",
-	"ch1_lamp": "frostbridge",
+	"ch1_lamp": "stairs",
+	"ch1_stairs_bottom": "stairs",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

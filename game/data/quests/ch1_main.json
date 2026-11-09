@@ -58,9 +58,18 @@
       "id": "stairs",
       "objective": "Q_CH1_OBJ_STAIRS",
       "checkpoint": "ch1_lamp",
-      "marker": "node:CellarTrigger",
+      "marker": "node:StairsDown",
       "done_when": {
         "flag": "ch1.stairs_bottom"
+      }
+    },
+    {
+      "id": "daylight_gate",
+      "objective": "Q_CH1_OBJ_GATE",
+      "checkpoint": "ch1_stairs_bottom",
+      "marker": "node:GateDoor",
+      "done_when": {
+        "flag": "ch1.door_opened"
       }
     }
   ]

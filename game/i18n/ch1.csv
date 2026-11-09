@@ -21,7 +21,7 @@ SPK_KEEPER,Innkeeper,酒館老闆
 SPK_LEO_LETTER,Leo's letter,黎歐的信
 CH1_CARD_NUMBER,Chapter One,第一章
 CH1_CARD_TITLE,The Door Beyond the Guide,攻略之外的門
-CH1_TO_BE_CONTINUED,To be continued — the 172 steps and Daylight City are still being built.,待續——一百七十二階與白晝城還在製作中。
+CH1_TO_BE_CONTINUED,To be continued — Daylight City is still being built.,待續——白晝城還在製作中。
 Q_CH1_MAIN_TITLE,The Door Beyond the Guide,攻略之外的門
 Q_CH1_OBJ_NOON,Find Sheila by the wounded,去傷者那邊找席菈
 Q_CH1_OBJ_DINNER,Night has fallen. Sit down to dinner with Sheila and Misha,入夜了，跟席菈、彌夏一起吃飯
@@ -73,3 +73,20 @@ DLG_CH1_ADA_002,I know.,我知道。
 DLG_CH1_ADA_003,Don't die down there. The dead don't rebuild anyone's house.,別死在下面。死人不會替人重建房子。
 DLG_CH1_ADA_004,(Ada pushes a round brass oil lamp into your hands. It's still warm.),（艾妲把一盞圓肚的銅油燈塞進你手裡。燈還是熱的。）
 CH1_NEXT_MORNING,The next morning.,隔天早上。
+Q_CH1_OBJ_GATE,Go to the door at the bottom of the stairs,走到樓梯底的那扇門
+CH1_STAIR_THROW_HINT,Press {key} — toss a stone ahead,按 {key}　往前丟一塊石頭試探
+DLG_CH1_STAIR_001,Wait.,等一下。
+DLG_CH1_STAIR_002,"In the guide, the first trap on these stairs is right here. Arrows.",照攻略，這段樓梯的第一個陷阱就在前面：射箭。
+DLG_CH1_STAIR_002_UNSURE,"In the guide, the first trap is right here. Arrows. ...That's one I marked "not sure."",照攻略，第一個陷阱就在前面：射箭。……這條我標了「不確定」。
+DLG_CH1_STAIR_003,Then don't test it with your feet.,那就別用腳去試。
+DLG_CH1_STAIR_004,(Misha hugs the clock tighter and steps behind Sheila.),（彌夏把鐘抱緊，躲到席菈後面。）
+DLG_CH1_TRAP_001,(No arrows.),（沒有箭。）
+DLG_CH1_TRAP_002,"(Instead, a bucket of dirty water drops from the ceiling — right where I would have stepped.)",（天花板卻掉下一桶髒水，潑在我剛剛要踩的地方。）
+DLG_CH1_TRAP_002_SOAKED,"(Instead, a bucket of dirty water drops from the ceiling. Right on my head.)",（天花板卻掉下一桶髒水。從我頭上淋下來。）
+DLG_CH1_TRAP_003,(Sheila glances at me and says nothing.),（席菈看了我一眼，什麼都沒說。）
+DLG_CH1_TRAP_003_UNSURE,...Figures.,……果然。
+DLG_CH1_TRAP_004,"(From deep down the stairs comes a child's laughter, then an adult's scolding.)",（樓梯深處傳來小孩的笑聲，接著是大人的喝斥。）
+DLG_CH1_TRAP_005,There are people down there.,下面有人。
+DLG_CH1_TRAP_006,"In the guide, there's nothing down there but monsters.",攻略上，下面只有怪物。
+DLG_CH1_TRAP_006_UNSURE,"In the guide, there's nothing down there but monsters. ...I marked that one too.",攻略上，下面只有怪物。……這條我也標了不確定。
+DLG_CH1_TRAP_007,Then let's go see what kind of monster laughs.,那就下去看看，什麼樣的怪物會笑。

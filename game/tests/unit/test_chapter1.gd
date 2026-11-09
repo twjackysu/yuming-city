@@ -185,7 +185,7 @@ func test_day_town_stages_and_dialogue() -> void:
 	Frost.call("dev_start_day", s, "stairs")
 	assert_eq(s.quests.stage_of("ch1_main"), "stairs")
 	assert_eq(s.state.checkpoint, "ch1_lamp")
-	assert_true(bool(Frost.call("is_day_chapter", s)), "拿到油燈：還在白天的霜橋鎮（一百七十二階還沒做）")
+	assert_eq(Game.level_for_checkpoint("ch1_lamp"), "stairs", "拿到油燈之後的檢查點在一百七十二階（D-152）")
 	# 對話：付了石拱記憶 → 艾妲的第一句換成「你連你爸都忘了」
 	for paid: bool in [false, true]:
 		var st := GameState.new()
@@ -199,5 +199,58 @@ func test_day_town_stages_and_dialogue() -> void:
 		TranslationServer.set_locale(loc)
 		for key: String in ["DLG_CH1_ADA_001_FORGOT", "DLG_CH1_ADA_004", "DLG_CH1_NORTH_003", "Q_CH1_OBJ_DAY_NORTH",
 				"Q_CH1_OBJ_ADA_LAMP", "Q_CH1_OBJ_STAIRS", "CH1_NEXT_MORNING"]:
+			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
+	TranslationServer.set_locale("en")
+
+
+## 一百七十二階（D-152）：方形螺旋的路線參數、射箭陷阱推翻攻略筆記、走到底進下一個階段。
+func test_stairs_path_trap_and_bottom() -> void:
+	var Stairs: GDScript = load("res://scenes/levels/stairs.gd") as GDScript
+	var side: float = float(Stairs.get("SIDE"))
+	var flights: int = int(Stairs.get("FLIGHTS"))
+	# 路線上的點換回 s 要一樣（螺旋疊了好幾圈，靠高度分辨）
+	for s_in: float in [0.0, 1.3, side * 1.5, side * 4.0 + 0.4, side * 6.2, side * flights - 0.5]:
+		var p: Vector3 = Stairs.call("path_point", s_in) as Vector3
+		assert_true(absf(float(Stairs.call("path_param", p)) - s_in) < 0.05, "s=%.2f 換回來" % s_in)
+	# 地面一路往下、不會往上跳（沿路線取樣）
+	var prev: float = 1.0
+	var s_t: float = 0.0
+	while s_t <= side * flights:
+		var y: float = (Stairs.call("path_point", s_t) as Vector3).y
+		assert_true(y <= prev + 0.0001, "s=%.1f 不往上" % s_t)
+		prev = y
+		s_t += 0.25
+	var lap_drop: float = float(Stairs.get("DROP")) * 4.0
+	assert_true(lap_drop >= 3.0, "上下兩圈之間留得出頭頂的空間")
+	# 陷阱：旗標 → 攻略筆記「射箭陷阱」被推翻；標過我不確定的會記得
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	s.new_game()
+	_play_slice(s)
+	s.set_flag("slice.cellar_entered", true)
+	load("res://scenes/levels/frostbridge.gd").call("dev_start_day", s, "stairs")
+	GuideNotes.set_unsure(s.state, "stair_arrows", true)
+	assert_eq(s.quests.stage_of("ch1_main"), "stairs")
+	assert_eq(s.objective_key(), "Q_CH1_OBJ_STAIRS")
+	s.set_flag("ch1.stair_trap_sprung", true)
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.WRONG, "射箭陷阱被推翻")
+	var r := DialogueRunner.new(Game.dialogues, s.state)
+	assert_true(r.start("ch1_stair_trap"))
+	var lines: PackedStringArray = []
+	for i: int in 10:
+		lines.append(r.current_text())
+		if not r.advance():
+			break
+	assert_true("DLG_CH1_TRAP_003_UNSURE" in lines, "標了我不確定 → 「果然」")
+	assert_true("DLG_CH1_TRAP_004" in lines, "樓梯深處的笑聲")
+	assert_true("DLG_CH1_TRAP_002" in lines, "丟石頭：水潑在剛剛要踩的地方")
+	s.set_flag("ch1.stairs_bottom", true)
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_gate", "走到底 → 不可互動的門")
+	assert_eq(s.state.checkpoint, "ch1_stairs_bottom")
+	assert_eq(Game.level_for_checkpoint("ch1_stairs_bottom"), "stairs")
+	assert_true("water_splash" in Sfx.NAMES and "child_laugh" in Sfx.NAMES, "新音效登記")
+	for loc: String in ["en", "zh_TW"]:
+		TranslationServer.set_locale(loc)
+		for key: String in ["CH1_STAIR_THROW_HINT", "Q_CH1_OBJ_GATE", "DLG_CH1_STAIR_002_UNSURE", "DLG_CH1_TRAP_002_SOAKED",
+				"DLG_CH1_TRAP_003", "DLG_CH1_TRAP_006_UNSURE", "DLG_CH1_TRAP_007"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")

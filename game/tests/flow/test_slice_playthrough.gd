@@ -335,7 +335,7 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	assert_eq(GuideNotes.status(s.state, "stair_arrows"), want_arrows, "[ch1_map_done] 攻略筆記與標記保留")
 	assert_false(tavern.has_node("GuideMarkView"), "[ch1_map_done] 不會再開標記畫面")
 	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "[ch1_map_done] 灑湯的選擇保留")
-	# --- 段落 4（D-151）：出門 → 白天的霜橋鎮 → 北街 → 艾妲的油燈 → 地窖（待續）
+	# --- 段落 4（D-151）：出門 → 白天的霜橋鎮 → 北街 → 艾妲的油燈 → 地窖 → 段落 5 一百七十二階（D-152）
 	await _chapter1_day(tavern, help_with_soup)
 
 
@@ -369,13 +369,69 @@ func _chapter1_day(tavern: StoryLevel, paid_arch: bool) -> void:
 	assert_true(_player(town).has_oil_lamp(), "油燈取代提燈")
 	assert_eq(s.quests.stage_of("ch1_main"), "stairs")
 	assert_eq(s.state.checkpoint, "ch1_lamp")
-	town = await _retry()
-	assert_eq(s.quests.stage_of("ch1_main"), "stairs", "[ch1_lamp] 階段恢復")
-	_assert_day_town(town, "[ch1_lamp]")
-	assert_true(_player(town).has_oil_lamp(), "[ch1_lamp] 重來還拿著油燈")
-	assert_eq(_objective(town), "Q_CH1_OBJ_STAIRS", "[ch1_lamp] HUD 目標")
+	# --- 段落 5（D-152）：走進地窖 → 一百七十二階
 	await _step_into(_player(town), (town.get_node("CellarTrigger") as Node3D).global_position, 3)
-	assert_eq((town.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "走進地窖 → 待續（一百七十二階還沒做）")
+	var stairs: StoryLevel = await _wait_scene()
+	assert_eq(str(stairs.name), "Stairs", "拿著油燈走進地窖 → 一百七十二階")
+	await _chapter1_stairs(stairs, paid_arch)
+
+
+## 段落 5：石拱路線（標了射箭陷阱我不確定）丟石頭試探；燃燒劍路線（全部確定）直接走上平台被淋濕。
+func _chapter1_stairs(stairs: StoryLevel, threw_stone: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(_objective(stairs), "Q_CH1_OBJ_STAIRS", "[ch1_lamp] HUD 目標")
+	stairs = await _retry()
+	assert_eq(str(stairs.name), "Stairs", "[ch1_lamp] 重來在樓梯頂")
+	assert_eq(s.quests.stage_of("ch1_main"), "stairs", "[ch1_lamp] 階段恢復")
+	assert_true(_player(stairs).has_oil_lamp(), "[ch1_lamp] 拿著油燈")
+	assert_true(stairs.has_node("Sheila") and stairs.has_node("Misha"), "[ch1_lamp] 席菈、彌夏跟著")
+	assert_true(float(stairs.call("path_param", _player(stairs).global_position)) < 3.0, "[ch1_lamp] 出生在樓梯頂")
+	var entrance: float = float(stairs.call("trap_entrance_s"))
+	await _step_into(_player(stairs), stairs.call("path_point", entrance - 2.0) as Vector3, 3)
+	assert_true(_game.call("is_in_dialogue"), "走近陷阱 → 諾恩攔住大家")
+	var warn: String = ""
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	runner.advance()
+	warn = runner.current_text()
+	assert_eq(warn, "DLG_CH1_STAIR_002_UNSURE" if threw_stone else "DLG_CH1_STAIR_002", "標了我不確定的那條 → 諾恩自己說")
+	await _run_dialogue(stairs, 0)
+	assert_eq(s.state.get_flag("ch1.stair_warned"), true)
+	assert_true(bool(stairs.call("can_throw")), "攔住之後可以丟石頭")
+	assert_false((stairs.call("interact_hint") as Dictionary).is_empty(), "互動提示：往前丟一塊石頭")
+	if threw_stone:
+		stairs.call("throw_stone")
+	else:
+		await _step_into(_player(stairs), stairs.call("path_point", entrance + 0.3) as Vector3, 3)
+	await tree.create_timer(float(stairs.get("THROW_SEC")) + float(stairs.get("TRAP_TALK_DELAY")) + 0.3).timeout
+	assert_eq(s.state.get_flag("ch1.stair_trap_sprung"), true, "機關觸發")
+	assert_eq(s.state.get_flag("ch1.stair_trap_soaked"), not threw_stone, "沒丟石頭 → 淋在諾恩身上")
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.WRONG, "攻略筆記「射箭陷阱」被推翻")
+	assert_true(_game.call("is_in_dialogue"), "水落下 → 對話")
+	runner = _game.get("dialogue") as DialogueRunner
+	var lines: PackedStringArray = []
+	for i: int in 12:
+		if not runner.is_running():
+			break
+		lines.append(runner.current_text())
+		runner.advance()
+	assert_true(("DLG_CH1_TRAP_003_UNSURE" if threw_stone else "DLG_CH1_TRAP_003") in lines, "標了我不確定 →「果然」；沒標 → 席菈看他一眼")
+	assert_true(("DLG_CH1_TRAP_002" if threw_stone else "DLG_CH1_TRAP_002_SOAKED") in lines, "水潑在哪裡")
+	assert_true("DLG_CH1_TRAP_004" in lines, "樓梯深處的笑聲")
+	await _run_dialogue(stairs, 0)
+	await _step_into(_player(stairs), stairs.call("path_point", float(stairs.call("bottom_s"))) as Vector3, 3)
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_gate", "走到底 → 樓梯底的門")
+	assert_eq(s.state.checkpoint, "ch1_stairs_bottom")
+	stairs = await _retry()
+	assert_eq(str(stairs.name), "Stairs", "[ch1_stairs_bottom] 重來還在樓梯")
+	assert_eq(_objective(stairs), "Q_CH1_OBJ_GATE", "[ch1_stairs_bottom] HUD 目標")
+	assert_true(float(stairs.call("path_param", _player(stairs).global_position)) > float(stairs.call("bottom_s")) - 1.0, "[ch1_stairs_bottom] 出生在樓梯底")
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.WRONG, "[ch1_stairs_bottom] 攻略筆記保留")
+	assert_true((stairs.get_node("Puddle") as Node3D).visible, "[ch1_stairs_bottom] 平台上的水灘還在")
+	var door: Node3D = stairs.get_node("GateDoor") as Node3D
+	_player(stairs).global_position = door.global_position + Vector3(-0.9, -0.95, 0.0)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_eq((stairs.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "樓梯底的門 → 待續（白晝城下一輪做）")
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
