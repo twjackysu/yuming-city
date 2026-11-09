@@ -1052,8 +1052,7 @@ func _house(side: int, z_start: float, length: float, is_kord: bool) -> void:
 
 ## 壽命石碑：黑色抛光石，正面浮著名字與「還能活 N 天」（Label3D、子集字型、翻譯 key）。
 func _build_steles() -> void:
-	var black := _mat(Color(0.025, 0.025, 0.03), 0.12)
-	black.metallic = 0.35
+	var black := stele_stone_mat()
 	var font: Font = UiFonts.load_font(UiFonts.UI_SANS)
 	for id: String in STELES.keys():
 		var pos: Vector3 = STELES[id] as Vector3
@@ -1080,6 +1079,18 @@ func _build_steles() -> void:
 		add_child(label)
 		_labels[id] = label
 	refresh_steles()
+
+
+## 壽命石碑的黑石：磨亮、映著穹頂的冷白光（上面亮一點、斜看邊緣亮一點；第 57 輪，D-175）
+const POLISHED_STONE_SHADER: String = "res://src/world/polished_stone.gdshader"
+
+
+func stele_stone_mat() -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load(POLISHED_STONE_SHADER) as Shader
+	m.set_shader_parameter("sheen_color", DOME_WHITE)
+	m.set_shader_parameter("half_height", 1.15)
+	return m
 
 
 func refresh_steles() -> void:

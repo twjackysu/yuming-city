@@ -122,3 +122,15 @@ func test_laundry_rope_and_garments() -> void:
 		var box: AABB = mesh.get_aabb()
 		assert_true(box.size.z > 0.005 and box.size.z < 0.1, "第 %d 件有起伏、但還是薄的（%.3f m）" % [i, box.size.z])
 		assert_true(mid.y + box.position.y > 1.6, "第 %d 件掛得比人高（不擋路）" % i)
+
+
+## 壽命石碑：磨亮的黑石（映著穹頂的淡光），光澤很淡、字還是最亮的
+func test_stele_polished_stone() -> void:
+	var lv: Node = _level()
+	var m: ShaderMaterial = lv.call("stele_stone_mat") as ShaderMaterial
+	assert_eq(m.shader.resource_path, str(_const("POLISHED_STONE_SHADER")), "石碑用 polished_stone shader")
+	var code: String = m.shader.code
+	for u: String in ["sheen_top = 0.0", "sheen_rim = 0.0"]:
+		assert_true(code.contains(u), "光澤很淡（%s…）" % u)
+	assert_true((m.get_shader_parameter("sheen_color") as Color).is_equal_approx(_const("DOME_WHITE") as Color), "映的是穹頂的白燈")
+	lv.free()
