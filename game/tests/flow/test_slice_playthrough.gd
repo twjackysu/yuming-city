@@ -1543,6 +1543,28 @@ func _assert_daylight(city: StoryLevel, tag: String) -> void:
 	assert_true(lamp != null and lamp.shadow_enabled, tag + " 油燈投影子")
 	for c: Node in city.find_children(ContactShadow.NODE_NAME, "", true, false):
 		assert_false((c as Node3D).visible, tag + " 接地陰影拿掉：" + str(c.get_parent().name))
+	_assert_daylight_art(city, tag)
+
+
+## 白晝城街道的美術（第 56 輪，D-174）：房子、廣場與路口的牆不再是素色白盒；地面是石板；窗台、門框、拱肋合併在 StreetTrim。
+func _assert_daylight_art(city: StoryLevel, tag: String) -> void:
+	var white_box: PackedStringArray = []
+	var plaster: Color = (city.get_script() as GDScript).get_script_constant_map()["PLASTER"] as Color
+	var shutter: Color = (city.get_script() as GDScript).get_script_constant_map()["SHUTTER"] as Color
+	for n: Node in city.get_children():
+		var mi: MeshInstance3D = n as MeshInstance3D
+		if mi == null or not (mi.material_override is StandardMaterial3D):
+			continue
+		var c: Color = (mi.material_override as StandardMaterial3D).albedo_color
+		if c.is_equal_approx(plaster) or c.is_equal_approx(shutter):
+			white_box.append(str(mi.name))
+	assert_eq(white_box.size(), 0, tag + " 街上沒有素色的白灰牆或窗板：%s" % ", ".join(white_box.slice(0, 5)))
+	var ground: MeshInstance3D = city.get_node("Ground") as MeshInstance3D
+	assert_true(ground.material_override is ShaderMaterial, tag + " 地面是石板")
+	for n: String in ["EndWall", "StreetPillar", "BellYardGate"]:
+		assert_true((city.get_node(n) as MeshInstance3D).material_override is ShaderMaterial, tag + " " + n + " 有材質")
+	assert_true(city.has_node("StreetTrim"), tag + " 窗台、門框、拱肋（StreetTrim）")
+	assert_true(city.get_node("StreetTrim").get_child_count() >= 3, tag + " StreetTrim 有石、木、拱肋三種材質")
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。

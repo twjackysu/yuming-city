@@ -110,18 +110,20 @@ var _yard_inside: bool = false
 var in_house: bool = false
 var _rations_sheila: Node3D
 var _rations_noen: Node3D
-var _plaster_mat: StandardMaterial3D
-var _stone_mat: StandardMaterial3D
-var _shutter_mat: StandardMaterial3D
+var _plaster_mat: Material
+var _stone_mat: Material
+var _shutter_mat: Material
 var _wood_mat: StandardMaterial3D
+## 街上的小細節（窗台、窗楣、門框、門楣、穹頂的拱肋）：合併成每種材質一個 draw call（第 56 輪，D-174）
+var _trim := StaticBatch.new()
 
 
 func _ready() -> void:
 	_rng.seed = 1704
 	residents = Residents.load_default()
-	_plaster_mat = _mat(PLASTER, 0.93)
-	_stone_mat = _mat(STONE, 0.95)
-	_shutter_mat = _mat(SHUTTER, 0.85)
+	_plaster_mat = street_wall_mat()
+	_stone_mat = ashlar_mat()
+	_shutter_mat = shutter_mat()
 	_wood_mat = _mat(WOOD, 0.85)
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	# 開發用：`-- --level=daylight` 直接進來 → 照正式流程走到進城（段落 6 結束）
@@ -147,6 +149,8 @@ func _ready() -> void:
 	_build_square()
 	_build_street()
 	_build_steles()
+	_build_dome_ribs()
+	_trim.build(self, "StreetTrim")
 	_build_house()
 	_init_story()
 	_place_player(at)
@@ -497,7 +501,7 @@ func _build_rabbit_street() -> void:
 	pillar.material_override = _stone_mat
 	pillar.position = PILLAR_POS + Vector3(0, h * 0.5, 0)
 	add_child(pillar)
-	_solid("StreetPillarBase", Vector3(0.8, 0.3, 0.8), PILLAR_POS + Vector3(0, 0.15, 0), _stone_mat, false)
+	_solid("StreetPillarBase", Vector3(0.8, 0.3, 0.8), PILLAR_POS + Vector3(0, 0.15, 0), trim_mat(), false)
 	var body := StaticBody3D.new()
 	body.name = "StreetPillarBody"
 	var cs := CollisionShape3D.new()
@@ -807,7 +811,7 @@ func _build_ground_and_dome() -> void:
 	var z0: float = END_Z - 3.0
 	var z1: float = GATE_Z + 2.0
 	var mid_z: float = (z0 + z1) * 0.5
-	_solid("Ground", Vector3(span_x, 0.4, z1 - z0), Vector3(0, -0.2, mid_z), _mat(PAVING, 0.95))
+	_solid("Ground", Vector3(span_x, 0.4, z1 - z0), Vector3(0, -0.2, mid_z), paving_mat())
 	# 穹頂：一大片淡灰白，鑲著數千盞白燈（一個 MultiMesh）
 	var dome_mat := _mat(Color(0.7, 0.72, 0.75), 1.0)
 	dome_mat.emission_enabled = true
@@ -1000,7 +1004,11 @@ func _build_street() -> void:
 			_solid("CrossEnd", Vector3(0.6, 9.0, w), Vector3(side * CROSS_HALF, 4.5, (c.x + c.y) * 0.5), _plaster_mat)
 			_solid("CrossBack", Vector3(CROSS_HALF - STREET_HALF, 9.0, 0.6), Vector3(side * (CROSS_HALF + STREET_HALF) * 0.5, 4.5, c.y - 0.3), _plaster_mat)
 	_solid("EndWall", Vector3(STREET_HALF * 2.0 + 2.0, 11.0, 0.8), Vector3(0, 5.5, END_Z - 0.4), _stone_mat)
-	_solid("BellYardGate", Vector3(2.6, 3.6, 0.2), Vector3(0, 1.8, END_Z + 0.05), _wood_mat, false)
+	_solid("BellYardGate", Vector3(2.6, 3.6, 0.2), Vector3(0, 1.8, END_Z + 0.05), door_mat(), false)
+	# 鐘院大門的木框＋上面一塊淺色石楣
+	for side: int in [-1, 1]:
+		_trim.add_box_at(Vector3(0.22, 3.75, 0.34), Vector3(side * 1.41, 1.875, END_Z + 0.07), timber_mat(), false)
+	_trim.add_box_at(Vector3(3.4, 0.4, 0.4), Vector3(0, 3.95, END_Z + 0.1), trim_mat(), false)
 
 
 func _crossing_at(z: float) -> Vector2:
@@ -1026,11 +1034,13 @@ func _house(side: int, z_start: float, length: float, is_kord: bool) -> void:
 	var cx: float = float(side) * (STREET_HALF + depth * 0.5)
 	var house := _solid("House", Vector3(depth, height, length - 0.1), Vector3(cx, height * 0.5, cz), _plaster_mat)
 	house.set_meta("height", height)
-	_solid("HouseBase", Vector3(depth + 0.16, 0.9, length), Vector3(cx, 0.45, cz), _stone_mat, false)
+	_solid("HouseBase", Vector3(depth + 0.16, STREET_STONE_H, length), Vector3(cx, STREET_STONE_H * 0.5, cz), _plaster_mat, false)
 	var face_x: float = float(side) * (STREET_HALF - 0.04)
 	# 門（柯德家的門正對 KORD_HOME）
 	var door_z: float = KORD_HOME.z if is_kord else cz + _rng.randf_range(-length * 0.25, length * 0.25)
-	_solid("HouseDoor", Vector3(0.1, 2.1, 1.0), Vector3(face_x, 1.05, door_z), _wood_mat, false)
+	_solid("HouseDoor", Vector3(0.1, 2.1, 1.0), Vector3(face_x, 1.05, door_z), door_mat(), false)
+	_door_casing(side, door_z)
+	_plinth_cap(side, z_start, length, door_z)
 	# 窗：每層幾扇，全部關著（灰藍的木窗板）
 	var floors: int = int((height - 1.4) / 2.3)
 	var per_floor: int = maxi(int(length / 2.2), 1)
@@ -1039,7 +1049,9 @@ func _house(side: int, z_start: float, length: float, is_kord: bool) -> void:
 			var wz: float = z_start - (float(w) + 0.5) * length / float(per_floor)
 			if f == 0 and absf(wz - door_z) < 1.0:
 				continue
-			_solid("Shutter", Vector3(0.08, 1.1, 0.8), Vector3(face_x, 1.9 + float(f) * 2.3 + 0.55, wz), _shutter_mat, false)
+			var sy: float = 1.9 + float(f) * 2.3 + 0.55
+			_solid("Shutter", Vector3(0.08, 1.1, 0.8), Vector3(face_x, sy, wz), _shutter_mat, false)
+			_window_trim(side, sy, wz)
 	if is_kord:
 		var m := Marker3D.new()
 		m.name = "KordHome"
@@ -1084,3 +1096,103 @@ func refresh_steles() -> void:
 
 func stele_text(id: String) -> String:
 	return (_labels[id] as Label3D).text if _labels.has(id) else ""
+
+
+# ---------------------------------------------------------------- 街道的美術（第 56 輪，D-174）
+# 白晝城的街：房子是石頭砌的（牆腳 STREET_STONE_H 的方石）、上面抹白灰泥，沒有木框；窗板與門是直排木板，
+# 窗下一塊淺色石窗台、窗上一條石楣，門有深色木門框＋石門楣＋門檻石；地面是沿街鋪的石板；
+# 盡頭的牆、門房、石柱是方石。穹頂的白燈之間每 RIB_SPACING 一道拱肋（看得出是蓋起來的天花板）。
+# 白晝城的規則照舊：只有油燈投影子（這一節不加任何光）。
+
+const STREET_STONE_H: float = 0.9
+const TRIM_STONE: Color = Color(0.72, 0.7, 0.66)
+const STREET_MORTAR: Color = Color(0.4, 0.39, 0.37)
+## 整面方石的縫比較深（淺縫＋小塊會像水泥空心磚，第 56 輪截圖）
+const ASHLAR_MORTAR: Color = Color(0.2, 0.195, 0.19)
+## 門框中心離門中心（門寬 1.0、門框 0.12）
+const DOOR_CASING_HALF: float = 0.56
+const RIB_SPACING: float = 7.0
+const RIB_SIZE: Vector2 = Vector2(0.45, 0.5)
+const RIB_COLOR: Color = Color(0.5, 0.51, 0.53)
+
+
+## 房子、廣場與路口的牆：牆腳方石（淺灰縫）＋白灰泥，沒有木框、不燻黑。
+func street_wall_mat() -> ShaderMaterial:
+	return interior.wall("daylight_street", PLASTER, STONE, STREET_STONE_H, {
+		"floor_height": 99.0, "post_spacing": 99.0, "brace_chance": 0.0, "beam_width": 0.04,
+		"block_scale": 0.8, "soot": 0.0, "mortar_color": STREET_MORTAR,
+	})
+
+
+## 整面方石：盡頭的牆、門房、石柱、石碑座。
+func ashlar_mat() -> ShaderMaterial:
+	return interior.wall("daylight_ashlar", STONE, STONE, 99.0, {
+		"block_scale": 1.8, "soot": 0.0, "mortar_color": ASHLAR_MORTAR,
+	})
+
+
+## 地面：沿街（南北）鋪的石板，中間常走的地方磨亮一點。
+func paving_mat() -> ShaderMaterial:
+	return interior.flagstone("daylight_paving", PAVING, 0.6, {"along_z": true, "wear": 0.3, "seam_dark": 0.5})
+
+
+## 窗台、窗楣、門楣、門檻、石柱座：比牆淺一點的條石。
+func trim_mat() -> ShaderMaterial:
+	return interior.flagstone("daylight_trim", TRIM_STONE, 0.45, {"seam_dark": 0.7, "base_roughness": 0.8})
+
+
+func shutter_mat() -> ShaderMaterial:
+	return interior.plank("daylight_shutter", SHUTTER, 0.2, 4.0, {"vertical_planks": true, "seam_dark": 0.45})
+
+
+func door_mat() -> ShaderMaterial:
+	return interior.plank("daylight_door", WOOD, 0.2, 4.0, {"vertical_planks": true, "seam_dark": 0.8})
+
+
+func timber_mat() -> ShaderMaterial:
+	return interior.timber(WOOD.darkened(0.3))
+
+
+## 窗：下面一塊石窗台（往街上突出一點）、上面一條石楣。sy＝窗板中心高度。
+func _window_trim(side: int, sy: float, wz: float) -> void:
+	var s: float = float(side)
+	_trim.add_box_at(Vector3(0.2, 0.07, 0.98), Vector3(s * (STREET_HALF - 0.1), sy - 0.55 - 0.035, wz), trim_mat(), false)
+	_trim.add_box_at(Vector3(0.1, 0.16, 1.0), Vector3(s * (STREET_HALF - 0.05), sy + 0.55 + 0.08, wz), trim_mat(), false)
+
+
+## 牆腳石的頂面蓋一條淺色壓頂石（不然半木構 shader 在 8 cm 寬的頂面畫出一條深色斜紋）；門的地方斷開。
+func _plinth_cap(side: int, z_start: float, length: float, door_z: float) -> void:
+	var gap: float = DOOR_CASING_HALF + 0.07
+	var spans: Array[Vector2] = [Vector2(z_start, door_z + gap), Vector2(door_z - gap, z_start - length)]
+	for sp: Vector2 in spans:
+		var l: float = sp.x - sp.y
+		if l > 0.05:
+			_trim.add_box_at(Vector3(0.1, 0.05, l), Vector3(float(side) * (STREET_HALF - 0.05), STREET_STONE_H + 0.025, (sp.x + sp.y) * 0.5), trim_mat(), false)
+
+
+## 門：兩根深色木門框、上面一塊石門楣、腳下一塊門檻石（都不擋人）。
+func _door_casing(side: int, door_z: float) -> void:
+	var s: float = float(side)
+	for k: int in [-1, 1]:
+		_trim.add_box_at(Vector3(0.14, 2.2, 0.12), Vector3(s * (STREET_HALF - 0.07), 1.1, door_z + float(k) * DOOR_CASING_HALF), timber_mat(), false)
+	_trim.add_box_at(Vector3(0.18, 0.26, 1.5), Vector3(s * (STREET_HALF - 0.09), 2.33, door_z), trim_mat(), false)
+	_trim.add_box_at(Vector3(0.35, 0.06, 1.3), Vector3(s * (STREET_HALF - 0.175), 0.03, door_z), trim_mat(), false)
+
+
+## 穹頂的拱肋：橫跨整座城、每 RIB_SPACING 一道，壓在白燈之間（看得出是蓋起來的天花板，不是天空）。
+func _build_dome_ribs() -> void:
+	var span_x: float = CROSS_HALF * 2.0 + 8.0
+	var rib := _mat(RIB_COLOR, 0.9)
+	var z: float = GATE_Z
+	while z > END_Z - 3.0:
+		_trim.add_box_at(Vector3(span_x, RIB_SIZE.x, RIB_SIZE.y), Vector3(0, CEILING_Y - RIB_SIZE.x * 0.5, z), rib, false)
+		z -= RIB_SPACING
+
+
+func dome_rib_count() -> int:
+	var n: int = 0
+	var z: float = GATE_Z
+	while z > END_Z - 3.0:
+		n += 1
+		z -= RIB_SPACING
+	return n
