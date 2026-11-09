@@ -2587,7 +2587,7 @@ func _line_between(node_name: String, a: Vector3, b: Vector3, radius: float, mat
 
 ## 頭頂的石樑：一排排橫跨整個運河（含兩岸），之間留縫——鐘院的光從縫裡透下來。
 func _build_ceiling() -> void:
-	var rock: StandardMaterial3D = _mat(ROCK, 1.0)
+	var rock: ShaderMaterial = outer_wall_mat()
 	var width: float = (CANAL_HALF_W + BANK_W + 1.0) * 2.0
 	var depth: float = SLAT_PITCH - SLAT_GAP
 	var ceiling := Node3D.new()
