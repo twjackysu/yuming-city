@@ -7,13 +7,13 @@
   "files": [
     {
       "file": "preview.png",
-      "bytes": 324779,
-      "sha256": "631748d355e5130da5db950eda204536a1eb93698fa9bd070517b5367f1f1d17"
+      "bytes": 315801,
+      "sha256": "f124012a9e7b87370ef98c141f726194c554f16962f90ff97f0d4b387d5faccd"
     },
     {
       "file": "sheila_walk_candidate.glb",
-      "bytes": 16880452,
-      "sha256": "1ecbebecc61640c042078b3e408c6c08dac4fb0400cface1a3903b35f7c3f2bd"
+      "bytes": 16823528,
+      "sha256": "5aff686b76abd94f64d3a2ae9062b5a1b7cea41387167291e0567f1b49f1efd0"
     },
     {
       "file": "walk_candidate.fbx",
@@ -22,23 +22,28 @@
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 278479,
-      "sha256": "0ad9c149eee2bd3b6685036dde005a7ce1f23db7afceaf5ec40f80854f61ef72"
+      "bytes": 266558,
+      "sha256": "9f4b65c640427e41b62964ba7d17f7ee32f8449477b67ced3b85fd0940beb0f2"
     },
     {
       "file": "blade_preview.png",
-      "bytes": 411590,
-      "sha256": "8d0bee2a0b1cc2e3909e42f3cceac45f43ba9f510e98769187e2e040b4c0c495"
+      "bytes": 352619,
+      "sha256": "cb7f003850d58258a347a719e11ee051749b5fc62652005492dba0e13a4bbfd4"
     },
     {
       "file": "night_preview.png",
-      "bytes": 435383,
-      "sha256": "a808f991c52c0f8c98f443edd0ac53d723145847f134504fed9d3d3d99c73063"
+      "bytes": 434129,
+      "sha256": "d51d0f54b209380e6030c7e2c755ab5684fc03733842085e9d8d90e9b3e12258"
     },
     {
       "file": "portrait_front.png",
-      "bytes": 1563271,
-      "sha256": "7c9aca269bad3543ff55dbd23aa35d54713b868a0139ea4ad9a77b8dd0621bfa"
+      "bytes": 1560974,
+      "sha256": "ff25a35e9a9f587204523be5fbfc8d2bccab9ea0281bf1f54c5153b48c4f89a2"
+    },
+    {
+      "file": "blade_night_preview.png",
+      "bytes": 448457,
+      "sha256": "0310c07ba3dd0d38ffc5627d9e6c538f634cd5912ab091829d6db18fc1cdfea1"
     }
   ],
   "maximum_texture_dimension": 2048,
@@ -46,7 +51,9 @@
     "walk_loop"
   ],
   "meshes": 4,
-  "variant": "forged_sword_three_atlases_original_cape",
+  "variant": "tapered_44cm_steel_sword_three_atlases_original_cape",
   "cape_status": "unchanged_existing_clipping_not_fixed",
-  "godot_import_script": "sheila_material_import.gd"
+  "godot_import_script": "sheila_material_import.gd",
+  "sword_width_m": 0.44,
+  "sword_break_width_m": 0.286
 }

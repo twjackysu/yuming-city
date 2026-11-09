@@ -1,7 +1,7 @@
-import bpy,json
+import bpy,json,os
 from pathlib import Path
 from mathutils.kdtree import KDTree
-home=Path.home();root=home/'Documents/sheila-sword-delivery';bpy.ops.wm.read_factory_settings(use_empty=True);scene=bpy.context.scene;scene.render.fps=30
+home=Path.home();root=Path(os.environ.get('YUMING_SHEILA_ATLAS_WORK',str(home/'Documents/sheila-sword-delivery')));bpy.ops.wm.read_factory_settings(use_empty=True);scene=bpy.context.scene;scene.render.fps=30
 sets=[]
 for path in [home/'Documents/sheila-motion/sheila_walk_preview.glb',root/'sheila_walk_preview.glb']:
  old=set(scene.objects);bpy.ops.import_scene.gltf(filepath=str(path));new=set(scene.objects)-old;sets.append([o for o in new if o.type=='MESH' and any(m.type=='ARMATURE' for m in o.modifiers) and not ('Sword' in o.name and 'Badge' not in o.name)])

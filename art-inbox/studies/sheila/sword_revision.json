@@ -1,0 +1,10 @@
+{
+  "blade_width_at_guard_m": 0.44,
+  "blade_width_at_break_m": 0.286,
+  "maximum_full_ridge_thickness_m": 0.032,
+  "guard_depth_m": 0.026,
+  "previous_width_m": 0.55,
+  "previous_break_width_m": 0.462,
+  "three_materials_retained": true,
+  "cape_status": "unchanged_not_approved"
+}

@@ -7,13 +7,13 @@
   "files": [
     {
       "file": "night_preview.png",
-      "bytes": 437531,
-      "sha256": "c14afc342e1b7459b666f1b4bb26299b1cd7d25463bbbb645e8030ab09c6226a"
+      "bytes": 433894,
+      "sha256": "bcde456d0d7e5bc86f87110be4bcd09e3350f695d5c9b0848e79856bf7a1ea36"
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 24936364,
-      "sha256": "b59734ad344f6754641b3b2f3c97d49b46d8c3aba802040c69aa599e8e3635a0"
+      "bytes": 24979172,
+      "sha256": "59974678fd500a0bfbda203ef4427a6a51151acb7efb7642c8f42e6ed0f60e9e"
     },
     {
       "file": "portrait_front.png",
@@ -27,18 +27,18 @@
     },
     {
       "file": "preview.png",
-      "bytes": 298704,
-      "sha256": "3c7f162e48d2c0ba896d9b2d4c32b92b4e528eb0fa49ae217341c872eb65c50b"
+      "bytes": 265408,
+      "sha256": "425f6ac8c8f373881dd5f6407d2918eab9103adc14a9bea6243fcdd227562cd8"
     },
     {
       "file": "walk_candidate.fbx",
-      "bytes": 516012,
-      "sha256": "5ca6aad61d67b1a1c1e673d2e3dcae9b91c503a3e24af374dff43dc9419b95e8"
+      "bytes": 516940,
+      "sha256": "6f5ad11c8c07a98586afbd98032c635dfd3a0c8d0350426e2c48d84bbef23f2d"
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 242115,
-      "sha256": "05cde938f4fbf9770f4d7a24d691737595249edd420e3575d1142a6f404cf8e8"
+      "bytes": 274798,
+      "sha256": "d3c24d282170265df4bd33370a6a9d4864670d2074025cd0217a55770a25fcec"
     },
     {
       "file": "idle_candidate.fbx",
@@ -79,6 +79,11 @@
       "file": "run_night_preview.png",
       "bytes": 416116,
       "sha256": "59ccefca8044f924fd90e67c3c4639ef581f2f7d1574945c83c68d945a583d92"
+    },
+    {
+      "file": "coat_side_preview.png",
+      "bytes": 228606,
+      "sha256": "1c840e15cacf90b4779d6e3fb89f2e65992b07a5e35b12dff08892978411f561"
     }
   ],
   "maximum_texture_dimension": 2048,
@@ -96,7 +101,7 @@
     "M_Noen_Skin"
   ],
   "godot_import_script": "noen_material_import.gd",
-  "glb_bytes": 24936364,
+  "glb_bytes": 24979172,
   "godot_animation_names": [
     "idle",
     "run",
@@ -105,5 +110,8 @@
   "idle_duration_s": 3.2,
   "run_duration_s": 0.6333333333333333,
   "run_reference_speed_mps": 4.487133913989299,
-  "run_contact_snap_m": 0.015
+  "run_contact_snap_m": 0.015,
+  "walk_garment_variant": "lower_panel_gravity_drape_only",
+  "walk_preview_renderer": "Godot 4.7.2 Forward+",
+  "walk_floor_grid_m": 0.25
 }

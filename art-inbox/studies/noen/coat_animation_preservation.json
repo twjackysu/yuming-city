@@ -1,0 +1,26 @@
+{
+  "changed_tracks": {
+    "Coat_Back_L_Lower/rotation": {
+      "before_keys": 2,
+      "after_keys": 35,
+      "maximum_component_delta": null
+    },
+    "Coat_Back_R_Lower/rotation": {
+      "before_keys": 2,
+      "after_keys": 35,
+      "maximum_component_delta": null
+    },
+    "Coat_Front_L_Lower/rotation": {
+      "before_keys": 2,
+      "after_keys": 35,
+      "maximum_component_delta": null
+    },
+    "Coat_Front_R_Lower/rotation": {
+      "before_keys": 2,
+      "after_keys": 35,
+      "maximum_component_delta": null
+    }
+  },
+  "all_changes_are_lower_coat_rotation": true,
+  "tolerance": 1e-05
+}

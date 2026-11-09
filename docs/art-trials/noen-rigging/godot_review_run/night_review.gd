@@ -65,4 +65,3 @@ func _ready() -> void:
   var result = screenshot.save_png("res://frames/run_night_%03d.png" % i)
   print("CAPTURE ", i, " ", result)
  get_tree().quit()
-

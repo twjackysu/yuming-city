@@ -118,3 +118,10 @@ Godot 檢視在 godot_review_idle。將合併後 GLB 複製為 noen_walk_preview
 本機製作中間檔需先準備：YUMING_NOEN_WORK/tailored_noen.blend 為保留獨立靴子的原生 11 材質修整版本；tailored_candidate.glb 為靜態三材質版本。YUMING_WALK_BVH 指向 C03_Run。依序以 Blender 執行 analyze_noen_run_cycle.py、retarget_noen_run.py、export_noen_run.py、review_noen_run.py（YUMING_SKIP_RENDERS=1 可略過 Blender 預覽）、check_noen_run_fbx.py；系統 Python（numpy）執行 merge_noen_run.py，YUMING_NOEN_BASE_GLB 可指定既有 idle/walk 模型。合併保留原網格／貼圖，核對骨架 inverse bind，並將每段時間軸歸零。
 
 godot_review_run 使用合併 GLB 複製成 noen_walk_preview.glb；夜景需沿用 godot_review_idle 的 src/world 與相關 shader 檔，並依 godot_review_atlas 說明設定匯入腳本。先 --headless --editor --import，再執行 check_run_contact.gd、check_run_guard.gd、check_clip_switch.gd；畫面用 review.tscn／night_review.tscn（夜景 Forward+）。檢查腳本是 SceneTree，擷取腳本是場景 Node3D，後者請以 .tscn 啟動。技術證據與預覽已放 studies/noen；不是正式角色交件。
+
+
+## 2026-11-10：走路衣襬下垂
+
+drape_noen_walk_coat.py 讀取 YUMING_NOEN_WALK_BLEND（上一版原生 walk 中間檔），輸出 YUMING_NOEN_WORK/mocap_walk_trial.blend。只調整四根 Coat_*_Lower 的全域俯仰，35% 上段角度且限制 ±0.24rad；保留原身體動作。之後沿用 export_walk_rest_bind.py／review_walk_export.py，再用 merge_noen_draped_walk.py 合併到 YUMING_NOEN_BASE_GLB（預設 studies/noen 的現有 GLB）。需要靜態三材質 tailored_candidate.glb 放在工作目錄。godot_review_draped_walk 沿用其他預覽的 src/world 與 shader／匯入設定；以 Forward+ 執行場景，檢查腳本用 --headless --script。
+
+逐軌保留證據、FBX、接地、切換及褲面有向距離在 studies/noen/coat_*。負側頂點峰值下降但仍有既有穿插，不能聲稱完整碰撞驗收。此修整只進 walk，run/idle 未修改。棚光平地不投射自身陰影，25cm 格線供接地判讀；不影響遊戲內容。

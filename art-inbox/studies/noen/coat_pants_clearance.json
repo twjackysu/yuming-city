@@ -1,0 +1,356 @@
+{
+  "before": [
+    {
+      "frame": 1,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.0487653465825133
+    },
+    {
+      "frame": 2,
+      "negative_vertices": 16,
+      "worst_signed_distance_m": -0.05424878932535648
+    },
+    {
+      "frame": 3,
+      "negative_vertices": 16,
+      "worst_signed_distance_m": -0.0536784278228879
+    },
+    {
+      "frame": 4,
+      "negative_vertices": 17,
+      "worst_signed_distance_m": -0.053080101031810045
+    },
+    {
+      "frame": 5,
+      "negative_vertices": 18,
+      "worst_signed_distance_m": -0.048020740039646626
+    },
+    {
+      "frame": 6,
+      "negative_vertices": 20,
+      "worst_signed_distance_m": -0.0456199343316257
+    },
+    {
+      "frame": 7,
+      "negative_vertices": 12,
+      "worst_signed_distance_m": -0.03512244392186403
+    },
+    {
+      "frame": 8,
+      "negative_vertices": 8,
+      "worst_signed_distance_m": -0.022940921191548114
+    },
+    {
+      "frame": 9,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.014541156254381349
+    },
+    {
+      "frame": 10,
+      "negative_vertices": 6,
+      "worst_signed_distance_m": -0.010243669275951106
+    },
+    {
+      "frame": 11,
+      "negative_vertices": 5,
+      "worst_signed_distance_m": -0.008697810466401279
+    },
+    {
+      "frame": 12,
+      "negative_vertices": 5,
+      "worst_signed_distance_m": -0.011352048721164465
+    },
+    {
+      "frame": 13,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.05561458878219128
+    },
+    {
+      "frame": 14,
+      "negative_vertices": 5,
+      "worst_signed_distance_m": -0.017936452757567167
+    },
+    {
+      "frame": 15,
+      "negative_vertices": 10,
+      "worst_signed_distance_m": -0.05923595931380987
+    },
+    {
+      "frame": 16,
+      "negative_vertices": 12,
+      "worst_signed_distance_m": -0.04165256302803755
+    },
+    {
+      "frame": 17,
+      "negative_vertices": 14,
+      "worst_signed_distance_m": -0.044510424602776766
+    },
+    {
+      "frame": 18,
+      "negative_vertices": 19,
+      "worst_signed_distance_m": -0.046470613684505224
+    },
+    {
+      "frame": 19,
+      "negative_vertices": 21,
+      "worst_signed_distance_m": -0.050674932543188334
+    },
+    {
+      "frame": 20,
+      "negative_vertices": 19,
+      "worst_signed_distance_m": -0.047283224295824766
+    },
+    {
+      "frame": 21,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.04728000168688595
+    },
+    {
+      "frame": 22,
+      "negative_vertices": 19,
+      "worst_signed_distance_m": -0.04946545697748661
+    },
+    {
+      "frame": 23,
+      "negative_vertices": 19,
+      "worst_signed_distance_m": -0.042447673695278354
+    },
+    {
+      "frame": 24,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.03295413707382977
+    },
+    {
+      "frame": 25,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.016161354884388857
+    },
+    {
+      "frame": 26,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 27,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 28,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 29,
+      "negative_vertices": 1,
+      "worst_signed_distance_m": -0.014744647778570652
+    },
+    {
+      "frame": 30,
+      "negative_vertices": 1,
+      "worst_signed_distance_m": -0.004234153453239742
+    },
+    {
+      "frame": 31,
+      "negative_vertices": 2,
+      "worst_signed_distance_m": -0.006345570775010856
+    },
+    {
+      "frame": 32,
+      "negative_vertices": 2,
+      "worst_signed_distance_m": -0.0070879016966500785
+    },
+    {
+      "frame": 33,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.011360821430571377
+    },
+    {
+      "frame": 34,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.035559510230086744
+    },
+    {
+      "frame": 35,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.04876537655945867
+    }
+  ],
+  "after": [
+    {
+      "frame": 1,
+      "negative_vertices": 13,
+      "worst_signed_distance_m": -0.03655475750565529
+    },
+    {
+      "frame": 2,
+      "negative_vertices": 13,
+      "worst_signed_distance_m": -0.03624235632014461
+    },
+    {
+      "frame": 3,
+      "negative_vertices": 11,
+      "worst_signed_distance_m": -0.033376829931512475
+    },
+    {
+      "frame": 4,
+      "negative_vertices": 9,
+      "worst_signed_distance_m": -0.025432237423956394
+    },
+    {
+      "frame": 5,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.009603423750832007
+    },
+    {
+      "frame": 6,
+      "negative_vertices": 2,
+      "worst_signed_distance_m": -0.004895654288702644
+    },
+    {
+      "frame": 7,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.004609804083884228
+    },
+    {
+      "frame": 8,
+      "negative_vertices": 1,
+      "worst_signed_distance_m": -0.008669789647683501
+    },
+    {
+      "frame": 9,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.014008499681949615
+    },
+    {
+      "frame": 10,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.019230385776609182
+    },
+    {
+      "frame": 11,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.023358534555882215
+    },
+    {
+      "frame": 12,
+      "negative_vertices": 3,
+      "worst_signed_distance_m": -0.0267649469897151
+    },
+    {
+      "frame": 13,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.05561458878219128
+    },
+    {
+      "frame": 14,
+      "negative_vertices": 6,
+      "worst_signed_distance_m": -0.02420345856808126
+    },
+    {
+      "frame": 15,
+      "negative_vertices": 11,
+      "worst_signed_distance_m": -0.05923595931380987
+    },
+    {
+      "frame": 16,
+      "negative_vertices": 12,
+      "worst_signed_distance_m": -0.04136130027472973
+    },
+    {
+      "frame": 17,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.04451764980331063
+    },
+    {
+      "frame": 18,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.04440464032813907
+    },
+    {
+      "frame": 19,
+      "negative_vertices": 12,
+      "worst_signed_distance_m": -0.041977270506322384
+    },
+    {
+      "frame": 20,
+      "negative_vertices": 11,
+      "worst_signed_distance_m": -0.033605649950914085
+    },
+    {
+      "frame": 21,
+      "negative_vertices": 8,
+      "worst_signed_distance_m": -0.022282420744886622
+    },
+    {
+      "frame": 22,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.008500517578795552
+    },
+    {
+      "frame": 23,
+      "negative_vertices": 6,
+      "worst_signed_distance_m": -0.010580923408269882
+    },
+    {
+      "frame": 24,
+      "negative_vertices": 4,
+      "worst_signed_distance_m": -0.007115414133295417
+    },
+    {
+      "frame": 25,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 26,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 27,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 28,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 29,
+      "negative_vertices": 1,
+      "worst_signed_distance_m": -0.014744647778570652
+    },
+    {
+      "frame": 30,
+      "negative_vertices": 0,
+      "worst_signed_distance_m": 0
+    },
+    {
+      "frame": 31,
+      "negative_vertices": 2,
+      "worst_signed_distance_m": -0.005836621858179569
+    },
+    {
+      "frame": 32,
+      "negative_vertices": 7,
+      "worst_signed_distance_m": -0.01642910297960043
+    },
+    {
+      "frame": 33,
+      "negative_vertices": 13,
+      "worst_signed_distance_m": -0.028889152221381664
+    },
+    {
+      "frame": 34,
+      "negative_vertices": 15,
+      "worst_signed_distance_m": -0.034433163702487946
+    },
+    {
+      "frame": 35,
+      "negative_vertices": 13,
+      "worst_signed_distance_m": -0.03655474475817755
+    }
+  ]
+}

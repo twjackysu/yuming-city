@@ -40,3 +40,8 @@ GLB 同時含 idle_loop 和 walk_loop；Godot 4.7.2 自動辨識 loop 後匯入�
 2026-11-10 新增 run_loop／run_candidate.fbx：ACCAD Male1_C03_Run 真實跑步動捕第 12～31 幀，20 個關鍵取樣／19 幀週期，30fps、Without Skin、In Place，約 0.6333s。保留右前臂護傷；依腿長縮放原動捕的騰空高度，校準後低於 15mm 的足尖高度視為接觸，未將騰空強壓到地面。20 個引擎實際蒙皮最低點與預定高度差最大 0.00037mm，兩次落地、最高騰空約 14.5cm；這是垂直接觸檢查，不代表移動時腳步滑動已驗收。移速參考約 4.49m/s，仍須遊戲實際驗證。
 
 run_preview.mp4／run_preview.png 是 Godot Compatibility 棚光擷取，run_night_preview.png 是 Forward+ 遊戲夜空／霧與暖燈檢查。FBX 60 骨、0 網格、30fps、循環矩陣差小於 0.000001；idle→walk→run→idle→run→walk 姿勢恢復檢查通過。原模型／貼圖區段不變，衣襬外翹、髮膚品質與其他完整動作仍未解決。run_source_cycle.json／run_retarget_cycle.json 記錄來源週期、接觸校準與重定向參數；run_engine_*.log 是引擎證據。
+
+
+2026-11-10 衣襬修整：只調整 walk 的四根 Coat_*_Lower 旋轉，下半段以重力方向為基準，跟隨上段角度 35%，限制在 ±0.24rad（約 13.75°）；不再上下兩段一起跟著大腿整片抬起。coat_side_preview.png 是側面檢查，preview.png／walk_preview.mp4／night_preview.png 已更新。idle／run 保留原動作，尚未套用此修整。
+
+walk_candidate.fbx 已重匯出，60 骨／0 網格／30fps／原地與循環檢查通過。逐軌比較僅四根衣襬下段 rotation 改變；35 幀引擎接地與三動作切換通過。另分網格確認最低點來自不透明 Clothes（靴子），不是透明皮膚面片。技術棚光改 Forward+，25cm 地面格線；平地只接收陰影，避免自身陰影條紋。褲面有向距離檢查的負側頂點峰值由 21 降至 15，最深既有負距離約 5.9cm 仍存在；開放表面的有向距離只是診斷，不等於完整碰撞解決。請勿把這次修整理解為所有衣物與極端姿勢均已驗收。

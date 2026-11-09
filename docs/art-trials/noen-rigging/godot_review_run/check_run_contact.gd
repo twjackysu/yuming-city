@@ -51,4 +51,3 @@ func check():
   print("RUN_CONTACT ", frame, " ", lowest, " expected=", expected[frame], " error=", abs(lowest-expected[frame]))
   if not is_finite(lowest) or (lowest < -0.003 or abs(lowest-expected[frame]) > 0.003): failed = true
  quit(3 if failed else 0)
-

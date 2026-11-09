@@ -9,7 +9,23 @@ def skin(obj,bone):
  obj.parent=rig;g=obj.vertex_groups.new(name=bone);g.add(list(range(len(obj.data.vertices))),1,'REPLACE');mod=obj.modifiers.new('Skin','ARMATURE');mod.object=rig
 
 def steel(name,edge=False):
- m=bpy.data.materials.new(name);m.use_nodes=True;n=m.node_tree.nodes;l=m.node_tree.links;p=n.get('Principled BSDF');coord=n.new('ShaderNodeTexCoord');stretch=n.new('ShaderNodeVectorMath');stretch.operation='MULTIPLY';stretch.inputs[1].default_value=(80,80,80);l.new(coord.outputs['Object'],stretch.inputs[0]);noise=n.new('ShaderNodeTexNoise');noise.inputs['Scale'].default_value=1;noise.inputs['Detail'].default_value=4;l.new(stretch.outputs[0],noise.inputs['Vector']);ramp=n.new('ShaderNodeValToRGB');ramp.color_ramp.elements[0].position=.28;ramp.color_ramp.elements[0].color=(.12,.135,.15,1) if not edge else (.12,.14,.16,1);ramp.color_ramp.elements[1].position=.72;ramp.color_ramp.elements[1].color=(.14,.155,.17,1) if not edge else (.30,.33,.36,1);l.new(noise.outputs['Fac'],ramp.inputs[0]);l.new(ramp.outputs[0],p.inputs['Base Color']);p.inputs['Metallic'].default_value=.72 if not edge else .78;p.inputs['Roughness'].default_value=.50 if not edge else .46;fine=n.new('ShaderNodeTexNoise');fine.inputs['Scale'].default_value=420;l.new(coord.outputs['Object'],fine.inputs['Vector']);bump=n.new('ShaderNodeBump');bump.inputs['Distance'].default_value=.00015;bump.inputs['Strength'].default_value=.25;l.new(fine.outputs['Fac'],bump.inputs['Height']);l.new(bump.outputs[0],p.inputs['Normal']);return m
+ m=bpy.data.materials.new(name);m.use_nodes=True;n=m.node_tree.nodes;l=m.node_tree.links;p=n.get('Principled BSDF');coord=n.new('ShaderNodeTexCoord')
+ def noise(scale,detail=2,stretch=None):
+  node=n.new('ShaderNodeTexNoise');node.inputs['Scale'].default_value=scale;node.inputs['Detail'].default_value=detail;vector=coord.outputs['Object']
+  if stretch:
+   mul=n.new('ShaderNodeVectorMath');mul.operation='MULTIPLY';mul.inputs[1].default_value=stretch;l.new(vector,mul.inputs[0]);vector=mul.outputs[0]
+  l.new(vector,node.inputs['Vector']);return node.outputs['Fac']
+ def ramp(value,lo,hi,a,b):
+  node=n.new('ShaderNodeValToRGB');node.color_ramp.elements[0].position=lo;node.color_ramp.elements[0].color=(*a,1);node.color_ramp.elements[1].position=hi;node.color_ramp.elements[1].color=(*b,1);l.new(value,node.inputs[0]);return node.outputs['Color']
+ mottling=noise(36,3);base=ramp(mottling,.25,.75,(.16,.18,.20) if not edge else (.40,.43,.46),(.20,.22,.24) if not edge else (.54,.57,.60))
+ # Sparse oxidation islands, rather than a uniform brown blade.
+ rust=ramp(noise(12,3),.68,.82,(0,0,0),(.8,.8,.8))
+ if edge:rust=ramp(noise(18,2),.84,.94,(0,0,0),(.25,.25,.25))
+ color=n.new('ShaderNodeMixRGB');color.blend_type='MIX';l.new(rust,color.inputs[0]);l.new(base,color.inputs[1]);color.inputs[2].default_value=(.075,.028,.009,1);l.new(color.outputs[0],p.inputs['Base Color'])
+ metal=n.new('ShaderNodeMapRange');metal.inputs['From Min'].default_value=0;metal.inputs['From Max'].default_value=1;metal.inputs['To Min'].default_value=.94;metal.inputs['To Max'].default_value=.15;l.new(rust,metal.inputs['Value']);l.new(metal.outputs[0],p.inputs['Metallic'])
+ scratches=ramp(noise(1,2,(220,220,50)),.59,.72,(.42,.42,.42) if not edge else (.18,.18,.18),(.58,.58,.58) if not edge else (.34,.34,.34))
+ rough=n.new('ShaderNodeMixRGB');l.new(rust,rough.inputs[0]);l.new(scratches,rough.inputs[1]);rough.inputs[2].default_value=(.90,.90,.90,1);l.new(rough.outputs[0],p.inputs['Roughness'])
+ bump=n.new('ShaderNodeBump');bump.inputs['Distance'].default_value=.00007;bump.inputs['Strength'].default_value=.18;l.new(noise(450,2),bump.inputs['Height']);l.new(bump.outputs[0],p.inputs['Normal']);return m
 face=steel('Sheila_Forged_Blade');edge=steel('Sheila_Worn_Bevel',True);fracture=steel('Sheila_Rough_Fracture');fracture.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.92
 xs=[-.275,-.255,-.17,-.05,-.025,0,.025,.06,.12,.255,.275];ends=[(-.275,.96),(-.17,.87),(-.05,.91),(.06,.84),(.12,.92),(.275,.89)]
 def bottom(x):
@@ -18,14 +34,14 @@ def bottom(x):
  raise ValueError(x)
 def thickness(x):
  a=abs(x)
- if a>=.255:return .0015+(.013-.0015)*(.275-a)/.020
- if a>=.025:return .013+(.035-.013)*(.255-a)/.230
- return .024+.011*a/.025
+ if a>=.255:return .001+(.007-.001)*(.275-a)/.020
+ if a>=.025:return .007+(.016-.007)*(.255-a)/.230
+ return .010+.006*a/.025
 verts=[];faces=[];matids=[];rows=6;cols=len(xs)
 for side in [-1,1]:
  for row in range(rows):
   t=row/(rows-1)
-  for x in xs:verts.append((x*(1-.16*t),.2825+side*thickness(x),1.42*(1-t)+(bottom(x)-.20)*t))
+  for x in xs:verts.append((x*.8*(1-.35*t),.2825+side*thickness(x),1.42*(1-t)+(bottom(x)-.20)*t))
 for side in range(2):
  for row in range(rows-1):
   for col in range(cols-1):
@@ -44,7 +60,7 @@ bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=list(bm
 def bar(name,center,dimensions,mat,bevel):
  bpy.ops.mesh.primitive_cube_add(size=1,location=center);obj=bpy.context.object;obj.name=name;obj.scale=dimensions;bpy.ops.object.transform_apply(location=True,rotation=True,scale=True);obj.data.materials.append(mat);mod=obj.modifiers.new('Forged edge','BEVEL');mod.width=bevel;mod.segments=2;bpy.ops.object.modifier_apply(modifier=mod.name);skin(obj,'weapon_socket');return obj
 guard_profile=[(-.31,1.415),(-.28,1.46),(-.15,1.475),(0,1.468),(.15,1.475),(.28,1.46),(.31,1.415),(.26,1.425),(.12,1.442),(-.12,1.442),(-.26,1.425)]
-gv=[(x,y,z) for y in [.26,.305] for x,z in guard_profile];count=len(guard_profile);gf=[tuple(reversed(range(count))),tuple(range(count,2*count))]+[(i,(i+1)%count,(i+1)%count+count,i+count) for i in range(count)];mesh=bpy.data.meshes.new('Curved forged guard');mesh.from_pydata(gv,[],gf);guard=bpy.data.objects.new('Sheila_Sword_Guard',mesh);scene.collection.objects.link(guard);mesh.materials.append(face);bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(mesh);bm.free();bpy.ops.object.select_all(action='DESELECT');guard.select_set(True);bpy.context.view_layer.objects.active=guard;mod=guard.modifiers.new('Rounded forged edge','BEVEL');mod.width=.003;mod.segments=2;bpy.ops.object.modifier_apply(modifier=mod.name);skin(guard,'weapon_socket')
+gv=[(x*.85,y,1.445+(z-1.445)*.6) for y in [.2695,.2955] for x,z in guard_profile];count=len(guard_profile);gf=[tuple(reversed(range(count))),tuple(range(count,2*count))]+[(i,(i+1)%count,(i+1)%count+count,i+count) for i in range(count)];mesh=bpy.data.meshes.new('Curved forged guard');mesh.from_pydata(gv,[],gf);guard=bpy.data.objects.new('Sheila_Sword_Guard',mesh);scene.collection.objects.link(guard);mesh.materials.append(face);bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(mesh);bm.free();bpy.ops.object.select_all(action='DESELECT');guard.select_set(True);bpy.context.view_layer.objects.active=guard;mod=guard.modifiers.new('Rounded forged edge','BEVEL');mod.width=.003;mod.segments=2;bpy.ops.object.modifier_apply(modifier=mod.name);skin(guard,'weapon_socket')
 leather=bpy.data.materials.new('Sheila_Grip_Leather');leather.use_nodes=True;p=leather.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(.035,.018,.01,1);p.inputs['Roughness'].default_value=.87
 bpy.ops.mesh.primitive_cylinder_add(vertices=16,radius=.0185,depth=.21,location=(0,.2825,1.565));grip=bpy.context.object;grip.name='Sheila_Sword_Grip';grip.scale.y=.88;bpy.ops.object.transform_apply(location=True,rotation=True,scale=True);grip.data.materials.append(leather);skin(grip,'weapon_socket')
 wrapmat=leather.copy();wrapmat.name='Sheila_Grip_Wrapped_Leather';wrapmat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.055,.027,.012,1)

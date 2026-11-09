@@ -29,3 +29,6 @@ inputs 的圖片由 OpenAI image generation 依固定鏡頭渲染製作，僅是
 Godot 使用 godot_review_atlas：複製 sheila_walk_preview.glb → import → configure_material_import.py → 再 import。材質匯入腳本僅恢復 M_Sheila_Hair specular=0.06；標準棚光改用 shadow_bias=0.1、shadow_normal_bias=0.5，減少先前自陰影網紋。check_ground.gd 覆蓋所有蒙皮網格 35 幀。blade_review.tscn、night_review.tscn 提供劍身背面與實際共用夜景材質檢視。
 
 目前 38,396 三角面／53 骨／4 網格／3 材質／9 張 2K PNG。Godot 接地、獨立大劍單骨、貼圖尺寸與結構 gate 通過，未通過正式美術及全動作碰撞驗收；仍只含 walk。
+
+
+2026-11-10：rebuild_sheila_sword.py 更新為 44cm→28.6cm 漸窄劍身、3.2cm 中脊、2.6cm 深護手，以及局部氧化／短刮磨的鋼材。仍從原生 sheila-production/tailored_baked.blend 起建，不採用失敗披肩試作。依原 bake→split→review 流程；blade_night_review 新增背面暖燈檢查。來源、其他幾何與 FBX 不變，三材質／9 張 2K、38,396 三角面。披肩與正式戰鬥仍缺驗收。
