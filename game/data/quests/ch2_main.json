@@ -1,6 +1,11 @@
 {
   "id": "ch2_main",
   "title": "Q_CH2_MAIN_TITLE",
+  "on_complete": {
+    "set": {
+      "ch2.complete": true
+    }
+  },
   "stages": [
     {
       "id": "isa_table",

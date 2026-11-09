@@ -93,6 +93,29 @@ const COPPER: Color = Color(0.72, 0.44, 0.27)
 const BRONZE: Color = Color(0.6, 0.42, 0.22)
 const BRONZE_DARK: Color = Color(0.3, 0.2, 0.12)
 const WARM: Color = Color(1.0, 0.6, 0.3)
+## 段落 5 窗簾（D-161）：內室東牆的高窗（窗簾拉著）。牆上的紋路看完，伊薩走到窗邊等；諾恩走到他旁邊 → 對話（撤離？毀掉鐘？援軍？
+## 每一條都被現實擋下）→ 伊薩拉開窗簾 → 過場 ch2_eye：玻璃外一堵黑牆動了一下＝一隻眼睛（吞日獸）→ 第 2 章完成。
+const WINDOW_Z: float = -9.6
+const WINDOW_W: float = 2.8
+const WINDOW_SILL: float = 1.2
+const WINDOW_TOP: float = 4.6
+const ISA_WINDOW: Vector3 = Vector3(3.7, 0.0, -7.6)
+const CURTAIN_TALK_RANGE: float = 2.2
+## 過場時諾恩站在窗的北邊一點（從大家背後看窗的鏡頭不會被他擋住）
+const NOEN_WINDOW: Vector3 = Vector3(2.4, 0.0, -10.6)
+const CURTAIN_TALK: String = "ch2_curtain"
+const EYE_CUTSCENE: String = "ch2_eye"
+## 窗外：屏障的冷光網格、後面那面「黑牆」（眼睛）；都不受燈光影響
+const BARRIER_X: float = 5.4
+const EYE_X: float = 8.5
+const EYE_Y: float = 3.0
+const EYE_PLANE: Vector2 = Vector2(20.0, 13.0)
+const BARRIER_PLANE: Vector2 = Vector2(12.0, 9.0)
+## 瞳孔收到多窄（0＝一道縫）
+const PUPIL_NARROW: float = 0.15
+const COLD: Color = Color(0.55, 0.78, 1.0)
+const BARRIER_LIGHT_ENERGY: float = 1.3
+const CURTAIN_CLOTH: Color = Color(0.3, 0.11, 0.09)
 ## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
 const ISA_INSIGHT_RANGE: float = 9.0
 const LAMP_RANGE: float = 7.0
@@ -127,6 +150,21 @@ var steam_level: float = 1.0
 var _steam: CPUParticles3D
 ## 截圖用：小卡停在指定的按住秒數
 var _dev_insight: bool = false
+## 段落 5：窗簾兩半、窗外的眼睛與屏障、屏障照進來的冷光
+var _curtain_halves: Array[Node3D] = []
+var _eye_mat: ShaderMaterial
+var _eye_wall: MeshInstance3D
+var _barrier: MeshInstance3D
+var _barrier_light: OmniLight3D
+var curtain_open: bool = false
+## 眼睛：0＝閉著（一堵牆）～1＝睜開；瞳孔 1＝放大～PUPIL_NARROW；整面牆「動了一下」往上移多少
+var eye_open: float = 0.0
+var pupil: float = 1.0
+var wall_shift: float = 0.0
+## 截圖用：過場事件直接跳到結果（不等補間）
+var _dev_instant: bool = false
+## 窗簾、冷光、眼睛的補間（跳過過場時全部停掉、直接到結果）
+var _window_tweens: Array[Tween] = []
 
 
 func _ready() -> void:
@@ -158,13 +196,23 @@ func _ready() -> void:
 		Game.session.set_flag("ch2.table_seated", true)
 	# `--hall-at=inner` 走進內室、過場開始（再加 `--hall-shot=N` 停在第 N 個鏡頭）；`--hall-at=leo` 過場看完、站在內室
 	# `--hall-at=carved` 牆上的紋路也都看完了（刻痕亮著）
-	if at in ["inner", "leo", "carved"]:
+	# `--hall-at=curtain` 紋路看完、伊薩在窗邊（窗簾還拉著）；`--hall-at=eye [--hall-shot=N]` 窗簾的對話講完、過場開始；
+	# `--hall-at=eye-after` 過場看完（窗簾開著、眼睛睜開）
+	var carved: bool = at in ["carved", "curtain", "eye", "eye-after"]
+	if at in ["inner", "leo"] or carved:
 		dev_reach_inner_room(Game.session, at != "inner")
-	if at == "carved":
+	if carved:
 		for i: int in CARVING_ZS.size():
 			Game.session.state.set_flag("ch2.carving_%d" % i, true)
 		Game.session.set_flag("ch2.read_wall_carvings", true)
 		_update_carvings()
+	if at in ["eye", "eye-after"]:
+		Game.session.state.set_flag("ch2.plan_break", true)
+		Game.session.state.set_flag("ch2.plan_aid", true)
+		Game.session.set_flag("ch2.curtain_talked", true)
+		_dev_instant = true
+	if at == "eye-after":
+		Game.session.set_flag("ch2.curtain_opened", true)
 	# 已經坐下過（重來、讀檔）：直接在桌邊
 	if bool(Game.session.state.get_flag("ch2.table_seated", false)):
 		_seat_everyone()
@@ -175,6 +223,13 @@ func _ready() -> void:
 		_place_inner(bool(Game.session.state.get_flag("ch2.leo_met", false)))
 		if Game.session.quests.stage_of(QUEST) == "meet_leo":
 			_play_leo_cutscene.call_deferred(int(str(dev_args.get("hall-shot", "0"))))
+	# 窗簾：已經看過眼睛（第 2 章完成、重來、讀檔）→ 窗簾開著、眼睛睜開、待續；對話講完但過場沒看完 → 重新播
+	if bool(Game.session.state.get_flag("ch2.curtain_opened", false)):
+		_reveal_eye()
+		_continued_shown = true
+		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
+	elif Game.session.quests.stage_of(QUEST) == "curtain" and bool(Game.session.state.get_flag("ch2.curtain_talked", false)):
+		_play_eye_cutscene.call_deferred(int(str(dev_args.get("hall-shot", "0"))))
 	if dev_args.has("hall-insight") and _strike != null and not _strike.is_done():
 		_dev_insight = true
 		_strike.held = float(str(dev_args["hall-insight"]))
@@ -261,10 +316,9 @@ func _physics_process(delta: float) -> void:
 	if stage == "wall_carvings" and Input.is_action_just_pressed("interact") and nearest_carving() >= 0:
 		read_carving(nearest_carving())
 		return
-	# 段落 5（窗簾）還沒做：牆上的紋路看完之後顯示「待續」
-	if stage == "curtain" and not _continued_shown:
-		_continued_shown = true
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+	# 段落 5：走到窗邊的伊薩旁邊 → 窗簾的對話
+	if stage == "curtain" and _flat(player.global_position, ISA_WINDOW) <= CURTAIN_TALK_RANGE:
+		talk_curtain()
 
 
 ## 看穿伊薩（D-158）：攻略的稱號一個字一個字被劃掉 → 真的伊薩。劃完設 ch2.usurper_crossed_out（攻略筆記「城主＝食歲的僭王」被推翻）。
@@ -283,6 +337,7 @@ func _build_isa_insight() -> void:
 func _process(delta: float) -> void:
 	_update_steam(delta)
 	_update_mood(delta)
+	_update_eye()
 	var player: PlayerController = get_node_or_null("Player") as PlayerController
 	if _dev_insight:
 		update_isa_insight(0.0, true)
@@ -392,6 +447,11 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 	elif dialogue_id == CARVING_END_TALK and not bool(Game.session.state.get_flag("ch2.read_wall_carvings", false)):
 		# 跳過也算看完：攻略筆記「焚城路線最快」被推翻（諾恩自己寫的那條）
 		Game.session.set_flag("ch2.read_wall_carvings", true)
+		# 伊薩走到窗邊等（段落 5）
+		_isa_to_window(true)
+	elif dialogue_id == CURTAIN_TALK and not bool(Game.session.state.get_flag("ch2.curtain_talked", false)):
+		Game.session.set_flag("ch2.curtain_talked", true)
+		_play_eye_cutscene(0)
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:
@@ -522,8 +582,6 @@ func _build_room() -> void:
 	_solid("SkirtNorth", Vector3(hx * 2.0, 0.18, 0.06), Vector3(0, 0.09, -hz + 0.03), skirting, false)
 	_solid("SkirtWest", Vector3(0.06, 0.18, hz * 2.0), Vector3(-hx + 0.03, 0.09, 0), skirting, false)
 	_solid("SkirtEast", Vector3(0.06, 0.18, hz * 2.0), Vector3(hx - 0.03, 0.09, 0), skirting, false)
-	# 窗簾（西牆，拉著）：第 2 章最後伊薩會拉開它（段落 5）
-	_solid("Curtain", Vector3(0.08, 2.6, 2.4), Vector3(-hx + 0.08, 1.55, -0.9), _mat(Color(0.36, 0.3, 0.3), 0.95), false)
 	var lamp := OmniLight3D.new()
 	lamp.name = "CeilingLamp"
 	lamp.light_color = Color(0.92, 0.95, 1.0)
@@ -738,6 +796,9 @@ func _place_inner(after: bool) -> void:
 	if _isa != null:
 		_isa.global_position = INNER_SPOTS["isa"] as Vector3
 		_face(_isa, MAIN_SEAT_POS)
+		# 紋路看完之後伊薩在窗邊
+		if bool(Game.session.state.get_flag("ch2.read_wall_carvings", false)):
+			_isa_to_window(false)
 	if _misha != null:
 		_misha.global_position = INNER_SPOTS["misha" if after else "misha_door"] as Vector3
 		_face(_misha, MAIN_SEAT_POS)
@@ -802,6 +863,26 @@ func _on_cutscene_event(event: String, shot: Dictionary) -> void:
 				tw.tween_callback(_misha_arrived)
 		"slap":
 			Sfx.play_at(self, "slap", MAIN_SEAT_POS + Vector3(0, 1.1, 0.3), -6.0, 0.02)
+		"curtain_open":
+			_set_curtain(true, not _dev_instant)
+		"wall_shift":
+			if _dev_instant:
+				wall_shift = 0.0
+			else:
+				var tw: Tween = _window_tween(self)
+				tw.tween_property(self, "wall_shift", 0.32, 0.5).set_trans(Tween.TRANS_SINE)
+				tw.tween_property(self, "wall_shift", 0.0, 1.4).set_trans(Tween.TRANS_SINE)
+			Sfx.play_at(self, "deep_rumble", Vector3(INNER_HALF_X, EYE_Y, WINDOW_Z), -2.0, 0.0, 12.0)
+		"eye_open":
+			if _dev_instant:
+				eye_open = 1.0
+			else:
+				_window_tween(self).tween_property(self, "eye_open", 1.0, 2.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		"pupil":
+			if _dev_instant:
+				pupil = PUPIL_NARROW
+			else:
+				_window_tween(self).tween_property(self, "pupil", PUPIL_NARROW, 2.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		_:
 			super._on_cutscene_event(event, shot)
 
@@ -817,6 +898,12 @@ func _on_cutscene_ended(cutscene_id: String, skipped: bool) -> void:
 	super._on_cutscene_ended(cutscene_id, skipped)
 	if cutscene_id == LEO_CUTSCENE:
 		_place_inner(true)
+	elif cutscene_id == EYE_CUTSCENE:
+		# 跳過也一樣：窗簾開著、眼睛睜開看著我們 → 第 2 章完成（ch2.curtain_opened 由過場的 on_end 設）→ 第 3 章待續
+		_reveal_eye()
+		if not _continued_shown:
+			_continued_shown = true
+			_banner("CH1_TO_BE_CONTINUED", 6.0)
 
 
 func _cut_from_black(seconds: float) -> void:
@@ -846,6 +933,10 @@ func _build_cutscene_cameras() -> void:
 	_camera_marker("InnerCamLeo", seat + Vector3(0.55, 1.3, 2.0), seat + Vector3(0.0, 1.05, 0.0))
 	_camera_marker("InnerCamMisha", seat + Vector3(-0.5, 1.45, 0.9), (INNER_SPOTS["misha_door"] as Vector3) + Vector3(0, 1.35, 0))
 	_camera_marker("InnerCamTwo", seat + Vector3(2.3, 1.45, 1.6), seat + Vector3(0.2, 1.05, 0.4))
+	# 段落 5：從大家背後看窗（伊薩在窗邊）／貼近窗看外面的眼睛／從窗邊回頭看被冷光照到的大家
+	_camera_marker("EyeCamWindow", Vector3(-1.4, 1.75, -8.0), Vector3(EYE_X, EYE_Y - 0.2, WINDOW_Z))
+	_camera_marker("EyeCamClose", Vector3(2.9, 2.5, -8.9), Vector3(EYE_X, EYE_Y, WINDOW_Z - 0.2))
+	_camera_marker("EyeCamGroup", Vector3(4.0, 1.85, -9.5), Vector3(1.2, 1.4, -10.9))
 
 
 ## 內室：石地板、高牆、牆上的巨大鐘盤、主椅（銅椅）、十二條細管、西牆 4 塊浮雕（段落 4）、三盞不投影子的暖光。
@@ -861,7 +952,15 @@ func _build_inner_room() -> void:
 	_solid("InnerFloor", Vector3(hx * 2.0 + 0.6, 0.4, floor_from - far + 0.5), Vector3(0, -0.2, (floor_from + far - 0.5) * 0.5), _mat(Color(0.36, 0.32, 0.28), 0.85))
 	_solid("InnerCeiling", Vector3(hx * 2.0 + 0.6, 0.3, depth + 0.6), Vector3(0, INNER_H + 0.15, mid), stone, false)
 	_solid("InnerWallWest", Vector3(WALL_T, INNER_H, depth), Vector3(-hx - WALL_T * 0.5, INNER_H * 0.5, mid), stone)
-	_solid("InnerWallEast", Vector3(WALL_T, INNER_H, depth), Vector3(hx + WALL_T * 0.5, INNER_H * 0.5, mid), stone)
+	# 東牆中間留一扇高窗（段落 5，D-161）：窗的南邊、北邊、窗台下、窗楣上四段
+	var wx: float = hx + WALL_T * 0.5
+	var w_south: float = WINDOW_Z + WINDOW_W * 0.5
+	var w_north: float = WINDOW_Z - WINDOW_W * 0.5
+	_solid("InnerWallEastS", Vector3(WALL_T, INNER_H, near - w_south), Vector3(wx, INNER_H * 0.5, (near + w_south) * 0.5), stone)
+	_solid("InnerWallEastN", Vector3(WALL_T, INNER_H, w_north - far), Vector3(wx, INNER_H * 0.5, (w_north + far) * 0.5), stone)
+	_solid("InnerWallEastSill", Vector3(WALL_T, WINDOW_SILL, WINDOW_W), Vector3(wx, WINDOW_SILL * 0.5, WINDOW_Z), stone)
+	_solid("InnerWallEastHead", Vector3(WALL_T, INNER_H - WINDOW_TOP, WINDOW_W), Vector3(wx, WINDOW_TOP + (INNER_H - WINDOW_TOP) * 0.5, WINDOW_Z), stone)
+	_build_window()
 	_solid("InnerWallNorth", Vector3(hx * 2.0 + 0.6, INNER_H, WALL_T), Vector3(0, INNER_H * 0.5, far - WALL_T * 0.5), stone)
 	# 飯廳的北牆只有 3.8 m 高：上面補一段到內室的天花板
 	_solid("InnerWallSouthUpper", Vector3(hx * 2.0, INNER_H - WALL_H, WALL_T), Vector3(0, WALL_H + (INNER_H - WALL_H) * 0.5, -ROOM_HALF.y - WALL_T * 0.5), stone, false)
@@ -1144,3 +1243,248 @@ func _update_carvings() -> void:
 		var lit: bool = all or bool(Game.session.state.get_flag("ch2.carving_%d" % i, false))
 		_carving_grooves[i].emission_enabled = lit
 		_carving_grooves[i].emission_energy_multiplier = 1.2
+
+
+# ---------------------------------------------------------------- 段落 5：窗簾與眼睛（D-161）
+
+## 內室東牆的高窗：銅框＋十字窗櫺；裡面一幅厚窗簾（兩半）；窗外一層屏障的冷光網格，後面是那面「黑牆」（眼睛）。
+func _build_window() -> void:
+	var x_in: float = INNER_HALF_X
+	var frame_mat: StandardMaterial3D = _metal(BRONZE_DARK, 0.6, 0.5)
+	var cy: float = (WINDOW_SILL + WINDOW_TOP) * 0.5
+	var wh: float = WINDOW_TOP - WINDOW_SILL
+	var bars: Array[Array] = [
+		["FrameTop", Vector3(0.14, 0.12, WINDOW_W + 0.12), Vector3(x_in + 0.02, WINDOW_TOP, WINDOW_Z)],
+		["FrameBottom", Vector3(0.2, 0.1, WINDOW_W + 0.12), Vector3(x_in + 0.02, WINDOW_SILL, WINDOW_Z)],
+		["FrameS", Vector3(0.14, wh, 0.1), Vector3(x_in + 0.02, cy, WINDOW_Z + WINDOW_W * 0.5)],
+		["FrameN", Vector3(0.14, wh, 0.1), Vector3(x_in + 0.02, cy, WINDOW_Z - WINDOW_W * 0.5)],
+		["Mullion", Vector3(0.06, wh, 0.05), Vector3(x_in + 0.15, cy, WINDOW_Z)],
+		["Transom", Vector3(0.06, 0.05, WINDOW_W), Vector3(x_in + 0.15, WINDOW_SILL + wh * 0.62, WINDOW_Z)],
+	]
+	var frame := Node3D.new()
+	frame.name = "WindowFrame"
+	add_child(frame)
+	for b: Array in bars:
+		var mi := MeshInstance3D.new()
+		mi.name = str(b[0])
+		var bm := BoxMesh.new()
+		bm.size = b[1] as Vector3
+		mi.mesh = bm
+		mi.material_override = frame_mat
+		mi.position = b[2] as Vector3
+		frame.add_child(mi)
+	_build_curtain()
+	# 窗外：屏障（疊加的冷光網格）與後面的黑牆（眼睛）；窗簾打開才顯示
+	_barrier = _outside_plane("Barrier", BARRIER_PLANE, BARRIER_X, "res://src/world/barrier_grid.gdshader")
+	(_barrier.material_override as ShaderMaterial).set_shader_parameter("plane_size", BARRIER_PLANE)
+	_eye_wall = _outside_plane("EyeWall", EYE_PLANE, EYE_X, "res://src/world/deep_eye.gdshader")
+	_eye_mat = _eye_wall.material_override as ShaderMaterial
+	_eye_mat.set_shader_parameter("plane_size", EYE_PLANE)
+	# 屏障照進來的冷光（打開窗簾才亮；不投影子，照第 1 章的規則）
+	_barrier_light = OmniLight3D.new()
+	_barrier_light.name = "BarrierLight"
+	_barrier_light.light_color = COLD
+	_barrier_light.light_energy = 0.0
+	_barrier_light.omni_range = 7.5
+	_barrier_light.shadow_enabled = false
+	_barrier_light.position = Vector3(x_in - 0.5, cy + 0.3, WINDOW_Z)
+	add_child(_barrier_light)
+	_set_curtain(false, false)
+
+
+## 窗外的一張四邊形（面向內室，-X）；UV 的 u 往 +Z、v 往下。
+func _outside_plane(node_name: String, size: Vector2, x: float, shader_path: String) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	var qm := QuadMesh.new()
+	qm.size = size
+	mi.mesh = qm
+	var mat := ShaderMaterial.new()
+	mat.shader = load(shader_path) as Shader
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = Vector3(x, EYE_Y, WINDOW_Z)
+	mi.rotation.y = -PI * 0.5
+	add_child(mi)
+	return mi
+
+
+## 厚窗簾：兩半，各自是一片有直褶的布（SurfaceTool；拉開時沿 Z 收窄，褶子跟著擠在一起）。
+func _build_curtain() -> void:
+	var root := Node3D.new()
+	root.name = "Curtain"
+	add_child(root)
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_color = CURTAIN_CLOTH
+	cloth.roughness = 0.95
+	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var half_w: float = WINDOW_W * 0.5 + 0.14
+	var h: float = WINDOW_TOP - WINDOW_SILL + 0.55
+	var mesh: ArrayMesh = curtain_mesh(half_w, h)
+	for side: String in ["S", "N"]:
+		var half := MeshInstance3D.new()
+		half.name = "Curtain" + side
+		half.mesh = mesh
+		half.material_override = cloth
+		root.add_child(half)
+		_curtain_halves.append(half)
+	var rod := MeshInstance3D.new()
+	rod.name = "CurtainRod"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.025
+	cm.bottom_radius = 0.025
+	cm.height = WINDOW_W + 1.2
+	rod.mesh = cm
+	rod.material_override = _metal(BRONZE, 0.8, 0.35)
+	rod.rotation.x = PI * 0.5
+	rod.position = Vector3(INNER_HALF_X - 0.14, WINDOW_TOP + 0.3, WINDOW_Z)
+	root.add_child(rod)
+
+
+## 一片有直褶的布：寬 w（沿 Z）、高 h，中心在原點；褶子是沿 Z 的正弦起伏（往 -X 凸），底邊一點點不齊。
+static func curtain_mesh(w: float, h: float) -> ArrayMesh:
+	const COLS: int = 48
+	const ROWS: int = 6
+	const FOLD: float = 0.26
+	const DEPTH: float = 0.05
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for r: int in ROWS + 1:
+		var v: float = float(r) / float(ROWS)
+		for c: int in COLS + 1:
+			var u: float = float(c) / float(COLS)
+			var z: float = (u - 0.5) * w
+			var x: float = -DEPTH * (0.5 + 0.5 * sin(z * TAU / FOLD))
+			var y: float = (0.5 - v) * h
+			if r == ROWS:
+				y -= 0.03 * sin(z * 17.0) * sin(z * 5.3)
+			st.set_uv(Vector2(u, v))
+			st.add_vertex(Vector3(x, y, z))
+	for r: int in ROWS:
+		for c: int in COLS:
+			var a: int = r * (COLS + 1) + c
+			var b: int = a + COLS + 1
+			st.add_index(a)
+			st.add_index(a + 1)
+			st.add_index(b)
+			st.add_index(a + 1)
+			st.add_index(b + 1)
+			st.add_index(b)
+	st.generate_normals()
+	return st.commit()
+
+
+## 窗簾開／關：關著兩半在窗中間合起來；開著各自收到窗邊（變窄、褶子擠在一起），窗外的屏障與眼睛顯示、冷光照進來。
+func _set_curtain(open: bool, animate: bool) -> void:
+	curtain_open = open
+	if not animate:
+		for t: Tween in _window_tweens:
+			if t.is_valid():
+				t.kill()
+		_window_tweens.clear()
+	var half_w: float = WINDOW_W * 0.5 + 0.14
+	var cy: float = (WINDOW_SILL + WINDOW_TOP) * 0.5 + 0.2
+	for i: int in _curtain_halves.size():
+		var half: Node3D = _curtain_halves[i]
+		var sz: float = 1.0 if i == 0 else -1.0
+		var closed_z: float = WINDOW_Z + sz * half_w * 0.5
+		var open_z: float = WINDOW_Z + sz * (WINDOW_W * 0.5 + 0.12)
+		var to_pos := Vector3(INNER_HALF_X - 0.2, cy, open_z if open else closed_z)
+		var to_scale := Vector3(1.0, 1.0, 0.26 if open else 1.0)
+		if animate:
+			var tw: Tween = _window_tween(half).set_parallel(true)
+			tw.tween_property(half, "position", to_pos, 1.1).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(half, "scale", to_scale, 1.1).set_trans(Tween.TRANS_SINE)
+		else:
+			half.position = to_pos
+			half.scale = to_scale
+	if _barrier != null:
+		_barrier.visible = open
+	if _eye_wall != null:
+		_eye_wall.visible = open
+	if _barrier_light != null:
+		if animate and open:
+			_window_tween(_barrier_light).tween_property(_barrier_light, "light_energy", BARRIER_LIGHT_ENERGY, 1.6)
+		else:
+			_barrier_light.light_energy = BARRIER_LIGHT_ENERGY if open else 0.0
+	if animate and open:
+		Sfx.play_at(self, "whoosh", Vector3(INNER_HALF_X, 2.6, WINDOW_Z), -14.0)
+
+
+func _window_tween(node: Node) -> Tween:
+	var tw: Tween = node.create_tween()
+	_window_tweens.append(tw)
+	return tw
+
+
+func is_curtain_open() -> bool:
+	return curtain_open
+
+
+## 每幀把眼睛的狀態送進 shader（截圖、測試可以直接設 eye_open／pupil／wall_shift）。
+func _update_eye() -> void:
+	if _eye_mat == null:
+		return
+	_eye_mat.set_shader_parameter("eye_open", eye_open)
+	_eye_mat.set_shader_parameter("pupil", pupil)
+	_eye_mat.set_shader_parameter("shift", wall_shift)
+
+
+## 看過眼睛之後的樣子（過場結束、跳過、重來、讀檔）：窗簾開著、眼睛睜開、瞳孔收窄、伊薩在窗邊。
+func _reveal_eye() -> void:
+	_set_curtain(true, false)
+	eye_open = 1.0
+	pupil = PUPIL_NARROW
+	wall_shift = 0.0
+	_isa_to_window(false)
+	_noen_to_window()
+	_update_eye()
+
+
+## 諾恩站到窗前（窗的北邊一點、面向窗外的眼睛）：過場開始時、看過眼睛之後。
+func _noen_to_window() -> void:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null:
+		var to: Vector3 = Vector3(EYE_X, 0.0, WINDOW_Z) - NOEN_WINDOW
+		_put(player, NOEN_WINDOW, atan2(-to.x, -to.z))
+
+
+## 伊薩走到窗邊（面向窗）；walk＝慢慢走過去（紋路看完那時），否則直接站好。
+func _isa_to_window(walk: bool) -> void:
+	if _isa == null:
+		return
+	var to: Vector3 = ISA_WINDOW
+	if walk:
+		_face(_isa, to)
+		_isa.set_move_speed(1.0)
+		var tw: Tween = _isa.create_tween()
+		tw.tween_property(_isa, "global_position", to, maxf(0.8, _flat(_isa.global_position, to) / 1.4))
+		tw.tween_callback(_isa_at_window)
+	else:
+		_isa.global_position = to
+		_isa_at_window()
+
+
+func _isa_at_window() -> void:
+	if _isa == null:
+		return
+	_isa.set_move_speed(0.0)
+	_face(_isa, Vector3(INNER_HALF_X + 1.0, 0.0, WINDOW_Z))
+
+
+## 走到窗邊的伊薩旁邊（測試也用）：席菈「把人撤走。」→ 諾恩想得到的辦法一條條被擋下 → 伊薩拉開窗簾。
+func talk_curtain() -> void:
+	if Game.is_in_dialogue() or bool(Game.session.state.get_flag("ch2.curtain_talked", false)):
+		return
+	Game.start_dialogue(CURTAIN_TALK)
+
+
+## 過場 ch2_eye；shot＞0 是截圖用（直接跳到第 shot 個鏡頭）。
+func _play_eye_cutscene(shot: int) -> void:
+	if Game.is_in_cutscene() or bool(Game.session.state.get_flag("ch2.curtain_opened", false)):
+		return
+	if not Game.play_cutscene(EYE_CUTSCENE):
+		return
+	_noen_to_window()
+	for i: int in shot:
+		Game.cutscene.update(100.0)

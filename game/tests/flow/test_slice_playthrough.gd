@@ -751,7 +751,89 @@ func _chapter2_carvings(hall: StoryLevel, reverse: bool) -> void:
 	for i: int in 3:
 		await tree.physics_frame
 	assert_false(_game.call("is_in_dialogue"), "[ch2_carvings] 不會又開獨白")
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 5（窗簾）待續")
+	await _chapter2_curtain(hall, reverse)
+
+
+## 第 2 章段落 5（D-161）：紋路看完伊薩在窗邊等 → 走到他旁邊 → 窗簾的對話（席菈「把人撤走。」；諾恩問毀掉鐘、地上的援軍，
+## 兩條都被擋下才有「……」）→ 過場 ch2_eye（拉開窗簾、黑牆動了一下、眼睛睜開、瞳孔收窄）→ 第 2 章完成 → 待續。
+## 兩條路線：問的順序不一樣＋看完整段過場／跳過（結果一樣）。
+func _chapter2_curtain(hall: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	await _assert_window(hall, "[窗簾]", false)
+	var at_window: Vector3 = hall.get("ISA_WINDOW") as Vector3
+	var isa: Node3D = hall.get_node("Isa") as Node3D
+	assert_true(_flat_dist(isa.global_position, at_window) < 0.1, "紋路看完：伊薩在窗邊等")
+	assert_eq(_objective(hall), "Q_CH2_OBJ_CURTAIN")
+	await _step_into(_player(hall), at_window + Vector3(-1.5, 0.0, -0.5), 3)
+	assert_true(_game.call("is_in_dialogue"), "走到伊薩旁邊 → 窗簾的對話")
+	assert_eq((_game.get("dialogue") as DialogueRunner).dialogue_id, "ch2_curtain")
+	var most: int = await _run_dialogue(hall, 1 if alt else 0)
+	assert_eq(most, 3, "諾恩想得到的辦法：毀掉鐘、地上的援軍，或什麼都不說（問過的就不再出現）")
+	assert_eq(s.state.get_flag("ch2.plan_aid"), true, "問過援軍 →「援軍沒有來。」")
+	# 另一條路線：問完援軍就沉默（「……」隨時可以選），毀掉鐘沒問
+	assert_eq(s.state.get_flag("ch2.plan_break") == true, not alt, "毀掉鐘 →「深層的東西就會上來。」（沉默那條沒問）")
+	assert_eq(s.state.get_flag("ch2.curtain_talked"), true)
+	await tree.process_frame
+	assert_true(_game.call("is_in_cutscene"), "→ 過場：伊薩拉開窗簾")
+	var cs: CutsceneRunner = _game.get("cutscene") as CutsceneRunner
+	assert_eq(cs.id, "ch2_eye")
+	assert_true(bool(hall.call("is_curtain_open")), "第一個鏡頭：伊薩拉開窗簾")
+	assert_eq(float(hall.get("eye_open")), 0.0, "剛拉開：只是一堵黑牆")
+	if not alt:
+		var lines: PackedStringArray = []
+		var events: PackedStringArray = []
+		cs.event_fired.connect(func(e: String, _shot: Dictionary) -> void: events.append(e))
+		for i: int in 12:
+			if not cs.is_running():
+				break
+			lines.append(str(cs.current().get("line", "")))
+			cs.update(100.0)
+		assert_true("CUT_CH2_EYE_004" in lines, "那是一隻眼睛，正在隔著屏障看我們。")
+		assert_true("CUT_CH2_EYE_006" in lines, "最終章的災厄，吞日獸。")
+		assert_eq(events, PackedStringArray(["wall_shift", "eye_open", "pupil"]), "過場事件：牆動了一下、眼睛睜開、瞳孔收窄")
+	else:
+		cs.skip()
+	await tree.process_frame
+	assert_false(_game.call("is_in_cutscene"), "過場結束")
+	assert_eq(s.state.get_flag("ch2.curtain_opened"), true)
+	assert_true(s.quests.is_done("ch2_main"), "第 2 章完成")
+	assert_eq(s.state.get_flag("ch2.complete"), true)
+	await _assert_window(hall, "[看過眼睛]", true)
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "第 3 章待續")
+	hall = await _retry()
+	assert_eq(str(hall.name), "BellHall", "[第 2 章完成] 重來還在鐘院")
+	assert_false(_game.call("is_in_cutscene"), "[第 2 章完成] 不會又播過場")
+	assert_true(s.quests.is_done("ch2_main"), "[第 2 章完成] 章節完成有自動存檔：重來不會回到窗簾之前")
+	await _assert_window(hall, "[第 2 章完成]", true)
+	await _assert_bell_hall(hall, "[第 2 章完成]")
+	await tree.process_frame
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[第 2 章完成] 第 3 章待續")
+
+
+## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。
+func _assert_window(hall: StoryLevel, tag: String, open: bool) -> void:
+	for n: String in ["WindowFrame", "Curtain/CurtainS", "Curtain/CurtainN", "Curtain/CurtainRod", "EyeWall", "Barrier", "BarrierLight", "EyeCamWindow", "EyeCamClose", "EyeCamGroup"]:
+		assert_true(hall.has_node(n), tag + " 有 " + n)
+	var eye: MeshInstance3D = hall.get_node("EyeWall") as MeshInstance3D
+	assert_eq(((eye.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/deep_eye.gdshader", tag + " 眼睛是程序 shader")
+	var barrier: MeshInstance3D = hall.get_node("Barrier") as MeshInstance3D
+	assert_eq(((barrier.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/barrier_grid.gdshader", tag + " 屏障的冷光網格")
+	var light: OmniLight3D = hall.get_node("BarrierLight") as OmniLight3D
+	assert_false(light.shadow_enabled, tag + " 冷光不投影子")
+	assert_true(light.light_color.b > light.light_color.r, tag + " 屏障的光是冷的")
+	assert_eq(bool(hall.call("is_curtain_open")), open, tag + (" 窗簾開著" if open else " 窗簾拉著"))
+	assert_eq(eye.visible, open, tag + (" 看得到窗外的眼睛" if open else " 窗簾拉著：看不到窗外"))
+	assert_eq(barrier.visible, open, tag + " 屏障跟著窗簾")
+	if open:
+		await tree.process_frame
+		assert_eq(float(hall.get("eye_open")), 1.0, tag + " 眼睛睜開")
+		assert_eq(float(hall.get("pupil")), float(hall.get("PUPIL_NARROW")), tag + " 瞳孔收窄")
+		assert_true(light.light_energy > 0.5, tag + " 冷光照進來")
+		assert_eq(float((eye.material_override as ShaderMaterial).get_shader_parameter("eye_open")), 1.0, tag + " shader 拿到眼睛的狀態")
+		var isa: Node3D = hall.get_node("Isa") as Node3D
+		assert_true(_flat_dist(isa.global_position, hall.get("ISA_WINDOW") as Vector3) < 0.1, tag + " 伊薩站在窗邊")
+	else:
+		assert_eq(light.light_energy, 0.0, tag + " 窗簾拉著：沒有冷光")
 
 
 ## 鐘院內室：主椅上坐著黎歐、牆上的鐘盤（九道刻痕）、十二條細管（光團往鐘盤流的 shader）、西牆 4 塊浮雕；暖光都不投影子。

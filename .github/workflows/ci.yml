@@ -213,6 +213,8 @@ jobs:
           shot 21-ch2-inner 30 --level=bell_hall --hall-at=inner --locale=zh_TW
           shot 22-ch2-inner-after 30 --level=bell_hall --hall-at=leo --locale=zh_TW
           shot 23-ch2-carvings 30 --level=bell_hall --hall-at=carved --locale=zh_TW
+          shot 24-ch2-eye 22 --level=bell_hall --hall-at=eye --hall-shot=3 --locale=zh_TW
+          shot 25-ch2-eye-after 30 --level=bell_hall --hall-at=eye-after --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

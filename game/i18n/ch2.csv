@@ -55,3 +55,25 @@ DLG_CH2_CARVE_3_3,"Nine strikes is the order the kingdom left behind for an emer
 DLG_CH2_CARVE_END_1,(Now I finally understood why my guide had always worked so well.),（我終於理解，自己的攻略為什麼那麼有效。）
 DLG_CH2_CARVE_END_2,(The monsters were never burned by players.),（怪物不是被玩家燒死的。）
 DLG_CH2_CARVE_END_3,(The whole city paid for that strike.),（是整座城替玩家付了那一擊的費用。）
+DLG_CH2_CUR_001,Get everyone out.,把人撤走。
+DLG_CH2_CUR_002,"Seven thousand people, and the exit only lets two through at a time. Ten days at the very least.",七千多人，出口一次只能過兩個。至少十天。
+DLG_CH2_CUR_003,"And leaving doesn't erase the registry. The bell keeps taking their lives, wherever they go.",而且一離開這裡，登記還在。鐘一樣會抽走他們的命。
+DLG_CH2_CUR_HUB,(I went through every way out I remembered from the guide.),（我把攻略裡記得的辦法一條條翻出來。）
+DLG_CH2_CUR_HUB2,(There had to be another way.),（一定還有別的辦法。）
+DLG_CH2_CUR_HUB3,(I couldn't think of anything else.),（我想不出別的了。）
+DLG_CH2_CUR_C_BREAK,Then destroy the bell.,那毀掉鐘。
+DLG_CH2_CUR_C_AID,What about the kingdom up top? Make them send people.,地上的王國呢？叫他們派人來。
+DLG_CH2_CUR_C_DONE,……,……
+DLG_CH2_CUR_BREAK_1,Then the things in the deep come up.,深層的東西就會上來。
+DLG_CH2_CUR_AID_1,"Seventeen years ago, they told us to hold on until help came.",十七年前，他們說等援軍來就能停。
+DLG_CH2_CUR_AID_2,Help never came.,援軍沒有來。
+DLG_CH2_CUR_END_1,"Everything you can think of, I've thought of. For seventeen years.",你們想得到的，我十七年來都想過。
+DLG_CH2_CUR_END_2,(He walked over to the window.) You should see it for yourselves.,（他走到窗邊。）你們該親眼看看。
+CUT_CH2_EYE_001,He drew back the curtain.,他拉開窗簾。
+CUT_CH2_EYE_002,"Beyond the glass, a black wall moved.",玻璃之外，一堵黑色的牆動了一下。
+CUT_CH2_EYE_003,It was not a wall.,那不是牆。
+CUT_CH2_EYE_004,"It was an eye, watching us through the barrier.",那是一隻眼睛，正在隔著屏障看我們。
+CUT_CH2_EYE_005,I knew it.,我認得它。
+CUT_CH2_EYE_006,"The final chapter's catastrophe. The Sun-Eater.",最終章的災厄，吞日獸。
+CUT_CH2_EYE_007,"By my records, killing it took nine max-level parties.",我的紀錄裡，殺死它需要九支滿級隊伍。
+CUT_CH2_EYE_008,"All we had was a knight who couldn't hold a sword, a clockmaker, and an expert who had gotten thirty-one people killed.",我們只有一個不能握劍的騎士，一個鐘匠，和一個害死三十一個人的高手。

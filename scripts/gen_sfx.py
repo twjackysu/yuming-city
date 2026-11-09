@@ -12,6 +12,7 @@
 - child_laugh：樓梯深處小孩的笑聲（第 1 章）。高音的「哈、哈、哈」：脈衝串經過兩個母音共振峰，加長的回音當作「很遠、在石階下面」。
 - daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
 - brace_creak：伊薩右腿金屬支架的「吱」一聲（第 2 章）。生鏽的鉸鏈：基頻從 620 Hz 往上滑到 900 Hz 再掉回來的摩擦音（調頻＋顆粒），帶一點金屬泛音，0.5 秒。
+- deep_rumble：窗外那堵黑牆「動了一下」（第 2 章段落 5）。很低的隆隆聲：30～70 Hz 的低通噪音＋兩個慢慢拍頻的低音，0.4 秒湧上來、2.6 秒退掉，像隔著石牆感覺到的震動。
 - slap：彌夏打黎歐的那一巴掌（第 2 章段落 3）。不重：很短的一聲帶通噪音「啪」（1～4 kHz、60 毫秒內衰減）＋一點點低頻的肉聲，0.2 秒。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
@@ -354,6 +355,21 @@ def slap(seconds=0.2, seed=37):
     return out
 
 
+def deep_rumble(seconds=3.0, seed=41):
+    """窗外的牆動了一下：低通噪音（很低）＋38／41 Hz 兩個拍頻的低音，慢起慢收。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    rumble = onepole_lp(onepole_lp(noise(n, rng), 90), 70)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        env = min(t / 0.4, 1.0) * math.exp(-max(t - 0.4, 0.0) / 0.9)
+        tone = 0.5 * math.sin(2 * math.pi * 38 * t) + 0.4 * math.sin(2 * math.pi * 41 * t + 0.7)
+        out.append(env * (rumble[i] * 6.0 + tone * 0.55))
+    peak = max(abs(v) for v in out) or 1.0
+    return [v / peak * 0.85 for v in out]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -373,6 +389,7 @@ def main():
         write("daylight_ambience", daylight_ambience()),
         write("brace_creak", brace_creak()),
         write("slap", slap()),
+        write("deep_rumble", deep_rumble()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")
