@@ -2439,7 +2439,8 @@ func _build_canal() -> void:
 	for i: int in 26:
 		var size := Vector3(_rng.randf_range(0.2, 0.7), _rng.randf_range(0.1, 0.35), _rng.randf_range(0.2, 0.8))
 		var p := Vector3(_rng.randf_range(-CANAL_HALF_W + 0.4, CANAL_HALF_W - 0.4), BED_Y + size.y * 0.5, _rng.randf_range(Z_NORTH + 2.0, Z_SOUTH - 2.0))
-		var debris: MeshInstance3D = _solid("Debris%d" % i, size, p, _mat(STONE if i % 3 else WOOD, 1.0), false)
+		# 掉下來的石塊（河道牆同一種石頭）與泡爛的木頭
+		var debris: MeshInstance3D = _solid("Debris%d" % i, size, p, canal_wall_mat() if i % 3 else timber_mat(), false)
 		debris.rotation.y = _rng.randf_range(-PI, PI)
 	for z: float in [Z_SOUTH + 0.5, Z_NORTH - 0.5]:
 		_solid("EndWall%d" % int(z), Vector3((CANAL_HALF_W + BANK_W + 1.0) * 2.0, OUTER_WALL_H - BED_Y, 1.0), Vector3(0.0, (OUTER_WALL_H + BED_Y) * 0.5, z), rock)
