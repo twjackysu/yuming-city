@@ -59,3 +59,11 @@ func test_dome_ribs_cover_whole_city() -> void:
 	var rib: Vector2 = _const("RIB_SIZE") as Vector2
 	assert_true(float(_const("CEILING_Y")) - rib.x > 12.0, "拱肋在高處，不擋路")
 	lv.free()
+
+
+func test_furnace_bands_on_body() -> void:
+	var bands: PackedFloat32Array = _const("FURNACE_BANDS") as PackedFloat32Array
+	assert_eq(bands.size(), 3, "三道鐵箍")
+	for y: float in bands:
+		assert_true(y > 0.16 and y < 2.1, "鐵箍 %.2f 在石座上面、爐身頂（2.1 m）下面" % y)
+	assert_true(float(_const("FURNACE_PIPE_JOINT")) > 1.0, "煙管接頭不要太密")

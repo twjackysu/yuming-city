@@ -911,6 +911,7 @@ func _build_square() -> void:
 	door.material_override = _mat(Color(0.12, 0.11, 0.1), 0.6)
 	door.position = Vector3(-1.08, 0.75, 0)
 	furnace.add_child(door)
+	_furnace_detail(furnace, cyl, pm.height)
 	var furnace_body := StaticBody3D.new()
 	var fcs := CollisionShape3D.new()
 	var fshape := CylinderShape3D.new()
@@ -1196,3 +1197,73 @@ func dome_rib_count() -> int:
 		n += 1
 		z -= RIB_SPACING
 	return n
+
+
+## 淨化爐的細節（第 56 輪，D-174）：爐身三道鐵箍、底下一圈石座、爐門的鐵框與門閂、煙管每 FURNACE_PIPE_JOINT 一個接頭箍。
+## 鐵箍與接頭比爐身亮一點、帶點鏽色（冷了很多年）；全部不發光。
+const FURNACE_BANDS: PackedFloat32Array = [0.22, 1.05, 1.88]
+const FURNACE_PIPE_JOINT: float = 2.4
+const RUST_IRON: Color = Color(0.32, 0.24, 0.19)
+
+
+func _furnace_detail(furnace: Node3D, body: CylinderMesh, pipe_h: float) -> void:
+	var rust := _mat(RUST_IRON, 0.75)
+	rust.metallic = 0.4
+	for k: int in FURNACE_BANDS.size():
+		var y: float = FURNACE_BANDS[k]
+		var r: float = lerpf(body.bottom_radius, body.top_radius, y / body.height) + 0.035
+		var band := MeshInstance3D.new()
+		band.name = "FurnaceBand%d" % k
+		var bm := CylinderMesh.new()
+		bm.top_radius = r
+		bm.bottom_radius = r
+		bm.height = 0.1
+		bm.radial_segments = 32
+		band.mesh = bm
+		band.material_override = rust
+		band.position = Vector3(0, y, 0)
+		furnace.add_child(band)
+	var plinth := MeshInstance3D.new()
+	plinth.name = "FurnacePlinth"
+	var pl := CylinderMesh.new()
+	pl.top_radius = body.bottom_radius + 0.18
+	pl.bottom_radius = body.bottom_radius + 0.22
+	pl.height = 0.16
+	pl.radial_segments = 24
+	plinth.mesh = pl
+	plinth.material_override = trim_mat()
+	plinth.position = Vector3(0, 0.08, 0)
+	furnace.add_child(plinth)
+	# 爐門：鐵框（上下左右四條）＋一根橫的門閂
+	var door_x: float = -1.13
+	var frame_parts: Array[Array] = [
+		[Vector3(0.06, 0.08, 1.04), Vector3(door_x, 1.19, 0)], [Vector3(0.06, 0.08, 1.04), Vector3(door_x, 0.31, 0)],
+		[Vector3(0.06, 0.96, 0.08), Vector3(door_x, 0.75, -0.48)], [Vector3(0.06, 0.96, 0.08), Vector3(door_x, 0.75, 0.48)],
+		[Vector3(0.05, 0.05, 0.7), Vector3(door_x - 0.03, 0.8, 0.05)],
+	]
+	for i: int in frame_parts.size():
+		var part := MeshInstance3D.new()
+		part.name = "FurnaceDoorFrame%d" % i
+		var fm := BoxMesh.new()
+		fm.size = frame_parts[i][0] as Vector3
+		part.mesh = fm
+		part.material_override = rust
+		part.position = frame_parts[i][1] as Vector3
+		furnace.add_child(part)
+	# 煙管的接頭箍
+	var y0: float = 2.6 + FURNACE_PIPE_JOINT
+	var j: int = 0
+	while y0 < 2.6 + pipe_h - 0.5:
+		var joint := MeshInstance3D.new()
+		joint.name = "FurnacePipeJoint%d" % j
+		var jm := CylinderMesh.new()
+		jm.top_radius = 0.24
+		jm.bottom_radius = 0.24
+		jm.height = 0.12
+		jm.radial_segments = 16
+		joint.mesh = jm
+		joint.material_override = rust
+		joint.position = Vector3(0, y0, 0)
+		furnace.add_child(joint)
+		y0 += FURNACE_PIPE_JOINT
+		j += 1

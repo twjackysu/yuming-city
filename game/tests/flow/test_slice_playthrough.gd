@@ -1565,6 +1565,8 @@ func _assert_daylight_art(city: StoryLevel, tag: String) -> void:
 		assert_true((city.get_node(n) as MeshInstance3D).material_override is ShaderMaterial, tag + " " + n + " 有材質")
 	assert_true(city.has_node("StreetTrim"), tag + " 窗台、門框、拱肋（StreetTrim）")
 	assert_true(city.get_node("StreetTrim").get_child_count() >= 3, tag + " StreetTrim 有石、木、拱肋三種材質")
+	for n: String in ["FurnaceBand0", "FurnaceBand2", "FurnacePlinth", "FurnaceDoorFrame0", "FurnacePipeJoint0"]:
+		assert_true(city.get_node("Furnace").has_node(n), tag + " 淨化爐的 " + n)
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
