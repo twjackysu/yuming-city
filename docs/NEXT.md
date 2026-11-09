@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 39 輪）的程式 commit：4cbbb9e 段落 5 一百七十二階、6d5a11c 畫面調整＋CI 截圖 `14-ch1-stairs`、2089466 段落 6 柯德、d497b9d 樓梯裡油燈先不投影子（最後一個；前面幾個的 run 被 concurrency 取消，內容都在 d497b9d 裡）。**開工先看 d497b9d 的 run 整個綠燈、screens 有沒有 `14-ch1-stairs`**。開工照常先跑 `scripts/check.sh`（最後 320 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 39 輪）的程式 commit：4cbbb9e 段落 5 一百七十二階、6d5a11c 畫面調整＋CI 截圖 `14-ch1-stairs`、2089466 段落 6 柯德、d497b9d 樓梯裡油燈先不投影子（最後一個；前面幾個的 run 被 concurrency 取消，內容都在 d497b9d 裡）。**開工先看 d497b9d 的 run 42570417322 與 2089466 的 run 42569871509 整個綠燈（後者的測試與匯出、盤點截圖收尾時已綠）、screens 有沒有 `14-ch1-stairs`**。開工照常先跑 `scripts/check.sh`（最後 320 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 38 輪的 f1e42f9 run 42563697609 已全綠（第 39 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 38 輪已把第 29～33 輪合併成每日摘要）；超過約 300 行時把第 34～37 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
