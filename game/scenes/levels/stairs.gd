@@ -30,8 +30,8 @@ const TRAP_TALK_DELAY: float = 0.9
 ## 笑聲在這一句出現
 const LAUGH_LINE: String = "DLG_CH1_TRAP_004"
 const DOOR_RANGE: float = 1.8
-const SHEILA_BEHIND: float = 3.4
-const MISHA_BEHIND: float = 4.6
+const SHEILA_BEHIND: float = 4.2
+const MISHA_BEHIND: float = 5.6
 const MISHA_SPEED: float = 4.2
 ## 樓梯頂的出生點（往下走了一點，頂層平台留給席菈和彌夏）
 const TOP_SPAWN_S: float = 1.8
@@ -42,7 +42,7 @@ const LAMP_ENERGY: float = 1.5
 
 const STONE: Color = Color(0.3, 0.28, 0.25)
 const STONE_DARK: Color = Color(0.2, 0.19, 0.18)
-const WALL: Color = Color(0.23, 0.22, 0.21)
+const WALL: Color = Color(0.34, 0.32, 0.3)
 const WOOD: Color = Color(0.3, 0.21, 0.13)
 const DAYLIGHT: Color = Color(0.8, 0.86, 1.0)
 const DOOR_GLOW: Color = Color(1.0, 0.94, 0.84)
@@ -396,7 +396,7 @@ func _build_environment() -> void:
 	env.background_color = Color(0.005, 0.005, 0.008)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.3, 0.32, 0.4)
-	env.ambient_light_energy = 0.1
+	env.ambient_light_energy = 0.16
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 1.15
 	env.glow_enabled = true

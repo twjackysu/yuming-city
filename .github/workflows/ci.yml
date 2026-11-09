@@ -203,6 +203,7 @@ jobs:
           shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW
           shot 12-ch1-tavern 30 --level=tavern --ch1-stage=dinner --locale=zh_TW
           shot 13-ch1-day-north 30 --level=frostbridge --day --at=north --locale=zh_TW
+          shot 14-ch1-stairs 30 --level=stairs --stairs-at=trap --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"
