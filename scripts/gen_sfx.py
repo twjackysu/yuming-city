@@ -13,6 +13,8 @@
 - daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
 - brace_creak：伊薩右腿金屬支架的「吱」一聲（第 2 章）。生鏽的鉸鏈：基頻從 620 Hz 往上滑到 900 Hz 再掉回來的摩擦音（調頻＋顆粒），帶一點金屬泛音，0.5 秒。
 - deep_rumble：窗外那堵黑牆「動了一下」（第 2 章段落 5）。很低的隆隆聲：30～70 Hz 的低通噪音＋兩個慢慢拍頻的低音，0.4 秒湧上來、2.6 秒退掉，像隔著石牆感覺到的震動。
+- cloth_knock：席菈用布包著的小石頭隔著銅片敲（第 3 章段落 2）。悶悶的「咚」：200 Hz 往下滑的短正弦＋很淡的銅片泛音（1.3／2.9 kHz，快速衰減，被布蓋住），0.25 秒。
+- chain_creak：掛著的送葬者要轉頭之前，鏈子先響（第 3 章段落 2 的觀察提示音）。三下很輕的鐵環碰撞「喀啦」＋一聲低低的摩擦，0.7 秒。
 - slap：彌夏打黎歐的那一巴掌（第 2 章段落 3）。不重：很短的一聲帶通噪音「啪」（1～4 kHz、60 毫秒內衰減）＋一點點低頻的肉聲，0.2 秒。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
@@ -370,6 +372,46 @@ def deep_rumble(seconds=3.0, seed=41):
     return [v / peak * 0.85 for v in out]
 
 
+def cloth_knock(seconds=0.25, seed=43):
+    """布包的小石頭敲銅片：悶的低音「咚」＋被布蓋住的一點銅泛音。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    nz = onepole_lp(noise(n, rng), 700)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        f = 120 + 80 * math.exp(-t * 40)
+        phase += 2 * math.pi * f / RATE
+        env = min(t / 0.002, 1.0) * math.exp(-t * 22)
+        ring = 0.12 * math.sin(2 * math.pi * 1310 * t) * math.exp(-t * 28) + 0.06 * math.sin(2 * math.pi * 2930 * t) * math.exp(-t * 40)
+        out.append(0.85 * env * math.sin(phase) + 0.35 * nz[i] * math.exp(-t * 60) + ring)
+    peak = max(abs(v) for v in out) or 1.0
+    return [v / peak * 0.8 for v in out]
+
+
+def chain_creak(seconds=0.7, seed=47):
+    """鏈子先響：三下鐵環碰撞（短的非諧波泛音）＋一聲低低的摩擦（低通噪音、慢慢起落）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    rub = onepole_lp(hp(noise(n, rng), 300), 1400)
+    out = [0.0] * n
+    for i in range(n):
+        t = i / RATE
+        env = math.sin(math.pi * min(t / seconds, 1.0)) ** 2
+        out[i] = 0.5 * rub[i] * env
+    for k, (at, f) in enumerate([(0.05, 2100.0), (0.21, 2650.0), (0.33, 1870.0)]):
+        start = int(at * RATE)
+        for j in range(int(0.12 * RATE)):
+            if start + j >= n:
+                break
+            t = j / RATE
+            v = math.sin(2 * math.pi * f * t) + 0.6 * math.sin(2 * math.pi * f * 2.76 * t)
+            out[start + j] += 0.28 * v * math.exp(-t * 55)
+    peak = max(abs(v) for v in out) or 1.0
+    return [v / peak * 0.7 for v in out]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -390,6 +432,8 @@ def main():
         write("brace_creak", brace_creak()),
         write("slap", slap()),
         write("deep_rumble", deep_rumble()),
+        write("cloth_knock", cloth_knock()),
+        write("chain_creak", chain_creak()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

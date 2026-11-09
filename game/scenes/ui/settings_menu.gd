@@ -119,6 +119,7 @@ func _build() -> void:
 		func(i: int) -> String: return str(LOCALE_KEYS[Settings.SUPPORTED_LOCALES[i]]))
 	_add_toggle("SET_SUBTITLES", "Subtitles", "subtitles")
 	_add_toggle("SET_OBJECTIVE_MARKER", "ObjectiveMarker", "objective_marker")
+	_add_toggle("SET_OBSERVE_CUE", "ObserveCue", "observe_cue")
 
 	_add_group("SET_GROUP_AUDIO", "Audio")
 	for bus: String in Settings.VOLUME_BUSES:

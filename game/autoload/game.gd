@@ -47,6 +47,7 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	# 第 3 章：乾運河（D-163）
 	"ch3_start": "canal",
 	"ch3_bank": "canal",
+	"ch3_rhythm": "canal",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

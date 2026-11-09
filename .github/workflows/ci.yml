@@ -217,6 +217,7 @@ jobs:
           shot 25-ch2-eye-after 30 --level=bell_hall --hall-at=eye-after --locale=zh_TW
           shot 26-ch3-canal 30 --level=canal --canal-at=edge --locale=zh_TW
           shot 27-ch3-bank 30 --level=canal --canal-at=bank --locale=zh_TW
+          shot 28-ch3-drain 40 --level=canal --canal-at=turn --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

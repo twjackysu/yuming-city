@@ -20,9 +20,18 @@
       "id": "observe",
       "objective": "Q_CH3_OBJ_OBSERVE",
       "checkpoint": "ch3_bank",
-      "marker": "node:HangPivot/ClapperUndertaker",
+      "marker": "node:Drain",
       "done_when": {
         "flag": "ch3.rhythm_found"
+      }
+    },
+    {
+      "id": "decoy",
+      "objective": "Q_CH3_OBJ_DECOY",
+      "checkpoint": "ch3_rhythm",
+      "marker": "node:Misha",
+      "done_when": {
+        "flag": "ch3.decoy_done"
       }
     }
   ]

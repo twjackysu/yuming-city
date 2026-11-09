@@ -1,0 +1,222 @@
+{
+  "id": "ch3_rhythm",
+  "start": "r0",
+  "nodes": {
+    "r0": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_RHY_001",
+      "next": "r1"
+    },
+    "r1": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_RHY_002",
+      "next": "r2"
+    },
+    "r2": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_RHY_003",
+      "next": "hub"
+    },
+    "hub": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_RHY_HUB",
+      "text_if": [
+        {
+          "if": {
+            "flag": "ch3.rhythm_tries",
+            "gte": 3
+          },
+          "text": "DLG_CH3_RHY_HUB3"
+        },
+        {
+          "if": {
+            "flag": "ch3.rhythm_tries",
+            "gte": 1
+          },
+          "text": "DLG_CH3_RHY_HUB2"
+        }
+      ],
+      "choices": [
+        {
+          "text": "DLG_CH3_RHY_C_VERY_SLOW",
+          "if": {
+            "not": {
+              "flag": "ch3.tempo_very_slow"
+            }
+          },
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_very_slow": true,
+              "ch3.last_tempo": "very_slow",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        },
+        {
+          "text": "DLG_CH3_RHY_C_SLOW",
+          "if": {
+            "not": {
+              "flag": "ch3.tempo_slow"
+            }
+          },
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_slow": true,
+              "ch3.last_tempo": "slow",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        },
+        {
+          "text": "DLG_CH3_RHY_C_STEADY",
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_steady": true,
+              "ch3.last_tempo": "steady",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        },
+        {
+          "text": "DLG_CH3_RHY_C_FAST",
+          "if": {
+            "not": {
+              "flag": "ch3.tempo_fast"
+            }
+          },
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_fast": true,
+              "ch3.last_tempo": "fast",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        },
+        {
+          "text": "DLG_CH3_RHY_C_VERY_FAST",
+          "if": {
+            "not": {
+              "flag": "ch3.tempo_very_fast"
+            }
+          },
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_very_fast": true,
+              "ch3.last_tempo": "very_fast",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        },
+        {
+          "text": "DLG_CH3_RHY_C_IRREGULAR",
+          "if": {
+            "not": {
+              "flag": "ch3.tempo_irregular"
+            }
+          },
+          "next": "knock",
+          "do": {
+            "set": {
+              "ch3.tempo_irregular": true,
+              "ch3.last_tempo": "irregular",
+              "ch3.react": ""
+            },
+            "add": {
+              "ch3.rhythm_tries": 1
+            }
+          }
+        }
+      ]
+    },
+    "knock": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_RHY_KNOCK",
+      "next": "react"
+    },
+    "react": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_RHY_STILL",
+      "text_if": [
+        {
+          "if": {
+            "flag": "ch3.react",
+            "eq": "turn"
+          },
+          "text": "DLG_CH3_RHY_TURN"
+        },
+        {
+          "if": {
+            "flag": "ch3.react",
+            "eq": "tilt"
+          },
+          "text": "DLG_CH3_RHY_TILT"
+        },
+        {
+          "if": {
+            "flag": "ch3.last_tempo",
+            "eq": "irregular"
+          },
+          "text": "DLG_CH3_RHY_IRREGULAR"
+        }
+      ],
+      "choices": [
+        {
+          "text": "DLG_CH3_RHY_C_THIS",
+          "if": {
+            "flag": "ch3.react",
+            "eq": "turn"
+          },
+          "next": "f1"
+        },
+        {
+          "text": "DLG_CH3_RHY_C_AGAIN",
+          "next": "hub"
+        }
+      ]
+    },
+    "f1": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_RHY_F1",
+      "next": "f2"
+    },
+    "f2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_RHY_F2",
+      "next": "f3"
+    },
+    "f3": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_RHY_F3",
+      "next": "f4"
+    },
+    "f4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_RHY_F4",
+      "do": {
+        "set": {
+          "ch3.rhythm_found": true
+        }
+      }
+    }
+  }
+}

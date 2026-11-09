@@ -7,13 +7,17 @@ extends StoryLevel
 ## 再往北一座石橋、更遠是閘道（剪影）。
 ## 段落 1 乾涸的運河：走到東岸的說話點 → 席菈「我去引開牠。」→「不行。」／（沉默）→「那你有什麼方案？」→ 我說不出來 →
 ## 攻略筆記多一條**空白**「攻略沒有寫」（guide_blank，D-163）→ 彌夏蹲在渠邊：「牠跟著什麼走？」「心跳。」「多快？」→
-## 檢查點 ch3_bank → 段落 2「趴在水溝裡（觀察）」待續。
+## 檢查點 ch3_bank → 段落 2「趴在水溝裡（觀察）」（D-164）：吊樑旁邊的東岸有一道淺水溝（`Drain`）→ 走進去，三個人趴下 →
+## 對話 ch3_rhythm：席菈用布包著小石頭隔著銅片敲，**玩家選節奏**（很慢／慢一點／不快不慢／快一點／很快／忽快忽慢，試過的消失）→
+## 「敲」那一句出現時判定（RhythmTrial）、送葬者照結果演：不動／偏頭／轉頭（轉頭之前鏈子先響＝觀察提示音，設定可關）→
+## 不快不慢＝人的心跳 → 轉頭 →「就是這個速度。」→ 攻略筆記的空白條目變成證實（自己看到的）→ 檢查點 ch3_rhythm →
+## 段落 3 假心臟待續。
 ##
 ## 座標：運河沿 Z（南 Z_SOUTH → 北 Z_NORTH），河道 x -CANAL_HALF_W～CANAL_HALF_W，兩岸各寬 BANK_W、岸頂 y＝0；
 ## 諾恩從東岸南端進來，岸邊有矮牆（不會掉下去）。北邊有一座閘道（段落 3 把送葬者引進去的地方，現在只是剪影）。
 
 const QUEST: String = "ch3_main"
-const STAGES: PackedStringArray = ["canal_bank", "observe"]
+const STAGES: PackedStringArray = ["canal_bank", "observe", "decoy"]
 const BED_Y: float = -4.5
 const CANAL_HALF_W: float = 3.0
 const BANK_W: float = 6.0
@@ -48,6 +52,24 @@ const BANK_TALK: String = "ch3_bank"
 ## 岸邊對話時鏡頭往下看多少（弧度）
 const LOOK_DOWN_PITCH: float = -0.55
 const BLANK_ENTRY: String = "clapper_heartbeat"
+## 段落 2：吊樑旁邊東岸的淺水溝（沿 Z 長 DRAIN_LEN、寬 DRAIN_W，兩側低低的石緣）；走進 DRAIN_RANGE 就趴下開始觀察。
+## 三個人沿 Z 並排趴著、頭朝運河（第 46 輪截圖：溝只有 0.9 m 寬，橫著趴的人整個伸出溝外）
+const DRAIN_POS: Vector3 = Vector3(4.6, 0.0, -14.2)
+const DRAIN_LEN: float = 4.2
+const DRAIN_W: float = 2.3
+const DRAIN_RANGE: float = 1.4
+const RHYTHM_TALK: String = "ch3_rhythm"
+const KNOCK_LINE: String = "DLG_CH3_RHY_KNOCK"
+## 銅片插在水溝前端的泥裡（席菈敲的地方）
+const PLATE_POS: Vector3 = Vector3(3.7, 0.0, -15.5)
+## 一次敲幾下；第幾下之後送葬者開始反應
+const KNOCK_COUNT: int = 7
+const REACT_AFTER: int = 3
+## 送葬者的反應：偏頭（上半身繞 Z 歪一點又回來）、轉頭（上半身轉向銅片，停在那裡）
+const TILT_DEG: float = 13.0
+const TURN_DEG: float = 62.0
+## 觀察提示音比轉頭早多久響
+const CUE_LEAD: float = 0.7
 ## 北邊的閘道（段落 3 用）
 const SLUICE_Z: float = -29.0
 ## 頭頂的石樑：一排排橫跨運河，縫裡透下鐘院的光
@@ -81,6 +103,13 @@ var _clapper_light: OmniLight3D
 var _clapper_mat: StandardMaterial3D
 var _t: float = 0.0
 var _continued_shown: bool = false
+## 段落 2：趴在水溝裡（觀察中）、上一次敲的反應（測試讀）、反應的補間
+var in_drain: bool = false
+var last_reaction: String = ""
+var _drain_armed: bool = true
+var _reaction_tweens: Array[Tween] = []
+var _torso: Node3D
+var _plate: Node3D
 ## 截圖用（`--canal-at=edge`）：站在岸邊不開對話、彌夏不跟
 var _dev_hold_edge: bool = false
 
@@ -96,6 +125,7 @@ func _ready() -> void:
 	_build_sluice()
 	_build_ceiling()
 	_build_undertaker()
+	_build_drain()
 	_init_story()
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
@@ -103,6 +133,7 @@ func _ready() -> void:
 	_set_up_lamp()
 	_build_people()
 	Game.dialogue_ended.connect(_on_dialogue_ended)
+	Game.dialogue_started.connect(_on_dialogue_started)
 	# 截圖用：`--canal-at=bank` 站在岸邊、對話第一句；`--canal-at=edge` 站在岸邊（不開對話）；`--canal-at=after` 岸邊的對話講完
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	var at: String = str(dev_args.get("canal-at", ""))
@@ -117,7 +148,19 @@ func _ready() -> void:
 		talk_bank.call_deferred()
 	elif at == "edge":
 		_dev_hold_edge = true
-	if Game.session.quests.stage_of(QUEST) == "observe":
+	# 截圖用：`--canal-at=drain` 走進水溝、對話第一句；`--canal-at=turn` 趴在水溝裡、送葬者已經轉頭（不開對話）
+	if at in ["drain", "turn"]:
+		if not bool(Game.session.state.get_flag("ch3.bank_talked", false)):
+			StoryLogic.apply({"guide_blank": [BLANK_ENTRY]}, Game.session.state)
+			Game.session.set_flag("ch3.bank_talked", true)
+		if at == "drain":
+			enter_drain.call_deferred()
+		else:
+			_dev_hold_edge = true
+			_lie_down()
+			_play_reaction("steady", RhythmTrial.TURN)
+			skip_reaction()
+	if Game.session.quests.stage_of(QUEST) == "decoy":
 		_continued_shown = true
 		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
 
@@ -175,8 +218,15 @@ func _physics_process(delta: float) -> void:
 	_follow_misha(player, delta)
 	if Game.is_player_locked() or _dev_hold_edge:
 		return
-	if Game.session.quests.stage_of(QUEST) == "canal_bank" and _flat(player.global_position, BANK_POS) <= BANK_RANGE:
+	var stage: String = Game.session.quests.stage_of(QUEST)
+	if stage == "canal_bank" and _flat(player.global_position, BANK_POS) <= BANK_RANGE:
 		talk_bank()
+	elif stage == "observe" and not in_drain:
+		var d: float = _flat(player.global_position, DRAIN_POS)
+		if d > DRAIN_RANGE + 0.6:
+			_drain_armed = true
+		elif d <= DRAIN_RANGE and _drain_armed:
+			enter_drain()
 
 
 func _process(delta: float) -> void:
@@ -220,6 +270,9 @@ func _look_into_canal() -> void:
 
 
 func _on_dialogue_ended(dialogue_id: String) -> void:
+	if dialogue_id == RHYTHM_TALK:
+		_on_rhythm_ended()
+		return
 	if dialogue_id != BANK_TALK or bool(Game.session.state.get_flag("ch3.bank_talked", false)):
 		return
 	# 跳過也一樣：攻略筆記多一條空白（「攻略沒有寫」）→ 檢查點 ch3_bank → 段落 2 待續
@@ -229,6 +282,195 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 	if not _continued_shown:
 		_continued_shown = true
 		get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+
+
+# ---------------------------------------------------------------- 段落 2：趴在水溝裡（觀察）
+
+## 走進水溝（測試也用）：三個人趴下、鏡頭對著掛著的送葬者 → 對話 ch3_rhythm（選節奏）。
+func enter_drain() -> void:
+	if in_drain or Game.is_in_dialogue() or Game.session.quests.stage_of(QUEST) != "observe":
+		return
+	in_drain = true
+	_drain_armed = false
+	_lie_down()
+	Game.start_dialogue(RHYTHM_TALK)
+
+
+## 趴下：諾恩在水溝中段、席菈在前端（伸手就碰得到銅片）、彌夏在後面；都面向吊樑。
+func _lie_down() -> void:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	var face_at: Vector3 = Vector3(HANG_X, 0.0, HANG_Z)
+	var spots: Array[Vector3] = [DRAIN_POS, DRAIN_POS + Vector3(-0.1, 0.0, -1.25), DRAIN_POS + Vector3(0.1, 0.0, 1.25)]
+	var people: Array[Node3D] = [player, get_node_or_null("Sheila") as Node3D, _misha]
+	for i: int in people.size():
+		var who: Node3D = people[i]
+		if who == null:
+			continue
+		var to: Vector3 = face_at - spots[i]
+		var yaw: float = atan2(-to.x, -to.z)
+		who.global_position = spots[i] + Vector3(0.0, 0.03, 0.0)
+		var pup: Puppet = _puppet_of(who)
+		if who is PlayerController:
+			var pc: PlayerController = who as PlayerController
+			pc.rotation.y = 0.0
+			pc.velocity = Vector3.ZERO
+			var body: Node3D = pc.get_node_or_null("Body") as Node3D
+			if body != null:
+				body.rotation.y = yaw
+			pc.yaw = yaw + 0.22
+			pc.pitch = -0.2
+			pc.snap_camera()
+		else:
+			who.rotation.y = yaw
+		if pup != null:
+			pup.lying = "front"
+
+
+func _stand_up() -> void:
+	for who: Node3D in [get_node_or_null("Player") as Node3D, get_node_or_null("Sheila") as Node3D, _misha]:
+		var pup: Puppet = _puppet_of(who)
+		if pup != null:
+			pup.lying = ""
+
+
+func _puppet_of(who: Node3D) -> Puppet:
+	if who == null:
+		return null
+	if who is Puppet:
+		return who as Puppet
+	if who.has_method("puppet"):
+		return who.call("puppet") as Puppet
+	return null
+
+
+func is_lying(who: Node3D) -> bool:
+	var pup: Puppet = _puppet_of(who)
+	return pup != null and pup.lying == "front"
+
+
+func _on_dialogue_started(runner: DialogueRunner) -> void:
+	if runner != null and runner.dialogue_id == RHYTHM_TALK and not runner.line_shown.is_connected(_on_rhythm_line):
+		runner.line_shown.connect(_on_rhythm_line)
+
+
+## 「敲」那一句出現：照剛剛選的節奏判定（寫進 ch3.react，下一句讀它），送葬者照結果演。
+func _on_rhythm_line(_speaker_key: String, text_key: String) -> void:
+	if text_key != KNOCK_LINE:
+		return
+	var tempo: String = str(Game.session.state.get_flag(RhythmTrial.FLAG_LAST, ""))
+	var r: String = RhythmTrial.try_last(Game.session.state)
+	if r != "":
+		_play_reaction(tempo, r)
+
+
+## 席菈照 tempo 敲 KNOCK_COUNT 下（悶悶的布包石頭敲銅片）；第 REACT_AFTER 下之後送葬者反應。
+## 轉頭：先回到正面 → 提示音（設定可關）→ 上半身轉向銅片、停住；胸口的銅光跟著敲的速度亮。
+func _play_reaction(tempo: String, r: String) -> void:
+	skip_reaction()
+	last_reaction = r
+	if _torso == null:
+		return
+	_torso.rotation = Vector3.ZERO
+	var times: PackedFloat32Array = RhythmTrial.knock_times(tempo, KNOCK_COUNT)
+	var knocks := create_tween()
+	var prev: float = 0.0
+	for i: int in times.size():
+		knocks.tween_interval(maxf(times[i] - prev, 0.001))
+		knocks.tween_callback(_knock)
+		prev = times[i]
+	var react_at: float = times[mini(REACT_AFTER, times.size() - 1)]
+	var tw := create_tween()
+	tw.tween_interval(react_at)
+	match r:
+		RhythmTrial.TURN:
+			if Settings.observe_cue:
+				tw.tween_callback(_cue)
+			tw.tween_interval(CUE_LEAD)
+			tw.tween_property(_torso, "rotation:y", deg_to_rad(_turn_sign() * TURN_DEG), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		RhythmTrial.TILT:
+			tw.tween_property(_torso, "rotation:z", deg_to_rad(TILT_DEG), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tw.tween_interval(1.1)
+			tw.tween_property(_torso, "rotation:z", 0.0, 0.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_:
+			if RhythmTrial.bpm(tempo) <= 0.0 and _pivot != null:
+				# 不規則：鏈子抖一下又靜下來（沒有提示音：牠沒有要轉頭）
+				tw.tween_property(_pivot, "position:y", BEAM_Y + 0.04, 0.08)
+				tw.tween_property(_pivot, "position:y", BEAM_Y, 0.25)
+	_reaction_tweens = [knocks, tw]
+
+
+## 測試、截圖用：反應直接跳到結果（轉頭的停在轉過去的樣子）。
+func skip_reaction() -> void:
+	for t: Tween in _reaction_tweens:
+		if t != null and t.is_valid():
+			t.kill()
+	_reaction_tweens.clear()
+	if _torso == null:
+		return
+	_torso.rotation = Vector3(0.0, deg_to_rad(_turn_sign() * TURN_DEG) if last_reaction == RhythmTrial.TURN else 0.0, 0.0)
+	if _pivot != null:
+		_pivot.position.y = BEAM_Y
+
+
+## 上半身往哪邊轉才是對著銅片（牠面朝東南，銅片在東岸）。
+func _turn_sign() -> float:
+	if _undertaker == null:
+		return 1.0
+	var to: Vector3 = PLATE_POS - _undertaker.global_position
+	var fwd: Vector3 = -_undertaker.global_basis.z
+	return 1.0 if fwd.cross(Vector3(to.x, 0.0, to.z)).y >= 0.0 else -1.0
+
+
+## 送葬者上半身現在轉了多少度（測試讀）。
+func torso_turn_deg() -> float:
+	return rad_to_deg(_torso.rotation.y) if _torso != null else 0.0
+
+
+func _knock() -> void:
+	if _plate != null:
+		Sfx.play_at(self, "cloth_knock", _plate.global_position + Vector3(0, 0.25, 0), -2.0, 0.03)
+
+
+func _cue() -> void:
+	if _pivot != null:
+		Sfx.play_at(self, "chain_creak", _pivot.global_position + Vector3(0, -CHAIN_LEN * 0.5, 0), 0.0, 0.02, 9.0)
+
+
+## 觀察的對話結束：找到速度 → 站起來、攻略筆記提示（空白條目已經由旗標變成證實）→ 段落 3 待續。
+func _on_rhythm_ended() -> void:
+	in_drain = false
+	_stand_up()
+	if not bool(Game.session.state.get_flag(RhythmTrial.FLAG_FOUND, false)):
+		return
+	_banner("GUIDE_SELF_NOTE", 4.0)
+	if not _continued_shown:
+		_continued_shown = true
+		get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+
+
+## 水溝：東岸上一道沿 Z 的淺溝（兩側低低的石緣、底下爛泥），前端插著一片銅片。
+func _build_drain() -> void:
+	var drain := Node3D.new()
+	drain.name = "Drain"
+	drain.position = DRAIN_POS
+	add_child(drain)
+	var curb: StandardMaterial3D = _mat(STONE_LIGHT, 0.9)
+	for side: float in [-1.0, 1.0]:
+		_solid("DrainCurb%d" % int(side), Vector3(DRAIN_W + 0.32, 0.18, 0.16), Vector3(0.0, 0.09, side * (DRAIN_LEN * 0.5 + 0.08)), curb, false, drain)
+		_solid("DrainSide%d" % int(side), Vector3(0.16, 0.12, DRAIN_LEN), Vector3(side * (DRAIN_W * 0.5 + 0.08), 0.06, 0.0), curb, false, drain)
+	var mud: StandardMaterial3D = _mat(Color(0.07, 0.06, 0.055), 0.35)
+	mud.metallic_specular = 0.6
+	_solid("DrainMud", Vector3(DRAIN_W, 0.02, DRAIN_LEN), Vector3(0.0, 0.012, 0.0), mud, false, drain)
+	_plate = Node3D.new()
+	_plate.name = "CopperPlate"
+	_plate.position = PLATE_POS - DRAIN_POS
+	drain.add_child(_plate)
+	var copper := _mat(Color(0.55, 0.33, 0.18), 0.4)
+	copper.metallic = 0.85
+	var sheet: MeshInstance3D = _solid("Sheet", Vector3(0.36, 0.42, 0.02), Vector3(0.0, 0.2, 0.0), copper, false, _plate)
+	sheet.rotation.y = 0.5
+	if _undertaker != null:
+		_torso = _undertaker.find_child("Torso", true, false) as Node3D
 
 
 ## 對話開始時：席菈站在諾恩東北邊（不擋往橋下看的視線）、彌夏在諾恩左手邊的渠邊（往橋那邊看）。

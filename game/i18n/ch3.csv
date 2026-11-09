@@ -3,10 +3,10 @@ CH3_CARD_NUMBER,Chapter Three,第三章
 CH3_CARD_TITLE,Don't Answer for Me,不准替我答應
 Q_CH3_MAIN_TITLE,Don't Answer for Me,不准替我答應
 Q_CH3_OBJ_BANK,The clapper is somewhere along the dry canal. Go to the edge and look,鐘舌在乾運河那邊。走到岸邊看看
-Q_CH3_OBJ_OBSERVE,Find out what it follows,看清楚牠跟著什麼走
+Q_CH3_OBJ_OBSERVE,Get down in the drain by the bank and find out what it follows,躲進岸邊的水溝，看清楚牠跟著什麼走
 GUIDE_STATUS_BLANK,Not in the guide,攻略沒有寫
 GUIDE_CLAPPER_HEARTBEAT,The clapper is in an undertaker's chest. What does it follow? How fast?,鐘舌在一隻送葬者的胸口。牠跟著什麼走？多快？
-GUIDE_CLAPPER_HEARTBEAT_CONFIRMED,It follows a heartbeat. On the seventh try it turned its head. We found that speed ourselves.,牠跟著心跳走。第七次，牠轉了頭——那個速度是我們自己找出來的。
+GUIDE_CLAPPER_HEARTBEAT_CONFIRMED,"It follows a heartbeat: not fast, not slow, the same as a person's. We saw it ourselves, lying in a drain.",牠跟著心跳走——不快不慢，跟人的心跳一樣。這是我們趴在水溝裡自己看到的。
 GUIDE_BLANK_NOTE,Guide notes: one line left blank,攻略筆記：這一條是空白
 DLG_CH3_BANK_001,There.,在那裡。
 DLG_CH3_BANK_002,"(The canal ran dry long ago. From an old hoist beam hung an undertaker, feet dangling over the drop, perfectly still. Something copper glowed in its chest.)",（運河早就乾了。一根舊吊樑下掛著一隻送葬者，腳懸在半空，一動也不動。牠胸口有一點銅色的光。）
@@ -24,3 +24,28 @@ DLG_CH3_BANK_010,What does it follow?,牠跟著什麼走？
 DLG_CH3_BANK_011,Heartbeats.,心跳。
 DLG_CH3_BANK_012,How fast?,多快？
 DLG_CH3_BANK_013,(The guide didn't say.),（攻略沒有寫。）
+Q_CH3_OBJ_DECOY,Misha will make a fake heart at that speed,彌夏要照那個速度做一顆假心臟
+GUIDE_SELF_NOTE,Guide notes: you wrote one line yourself,攻略筆記：自己寫下一條
+DLG_CH3_RHY_001,(We crawled into the drain along the bank and lay flat in the cold mud. From here we could see its chest.),（我們爬進岸邊的水溝，趴在冰冷的爛泥裡。從這裡看得到牠的胸口。）
+DLG_CH3_RHY_002,"If it follows heartbeats, we'll give it one.",牠跟著心跳走，那就給牠一個心跳。
+DLG_CH3_RHY_003,"(Misha pushed a copper plate from the bell box into the mud. Sheila wrapped a small stone in cloth, tied it to a string, and let it hang in front of the plate.)",（彌夏把鐘箱拆下來的一片銅片插在泥裡。席菈用布包住一顆小石頭，繫在線上，垂到銅片前。）
+DLG_CH3_RHY_HUB,How fast?,多快？
+DLG_CH3_RHY_HUB2,Again. How fast?,再一次。多快？
+DLG_CH3_RHY_HUB3,We've got all night. How fast?,我們有一整夜。多快？
+DLG_CH3_RHY_C_VERY_SLOW,Very slow.,很慢。
+DLG_CH3_RHY_C_SLOW,A little slow.,慢一點。
+DLG_CH3_RHY_C_STEADY,"Not fast, not slow.",不快不慢。
+DLG_CH3_RHY_C_FAST,A little fast.,快一點。
+DLG_CH3_RHY_C_VERY_FAST,Very fast.,很快。
+DLG_CH3_RHY_C_IRREGULAR,Uneven.,忽快忽慢。
+DLG_CH3_RHY_KNOCK,"(Sheila began to knock. Thud... thud... Cloth-wrapped stone on copper, a dull sound.)",（席菈開始敲。咚……咚……布包著的石頭敲在銅片上，聲音悶悶的。）
+DLG_CH3_RHY_STILL,(It didn't move at all. Only the copper glow in its chest kept its own pace.),（牠一動也不動。只有胸口的銅光，照自己的速度一下一下地亮。）
+DLG_CH3_RHY_TILT,"(Its head tilted a little, then stopped. As if it heard something but wasn't sure.)",（牠的頭偏了一點——又停住了。像是聽到了，但不確定。）
+DLG_CH3_RHY_IRREGULAR,"(The chain shivered once, then went still. It wasn't following the sound.)",（鏈子抖了一下，又靜下來。牠跟的不是聲音。）
+DLG_CH3_RHY_TURN,"(The chain rattled first. Then it turned its head, the frost-light in its hood fixed on the copper plate. The glow in its chest began to beat with Sheila's hand.)",（鏈子先響了一聲。然後牠轉過頭，兜帽裡的霜光直直對著銅片。胸口的銅光，跟著席菈的手一起亮。）
+DLG_CH3_RHY_C_AGAIN,Try again.,再試一次。
+DLG_CH3_RHY_C_THIS,That's the one.,就是這個速度。
+DLG_CH3_RHY_F1,...Same as a person's heartbeat.,……跟人的心跳一樣快。
+DLG_CH3_RHY_F2,"(When Sheila stopped, it kept staring at the copper plate for a long time.)",（席菈停手之後，牠還對著銅片看了很久。）
+DLG_CH3_RHY_F3,Give me one night. I'll make one that beats at that speed.,給我一晚。我照這個速度，做一顆會跳的。
+DLG_CH3_RHY_F4,"(Under the blank line in my guide notes, I wrote one line myself. The first one I didn't remember. We saw it ourselves.)",（我在攻略筆記那條空白底下，自己寫了一行。這是第一條不是我記得的，是我們自己看到的。）

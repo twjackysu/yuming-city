@@ -28,7 +28,8 @@ const SIT_HIP_HEIGHT: float = 0.5
 @export var trim_color: Color = Color(0.3, 0.24, 0.18)
 @export var skin_color: Color = Color(0.62, 0.52, 0.45)
 
-## 躺姿：""＝站著、"back"＝仰躺（車上的傷者）。只在程序人偶上；中心在骨盆，頭朝 +Z。
+## 躺姿：""＝站著、"back"＝仰躺（車上的傷者，頭朝 +Z）、"front"＝趴著（第 3 章趴在水溝裡，頭朝 -Z＝面向的方向、臉朝下）。
+## 只在程序人偶上；中心在骨盆。
 @export var lying: String = ""
 ## 坐姿（第 2 章黎歐坐在主椅上）：骨盆降到 SIT_HIP_HEIGHT、大腿往前平放、小腿垂直、手放在膝上。只在程序人偶上。
 @export var sitting: bool = false
@@ -282,6 +283,9 @@ func _pose(speed_t: float) -> void:
 ## 仰躺（車上的傷者）：整個人繞骨盆轉成水平、臉朝上、頭朝 +Z，胸口慢慢起伏。
 func _pose_lying() -> void:
 	var breathe: float = sin(breath * TAU * 0.3)
+	if lying == "front":
+		_pose_prone(breathe)
+		return
 	_roll.basis = Basis(Vector3.RIGHT, PI * 0.5)
 	# 骨盆移到原點、背貼地（身體厚度約 0.17）
 	_roll.position = Vector3(0, 0.17, 0) - _roll.basis * Vector3(0, HIP_HEIGHT, 0)
@@ -296,6 +300,28 @@ func _pose_lying() -> void:
 	_rot("shoulder_R", Vector3(0.05, 0, 0.12))
 	_rot("elbow_L", Vector3(0.15, 0, 0))
 	_rot("elbow_R", Vector3(0.4, 0, 0))
+	if _coat != null:
+		_coat.rotation.x = 0.0
+
+
+## 趴著（第 3 章趴在水溝裡觀察）：整個人往前倒成水平、臉朝下、頭朝 -Z；手肘撐地、頭抬起來往前看。
+func _pose_prone(breathe: float) -> void:
+	_roll.basis = Basis(Vector3.RIGHT, -PI * 0.5)
+	# 骨盆移到原點、肚子貼地（身體厚度約 0.17）
+	_roll.position = Vector3(0, 0.17, 0) - _roll.basis * Vector3(0, HIP_HEIGHT, 0)
+	_rot("thigh_L", Vector3(0.0, 0, 0.1))
+	_rot("thigh_R", Vector3(0.0, 0, -0.1))
+	_rot("knee_L", Vector3(-0.15, 0, 0))
+	_rot("knee_R", Vector3(-0.1, 0, 0))
+	_rot("spine", Vector3(0.12, 0, 0))
+	_rot("chest", Vector3(0.18 + 0.02 * breathe, 0, 0))
+	# 抬頭往前看
+	_rot("neck", Vector3(0.7, 0, 0))
+	# 手肘撐在身體前面（正角度＝手臂往身體前面抬：上臂往地面、前臂往頭的方向平放）
+	_rot("shoulder_L", Vector3(1.9, 0, -0.25))
+	_rot("shoulder_R", Vector3(1.9, 0, 0.25))
+	_rot("elbow_L", Vector3(1.25, 0, 0))
+	_rot("elbow_R", Vector3(1.25, 0, 0))
 	if _coat != null:
 		_coat.rotation.x = 0.0
 

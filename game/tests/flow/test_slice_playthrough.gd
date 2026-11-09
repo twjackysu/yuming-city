@@ -853,8 +853,85 @@ func _chapter3(hall: StoryLevel, alt: bool) -> void:
 	await _step_into(_player(canal), canal.get("BANK_POS") as Vector3, 3)
 	assert_false(_game.call("is_in_dialogue"), "[ch3_bank] 岸邊的對話不會再開")
 	_assert_canal(canal, "[ch3_bank]")
+	await _chapter3_observe(canal, alt)
+
+
+## 第 3 章段落 2（D-164）：走進岸邊的水溝 → 三個人趴下 → 席菈隔著銅片敲，玩家選節奏（試過的消失）→
+## 送葬者照 RhythmTrial 反應（不動／偏頭／轉頭）→ 不快不慢（人的心跳）→ 轉頭 →「就是這個速度。」→
+## 攻略筆記的空白條目變成證實 → 站起來 → 檢查點 ch3_rhythm → 段落 3 待續。
+## 主路線：慢一點（偏頭）→ 不快不慢（轉頭）；另一條：忽快忽慢（不動）→ 很快（不動）→ 快一點（偏頭）→ 不快不慢。
+func _chapter3_observe(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.quests.stage_of("ch3_main"), "observe")
+	assert_true(canal.has_node("Drain") and canal.has_node("Drain/CopperPlate"), "岸邊有一道水溝、前端插著銅片")
+	var player: PlayerController = _player(canal)
+	await _step_into(player, canal.get("DRAIN_POS") as Vector3, 3)
+	assert_true(_game.call("is_in_dialogue"), "走進水溝 → 開始觀察")
+	assert_true(canal.call("is_lying", player), "諾恩趴在水溝裡")
+	assert_true(canal.call("is_lying", canal.get_node("Sheila")), "席菈也趴著")
+	assert_true(canal.call("is_lying", canal.get_node("Misha")), "彌夏也趴著")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_rhythm")
+	for i: int in 6:
+		if runner.visible_choices.size() > 0:
+			break
+		runner.advance()
+	assert_eq(runner.current_text(), "DLG_CH3_RHY_HUB", "席菈：多快？")
+	assert_eq(runner.visible_choices.size(), RhythmTrial.ORDER.size(), "六種節奏可以選")
+	var route: PackedStringArray = ["irregular", "very_fast", "fast", "steady"] if alt else ["slow", "steady"]
+	var left: int = RhythmTrial.ORDER.size()
+	for tempo: String in route:
+		var pick: int = -1
+		for i: int in runner.visible_choices.size():
+			if str(runner.visible_choices[i]["text"]) == "DLG_CH3_RHY_C_" + tempo.to_upper():
+				pick = i
+		assert_true(pick >= 0, "選項裡有「%s」" % tempo)
+		runner.choose(pick)
+		assert_eq(runner.current_text(), "DLG_CH3_RHY_KNOCK", "席菈開始敲（%s）" % tempo)
+		var want: String = RhythmTrial.reaction(tempo)
+		assert_eq(str(canal.get("last_reaction")), want, "送葬者的反應照判定：%s → %s" % [tempo, want])
+		assert_eq(s.state.get_flag("ch3.react"), want, "反應寫進 ch3.react")
+		await tree.process_frame
+		runner.advance()
+		var react_key: String = str({"turn": "DLG_CH3_RHY_TURN", "tilt": "DLG_CH3_RHY_TILT"}.get(want, "DLG_CH3_RHY_IRREGULAR" if tempo == "irregular" else "DLG_CH3_RHY_STILL"))
+		assert_eq(runner.current_text(), react_key, "旁白照反應換（%s）" % tempo)
+		canal.call("skip_reaction")
+		if want == RhythmTrial.TURN:
+			assert_true(absf(float(canal.call("torso_turn_deg"))) > 30.0, "轉頭：上半身轉向銅片，停在那裡")
+			assert_eq(runner.visible_choices.size(), 2, "轉頭之後：就是這個速度／再試一次")
+			assert_eq(str(runner.visible_choices[0]["text"]), "DLG_CH3_RHY_C_THIS", "就是這個速度。")
+			runner.choose(0)
+			break
+		assert_eq(runner.visible_choices.size(), 1, "沒轉頭：只能再試一次")
+		assert_eq(str(runner.visible_choices[0]["text"]), "DLG_CH3_RHY_C_AGAIN")
+		assert_true(absf(float(canal.call("torso_turn_deg"))) < 1.0, "沒有轉頭（%s）" % tempo)
+		runner.choose(0)
+		left -= 1
+		assert_eq(runner.visible_choices.size(), left, "試過的節奏從選項消失")
+		assert_eq(runner.current_text(), "DLG_CH3_RHY_HUB3" if int(s.state.get_flag("ch3.rhythm_tries", 0)) >= 3 else "DLG_CH3_RHY_HUB2", "席菈：再一次。多快？")
+	assert_eq(s.state.get_flag("ch3.rhythm_tries"), route.size(), "試了幾次有記下來")
+	for i: int in 8:
+		if not runner.is_running():
+			break
+		runner.advance()
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_bank] 段落 2 待續")
+	assert_false(_game.call("is_in_dialogue"), "觀察結束")
+	assert_eq(s.state.get_flag("ch3.rhythm_found"), true, "找到速度")
+	assert_eq(GuideNotes.status(s.state, "clapper_heartbeat"), GuideNotes.CONFIRMED, "攻略筆記：空白條目變成證實（自己看到的）")
+	assert_false(canal.call("is_lying", player), "看完站起來")
+	assert_false(canal.call("is_lying", canal.get_node("Sheila")), "席菈也站起來")
+	assert_eq(s.quests.stage_of("ch3_main"), "decoy", "→ 段落 3 假心臟")
+	assert_eq(s.state.checkpoint, "ch3_rhythm", "檢查點 ch3_rhythm")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "GUIDE_SELF_NOTE", "提示：攻略筆記自己寫下一條")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_rhythm] 重來還在乾運河")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_DECOY", "[ch3_rhythm] HUD 目標：彌夏照那個速度做假心臟")
+	assert_eq(GuideNotes.status(s.state, "clapper_heartbeat"), GuideNotes.CONFIRMED, "[ch3_rhythm] 證實有存到")
+	await _step_into(_player(canal), canal.get("DRAIN_POS") as Vector3, 3)
+	assert_false(_game.call("is_in_dialogue"), "[ch3_rhythm] 水溝的觀察不會再開")
+	_assert_canal(canal, "[ch3_rhythm]")
+	await tree.process_frame
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_rhythm] 段落 3 待續")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。
