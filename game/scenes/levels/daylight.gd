@@ -59,17 +59,18 @@ const BELL_YARD_RANGE: float = 3.2
 
 ## 柯德家（段落 8，D-155）：一間小室內，蓋在街區外面；屋內 x ±HOUSE_HALF.x、z ±HOUSE_HALF.y，門在南牆
 const HOUSE_ORIGIN: Vector3 = Vector3(40.0, 0.0, -24.0)
-const HOUSE_HALF: Vector2 = Vector2(4.0, 3.5)
+const HOUSE_HALF: Vector2 = Vector2(3.5, 3.0)
 const HOUSE_HEIGHT: float = 3.2
 ## 桌子（相對 HOUSE_ORIGIN）：桌面中心、大小、高度
 const TABLE_POS: Vector3 = Vector3(0.0, 0.0, -0.7)
 const TABLE_SIZE: Vector2 = Vector2(1.8, 1.0)
 const TABLE_TOP: float = 0.76
-## 每個人在桌邊站的地方（相對 HOUSE_ORIGIN）。席菈、彌夏站在諾恩前面兩側（站在後面會擋住過肩鏡頭）
+## 每個人在桌邊站的地方（相對 HOUSE_ORIGIN）。諾恩站在桌子東南角斜看整張桌子（站正中間會擋住桌面）；
+## 席菈、彌夏站在諾恩前面兩側（站在後面會擋住過肩鏡頭）
 const SEATS: Dictionary = {
-	"noen": Vector3(0.15, 0.0, 0.6),
-	"sheila": Vector3(-1.1, 0.0, 0.2),
-	"misha": Vector3(1.2, 0.0, 0.2),
+	"noen": Vector3(0.95, 0.0, 0.7),
+	"sheila": Vector3(-0.85, 0.0, 0.25),
+	"misha": Vector3(2.05, 0.0, 0.35),
 	"kord": Vector3(-1.45, 0.0, -0.75),
 	"wife": Vector3(1.45, 0.0, -0.75),
 	"daughter": Vector3(-0.4, 0.0, -1.6),
@@ -372,7 +373,9 @@ func leave_home() -> void:
 func _seat_everyone() -> void:
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
-		_put_player(player, HOUSE_ORIGIN + (SEATS["noen"] as Vector3), 0.0)
+		var seat: Vector3 = SEATS["noen"] as Vector3
+		var to: Vector3 = TABLE_POS - seat
+		_put_player(player, HOUSE_ORIGIN + seat, atan2(-to.x, -to.z))
 	var ally: Node3D = get_node_or_null("Sheila") as Node3D
 	if ally != null:
 		ally.global_position = HOUSE_ORIGIN + (SEATS["sheila"] as Vector3) + Vector3(0, 0.05, 0)
@@ -432,6 +435,15 @@ func _build_house() -> void:
 	_solid("HouseWallS", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, hz + 0.15), _plaster_mat)
 	_solid("HouseWallW", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(-hx - 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
 	_solid("HouseWallE", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(hx + 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
+	# 屋裡不要穹頂下的白霧（全域的體積霧在小房間裡像起霧）：一個負密度的 FogVolume 把它扣掉
+	var clear := FogVolume.new()
+	clear.name = "HouseFogClear"
+	clear.size = Vector3(hx * 2.0, HOUSE_HEIGHT, hz * 2.0)
+	clear.position = o + Vector3(0, HOUSE_HEIGHT * 0.5, 0)
+	var fm := FogMaterial.new()
+	fm.density = -1.0
+	clear.material = fm
+	add_child(clear)
 	# 牆腳一圈石砌、南牆的門（關著）、西牆關著的窗板、東牆的櫥櫃
 	for side: int in [-1, 1]:
 		_solid("HousePlinth", Vector3(0.06, 0.5, hz * 2.0), o + Vector3(side * (hx - 0.03), 0.25, 0), _stone_mat, false)
