@@ -423,3 +423,42 @@ func test_chapter1_complete_starts_chapter2() -> void:
 	assert_eq(up.load_slot("slot2"), SaveCodec.Status.OK)
 	assert_eq(up.main_quest(), "ch2_main", "舊存檔補開第 2 章")
 	assert_eq(up.state.chapter, "ch2")
+
+
+## 看穿伊薩（D-158）：先讀到攻略的字（按住一秒內不劃）→ 一個字一個字劃掉 → 劃完才出現真話、只發一次 finished；放開不會倒退。
+func test_strike_card_crosses_out_then_shows_truth() -> void:
+	var host := Control.new()
+	tree.root.add_child(host)
+	var card := StrikeCard.new()
+	host.add_child(card)
+	card.setup(PackedStringArray(["食歲的僭王", "弱點：心臟"]), "伊薩，城主。")
+	var got: Array[int] = [0]
+	card.finished.connect(func() -> void: got[0] += 1)
+	assert_eq(card.total_chars(), 10)
+	assert_false(card.advance(0.9), "一秒內")
+	assert_eq(card.struck_count(), 0, "按住一秒內先不劃（讓玩家讀到攻略的字）")
+	assert_false((card.find_child("Truth", true, false) as Label).visible, "還沒劃完不出現真話")
+	card.advance(0.4)
+	assert_true(card.struck_count() > 0 and card.struck_count() < 10, "一個字一個字劃")
+	var struck0: Label = card.find_child("Guide0", true, false).get_node("Struck") as Label
+	assert_true(struck0.visible and struck0.text != "", "被劃掉的字")
+	assert_true(struck0.has_node("Line"), "被劃掉的字有一條線")
+	var held: float = card.held
+	var steps: int = 0
+	while not card.is_done() and steps < 100:
+		card.advance(0.1)
+		steps += 1
+	assert_true(card.is_done())
+	assert_eq(card.struck_count(), 10, "全部劃掉")
+	assert_true(card.held >= held, "只往前，不倒退")
+	assert_true((card.find_child("Truth", true, false) as Label).visible, "劃完 → 真的伊薩")
+	card.advance(1.0)
+	assert_eq(got[0], 1, "finished 只發一次")
+	assert_eq(StrikeCard.split_struck("abc", 0), PackedStringArray(["", "abc"]))
+	assert_eq(StrikeCard.split_struck("abc", 2), PackedStringArray(["ab", "c"]))
+	var again := StrikeCard.new()
+	host.add_child(again)
+	again.setup(PackedStringArray(["食歲的僭王"]), "伊薩", true)
+	assert_true(again.is_done() and again.struck_count() == 5, "已經劃完過（讀檔）：直接是最後的樣子")
+	host.queue_free()
+	await tree.process_frame

@@ -592,6 +592,21 @@ func _chapter2(city: StoryLevel) -> void:
 	assert_true("DLG_CH2_TABLE_007" in lines, "他為什麼進了鐘院？")
 	await _run_dialogue(hall, 0)
 	assert_eq(s.state.get_flag("ch2.table_seated"), true)
+	# 段落 1（D-158）：對伊薩按住看穿 → 攻略的稱號一個字一個字被劃掉 → 攻略筆記「城主＝食歲的僭王」被推翻
+	var strike: StrikeCard = hall.call("strike_card") as StrikeCard
+	assert_not_null(strike, "看穿伊薩的小卡")
+	hall.call("update_isa_insight", 0.1, false)
+	assert_false(strike.visible, "沒按看穿：不顯示")
+	assert_eq(str((hall.call("interact_hint") as Dictionary).get("action", "")), "insight", "提示：按住看穿伊薩")
+	assert_ne(GuideNotes.status(s.state, "usurper"), GuideNotes.WRONG, "還沒看穿：攻略筆記照舊")
+	for i: int in 60:
+		hall.call("update_isa_insight", 0.1, true)
+		if strike.is_done():
+			break
+	assert_true(strike.is_done(), "按住看穿 → 劃完")
+	assert_eq(s.state.get_flag("ch2.usurper_crossed_out"), true)
+	assert_eq(GuideNotes.status(s.state, "usurper"), GuideNotes.WRONG, "攻略筆記「城主＝食歲的僭王」被推翻")
+	assert_true((hall.call("interact_hint") as Dictionary).is_empty(), "看穿過了：不再提示")
 	assert_eq(s.quests.stage_of("ch2_main"), "isa_volunteer", "→ 問伊薩彌夏的弟弟在哪裡")
 	for i: int in 3:
 		await tree.physics_frame

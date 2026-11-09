@@ -37,6 +37,8 @@ const SEATS: Dictionary = {
 const ISA_START: Vector3 = Vector3(0.1, 0.0, 0.2)
 const TABLE_TALK: String = "ch2_table"
 const INNER_DOOR_POS: Vector3 = Vector3(0.0, 0.0, -4.9)
+## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
+const ISA_INSIGHT_RANGE: float = 9.0
 const LAMP_RANGE: float = 7.0
 const LAMP_ENERGY: float = 3.0
 
@@ -53,6 +55,9 @@ var _misha: Puppet
 var _chair: Node3D
 var _seated: bool = false
 var _continued_shown: bool = false
+var _strike: StrikeCard
+## 截圖用：小卡停在指定的按住秒數
+var _dev_insight: bool = false
 
 
 func _ready() -> void:
@@ -69,15 +74,24 @@ func _ready() -> void:
 		_put(player, SPAWN, 0.0)
 	_set_up_lamp()
 	_build_people()
+	_build_isa_insight()
 	_hide_contact_shadows.call_deferred()
 	Game.dialogue_ended.connect(_on_dialogue_ended)
+	add_to_group("interact_prompts")
+	# 截圖用：`--hall-at=table` 直接走到桌邊（伊薩拉椅子、飯桌的對話第一句）；
+	# `--hall-at=seated` 飯桌的對話講完、坐在桌邊；再加 `--hall-insight=秒` 停在看穿伊薩按住那麼久的樣子
+	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	var at: String = str(dev_args.get("hall-at", ""))
+	if at == "seated":
+		Game.session.set_flag("ch2.table_seated", true)
 	# 已經坐下過（重來、讀檔）：直接在桌邊
 	if bool(Game.session.state.get_flag("ch2.table_seated", false)):
 		_seat_everyone()
-	# 截圖用：`--hall-at=table` 直接走到桌邊（伊薩拉椅子、飯桌的對話第一句）
-	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
-	if str(dev_args.get("hall-at", "")) == "table" and Game.session.quests.stage_of(QUEST) == "isa_table":
+	if at == "table" and Game.session.quests.stage_of(QUEST) == "isa_table":
 		take_seat.call_deferred()
+	if dev_args.has("hall-insight") and _strike != null and not _strike.is_done():
+		_dev_insight = true
+		_strike.held = float(str(dev_args["hall-insight"]))
 
 
 ## 開發旗標與測試用：照正式流程把第 1 章走完（第 2 章跟著開始）。已經開始第 2 章就不動。
@@ -140,6 +154,60 @@ func _physics_process(_delta: float) -> void:
 	if stage == "isa_volunteer" and not _continued_shown:
 		_continued_shown = true
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
+
+
+## 看穿伊薩（D-158）：攻略的稱號一個字一個字被劃掉 → 真的伊薩。劃完設 ch2.usurper_crossed_out（攻略筆記「城主＝食歲的僭王」被推翻）。
+func _build_isa_insight() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "IsaInsight"
+	layer.layer = 9
+	add_child(layer)
+	_strike = StrikeCard.new()
+	layer.add_child(_strike)
+	var done: bool = bool(Game.session.state.get_flag("ch2.usurper_crossed_out", false))
+	_strike.setup(PackedStringArray([tr("INSIGHT_USURPER_NAME"), tr("INSIGHT_USURPER_WEAK")]), tr("GUIDE_USURPER_WRONG"), done)
+	_strike.finished.connect(_on_usurper_crossed_out)
+
+
+func _process(delta: float) -> void:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if _dev_insight:
+		update_isa_insight(0.0, true)
+		return
+	update_isa_insight(delta, player != null and player.insight_active)
+
+
+## 每幀（測試也直接呼叫）：按住看穿、伊薩在附近 → 小卡往前劃；放開就藏起來（停在劃到的地方）。
+func update_isa_insight(delta: float, active: bool) -> void:
+	if _strike == null:
+		return
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var on: bool = active and player != null and _isa != null and _flat(player.global_position, _isa.global_position) <= ISA_INSIGHT_RANGE
+	if not on:
+		_strike.visible = false
+		return
+	_strike.advance(delta)
+	_strike.place(get_viewport().get_camera_3d(), _isa.global_position + Vector3(0, 1.9, 0))
+
+
+## 互動提示（D-065）：坐下之後、還沒看穿過伊薩 → 「按住 V 看穿伊薩」；按住的時候不顯示（不擋小卡）。
+func interact_hint() -> Dictionary:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player == null or _isa == null or not _seated or Game.is_player_locked():
+		return {}
+	if bool(Game.session.state.get_flag("ch2.usurper_crossed_out", false)) or player.insight_active:
+		return {}
+	if _flat(player.global_position, _isa.global_position) > ISA_INSIGHT_RANGE:
+		return {}
+	return {"fmt": TranslationServer.translate("CH2_ISA_INSIGHT_HINT"), "action": "insight", "progress": -1.0}
+
+
+func strike_card() -> StrikeCard:
+	return _strike
+
+
+func _on_usurper_crossed_out() -> void:
+	Game.session.set_flag("ch2.usurper_crossed_out", true)
 
 
 ## 走到桌邊（測試也用）：伊薩替諾恩拉椅子（支架吱一聲）→ 每個人站到桌邊 → 飯桌的對話。

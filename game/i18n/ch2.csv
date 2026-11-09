@@ -14,3 +14,6 @@ DLG_CH2_TABLE_006,The bell yard's shift runs until midnight today. You can wait 
 DLG_CH2_TABLE_007,Why did he go into the bell yard?,他為什麼進了鐘院？
 DLG_CH2_TABLE_008,(Isa didn't answer right away.),（伊薩沒有立刻回答。）
 DLG_CH2_TABLE_009,(Misha put down her spoon.),（彌夏放下湯匙。）
+INSIGHT_USURPER_NAME,The Year-Eating Usurper,食歲的僭王
+INSIGHT_USURPER_WEAK,Weak point: the heart,弱點：心臟
+CH2_ISA_INSIGHT_HINT,Hold {key} — see through Isa,按住 {key}　看穿伊薩

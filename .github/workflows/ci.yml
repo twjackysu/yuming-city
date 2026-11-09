@@ -209,6 +209,7 @@ jobs:
           shot 17-ch1-bell-yard-road 30 --level=daylight --daylight-at=yard --locale=zh_TW
           shot 18-ch2-table 30 --level=bell_hall --hall-at=table --locale=zh_TW
           shot 19-ch2-hall 30 --level=bell_hall --locale=zh_TW
+          shot 20-ch2-isa-insight 30 --level=bell_hall --hall-at=seated --hall-insight=1.6 --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"
