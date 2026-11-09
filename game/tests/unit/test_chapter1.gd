@@ -245,12 +245,34 @@ func test_stairs_path_trap_and_bottom() -> void:
 	assert_true("DLG_CH1_TRAP_002" in lines, "丟石頭：水潑在剛剛要踩的地方")
 	s.set_flag("ch1.stairs_bottom", true)
 	assert_eq(s.quests.stage_of("ch1_main"), "daylight_gate", "走到底 → 不可互動的門")
+	# 段落 6（D-153）：開門 → 攻略「不可互動的門」推翻；柯德 → 「全城是怪物」推翻；標過不確定的那條台詞不同
+	GuideNotes.set_unsure(s.state, "sealed_door", true)
+	s.set_flag("ch1.door_opened", true)
+	assert_eq(GuideNotes.status(s.state, "sealed_door"), GuideNotes.WRONG)
+	var kr := DialogueRunner.new(Game.dialogues, s.state)
+	assert_true(kr.start("ch1_kord_door"))
+	var klines: PackedStringArray = []
+	for i: int in 12:
+		klines.append(kr.current_text())
+		if not kr.current().has("choices"):
+			if not kr.advance():
+				break
+		else:
+			assert_eq((kr.current()["choices"] as Array).size(), 3, "三個回答")
+			kr.choose(1)
+	assert_true("DLG_CH1_KORD_006_UNSURE" in klines, "標了我不確定 → 地圖上自己畫的問號")
+	assert_true("DLG_CH1_KORD_R_HELP" in klines, "回答「來幫忙的」")
+	assert_eq(s.state.get_flag("ch1.kord_first"), "help")
+	s.set_flag("ch1.met_kord", true)
+	assert_eq(GuideNotes.status(s.state, "city_of_monsters"), GuideNotes.WRONG)
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_city", "柯德之後 → 白晝城（待續）")
 	assert_eq(s.state.checkpoint, "ch1_stairs_bottom")
 	assert_eq(Game.level_for_checkpoint("ch1_stairs_bottom"), "stairs")
 	assert_true("water_splash" in Sfx.NAMES and "child_laugh" in Sfx.NAMES, "新音效登記")
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
-		for key: String in ["CH1_STAIR_THROW_HINT", "Q_CH1_OBJ_GATE", "DLG_CH1_STAIR_002_UNSURE", "DLG_CH1_TRAP_002_SOAKED",
+		for key: String in ["SPK_KORD", "Q_CH1_OBJ_DAYLIGHT", "DLG_CH1_KORD_006_UNSURE", "DLG_CH1_KORD_C_MAP", "DLG_CH1_KORD_010",
+				"CH1_STAIR_THROW_HINT", "Q_CH1_OBJ_GATE", "DLG_CH1_STAIR_002_UNSURE", "DLG_CH1_TRAP_002_SOAKED",
 				"DLG_CH1_TRAP_003", "DLG_CH1_TRAP_006_UNSURE", "DLG_CH1_TRAP_007"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")

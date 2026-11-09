@@ -3,7 +3,8 @@ extends StoryLevel
 ## 梨販家地窖下的長階梯：方形螺旋往下（繞中間的石柱轉兩圈半），霧＋油燈只照得到前後十幾級。
 ## 照攻略，第一個陷阱是射箭：走近時諾恩攔住大家 → 玩家可以往前丟石頭試探（互動），
 ## 或直接走過去（踩到絆線）。兩種都掉下一桶髒水——攻略筆記「射箭陷阱」被推翻；樓梯深處傳來小孩的笑聲。
-## 走到底是一扇門（段落 6「不可互動的門」下一輪做；現在顯示「待續」）。
+## 走到底是一扇門：段落 6「不可互動的門」——柯德舉著叉子出來（攻略標「不可互動」的門後面是一家人），
+## 席菈摘下徽章；諾恩的回答記成柯德的第一印象（ch1.kord_first）。之後的白晝城還沒做，顯示「待續」。
 ##
 ## 路線：轉角 k 的位置是 CORNERS[k % 4]、高度 -k×DROP；轉角是平台、轉角之間是一段斜坡（看得到的台階＋看不到的斜坡碰撞）。
 ## 路線參數 s＝沿著路線的水平公尺數（轉角 k 在 s = k×SIDE）。
@@ -30,6 +31,10 @@ const TRAP_TALK_DELAY: float = 0.9
 ## 笑聲在這一句出現
 const LAUGH_LINE: String = "DLG_CH1_TRAP_004"
 const DOOR_RANGE: float = 1.8
+## 樓梯底的出生點離最後一個轉角多遠（不要一出生就站在門口）
+const BOTTOM_SPAWN_BACK: float = 2.2
+## 門往裡開的角度（段落 6：柯德開門出來）
+const DOOR_OPEN_DEG: float = -82.0
 const SHEILA_BEHIND: float = 4.2
 const MISHA_BEHIND: float = 5.6
 const MISHA_SPEED: float = 4.2
@@ -57,6 +62,10 @@ var _door_inside: bool = false
 var _misha_s: float = 0.0
 var _misha: Puppet
 var _lead: Marker3D
+var _door_pivot: Node3D
+var _doorway: MeshInstance3D
+var _door_leak: OmniLight3D
+var _kord: Puppet
 
 
 func _ready() -> void:
@@ -77,13 +86,21 @@ func _ready() -> void:
 		Game.session.set_flag("ch1.stair_warned", true)
 		Game.session.set_flag("ch1.stair_trap_sprung", true)
 		Game.session.state.set_flag("ch1.stair_trap_talked", true)
+	# 截圖用：`--stairs-door` 走到樓梯底、柯德開門出來（段落 6 的第一句）
+	if dev_args.has("stairs-door"):
+		Game.session.set_flag("ch1.stair_trap_sprung", true)
+		Game.session.set_flag("ch1.stairs_bottom", true)
 	_place_player(str(dev_args.get("stairs-at", "")))
 	_brighten_lamp()
 	_build_party()
 	if bool(Game.session.state.get_flag("ch1.stair_trap_sprung", false)):
 		_show_sprung(false, Vector3.INF)
+	if bool(Game.session.state.get_flag("ch1.met_kord", false)):
+		_show_door_open(false)
 	Game.dialogue_started.connect(_on_dialogue_started)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
+	if dev_args.has("stairs-door"):
+		open_gate_door.call_deferred()
 
 
 # ---------------------------------------------------------------- 路線
@@ -168,8 +185,8 @@ func _place_player(at: String) -> void:
 	if player == null:
 		return
 	var s: float = TOP_SPAWN_S
-	if Game.session.quests.stage_of(QUEST) == "daylight_gate" or at == "bottom":
-		s = bottom_s()
+	if Game.session.quests.stage_of(QUEST) in ["daylight_gate", "daylight_city"] or at == "bottom":
+		s = bottom_s() - BOTTOM_SPAWN_BACK
 	elif at == "trap":
 		s = trap_entrance_s() - WARN_AHEAD + 0.6
 	elif at == "mid":
@@ -206,9 +223,65 @@ func _physics_process(delta: float) -> void:
 	if stage == "stairs" and s >= bottom_s() - W * 0.5:
 		Game.session.set_flag("ch1.stairs_bottom", true)
 	var at_door: bool = player.global_position.distance_to(_door_pos()) <= DOOR_RANGE
-	if at_door and not _door_inside and Game.session.quests.stage_of(QUEST) == "daylight_gate":
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+	if at_door and not _door_inside:
+		match Game.session.quests.stage_of(QUEST):
+			"daylight_gate":
+				open_gate_door()
+			"daylight_city":
+				_banner("CH1_TO_BE_CONTINUED", 6.0)
 	_door_inside = at_door
+
+
+## 段落 6「不可互動的門」（測試也用）：門往裡開、柯德舉著叉子走出來 → 對話。
+func open_gate_door() -> void:
+	if bool(Game.session.state.get_flag("ch1.door_opened", false)) and _kord != null:
+		return
+	Game.session.set_flag("ch1.door_opened", true)
+	_show_door_open(true)
+	Game.start_dialogue("ch1_kord_door")
+
+
+func _show_door_open(animate: bool) -> void:
+	if _door_pivot != null:
+		if animate:
+			create_tween().tween_property(_door_pivot, "rotation_degrees:y", DOOR_OPEN_DEG, 0.6).set_trans(Tween.TRANS_SINE)
+		else:
+			_door_pivot.rotation_degrees.y = DOOR_OPEN_DEG
+	if _doorway != null:
+		_doorway.visible = true
+	if _door_leak != null:
+		_door_leak.light_energy = 2.2
+		_door_leak.omni_range = 5.0
+	if _kord == null:
+		_kord = Puppet.new()
+		_kord.name = "Kord"
+		# 柯德：瘦、衣領兜不住脖子（07）——灰褐的舊衣、白灰色滾邊
+		_kord.coat_color = Color(0.36, 0.33, 0.28)
+		_kord.trim_color = Color(0.7, 0.68, 0.62)
+		add_child(_kord)
+		var hammer: Node = _kord.hand("R").get_node_or_null("BellHammer") if _kord.hand("R") != null else null
+		if hammer != null:
+			hammer.queue_free()
+		var fork := MeshInstance3D.new()
+		fork.name = "Fork"
+		var fm := BoxMesh.new()
+		fm.size = Vector3(0.03, 0.03, 0.42)
+		fork.mesh = fm
+		fork.material_override = _mat(Color(0.55, 0.55, 0.56), 0.4)
+		if _kord.hand("R") != null:
+			_kord.hand("R").add_child(fork)
+			fork.position = Vector3(0, -0.05, -0.18)
+		var out_at: Vector3 = _door_pos() + Vector3(-0.75, 0.0, 0.0)
+		_kord.rotation.y = PI * 0.5
+		if animate:
+			_kord.global_position = _door_pos() + Vector3(0.1, 0.0, 0.0)
+			create_tween().tween_property(_kord, "global_position", out_at, 0.7).set_delay(0.3)
+		else:
+			_kord.global_position = out_at
+
+
+func _on_kord_talked() -> void:
+	_banner("CH1_TO_BE_CONTINUED", 6.0)
 
 
 ## 互動提示（D-065）：攔住大家之後、走上平台之前。
@@ -291,6 +364,8 @@ func _on_line_shown(_speaker: String, text_key: String) -> void:
 func _on_dialogue_ended(dialogue_id: String) -> void:
 	if dialogue_id == "ch1_stair_trap":
 		Game.session.state.set_flag("ch1.stair_trap_talked", true)
+	elif dialogue_id == "ch1_kord_door":
+		_on_kord_talked()
 
 
 ## 機關觸發後的樣子：木桶倒掛、平台上一灘髒水（animate＝剛觸發，水從桶裡倒下來）。
@@ -559,13 +634,33 @@ func _build_trap() -> void:
 
 func _build_bottom() -> void:
 	var door_at: Vector3 = _door_pos()
-	# 外牆上的木門（關著；門縫漏出白光——門後是白晝城的一戶人家）
-	_box_at("GateDoorLeaf", Vector3(0.08, 2.1, 1.1), door_at + Vector3(-0.05, 1.05, 0), _mat(WOOD, 0.8), true)
+	# 外牆上的木門（關著；門縫漏出白光——門後是白晝城的一戶人家）。鉸鏈在 -Z 那一邊，往裡（+X）開
+	_door_pivot = Node3D.new()
+	_door_pivot.name = "GateDoorPivot"
+	_door_pivot.position = door_at + Vector3(-0.05, 0.0, -0.55)
+	add_child(_door_pivot)
+	var leaf := _box_at("GateDoorLeaf", Vector3(0.08, 2.1, 1.1), Vector3.ZERO, _mat(WOOD, 0.8), false)
+	leaf.reparent(_door_pivot, false)
+	leaf.position = Vector3(0.0, 1.05, 0.55)
+	var leaf_body := StaticBody3D.new()
+	leaf_body.name = "GateDoorLeafBody"
+	var leaf_shape := CollisionShape3D.new()
+	var leaf_box := BoxShape3D.new()
+	leaf_box.size = Vector3(0.08, 2.1, 1.1)
+	leaf_shape.shape = leaf_box
+	leaf_body.add_child(leaf_shape)
+	leaf_body.position = Vector3(0.0, 1.05, 0.55)
+	_door_pivot.add_child(leaf_body)
+	# 門開了才看得到的門洞：屋裡的白光（白晝城的燈），桌子、孩子、碎頭盔裡的蔥由對話說
+	_doorway = _box_at("GateDoorway", Vector3(0.02, 2.1, 1.1), door_at + Vector3(-0.01, 1.05, 0), _glow_mat(DOOR_GLOW, 1.6), false)
+	_doorway.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_doorway.visible = false
 	var gap := _box_at("GateDoorGap", Vector3(0.02, 0.03, 1.1), door_at + Vector3(-0.1, 0.02, 0), _glow_mat(DOOR_GLOW, 3.0), false)
 	gap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var side := _box_at("GateDoorCrack", Vector3(0.02, 2.0, 0.02), door_at + Vector3(-0.1, 1.0, 0.55), _glow_mat(DOOR_GLOW, 2.2), false)
 	side.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var leak := OmniLight3D.new()
+	_door_leak = leak
 	leak.name = "DoorLeak"
 	leak.light_color = DOOR_GLOW
 	leak.light_energy = 0.7

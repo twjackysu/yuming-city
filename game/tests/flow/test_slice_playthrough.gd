@@ -424,14 +424,26 @@ func _chapter1_stairs(stairs: StoryLevel, threw_stone: bool) -> void:
 	stairs = await _retry()
 	assert_eq(str(stairs.name), "Stairs", "[ch1_stairs_bottom] 重來還在樓梯")
 	assert_eq(_objective(stairs), "Q_CH1_OBJ_GATE", "[ch1_stairs_bottom] HUD 目標")
-	assert_true(float(stairs.call("path_param", _player(stairs).global_position)) > float(stairs.call("bottom_s")) - 1.0, "[ch1_stairs_bottom] 出生在樓梯底")
+	assert_true(float(stairs.call("path_param", _player(stairs).global_position)) > float(stairs.call("bottom_s")) - 3.0, "[ch1_stairs_bottom] 出生在樓梯底")
 	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.WRONG, "[ch1_stairs_bottom] 攻略筆記保留")
 	assert_true((stairs.get_node("Puddle") as Node3D).visible, "[ch1_stairs_bottom] 平台上的水灘還在")
+	assert_false(_game.call("is_in_dialogue"), "[ch1_stairs_bottom] 出生的地方離門還有一段（不會一進來就開門）")
+	# --- 段落 6（D-153）：不可互動的門——柯德舉著叉子出來
 	var door: Node3D = stairs.get_node("GateDoor") as Node3D
 	_player(stairs).global_position = door.global_position + Vector3(-0.9, -0.95, 0.0)
 	for i: int in 3:
 		await tree.physics_frame
-	assert_eq((stairs.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "樓梯底的門 → 待續（白晝城下一輪做）")
+	assert_eq(s.state.get_flag("ch1.door_opened"), true, "走到門口 → 門開了")
+	assert_true(stairs.has_node("Kord"), "柯德走出來")
+	assert_eq(GuideNotes.status(s.state, "sealed_door"), GuideNotes.WRONG, "攻略筆記「不可互動的門」被推翻")
+	assert_true(_game.call("is_in_dialogue"), "→ 對話")
+	var most: int = await _run_dialogue(stairs, 0 if threw_stone else 2)
+	assert_eq(most, 3, "諾恩的回答有三個選項")
+	assert_eq(s.state.get_flag("ch1.kord_first"), "hands" if threw_stone else "map", "柯德的第一印象記下來")
+	assert_eq(s.state.get_flag("ch1.met_kord"), true)
+	assert_eq(GuideNotes.status(s.state, "city_of_monsters"), GuideNotes.WRONG, "攻略筆記「全城是怪物」被推翻：門後面是人")
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_city")
+	assert_eq((stairs.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "柯德之後 → 待續（白晝城下一輪做）")
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。

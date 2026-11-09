@@ -69,7 +69,15 @@
       "checkpoint": "ch1_stairs_bottom",
       "marker": "node:GateDoor",
       "done_when": {
-        "flag": "ch1.door_opened"
+        "flag": "ch1.met_kord"
+      }
+    },
+    {
+      "id": "daylight_city",
+      "objective": "Q_CH1_OBJ_DAYLIGHT",
+      "marker": "node:GateDoor",
+      "done_when": {
+        "flag": "ch1.entered_daylight"
       }
     }
   ]

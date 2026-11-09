@@ -90,3 +90,22 @@ DLG_CH1_TRAP_005,There are people down there.,下面有人。
 DLG_CH1_TRAP_006,"In the guide, there's nothing down there but monsters.",攻略上，下面只有怪物。
 DLG_CH1_TRAP_006_UNSURE,"In the guide, there's nothing down there but monsters. ...I marked that one too.",攻略上，下面只有怪物。……這條我也標了不確定。
 DLG_CH1_TRAP_007,Then let's go see what kind of monster laughs.,那就下去看看，什麼樣的怪物會笑。
+SPK_KORD,Kord,柯德
+Q_CH1_OBJ_DAYLIGHT,Follow Kord into Daylight City,跟著柯德走進白晝城
+DLG_CH1_KORD_001,From up top?,地上來的？
+DLG_CH1_KORD_002,(I nod.),（我點頭。）
+DLG_CH1_KORD_003,"(He sees Sheila's badge, and the smile leaves his face.)",（他看見席菈的徽章，臉上的笑消失了。）
+DLG_CH1_KORD_004,We've already paid this year.,我們今年已經交過了。
+DLG_CH1_KORD_005,"(The door behind him is half open. A table inside, two children, and a pot of scallions growing in a broken helmet.)",（他身後的門半開著。裡面有一張桌，兩個孩子，一盆種在碎頭盔裡的蔥。）
+DLG_CH1_KORD_006,"(On my map, that door is marked: cannot be opened.)",（我的地圖上，那扇門標著：不可互動。）
+DLG_CH1_KORD_006_UNSURE,"(On my map, that door is marked: cannot be opened. Next to it, a question mark I drew myself.)",（我的地圖上，那扇門標著：不可互動。旁邊有一個我自己畫的問號。）
+DLG_CH1_KORD_007,"(Sheila takes off her silver badge and puts it in her pocket.)",（席菈摘下銀徽，放進口袋。）
+DLG_CH1_KORD_008,We're here to fix the bell.,我們來修鐘。
+DLG_CH1_KORD_009,...And you?,……那你呢？
+DLG_CH1_KORD_C_HANDS,(Say nothing. Show him your empty hands.),（什麼都不說，把空著的手攤開給他看。）
+DLG_CH1_KORD_C_HELP,"We're not here to take anything. We're here to help.",我們不是來收東西的。我們是來幫忙的。
+DLG_CH1_KORD_C_MAP,"My map said this door doesn't open.",我的地圖上說，這扇門打不開。
+DLG_CH1_KORD_R_HANDS,(He looks at your hands for a long time.) ...They're shaking.,（他盯著你的手看了很久。）……在發抖。
+DLG_CH1_KORD_R_HELP,"Everyone who comes down says that. Then they take something.",下來的人都這麼說。說完就拿走一點東西。
+DLG_CH1_KORD_R_MAP,"A door that doesn't open? Doors are for people to go in and out of.",打不開的門？門是給人進出的。
+DLG_CH1_KORD_010,"(He stares at Sheila. In the end, he lowers the fork a little.)",（男人盯著席菈，最後把叉子放低了一點。）
