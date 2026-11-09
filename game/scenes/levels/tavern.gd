@@ -228,13 +228,8 @@ func _build_room() -> void:
 	_window_light.omni_range = 8.0
 	_window_light.shadow_enabled = true
 	add_child(_window_light)
-	# 西北角的壁爐
-	_box("Hearth", Vector3(2.2, 1.4, 0.8), Vector3(-4.6, 0.7, -d + 0.45), Color(0.3, 0.28, 0.26))
-	var fire := _box("HearthFire", Vector3(1.0, 0.45, 0.3), Vector3(-4.6, 0.35, -d + 0.82), HEARTH, false)
-	var fm := fire.material as StandardMaterial3D
-	fm.emission_enabled = true
-	fm.emission = HEARTH
-	fm.emission_energy_multiplier = 3.0
+	# 西北角的壁爐（第 52 輪：原本是一塊發光的長方形 → 石砌爐框＋凹進去的爐膛＋柴＋火焰與火星粒子＋會閃的火光）
+	_build_hearth(Vector3(-4.6, 0.0, -d + 0.45))
 	_hearth_light = OmniLight3D.new()
 	_hearth_light.name = "HearthLight"
 	_hearth_light.light_color = HEARTH
@@ -250,6 +245,121 @@ func _build_room() -> void:
 	lamp.omni_range = 6.0
 	lamp.position = Vector3(4.2, 2.4, -2.6)
 	add_child(lamp)
+
+
+## 壁爐（爐框中心在 base，背靠北牆、開口朝 +Z）：左右兩柱＋上面的爐楣＋爐台，中間凹進去的黑爐膛，
+## 兩根交叉的柴＋底下一層發亮的炭，火焰（加法混色、往上縮小變紅）與零星火星。
+const HEARTH_OPENING: Vector2 = Vector2(1.1, 0.8)
+var hearth_flames: CPUParticles3D
+var hearth_sparks: CPUParticles3D
+var _flicker_t: float = 0.0
+
+
+func _build_hearth(base: Vector3) -> void:
+	var stone := Color(0.3, 0.28, 0.26)
+	var ow: float = HEARTH_OPENING.x
+	var oh: float = HEARTH_OPENING.y
+	var side: float = (2.2 - ow) * 0.5
+	for sx: float in [-1.0, 1.0]:
+		_box("HearthJamb", Vector3(side, oh, 0.8), base + Vector3(sx * (ow + side) * 0.5, oh * 0.5, 0), stone)
+	_box("Hearth", Vector3(2.2, 1.4 - oh, 0.8), base + Vector3(0, oh + (1.4 - oh) * 0.5, 0), stone)
+	# 爐台（突出一點的石板）與上面的木頭壁架
+	_box("HearthMantel", Vector3(2.5, 0.12, 0.3), base + Vector3(0, 1.46, 0.3), BEAM, false)
+	_box("HearthStep", Vector3(2.4, 0.06, 0.5), base + Vector3(0, 0.03, 0.62), Color(0.26, 0.24, 0.22), false)
+	# 爐膛：燻黑的內壁（比外框凹 0.55 m）
+	_box("HearthBack", Vector3(ow, oh, 0.12), base + Vector3(0, oh * 0.5, -0.32), Color(0.05, 0.04, 0.035), false)
+	_box("HearthFloor", Vector3(ow, 0.04, 0.7), base + Vector3(0, 0.02, 0.0), Color(0.08, 0.06, 0.05), false)
+	# 炭床：發亮的一層
+	var embers := _box("HearthFire", Vector3(ow * 0.8, 0.06, 0.45), base + Vector3(0, 0.07, 0.02), HEARTH, false)
+	var em := embers.material as StandardMaterial3D
+	em.albedo_color = Color(0.25, 0.08, 0.03)
+	em.emission_enabled = true
+	em.emission = Color(1.0, 0.35, 0.08)
+	em.emission_energy_multiplier = 2.4
+	# 兩根柴交叉擱在炭上
+	var log_mat := StandardMaterial3D.new()
+	log_mat.albedo_color = Color(0.16, 0.1, 0.07)
+	log_mat.roughness = 0.95
+	log_mat.emission_enabled = true
+	log_mat.emission = Color(0.9, 0.3, 0.06)
+	log_mat.emission_energy_multiplier = 0.35
+	for i: int in 2:
+		var lg := MeshInstance3D.new()
+		lg.name = "HearthLog%d" % i
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.07
+		cm.bottom_radius = 0.08
+		cm.height = 0.8
+		lg.mesh = cm
+		lg.material_override = log_mat
+		lg.position = base + Vector3(0, 0.16 + i * 0.07, 0.02)
+		lg.rotation = Vector3(0.0, (0.35 if i == 0 else -0.35), PI * 0.5)
+		add_child(lg)
+	# 火焰：加法混色的柔點，往上飄、變小、由黃轉紅
+	hearth_flames = CPUParticles3D.new()
+	hearth_flames.name = "HearthFlames"
+	hearth_flames.amount = 40
+	hearth_flames.lifetime = 0.7
+	hearth_flames.position = base + Vector3(0, 0.2, 0.05)
+	hearth_flames.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	hearth_flames.emission_box_extents = Vector3(ow * 0.32, 0.03, 0.12)
+	hearth_flames.direction = Vector3.UP
+	hearth_flames.spread = 8.0
+	hearth_flames.gravity = Vector3(0, 0.6, 0)
+	hearth_flames.initial_velocity_min = 0.35
+	hearth_flames.initial_velocity_max = 0.7
+	hearth_flames.scale_amount_min = 0.7
+	hearth_flames.scale_amount_max = 1.2
+	var shrink := Curve.new()
+	shrink.add_point(Vector2(0.0, 0.6))
+	shrink.add_point(Vector2(0.25, 1.0))
+	shrink.add_point(Vector2(1.0, 0.1))
+	hearth_flames.scale_amount_curve = shrink
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1.0, 0.85, 0.45, 0.9))
+	ramp.set_color(1, Color(0.9, 0.2, 0.04, 0.0))
+	ramp.add_point(0.45, Color(1.0, 0.5, 0.12, 0.7))
+	hearth_flames.color_ramp = ramp
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.26, 0.34)
+	quad.material = ParticleLook.material(Color.WHITE, true)
+	hearth_flames.mesh = quad
+	add_child(hearth_flames)
+	# 火星：偶爾一顆往上竄
+	hearth_sparks = CPUParticles3D.new()
+	hearth_sparks.name = "HearthSparks"
+	hearth_sparks.amount = 6
+	hearth_sparks.lifetime = 1.4
+	hearth_sparks.position = base + Vector3(0, 0.3, 0.05)
+	hearth_sparks.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	hearth_sparks.emission_box_extents = Vector3(ow * 0.3, 0.05, 0.1)
+	hearth_sparks.direction = Vector3.UP
+	hearth_sparks.spread = 20.0
+	hearth_sparks.gravity = Vector3(0, 0.2, 0)
+	hearth_sparks.initial_velocity_min = 0.6
+	hearth_sparks.initial_velocity_max = 1.1
+	var spark_ramp := Gradient.new()
+	spark_ramp.set_color(0, Color(1.0, 0.75, 0.35, 1.0))
+	spark_ramp.set_color(1, Color(1.0, 0.3, 0.05, 0.0))
+	hearth_sparks.color_ramp = spark_ramp
+	var sq := QuadMesh.new()
+	sq.size = Vector2(0.03, 0.03)
+	sq.material = ParticleLook.material(Color.WHITE, true)
+	hearth_sparks.mesh = sq
+	add_child(hearth_sparks)
+
+
+## 火光閃動：兩個不同頻率的正弦疊起來＋一點高頻，亮度在 ±12% 內晃（照在牆上與人身上才像火）。
+static func hearth_flicker(t: float) -> float:
+	return 1.0 + 0.07 * sin(t * 7.3) + 0.04 * sin(t * 13.1 + 1.7) + 0.02 * sin(t * 29.0 + 0.4)
+
+
+func _process(delta: float) -> void:
+	if _hearth_light == null:
+		return
+	_flicker_t += delta
+	var base_energy: float = 3.2 if is_night() else 1.6
+	_hearth_light.light_energy = base_energy * hearth_flicker(_flicker_t)
 
 
 func _table(node_name: String, pos: Vector3, size: Vector2) -> Node3D:
