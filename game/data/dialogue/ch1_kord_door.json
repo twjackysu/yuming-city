@@ -107,7 +107,12 @@
         "set": {
           "ch1.met_kord": true
         }
-      }
+      },
+      "next": "k11"
+    },
+    "k11": {
+      "speaker": "SPK_KORD",
+      "text": "DLG_CH1_KORD_011"
     }
   }
 }

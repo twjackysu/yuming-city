@@ -21,7 +21,7 @@ SPK_KEEPER,Innkeeper,酒館老闆
 SPK_LEO_LETTER,Leo's letter,黎歐的信
 CH1_CARD_NUMBER,Chapter One,第一章
 CH1_CARD_TITLE,The Door Beyond the Guide,攻略之外的門
-CH1_TO_BE_CONTINUED,To be continued — Daylight City is still being built.,待續——白晝城還在製作中。
+CH1_TO_BE_CONTINUED,To be continued — the next part is still being built.,待續——下一段還在製作中。
 Q_CH1_MAIN_TITLE,The Door Beyond the Guide,攻略之外的門
 Q_CH1_OBJ_NOON,Find Sheila by the wounded,去傷者那邊找席菈
 Q_CH1_OBJ_DINNER,Night has fallen. Sit down to dinner with Sheila and Misha,入夜了，跟席菈、彌夏一起吃飯
@@ -109,3 +109,40 @@ DLG_CH1_KORD_R_HANDS,(He looks at your hands for a long time.) ...They're shakin
 DLG_CH1_KORD_R_HELP,"Everyone who comes down says that. Then they take something.",下來的人都這麼說。說完就拿走一點東西。
 DLG_CH1_KORD_R_MAP,"A door that doesn't open? Doors are for people to go in and out of.",打不開的門？門是給人進出的。
 DLG_CH1_KORD_010,"(He stares at Sheila. In the end, he lowers the fork a little.)",（男人盯著席菈，最後把叉子放低了一點。）
+DLG_CH1_KORD_011,Then eat something first. A bell fixed on an empty stomach never keeps time.,那先吃點東西。空肚子修的鐘不準。
+Q_CH1_OBJ_FURNACE,The guide says there's a purifying furnace at the entrance. Find it,攻略說入口有一座淨化爐，去找找看
+Q_CH1_OBJ_FOLLOW_KORD,Follow Kord,跟著柯德走
+Q_CH1_OBJ_KORD_HOME,Go to Kord's home for dinner,到柯德家吃飯
+DLG_CH1_DAY_001,(Daylight City has no sky.),（白晝城沒有天空。）
+DLG_CH1_DAY_002,(Thousands of white lamps are set into the dome. They light everything so evenly that nothing has a shadow. The streets are clean. Every window is shut.),（穹頂鑲著數千盞白燈，把一切照得沒有影子。街道乾淨，窗戶緊閉。）
+DLG_CH1_DAY_003,(Only the oil lamp in my hand drags a little shadow along the ground.),（只有我手上的油燈，在地上拖出一點影子。）
+DLG_CH1_DAY_004,"By the guide, there's a purifying furnace right here at the entrance.",照攻略，入口這裡有一座淨化爐。
+DLG_CH1_DAY_004_UNSURE,"By the guide, there's a purifying furnace right here at the entrance. ...I marked that one too.",照攻略，入口這裡有一座淨化爐。……這條我也標了不確定。
+DLG_CH1_FURNACE_001,"(The furnace is here. It's empty, and it's been cold for years. Children's clothes hang drying on its door.)",（爐子在。是空的，冷了很多年。爐門上晾著小孩的衣服。）
+DLG_CH1_FURNACE_002,"(At its foot, a pot of scallions growing in half a helmet.)",（爐腳邊擺著一盆蔥，種在半個頭盔裡。）
+DLG_CH1_FURNACE_003,"(Sheila looks at the scallions, then at me.)",（席菈看著那盆蔥，又看了我一眼。）
+DLG_CH1_FURNACE_003_UNSURE,...Figures. Wrong again.,……果然，這條也不對。
+DLG_CH1_FURNACE_004,"On your map, what is this furnace for?",你的地圖上，這個爐子是做什麼用的？
+DLG_CH1_FURNACE_005,...For burning things.,……燒東西的。
+DLG_CH1_FURNACE_006,Burning what? Firewood costs days too. Nobody's lit it since my father's time. Now it dries the laundry.,燒什麼？柴也要拿天數換。我爸那一代就不燒了，現在拿來晾衣服。
+DLG_CH1_STELE_001,"(A black stone tablet stands at the crossroads, names and numbers floating on its face. A woman presses her hand against it.)",（路口立著一塊黑色石碑，上面浮著人名和數字。一個女人把手按在石碑上。）
+DLG_CH1_STELE_002,(The number after her name drops from nineteen to eighteen. The jug in her hand is half full of water now.),（她名字後面的數字從十九變成十八，手裡的壺多了半壺水。）
+DLG_CH1_STELE_003,What's that number?,那是什麼數字？
+DLG_CH1_STELE_004,(Misha doesn't answer.),（彌夏沒有回答。）
+DLG_CH1_STELE_005,Days left to live.,還能活幾天。
+DLG_CH1_STELE_006,(His name is Kord. He's a baker.),（他叫柯德，做麵包的。）
+DLG_CH1_STELE_007,Come on. Home's just up ahead.,走吧。家就在前面。
+CH1_STELE_TOUCH_HINT,Press {key} — put your hand on the tablet,按 {key}　把手按在石碑上
+CH1_STELE_NO_NAME,Your name isn't on it.,上面沒有你的名字。
+STELE_LINE,{name} — {n} days left,{name}　還能活 {n} 天
+RES_MARA,Mara,瑪菈
+RES_OWEN,Owen,歐文
+RES_SUDA,Suda,蘇妲
+RES_OLD_GAR,Old Gar,老葛
+RES_DANE,Dane,黛恩
+RES_LIA,Lia,莉亞
+RES_BEN,Ben,班恩
+RES_KORD,Kord,柯德
+RES_NIKA,Nika,妮卡
+RES_LOTT,Lott,洛特
+RES_KARL,Karl,卡爾

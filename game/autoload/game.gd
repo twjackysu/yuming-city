@@ -22,6 +22,7 @@ const LEVELS: Dictionary = {
 	"benchmark": "res://scenes/bench/benchmark.tscn",
 	"tavern": "res://scenes/levels/tavern.tscn",
 	"stairs": "res://scenes/levels/stairs.tscn",
+	"daylight": "res://scenes/levels/daylight.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
 const CHECKPOINT_LEVELS: Dictionary = {
@@ -32,6 +33,8 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_day_town": "frostbridge",
 	"ch1_lamp": "stairs",
 	"ch1_stairs_bottom": "stairs",
+	# 段落 7：沒有影子的城（D-154）
+	"ch1_daylight": "daylight",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

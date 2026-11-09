@@ -276,3 +276,67 @@ func test_stairs_path_trap_and_bottom() -> void:
 				"DLG_CH1_TRAP_003", "DLG_CH1_TRAP_006_UNSURE", "DLG_CH1_TRAP_007"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")
+
+
+## 段落 7（D-154）：沒有影子的城——任務階段、淨化爐推翻、壽命石碑的資料與數字變化、翻譯。
+func test_daylight_stages_residents_and_furnace() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	s.new_game()
+	_play_slice(s)
+	s.set_flag("slice.cellar_entered", true)
+	var Daylight: GDScript = load("res://scenes/levels/daylight.gd") as GDScript
+	Daylight.call("dev_start_daylight", s)
+	GuideNotes.set_unsure(s.state, "purifier", true)
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_furnace", "跟著柯德進門 → 白晝城")
+	assert_eq(s.state.checkpoint, "ch1_daylight", "白晝城的檢查點")
+	assert_eq(Game.level_for_checkpoint("ch1_daylight"), "daylight")
+	assert_eq(s.objective_key(), "Q_CH1_OBJ_FURNACE")
+	assert_eq(GuideNotes.status(s.state, "purifier"), GuideNotes.UNSURE, "還沒看到爐子")
+	s.set_flag("ch1.saw_empty_furnace", true)
+	assert_eq(GuideNotes.status(s.state, "purifier"), GuideNotes.WRONG, "攻略「入口的淨化爐」被推翻")
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_stele")
+	var fr := DialogueRunner.new(Game.dialogues, s.state)
+	assert_true(fr.start("ch1_daylight_furnace"))
+	var flines: PackedStringArray = []
+	for i: int in 10:
+		flines.append(fr.current_text())
+		if not fr.advance():
+			break
+	assert_true("DLG_CH1_FURNACE_003_UNSURE" in flines, "標了我不確定 → 「果然」")
+	assert_true("DLG_CH1_FURNACE_006" in flines, "柯德：拿來晾衣服")
+	# 壽命石碑：資料 4～6 個名字、數字是資料、用掉一天會變、諾恩不在上面
+	var res: Residents = Residents.load_default()
+	assert_eq(res.errors.size(), 0, "石碑資料沒有錯：%s" % ", ".join(res.errors))
+	assert_eq(res.stele_ids().size(), 2, "兩塊石碑")
+	for id: String in res.stele_ids():
+		var n: int = res.residents_on(id).size()
+		assert_true(n >= 4 and n <= 6, "%s 列 4～6 個名字" % id)
+		assert_false("noen" in res.residents_on(id), "諾恩不在石碑上")
+	assert_eq(res.days_left(s.state, "mara"), 19, "瑪菈還能活 19 天")
+	assert_eq(res.spend(s, "mara", 1), 18, "用一天換半壺水 → 18")
+	assert_eq(res.days_left(s.state, "mara"), 18)
+	assert_eq(res.spend(s, "nika", 99), 0, "不會小於 0")
+	var bad: Residents = Residents.new()
+	bad.steles = {"x": PackedStringArray(["a", "b"])}
+	bad.base_days = {"a": 3, "b": 0}
+	assert_eq(bad.validate().size(), 2, "名字太少、天數 0 都擋下來")
+	var sr := DialogueRunner.new(Game.dialogues, s.state)
+	assert_true(sr.start("ch1_daylight_stele"))
+	for i: int in 12:
+		if not sr.advance():
+			break
+	assert_eq(s.state.get_flag("ch1.saw_stele_trade"), true)
+	s.set_flag("ch1.saw_stele_trade", true)
+	assert_eq(s.quests.stage_of("ch1_main"), "kord_home", "看完石碑 → 到柯德家吃飯")
+	for loc: String in ["en", "zh_TW"]:
+		TranslationServer.set_locale(loc)
+		for key: String in ["Q_CH1_OBJ_FURNACE", "Q_CH1_OBJ_FOLLOW_KORD", "Q_CH1_OBJ_KORD_HOME", "DLG_CH1_KORD_011",
+				"DLG_CH1_DAY_004_UNSURE", "DLG_CH1_STELE_005", "CH1_STELE_TOUCH_HINT", "CH1_STELE_NO_NAME", "STELE_LINE"]:
+			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
+		for id: String in res.stele_ids():
+			for rid: String in res.residents_on(id):
+				assert_ne(tr(Residents.name_key(rid)), Residents.name_key(rid), "%s 居民名字有翻譯：%s" % [loc, rid])
+	TranslationServer.set_locale("zh_TW")
+	s.state.set_flag("life.mara", 18)
+	assert_eq(res.line(s.state, "mara"), "瑪菈　還能活 18 天", "石碑上的一行")
+	TranslationServer.set_locale("en")

@@ -27,6 +27,7 @@ REQUIRED = [
     "i18n/ch1.en.translation",
     "i18n/ch1.zh_TW.translation",
     "data/guide/notes.json",
+    "data/daylight/residents.json",
     "data/quests/slice_main.json",
     "data/achievements.json",
     "data/dialogue/slice_ada_aftermath.json",

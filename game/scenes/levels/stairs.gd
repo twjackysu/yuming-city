@@ -4,7 +4,7 @@ extends StoryLevel
 ## 照攻略，第一個陷阱是射箭：走近時諾恩攔住大家 → 玩家可以往前丟石頭試探（互動），
 ## 或直接走過去（踩到絆線）。兩種都掉下一桶髒水——攻略筆記「射箭陷阱」被推翻；樓梯深處傳來小孩的笑聲。
 ## 走到底是一扇門：段落 6「不可互動的門」——柯德舉著叉子出來（攻略標「不可互動」的門後面是一家人），
-## 席菈摘下徽章；諾恩的回答記成柯德的第一印象（ch1.kord_first）。之後的白晝城還沒做，顯示「待續」。
+## 席菈摘下徽章；諾恩的回答記成柯德的第一印象（ch1.kord_first）。柯德說「那先吃點東西」→ 走進白晝城（daylight 關卡，D-154）。
 ##
 ## 路線：轉角 k 的位置是 CORNERS[k % 4]、高度 -k×DROP；轉角是平台、轉角之間是一段斜坡（看得到的台階＋看不到的斜坡碰撞）。
 ## 路線參數 s＝沿著路線的水平公尺數（轉角 k 在 s = k×SIDE）。
@@ -231,7 +231,7 @@ func _physics_process(delta: float) -> void:
 			"daylight_gate":
 				open_gate_door()
 			"daylight_city":
-				_banner("CH1_TO_BE_CONTINUED", 6.0)
+				enter_daylight()
 	_door_inside = at_door
 
 
@@ -284,7 +284,16 @@ func _show_door_open(animate: bool) -> void:
 
 
 func _on_kord_talked() -> void:
-	_banner("CH1_TO_BE_CONTINUED", 6.0)
+	enter_daylight()
+
+
+## 跟著柯德走進門（段落 7，D-154）：設旗標（白晝城的檢查點）→ 換關卡。讀檔停在 daylight_city 時走到門口也一樣。
+func enter_daylight() -> void:
+	if Game.session.quests.stage_of(QUEST) != "daylight_city":
+		return
+	Game.session.set_flag("ch1.entered_daylight", true)
+	if Game.LEVELS.has("daylight"):
+		Game.go_to_level.call_deferred("daylight")
 
 
 ## 互動提示（D-065）：攔住大家之後、走上平台之前。

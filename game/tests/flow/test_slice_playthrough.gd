@@ -68,7 +68,8 @@ func _run_dialogue(level: StoryLevel, choice: int) -> int:
 	var choices: Node = box.find_child("Choices", true, false)
 	var most_choices: int = 0
 	for i: int in 40:
-		if not bool(_game.call("is_in_dialogue")):
+		# 對話講完就換關卡（柯德 → 白晝城）：下一個關卡的對話不算這一段
+		if not is_instance_valid(box) or not bool(_game.call("is_in_dialogue")):
 			break
 		if choices.get_child_count() > 0:
 			most_choices = maxi(most_choices, choices.get_child_count())
@@ -442,8 +443,71 @@ func _chapter1_stairs(stairs: StoryLevel, threw_stone: bool) -> void:
 	assert_eq(s.state.get_flag("ch1.kord_first"), "hands" if threw_stone else "map", "柯德的第一印象記下來")
 	assert_eq(s.state.get_flag("ch1.met_kord"), true)
 	assert_eq(GuideNotes.status(s.state, "city_of_monsters"), GuideNotes.WRONG, "攻略筆記「全城是怪物」被推翻：門後面是人")
-	assert_eq(s.quests.stage_of("ch1_main"), "daylight_city")
-	assert_eq((stairs.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "柯德之後 → 待續（白晝城下一輪做）")
+	# --- 段落 7（D-154）：「那先吃點東西」→ 跟著柯德走進白晝城
+	assert_eq(s.state.get_flag("ch1.entered_daylight"), true, "柯德說完 → 走進白晝城")
+	var city: StoryLevel = await _wait_scene()
+	assert_eq(str(city.name), "Daylight", "走進門 → 白晝城")
+	await _chapter1_daylight(city)
+
+
+## 段落 7：沒有影子的城——一進來的第一眼、空的淨化爐、瑪菈用一天換半壺水、石碑上沒有諾恩的名字、柯德家門口（待續）。
+func _chapter1_daylight(city: StoryLevel) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_furnace")
+	assert_eq(s.state.checkpoint, "ch1_daylight")
+	await _assert_daylight(city, "[ch1_daylight]")
+	city = await _retry()
+	assert_eq(str(city.name), "Daylight", "[ch1_daylight] 重來還在白晝城")
+	assert_eq(_objective(city), "Q_CH1_OBJ_FURNACE", "[ch1_daylight] HUD 目標")
+	await _assert_daylight(city, "[ch1_daylight] 重來")
+	assert_true(_game.call("is_in_dialogue"), "一進來：白晝城沒有天空")
+	await _run_dialogue(city, 0)
+	assert_eq(s.state.get_flag("ch1.daylight_intro"), true)
+	var furnace: Vector3 = city.get("FURNACE_POS") as Vector3
+	await _step_into(_player(city), furnace + Vector3(-2.4, 0.0, -0.5), 3)
+	assert_true(_game.call("is_in_dialogue"), "走到爐子旁邊 → 對話")
+	assert_eq(GuideNotes.status(s.state, "purifier"), GuideNotes.WRONG, "攻略筆記「入口的淨化爐」被推翻")
+	await _run_dialogue(city, 0)
+	assert_eq(s.quests.stage_of("ch1_main"), "daylight_stele", "看完爐子 → 跟著柯德走")
+	assert_eq(_objective(city), "Q_CH1_OBJ_FOLLOW_KORD")
+	var stele: Vector3 = (city.get("STELES") as Dictionary)["stele_gate"] as Vector3
+	var res: Residents = city.get("residents") as Residents
+	assert_eq(res.days_left(s.state, "mara"), 19, "換水之前：瑪菈還能活 19 天")
+	await _step_into(_player(city), stele + Vector3(-1.6, 0.0, 4.5), 3)
+	assert_true(_game.call("is_in_dialogue"), "走近路口的石碑 → 瑪菈把手按在石碑上")
+	await _run_dialogue(city, 0)
+	assert_eq(res.days_left(s.state, "mara"), 18, "數字 19 → 18")
+	assert_true(str(city.call("stele_text", "stele_gate")).contains(res.line(s.state, "mara")), "石碑上的字跟著變")
+	assert_true((city.find_child("JugWater", true, false) as Node3D).visible, "壺裡有半壺水")
+	assert_eq(s.quests.stage_of("ch1_main"), "kord_home", "→ 到柯德家吃飯")
+	var other: Vector3 = (city.get("STELES") as Dictionary)["stele_bakery"] as Vector3
+	await _step_into(_player(city), other + Vector3(0.4, 0.0, 1.3), 2)
+	assert_eq(str(city.call("nearest_stele")), "stele_bakery", "站在第二塊石碑前")
+	assert_false((city.call("interact_hint") as Dictionary).is_empty(), "互動提示：把手按在石碑上")
+	city.call("touch_stele")
+	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_STELE_NO_NAME", "上面沒有你的名字")
+	await _step_into(_player(city), city.get("KORD_HOME") as Vector3 + Vector3(0.6, 0.0, 0.0), 3)
+	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "柯德家門口 → 待續（晚餐下一輪做）")
+
+
+## 白晝城：只有諾恩的油燈投影子（07 的場景斷言）；沒有太陽；接地陰影也拿掉；柯德、席菈、彌夏、瑪菈都在。
+func _assert_daylight(city: StoryLevel, tag: String) -> void:
+	await tree.process_frame
+	for n: String in ["Kord", "Sheila", "Misha", "Mara", "Furnace", "OnionPot", "KordHome"]:
+		assert_true(city.has_node(n), tag + " 有 " + n)
+	assert_true(_player(city).has_oil_lamp(), tag + " 拿著油燈")
+	var lamp: OmniLight3D = city.call("lamp_light") as OmniLight3D
+	assert_not_null(lamp, tag + " 油燈的光")
+	var shadowed: PackedStringArray = []
+	for l: Node in city.find_children("*", "Light3D", true, false):
+		if l is DirectionalLight3D:
+			shadowed.append("太陽 " + str(l.name))
+		elif (l as Light3D).shadow_enabled and l != lamp:
+			shadowed.append(str(l.get_path()))
+	assert_eq(shadowed.size(), 0, tag + " 除了油燈以外沒有投影子的光：%s" % ", ".join(shadowed))
+	assert_true(lamp != null and lamp.shadow_enabled, tag + " 油燈投影子")
+	for c: Node in city.find_children(ContactShadow.NODE_NAME, "", true, false):
+		assert_false((c as Node3D).visible, tag + " 接地陰影拿掉：" + str(c.get_parent().name))
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。

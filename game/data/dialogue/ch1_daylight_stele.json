@@ -1,0 +1,45 @@
+{
+  "id": "ch1_daylight_stele",
+  "start": "s1",
+  "nodes": {
+    "s1": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_STELE_001",
+      "next": "s2"
+    },
+    "s2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_STELE_002",
+      "next": "s3"
+    },
+    "s3": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_STELE_003",
+      "next": "s4"
+    },
+    "s4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_STELE_004",
+      "next": "s5"
+    },
+    "s5": {
+      "speaker": "SPK_KORD",
+      "text": "DLG_CH1_STELE_005",
+      "next": "s6"
+    },
+    "s6": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_STELE_006",
+      "next": "s7"
+    },
+    "s7": {
+      "speaker": "SPK_KORD",
+      "text": "DLG_CH1_STELE_007",
+      "do": {
+        "set": {
+          "ch1.saw_stele_trade": true
+        }
+      }
+    }
+  }
+}

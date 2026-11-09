@@ -1,0 +1,50 @@
+{
+  "id": "ch1_daylight_furnace",
+  "start": "f1",
+  "nodes": {
+    "f1": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_FURNACE_001",
+      "next": "f2"
+    },
+    "f2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_FURNACE_002",
+      "next": "f3"
+    },
+    "f3": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_FURNACE_003",
+      "text_if": [
+        {
+          "if": {
+            "guide": "purifier",
+            "is": "wrong",
+            "was_unsure": true
+          },
+          "text": "DLG_CH1_FURNACE_003_UNSURE"
+        }
+      ],
+      "next": "f4"
+    },
+    "f4": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_FURNACE_004",
+      "next": "f5"
+    },
+    "f5": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_FURNACE_005",
+      "next": "f6"
+    },
+    "f6": {
+      "speaker": "SPK_KORD",
+      "text": "DLG_CH1_FURNACE_006",
+      "do": {
+        "set": {
+          "ch1.furnace_talked": true
+        }
+      }
+    }
+  }
+}

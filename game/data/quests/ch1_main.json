@@ -79,6 +79,31 @@
       "done_when": {
         "flag": "ch1.entered_daylight"
       }
+    },
+    {
+      "id": "daylight_furnace",
+      "objective": "Q_CH1_OBJ_FURNACE",
+      "checkpoint": "ch1_daylight",
+      "marker": "node:Furnace",
+      "done_when": {
+        "flag": "ch1.saw_empty_furnace"
+      }
+    },
+    {
+      "id": "daylight_stele",
+      "objective": "Q_CH1_OBJ_FOLLOW_KORD",
+      "marker": "node:Kord",
+      "done_when": {
+        "flag": "ch1.saw_stele_trade"
+      }
+    },
+    {
+      "id": "kord_home",
+      "objective": "Q_CH1_OBJ_KORD_HOME",
+      "marker": "node:KordHome",
+      "done_when": {
+        "flag": "ch1.kord_dinner_done"
+      }
     }
   ]
 }

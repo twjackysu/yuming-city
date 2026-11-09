@@ -1,0 +1,39 @@
+{
+  "id": "ch1_daylight_enter",
+  "start": "d1",
+  "nodes": {
+    "d1": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DAY_001",
+      "next": "d2"
+    },
+    "d2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DAY_002",
+      "next": "d3"
+    },
+    "d3": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DAY_003",
+      "next": "d4"
+    },
+    "d4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_DAY_004",
+      "text_if": [
+        {
+          "if": {
+            "guide": "purifier",
+            "is": "unsure"
+          },
+          "text": "DLG_CH1_DAY_004_UNSURE"
+        }
+      ],
+      "do": {
+        "set": {
+          "ch1.daylight_intro": true
+        }
+      }
+    }
+  }
+}
