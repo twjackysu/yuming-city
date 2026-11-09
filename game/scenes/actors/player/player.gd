@@ -647,13 +647,15 @@ func _on_node_added_for_camera(n: Node) -> void:
 	_exclude_from_camera(n)
 	# 之後才加到身上的東西（夾板、換上的角色模型）也不投提燈的影子
 	if n is GeometryInstance3D and _body != null and _body.is_ancestor_of(n):
-		(n as GeometryInstance3D).layers |= SELF_LAYER
+		(n as GeometryInstance3D).layers = SELF_LAYER
 
 
-## 諾恩身上所有的幾何多放一層 SELF_LAYER（鏡頭、月光、路燈照舊看得到）。
+## 諾恩身上所有的幾何**只放**在 SELF_LAYER（鏡頭、燈光、月光的遮罩預設全部 20 層，照舊看得到、照得到、投月光的影子）。
+## 不能同時留在第 1 層：shadow_caster_mask 是「任何一層在遮罩裡就投影」，留著第 1 層等於提燈照樣被諾恩擋住
+## （第 44 輪查到：樓梯那條黑帶、內室右半邊很暗都是這個）。
 func _mark_self_layer(root: Node) -> void:
 	for g: Node in root.find_children("*", "GeometryInstance3D", true, false):
-		(g as GeometryInstance3D).layers |= SELF_LAYER
+		(g as GeometryInstance3D).layers = SELF_LAYER
 
 
 ## 角色（CharacterBody3D／RigidBody3D）不讓鏡頭的 SpringArm 撞到：站在諾恩身後時鏡頭不會被拉到他後腦（D-085）。

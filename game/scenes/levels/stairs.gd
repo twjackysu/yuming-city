@@ -172,15 +172,15 @@ static func path_dir(s: float) -> Vector3:
 # ---------------------------------------------------------------- 流程
 
 ## 地底下只有這盞燈：照得比地面上遠一點（不然霧裡只看得到諾恩自己）。
-## 影子先關掉：窄樓梯裡油燈的影子在畫面右側拉出一整條從上到下的黑帶、上一圈的樓梯底也是一大片黑弧（第 39 輪截圖），
-## 關掉之後石階與牆面才讀得出來。之後查清楚是誰的影子（D-118 諾恩自己不該擋油燈）再打開。
+## 油燈投影子（第 1 章的規則：白晝城裡只有油燈投影子）。第 39 輪先關掉過：畫面右側一整條黑帶＝諾恩自己擋了油燈；
+## 第 44 輪查到是 SELF_LAYER 沒有獨佔（諾恩的幾何同時在第 1 層，shadow_caster_mask 照樣命中），修好之後打開。
 func _brighten_lamp() -> void:
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	var light: OmniLight3D = player.find_child("LanternLight", true, false) as OmniLight3D if player != null else null
 	if light != null:
 		light.omni_range = LAMP_RANGE
 		light.light_energy = LAMP_ENERGY
-		light.shadow_enabled = false
+		light.shadow_enabled = true
 
 
 func _place_player(at: String) -> void:

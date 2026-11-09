@@ -16,8 +16,11 @@ func test_lantern_does_not_shadow_noen() -> void:
 	assert_true(geoms.size() >= 6, "諾恩身上有人偶的幾何（%d 個）" % geoms.size())
 	for g: Node in geoms:
 		var layers: int = (g as GeometryInstance3D).layers
-		assert_true((layers & PlayerController.SELF_LAYER) != 0, "%s 在諾恩那一層" % g.name)
-		assert_true((layers & 1) != 0, "%s 照樣在第 1 層（鏡頭、月光、路燈看得到）" % g.name)
+		assert_eq(layers, PlayerController.SELF_LAYER, "%s 只在諾恩那一層（留在第 1 層的話照樣會擋提燈：shadow_caster_mask 是任何一層命中就投影）" % g.name)
+	# 鏡頭、燈光照樣看得到諾恩那一層
+	for c: Node in player.find_children("*", "Camera3D", true, false):
+		assert_true(((c as Camera3D).cull_mask & PlayerController.SELF_LAYER) != 0, "鏡頭看得到諾恩那一層")
+	assert_true((light.light_cull_mask & PlayerController.SELF_LAYER) != 0, "提燈照得到諾恩（只是不投影）")
 	# 之後才加到身上的東西（夾板、換上的模型）
 	var extra := MeshInstance3D.new()
 	extra.mesh = BoxMesh.new()
