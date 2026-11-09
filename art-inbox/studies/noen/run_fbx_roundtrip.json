@@ -1,0 +1,12 @@
+{
+  "bones": 60,
+  "meshes": 0,
+  "fps": 30,
+  "frame_start": 2,
+  "frame_end": 21,
+  "loop_max_matrix_error": 5.960464477539062e-07,
+  "without_skin": true,
+  "in_place": true,
+  "horizontal_hip_range_m": 5.587935447692871e-08,
+  "passed": true
+}

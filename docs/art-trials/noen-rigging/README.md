@@ -109,3 +109,12 @@ Godot 檢視在 godot_review_idle。將合併後 GLB 複製為 noen_walk_preview
 注意：glTF 名稱 idle_loop／walk_loop 經 Godot 4.7.2 識別 loop 後會成 idle／walk。驗證與檢視腳本使用匯入後名稱，並檢查其存在，避免播放失敗卻誤當成驗證成功。預覽影片排除重複的循環末幀。
 
 這是諾恩護傷待機，不是席菈待機，也不能代替 sword_idle、扛人或其他要求動作。完整未完成項目見 ../../ART_DELIVERY_STATUS.md。
+
+
+## 2026-11-10：護傷跑步工作版
+
+使用同一 CC BY 3.0 ACCAD Male1 archive 的 C03_Run，非 walk 加速。來源週期 12～31 幀；腳尖各自校準地面，腿長比例 0.916；小於 15mm 的校準高度視為接觸。19/30 秒、20 keys，包含兩次落地與騰空，參考速度 4.49m/s。此速度需在遊戲實測，並未完成腳步鎖定或成品步態驗收。
+
+本機製作中間檔需先準備：YUMING_NOEN_WORK/tailored_noen.blend 為保留獨立靴子的原生 11 材質修整版本；tailored_candidate.glb 為靜態三材質版本。YUMING_WALK_BVH 指向 C03_Run。依序以 Blender 執行 analyze_noen_run_cycle.py、retarget_noen_run.py、export_noen_run.py、review_noen_run.py（YUMING_SKIP_RENDERS=1 可略過 Blender 預覽）、check_noen_run_fbx.py；系統 Python（numpy）執行 merge_noen_run.py，YUMING_NOEN_BASE_GLB 可指定既有 idle/walk 模型。合併保留原網格／貼圖，核對骨架 inverse bind，並將每段時間軸歸零。
+
+godot_review_run 使用合併 GLB 複製成 noen_walk_preview.glb；夜景需沿用 godot_review_idle 的 src/world 與相關 shader 檔，並依 godot_review_atlas 說明設定匯入腳本。先 --headless --editor --import，再執行 check_run_contact.gd、check_run_guard.gd、check_clip_switch.gd；畫面用 review.tscn／night_review.tscn（夜景 Forward+）。檢查腳本是 SceneTree，擷取腳本是場景 Node3D，後者請以 .tscn 啟動。技術證據與預覽已放 studies/noen；不是正式角色交件。

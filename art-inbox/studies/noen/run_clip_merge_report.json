@@ -1,0 +1,26 @@
+{
+  "clips": {
+    "walk_loop": {
+      "duration_s": 1.1333333253860474,
+      "start_time_offset_removed_s": 0.0,
+      "constant_pose_channels_added": 0,
+      "channels": 180
+    },
+    "idle_loop": {
+      "duration_s": 3.200000047683716,
+      "start_time_offset_removed_s": 0.0,
+      "constant_pose_channels_added": 0,
+      "channels": 180
+    },
+    "run_loop": {
+      "duration_s": 0.6333333253860474,
+      "start_time_offset_removed_s": 0.06666667014360428,
+      "constant_pose_channels_added": 0,
+      "channels": 180
+    }
+  },
+  "inverse_bind_maximum_difference": 0.0,
+  "existing_binary_prefix_unchanged": true,
+  "existing_binary_sha256": "550aedfa84213c068bef501c96de104a6c864921eba41e859d9b7e341568d170",
+  "status": "requires_engine_switching_test"
+}
