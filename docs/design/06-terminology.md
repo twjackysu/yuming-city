@@ -29,6 +29,11 @@
 | （設定頁分組） | `SET_GROUP_*` | 遊戲／聲音／畫面／操作 | Game／Audio／Display／Input | D-076；英文用 Input，避免跟「Controls（按鍵設定）」那一列重複 |
 | 噬日獸（第一部後段） | — | 吞日獸（暫定） | Sun-Eater（暫定） | 之後章節用到再定 |
 | 歸時核（第二部以後） | — | 暫不出現 | — | 之後章節用到再定 |
+| 攻略筆記（第 1 章起，`07-chapter1-door.md`） | `guide_notes` | 攻略筆記（每條標「確定」／「我不確定」／「被推翻」） | Guide Notes（Sure／Not sure／Proven wrong） | 諾恩前世記得的攻略；白話，保留（D-142） |
+| 壽命石碑（第 1 章） | `life_stone` | 壽命石碑 | Lifespan Stone | 用壽命換水的路口石碑；「壽命」本來就白話 |
+| 鐘舌（第 3 章，`08-chapter2-3.md`） | `clapper` | 鐘舌（第一次出現時說明：「鐘裡面那根撞鐘的鐵棒」） | the clapper | **不要叫鐘錘**：鐘錘是諾恩手上的武器 |
+| 主椅（第 2、3 章） | `main_seat` | 主椅 | the Main Seat | 承受所有轉換損耗的那張銅椅；白話，保留 |
+| 白晝城（第 1 章） | — | 白晝城 | Daylight City（暫定） | 地名，照原作 |
 
 ## 檢查方式
 

@@ -2,6 +2,30 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-142　2026-11-09　第 1～3 章的新名詞先進對照表
+
+- 決策：`06-terminology.md` 加上攻略筆記（`guide_notes`，每條標「確定／我不確定／被推翻」）、壽命石碑（`life_stone`）、鐘舌（`clapper`，第一次出現時說明「鐘裡面那根撞鐘的鐵棒」，不叫鐘錘）、主椅（`main_seat`）、白晝城（地名照原作，英文暫定 Daylight City）。
+- 理由：07／08 草稿要求「新名詞實作前補進對照表」；12/14 起實作，先定好名字，i18n key 與程式識別碼照這張表取。Jacky 對用詞有意見（FOR_JACKY 第 3、5 項）就照他的改。
+- 影響：只有文件；`test_i18n::test_no_obscure_terms` 的舊詞清單不變。
+
+## D-141　2026-11-09　廣場石盤上的鐘改成又高又窄、鐘口外翻、加鐘舌
+
+- 決策：`bell_inlay_mesh` 的鐘從 1.15 m 高／鐘口半徑 0.5 改成 1.4／0.42（`PLAZA_BELL_H／R`）；外輪廓下半段往外翻（鐘口最寬 `PLAZA_BELL_FLARE`＝1.14 倍）；鐘口外面（南邊）加一顆鐘舌（半徑 `PLAZA_BELL_CLAPPER_R`×鐘口直徑的圓球，一半露在鐘口外）＋一小段舌桿；整個圖案置中。鐘頂照舊朝北。
+- 理由：第八輪盤點第 6 項。從南邊進廣場（主要路線）的遊玩高度看，南北方向被透視壓扁成約四分之一，矮胖的鐘＝帽簷＋帽頂。試過橫躺（鐘頂朝西），從南邊看反而像一支箭／匕首，退回朝北、改比例。
+- 影響：截圖 `--at=plaza`（`03`、`02` 遠景）；測試 `test_frostbridge::test_plaza_bell_inlay_faces_up` 改成檢查又高又窄、鐘口外翻、鐘口外有鐘舌。
+
+## D-140　2026-11-09　角色模型的循環動作也認 `_loop` 結尾
+
+- 決策：`CharacterModels.ANIM_MAP` 的 idle／walk／run 各加一個 `_loop` 結尾的名字（`idle_loop`、`walk_loop`、`run_loop`），排在原本名字後面；照樣設成循環播放。
+- 理由：Jacky 11/9 推的席菈試作（`art-inbox/studies/sheila/`）走路動作叫 `walk_loop`。正式交件時不用改名就接得上；試作本身照 README 不接進遊戲。
+- 影響：測試 `test_character_models::test_loop_suffixed_animations_are_found`。`art-inbox/README.md` 的動作表不變（照舊建議 `walk`）。
+
+## D-139　2026-11-09　破屋頂的雪不再像一張平的白布
+
+- 決策：`SnowMound.build(..., on_tiles=true)` 用比較細的網格（`TILES_RINGS` 6 圈 × `TILES_SEGMENTS` 40 段，一般雪堆 4 × 20）、輪廓多兩個細的起伏（7、11 倍頻）、往內凹最多 `TILES_RAGGED` 0.28、高度往邊緣變薄的次方 `TILES_FALLOFF` 1.5（一般 0.7：中間平、邊上一圈陡坡），雪面再乘一個約 1.2～2 m 的 ±35% 起伏。`snow.gdshader` 屋瓦上的雪：每排屋瓦把雪撐出一道道起伏（`tile_drape`：沿斜面的公尺數對世界 xz 的梯度用螢幕空間導數解，排裡大部分緩坡、下緣那一小段陡坡）、每排亮度不同＋排裡往下緣變暗、大片的亮暗 `tile_mottle` 0.3、整體 0.93、外圈提早 0.18 開始變薄、背對月光的面偏藍暗（`moon_to`＝Moon 旋轉 (-38°, 35°) 往月亮的方向，`backlit_shade` 0.5）。
+- 理由：第八輪盤點第 4 項。救援畫面左半的破屋頂雪亮度很均勻、邊緣看得出一段段直線、邊上一圈發亮的厚度，像一張平的白布／床墊。
+- 影響：截圖 `--rescue`（`06`）；測試 `test_snow_mound::test_on_tiles_mesh_is_fine_and_feathered`。一片屋頂兩團雪、每團頂點數從 81 變 241，小鎮合併 mesh 數不變（同一個 `look.snow()`）。
+
 ## D-138　2026-11-09　石階每一級前緣下一道暗線
 
 - 決策：`_build_rise` 每一級的踢面頂端（踏面前緣下）加一條 4 cm 高、1.2 cm 厚的深色條，材質沿用廣場石框的溝（`look.mat(Color(0.05, 0.055, 0.065), 0.35)`，不多一個合併 mesh）。
