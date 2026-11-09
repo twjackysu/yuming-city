@@ -39,3 +39,19 @@ CUT_CH2_LEO_004,I said in my letter not to come. Did the fish eat that part?,我
 CUT_CH2_LEO_005,"She walked over to him,",她走過去，
 CUT_CH2_LEO_006,and slapped him.,給了他一巴掌。
 CUT_CH2_LEO_007,"Not hard. The same hand came up at once to hold his face, as if she were afraid he would break.",不重。打完立刻用同一隻手捧住他的臉，像怕把他碰碎。
+CH2_CARVING_HINT,Press {key} — look at the carving,按 {key}　看牆上的紋路
+Q_CH2_OBJ_CURTAIN,Ask Isa if there's another way,問伊薩還有沒有別的辦法
+DLG_CH2_CARVE_0_1,"(The first slab: people pressing something shapeless down into the earth, and a bell set on top of it.)",（第一塊：一群人把一個看不清形狀的東西壓進地底，上面蓋著一口鐘。）
+DLG_CH2_CARVE_0_2,"Seventeen years ago, the kingdom above sealed the monsters from the deep in here.",十七年前，地上的王國把深層的魔物封在這裡。
+DLG_CH2_CARVE_1_1,"(The second slab: a line of people with their hands on the bell. Above the bell, a net spreads open.)",（第二塊：排隊的人把手按在鐘上，鐘的上方張開一層網。）
+DLG_CH2_CARVE_1_2,"The bell turns people's years into a barrier. Everyone thought it was only for a while, until help came from above.",鐘能把人的壽命轉成屏障。大家以為只是暫時的，等地上派人來救，就能停。
+DLG_CH2_CARVE_1_3,No one came.,沒有人來。
+DLG_CH2_CARVE_2_1,"(The third slab: a chair, a person in it, and a row of small marks beside it, one in every three.)",（第三塊：一張椅子、椅子上的人，旁邊刻著一排小小的記號，每三格一個。）
+DLG_CH2_CARVE_2_2,"The bell only takes the days people choose to give. But every three years, someone has to sit in the Main Seat and carry everything that's lost along the way.",鐘只收大家自願付的日數。但每三年，必須有人坐進主椅，承受轉換時所有的損耗。
+DLG_CH2_CARVE_2_3,Leo took the seat three months ago.,黎歐三個月前接了位置。
+DLG_CH2_CARVE_3_1,"(The last slab: the bell struck nine times, and the whole city on fire.)",（最後一塊：鐘被敲了九下，整座城燒起來。）
+DLG_CH2_CARVE_3_2,"Once you took out the clapper, the bell stopped holding back how much it takes.",你們拆下鐘舌之後，鐘就不再控制一次收多少了。
+DLG_CH2_CARVE_3_3,"Nine strikes is the order the kingdom left behind for an emergency: burn the whole city.",敲滿九聲，是王國預留的緊急命令：燒掉整座城。
+DLG_CH2_CARVE_END_1,(Now I finally understood why my guide had always worked so well.),（我終於理解，自己的攻略為什麼那麼有效。）
+DLG_CH2_CARVE_END_2,(The monsters were never burned by players.),（怪物不是被玩家燒死的。）
+DLG_CH2_CARVE_END_3,(The whole city paid for that strike.),（是整座城替玩家付了那一擊的費用。）

@@ -42,6 +42,7 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch2_start": "bell_hall",
 	"ch2_volunteer": "bell_hall",
 	"ch2_inner": "bell_hall",
+	"ch2_carvings": "bell_hall",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

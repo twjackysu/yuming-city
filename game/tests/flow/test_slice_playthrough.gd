@@ -686,9 +686,7 @@ func _chapter2_inner(hall: StoryLevel, watch: bool) -> void:
 	assert_false(_game.call("is_in_cutscene"), "[ch2_inner] 不會又播過場")
 	await _assert_bell_hall(hall, "[ch2_inner]")
 	await _assert_inner_room(hall, "[ch2_inner]")
-	for i: int in 3:
-		await tree.physics_frame
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 4（牆上的紋路）待續")
+	assert_eq(int(hall.call("nearest_carving")), -1, "[ch2_inner] 不在浮雕前")
 	# 走回飯廳：氣氛換回白光
 	await _step_into(_player(hall), Vector3(0.0, 0.0, 1.5), 2)
 	for i: int in 400:
@@ -696,6 +694,64 @@ func _chapter2_inner(hall: StoryLevel, watch: bool) -> void:
 		if float(hall.get("mood")) <= 0.0:
 			break
 	assert_eq(float(hall.get("mood")), 0.0, "走回飯廳 → 白光")
+	await _chapter2_carvings(hall, watch)
+
+
+## 第 2 章段落 4（D-160）：站在浮雕前按互動 → 伊薩解說那一塊、刻痕亮起來；4 塊都看完 → 諾恩的獨白 →
+## 攻略筆記「焚城路線最快」被推翻 → 檢查點 ch2_carvings → 窗簾待續。兩條路線看的順序不一樣（最後一塊才接獨白）。
+func _chapter2_carvings(hall: StoryLevel, reverse: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var zs: Array = hall.get("CARVING_ZS") as Array
+	var cx: float = float(hall.get("CARVING_X"))
+	var order: Array[int] = [0, 1, 2, 3]
+	if reverse:
+		order = [3, 0, 2, 1]
+	assert_ne(GuideNotes.status(s.state, "burn_route"), GuideNotes.WRONG, "還沒看紋路：攻略筆記照舊")
+	for k: int in order.size():
+		var i: int = order[k]
+		await _step_into(_player(hall), Vector3(cx + 0.9, 0.0, float(zs[i])), 2)
+		assert_eq(int(hall.call("nearest_carving")), i, "站在第 %d 塊浮雕前" % i)
+		assert_eq(str((hall.call("interact_hint") as Dictionary).get("action", "")), "interact", "提示：按互動看牆上的紋路")
+		assert_false(bool(hall.call("carving_lit", i)), "還沒看的刻痕是暗的")
+		hall.call("read_carving", i)
+		assert_true(_game.call("is_in_dialogue"), "看浮雕 → 伊薩解說（第 %d 塊）" % i)
+		assert_true(bool(hall.call("carving_lit", i)), "看過的刻痕亮起來")
+		if k < order.size() - 1:
+			await _run_dialogue(hall, 0)
+			await tree.process_frame
+			await tree.process_frame
+			assert_false(_game.call("is_in_dialogue"), "還沒看完 4 塊：不接獨白")
+			assert_ne(s.state.get_flag("ch2.read_wall_carvings"), true, "還沒看完 4 塊：攻略筆記照舊")
+	# 最後一塊的解說講完，下一幀接諾恩的獨白（_run_dialogue 會一路按完）
+	var box: DialogueBox = hall.get_node("DialogueBox") as DialogueBox
+	box.press_continue()
+	await tree.process_frame
+	await tree.process_frame
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	for i: int in 6:
+		if runner != null and runner.current_text().begins_with("DLG_CH2_CARVE_END"):
+			break
+		box.press_continue()
+		await tree.process_frame
+		await tree.process_frame
+		runner = _game.get("dialogue") as DialogueRunner
+	assert_true(runner != null and runner.current_text() == "DLG_CH2_CARVE_END_1", "4 塊都看完 → 諾恩的獨白：我終於理解，自己的攻略為什麼那麼有效")
+	await _run_dialogue(hall, 0)
+	assert_eq(s.state.get_flag("ch2.read_wall_carvings"), true)
+	assert_eq(GuideNotes.status(s.state, "burn_route"), GuideNotes.WRONG, "攻略筆記「焚城路線最快」被推翻（諾恩自己寫的那條）")
+	assert_eq(s.quests.stage_of("ch2_main"), "curtain", "→ 問伊薩還有沒有別的辦法")
+	assert_eq(s.state.checkpoint, "ch2_carvings")
+	hall = await _retry()
+	assert_eq(str(hall.name), "BellHall", "[ch2_carvings] 重來還在鐘院")
+	assert_eq(_objective(hall), "Q_CH2_OBJ_CURTAIN", "[ch2_carvings] HUD 目標")
+	assert_true(bool(hall.call("is_in_inner_room")), "[ch2_carvings] 在內室裡")
+	for i: int in zs.size():
+		assert_true(bool(hall.call("carving_lit", i)), "[ch2_carvings] 4 塊的刻痕都亮著")
+	await _assert_inner_room(hall, "[ch2_carvings]")
+	for i: int in 3:
+		await tree.physics_frame
+	assert_false(_game.call("is_in_dialogue"), "[ch2_carvings] 不會又開獨白")
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 5（窗簾）待續")
 
 
 ## 鐘院內室：主椅上坐著黎歐、牆上的鐘盤（九道刻痕）、十二條細管（光團往鐘盤流的 shader）、西牆 4 塊浮雕；暖光都不投影子。

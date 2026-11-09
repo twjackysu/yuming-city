@@ -14,7 +14,7 @@ extends StoryLevel
 ## 內室：北牆後面 x -4.5～4.5、z -5.3～-14.3、高 6.5 m；鐘盤在最北的牆上、主椅面向門。
 
 const QUEST: String = "ch2_main"
-const STAGES: PackedStringArray = ["isa_table", "isa_volunteer", "inner_room", "meet_leo", "wall_carvings"]
+const STAGES: PackedStringArray = ["isa_table", "isa_volunteer", "inner_room", "meet_leo", "wall_carvings", "curtain"]
 const ROOM_HALF: Vector2 = Vector2(5.0, 5.0)
 const WALL_H: float = 3.8
 const WALL_T: float = 0.3
@@ -68,6 +68,8 @@ const TUBE_COUNT: int = 12
 ## 進內室之後每個人站的地方；彌夏一開始站在門口（「一步都沒有走」），過場裡走到黎歐旁邊
 const INNER_SPOTS: Dictionary = {
 	"noen": Vector3(1.6, 0.0, -6.9),
+	## 過場之後諾恩往裡站一點：過肩鏡頭才不會卡在門洞裡（第 43 輪截圖）
+	"noen_after": Vector3(1.3, 0.0, -8.4),
 	"sheila": Vector3(-1.7, 0.0, -7.1),
 	"isa": Vector3(-2.3, 0.0, -9.9),
 	"misha_door": Vector3(0.0, 0.0, -5.8),
@@ -75,6 +77,10 @@ const INNER_SPOTS: Dictionary = {
 }
 ## 牆上的紋路（段落 4 用；先擺 4 塊浮雕的白盒）：西牆，從門口往裡
 const CARVING_ZS: Array[float] = [-7.2, -8.8, -10.4, -12.0]
+## 段落 4：站在浮雕前這麼近按互動 → 看那一塊（伊薩解說）；4 塊都看完 → 諾恩的獨白 → 攻略筆記「焚城路線最快」被推翻
+const CARVING_X: float = -4.42
+const READ_RANGE: float = 1.5
+const CARVING_END_TALK: String = "ch2_carvings_end"
 ## 內室的氣氛（0＝飯廳的白光，1＝內室的暖光）：諾恩走進內室就慢慢換過去，走回飯廳就換回來
 const MOOD_RATE: float = 1.6
 const HALL_BG: Color = Color(0.7, 0.72, 0.75)
@@ -113,7 +119,7 @@ var _env: Environment
 var _ceiling_lamp: OmniLight3D
 ## 內室的氣氛（0～1，見 MOOD_RATE）
 var mood: float = 0.0
-var _carvings_shown: bool = false
+var _carving_grooves: Array[StandardMaterial3D] = []
 ## 坐下之後、沒按看穿的沉默秒數
 var silence: float = 0.0
 ## 粥鍋上的熱氣（1＝剛端上來，STEAM_COLD＝涼了）
@@ -151,8 +157,14 @@ func _ready() -> void:
 	if at == "seated":
 		Game.session.set_flag("ch2.table_seated", true)
 	# `--hall-at=inner` 走進內室、過場開始（再加 `--hall-shot=N` 停在第 N 個鏡頭）；`--hall-at=leo` 過場看完、站在內室
-	if at in ["inner", "leo"]:
-		dev_reach_inner_room(Game.session, at == "leo")
+	# `--hall-at=carved` 牆上的紋路也都看完了（刻痕亮著）
+	if at in ["inner", "leo", "carved"]:
+		dev_reach_inner_room(Game.session, at != "inner")
+	if at == "carved":
+		for i: int in CARVING_ZS.size():
+			Game.session.state.set_flag("ch2.carving_%d" % i, true)
+		Game.session.set_flag("ch2.read_wall_carvings", true)
+		_update_carvings()
 	# 已經坐下過（重來、讀檔）：直接在桌邊
 	if bool(Game.session.state.get_flag("ch2.table_seated", false)):
 		_seat_everyone()
@@ -245,8 +257,12 @@ func _physics_process(delta: float) -> void:
 	if stage == "inner_room" and _flat(player.global_position, INNER_DOOR_POS + Vector3(0, 0, 0.6)) <= ENTER_RANGE:
 		enter_inner_room()
 		return
-	# 段落 4（牆上的紋路）還沒做：過場看完之後顯示「待續」
-	if stage == "wall_carvings" and not _continued_shown:
+	# 段落 4：站在浮雕前按互動 → 看那一塊
+	if stage == "wall_carvings" and Input.is_action_just_pressed("interact") and nearest_carving() >= 0:
+		read_carving(nearest_carving())
+		return
+	# 段落 5（窗簾）還沒做：牆上的紋路看完之後顯示「待續」
+	if stage == "curtain" and not _continued_shown:
 		_continued_shown = true
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
 
@@ -291,6 +307,11 @@ func update_isa_insight(delta: float, active: bool) -> void:
 func interact_hint() -> Dictionary:
 	var player: PlayerController = get_node_or_null("Player") as PlayerController
 	if player == null or _isa == null or not _seated or Game.is_player_locked():
+		return {}
+	if nearest_carving() >= 0:
+		return {"fmt": TranslationServer.translate("CH2_CARVING_HINT"), "action": "interact", "progress": -1.0}
+	# 看穿伊薩只在飯桌那時候提示（進了內室就不再提示）
+	if Game.session.quests.stage_of(QUEST) not in ["isa_table", "isa_volunteer"]:
 		return {}
 	if bool(Game.session.state.get_flag("ch2.usurper_crossed_out", false)) or player.insight_active:
 		return {}
@@ -364,6 +385,13 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 		Game.session.set_flag("ch2.table_seated", true)
 	elif dialogue_id == VOLUNTEER_TALK and not bool(Game.session.state.get_flag("ch2.volunteer_talked", false)):
 		Game.session.set_flag("ch2.volunteer_talked", true)
+	elif dialogue_id.begins_with("ch2_carving_"):
+		# 4 塊都看完 → 諾恩的獨白（下一幀開，讓這段對話先收乾淨）
+		if carvings_read() == CARVING_ZS.size() and not bool(Game.session.state.get_flag("ch2.read_wall_carvings", false)):
+			Game.start_dialogue.call_deferred(CARVING_END_TALK)
+	elif dialogue_id == CARVING_END_TALK and not bool(Game.session.state.get_flag("ch2.read_wall_carvings", false)):
+		# 跳過也算看完：攻略筆記「焚城路線最快」被推翻（諾恩自己寫的那條）
+		Game.session.set_flag("ch2.read_wall_carvings", true)
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:
@@ -701,7 +729,7 @@ func _place_inner(after: bool) -> void:
 	_open_door(false)
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
-		var at: Vector3 = INNER_SPOTS["noen"] as Vector3
+		var at: Vector3 = INNER_SPOTS["noen_after" if after else "noen"] as Vector3
 		var to: Vector3 = MAIN_SEAT_POS - at
 		_put(player, at, atan2(-to.x, -to.z))
 	var ally: Node3D = get_node_or_null("Sheila") as Node3D
@@ -1036,11 +1064,14 @@ func _add_tube(st: SurfaceTool, base: int, c: Array, radius: float, phase: float
 func _build_carvings() -> void:
 	var root := Node3D.new()
 	root.name = "WallCarvings"
-	root.position = Vector3(-INNER_HALF_X + 0.08, 0.0, (CARVING_ZS[0] + CARVING_ZS[CARVING_ZS.size() - 1]) * 0.5)
+	root.position = Vector3(CARVING_X, 0.0, (CARVING_ZS[0] + CARVING_ZS[CARVING_ZS.size() - 1]) * 0.5)
 	add_child(root)
 	var slab_mat: StandardMaterial3D = _mat(Color(0.56, 0.5, 0.43), 0.9)
-	var groove: StandardMaterial3D = _mat(Color(0.26, 0.22, 0.19), 0.95)
 	for i: int in CARVING_ZS.size():
+		# 每塊自己的刻痕材質：看過的那塊刻痕亮起暖光（跟細管一樣的顏色）
+		var groove: StandardMaterial3D = _mat(Color(0.26, 0.22, 0.19), 0.95)
+		groove.emission = WARM
+		_carving_grooves.append(groove)
 		var panel := MeshInstance3D.new()
 		panel.name = "Carving%d" % i
 		var bm := BoxMesh.new()
@@ -1057,6 +1088,7 @@ func _build_carvings() -> void:
 			line.material_override = groove
 			line.position = Vector3(0.055, 0.35 - 0.35 * float(g), 0.0)
 			panel.add_child(line)
+	_update_carvings()
 
 
 ## 黎歐：坐在主椅上（程序人偶的坐姿），面向門。
@@ -1069,3 +1101,46 @@ func _build_leo() -> void:
 
 func leo() -> Puppet:
 	return _leo
+
+
+# ---------------------------------------------------------------- 段落 4：牆上的紋路（D-160）
+
+## 諾恩站在哪一塊浮雕前面（-1＝都不是）。只在牆上的紋路那個階段、沒有對話的時候。
+func nearest_carving() -> int:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player == null or Game.is_player_locked() or Game.session.quests.stage_of(QUEST) != "wall_carvings":
+		return -1
+	for i: int in CARVING_ZS.size():
+		if _flat(player.global_position, Vector3(CARVING_X, 0.0, CARVING_ZS[i])) <= READ_RANGE:
+			return i
+	return -1
+
+
+## 看一塊浮雕（測試也用）：伊薩解說那一塊（十七年前的封印／壽命轉成屏障／每三年一人坐主椅／敲滿九聲＝燒掉整座城），刻痕亮起來。
+func read_carving(i: int) -> void:
+	if i < 0 or i >= CARVING_ZS.size():
+		return
+	Game.session.state.set_flag("ch2.carving_%d" % i, true)
+	_update_carvings()
+	Sfx.play_flat(self, "ui_tick", -12.0)
+	Game.start_dialogue("ch2_carving_%d" % i)
+
+
+func carvings_read() -> int:
+	var n: int = 0
+	for i: int in CARVING_ZS.size():
+		if bool(Game.session.state.get_flag("ch2.carving_%d" % i, false)):
+			n += 1
+	return n
+
+
+func carving_lit(i: int) -> bool:
+	return i < _carving_grooves.size() and _carving_grooves[i].emission_enabled
+
+
+func _update_carvings() -> void:
+	var all: bool = bool(Game.session.state.get_flag("ch2.read_wall_carvings", false))
+	for i: int in _carving_grooves.size():
+		var lit: bool = all or bool(Game.session.state.get_flag("ch2.carving_%d" % i, false))
+		_carving_grooves[i].emission_enabled = lit
+		_carving_grooves[i].emission_energy_multiplier = 1.2

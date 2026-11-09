@@ -1,0 +1,15 @@
+{
+  "id": "ch2_carving_0",
+  "start": "l0",
+  "nodes": {
+    "l0": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH2_CARVE_0_1",
+      "next": "l1"
+    },
+    "l1": {
+      "speaker": "SPK_ISA",
+      "text": "DLG_CH2_CARVE_0_2"
+    }
+  }
+}

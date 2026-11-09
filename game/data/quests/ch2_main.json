@@ -44,6 +44,15 @@
       "done_when": {
         "flag": "ch2.read_wall_carvings"
       }
+    },
+    {
+      "id": "curtain",
+      "objective": "Q_CH2_OBJ_CURTAIN",
+      "checkpoint": "ch2_carvings",
+      "marker": "node:Isa",
+      "done_when": {
+        "flag": "ch2.curtain_opened"
+      }
     }
   ]
 }
