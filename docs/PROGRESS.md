@@ -14,7 +14,7 @@
 
 - `scripts/check.sh` 全綠（361 個測試，多 3 個 `test_tavern_art`：半木構的室外預設不變、plank 的參數、門口雪水的位置）；主線流程測試在中午／晚餐檢查酒館的地板、牆、窗框、碗、蠟燭（中午沒點、入夜點著）、`--pos`，在柯德家檢查木板地與室內牆。
 - 本機截圖（lavapipe Vulkan）前後對照：酒館 `--ch1-stage=dinner`（素色方塊 → 木板地、半木構牆、瓶架、吊燈、窗框）、中午（六格窗透白光、蠟燭沒點；吊燈的圓影投在北牆 → 燈罩改不投影子）、`--ch1-stage=draw_map --pos=1.4,-0.6 --face=DinnerTable`（蠟燭、碗、長凳、壁爐）；柯德家 `--daylight-at=dinner`（白牆＋素色地板 → 木板地、天花板木板、石塊牆腳）。
-- CI：89487cc run 42685749481 **全綠**（含盤點截圖）；8a9cc47 的 run 被取代；9f058ca run 42687206826 在第一次 import 重新匯入 `slice.csv` 時 **Godot 崩潰（signal 4）**——跟第 47 輪 b2319e1 同一種引擎偶發問題，本機同樣內容 `check.sh` 全綠 → `check.sh` 第一次 import 失敗時重試一次（c17d3ad），取消那個 run；c17d3ad run 42689054966 結果見收尾補記。
+- CI：89487cc run 42685749481 **全綠**（含盤點截圖）；8a9cc47 的 run 被取代；9f058ca run 42687206826 在第一次 import 重新匯入 `slice.csv` 時 **Godot 崩潰（signal 4）**——跟第 47 輪 b2319e1 同一種引擎偶發問題，本機同樣內容 `check.sh` 全綠 → `check.sh` 第一次 import 失敗時重試一次（c17d3ad），取消那個 run；c17d3ad run 42689054966 收尾時「Import、測試、匯出」已綠，盤點截圖還在跑。
 
 **問題**
 
