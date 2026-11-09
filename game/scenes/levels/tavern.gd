@@ -29,6 +29,7 @@ const HEARTH: Color = Color(1.0, 0.62, 0.32)
 var _door_inside: bool = false
 var _hearth_light: OmniLight3D
 var _window_light: OmniLight3D
+var _window_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -38,12 +39,36 @@ func _ready() -> void:
 	_build_furniture()
 	_build_people()
 	_init_story()
+	# 開發用：`-- --level=tavern` 直接進來時還在切片 → 把切片走完、開始第 1 章；
+	# `--ch1-stage=dinner|draw_map|to_cellar` 再往後推（截圖用）
+	if not Game.session.state.quests.has(QUEST):
+		dev_start_chapter(Game.session, str(App.parse_user_args(OS.get_cmdline_user_args()).get("ch1-stage", "")))
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
 		player.global_position = SPAWN_POS
 		player.rotation.y = 0.0
 	_apply_time_of_day()
 	Game.session.stage_changed.connect(_on_stage_changed)
+
+
+## 開發用：照正式流程設旗標，把切片走完（第 1 章跟著開始），再推到 stage（空字串＝第 1 章開頭）。
+static func dev_start_chapter(s: GameSession, stage: String) -> void:
+	# 跳著設旗標不算成就（不然截圖右上角會跳出切片的成就小卡）
+	var ach: AchievementTracker = s.achievements
+	s.achievements = null
+	if not s.is_slice_complete():
+		StoryLevel.dev_advance_to_convoy(s)
+		s.set_flag("slice.convoy_through", true)
+		s.set_flag("slice.ada_talked_aftermath", true)
+		s.set_flag("slice.cellar_entered", true)
+	var order: PackedStringArray = ["tavern_noon", "dinner", "draw_map", "to_cellar"]
+	var flags: PackedStringArray = ["ch1.noon_talked", "ch1.dinner_done", "ch1.map_drawn"]
+	var target: int = order.find(stage)
+	for i: int in maxi(target, 0):
+		if i == 2:
+			StoryLogic.apply({"guide_write": Array(s.guide.ids())}, s.state)
+		s.set_flag(flags[i], true)
+	s.attach_achievements(ach)
 
 
 func _physics_process(_delta: float) -> void:
@@ -93,6 +118,11 @@ func _apply_time_of_day() -> void:
 		_window_light.light_energy = 0.5 if night else 2.2
 	if _hearth_light != null:
 		_hearth_light.light_energy = 3.2 if night else 1.6
+	# 窗玻璃：中午是外面的雪光（自己發亮），入夜只剩一點暗藍
+	if _window_mat != null:
+		_window_mat.albedo_color = Color(0.06, 0.08, 0.13) if night else Color(0.75, 0.82, 0.95)
+		_window_mat.emission = Color(0.05, 0.07, 0.14) if night else Color(0.8, 0.86, 1.0)
+		_window_mat.emission_energy_multiplier = 0.4 if night else 1.6
 
 
 func _build_environment() -> void:
@@ -154,7 +184,9 @@ func _build_room() -> void:
 	for i: int in 4:
 		_box("Beam%d" % i, Vector3(w * 2.0, 0.22, 0.26), Vector3(0, WALL_H - 0.15, -3.6 + i * 2.4), BEAM, false)
 	# 東牆的窗（中午的光從這裡進來）
-	_box("Window", Vector3(0.06, 1.1, 1.6), Vector3(w - 0.14, 1.7, -1.0), Color(0.75, 0.82, 0.95), false)
+	var window := _box("Window", Vector3(0.06, 1.1, 1.6), Vector3(w - 0.14, 1.7, -1.0), Color(0.75, 0.82, 0.95), false)
+	_window_mat = window.material as StandardMaterial3D
+	_window_mat.emission_enabled = true
 	_window_light = OmniLight3D.new()
 	_window_light.name = "WindowLight"
 	_window_light.position = Vector3(w - 1.0, 1.9, -1.0)
@@ -216,6 +248,10 @@ func _puppet(node_name: String, pos: Vector3, yaw_deg: float, coat: Color, trim:
 	p.position = pos
 	p.rotation_degrees.y = yaw_deg
 	add_child(p)
+	# 程序人偶預設右手拿鐘錘（諾恩的）；酒館裡的人不拿
+	var hammer: Node = p.hand("R").get_node_or_null("BellHammer") if p.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
 	return p
 
 
