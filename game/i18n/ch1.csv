@@ -55,3 +55,8 @@ DLG_CH1_MAP_004,"(She doesn't laugh.) In that life, how many people died today?"
 DLG_CH1_MAP_005,None. It was only a game there.,沒有。那裡只是遊戲。
 DLG_CH1_MAP_006,"(She's quiet for a long time.) Mark the parts you're not sure about, too.",（她很久沒說話。）把你不確定的地方也標出來。
 DLG_CH1_MAP_007,"(You pick up the pen. In the end, you circle the whole map.)",（你拿起筆。最後，整張地圖都被你圈了起來。）
+GUIDE_MARK_TITLE,The map on the table,桌上的地圖
+GUIDE_MARK_HINT,Mark the parts you're not sure about.,把你不確定的地方也標出來。
+GUIDE_MARK_DONE,That's all,就這樣
+DLG_CH1_MAP_007_SOME,(You pick up the pen and circle a few places. Sheila looks at the map and says nothing.),（你拿起筆，圈了幾個地方。席菈看著那張地圖，什麼也沒說。）
+DLG_CH1_MAP_007_NONE,(You hold the pen over the paper for a long time. You don't circle anything.),（你拿著筆，在紙上停了很久。一個圈也沒畫。）

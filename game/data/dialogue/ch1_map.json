@@ -40,14 +40,9 @@
     "m6": {
       "speaker": "SPK_SHEILA",
       "text": "DLG_CH1_MAP_006",
-      "next": "m7"
-    },
-    "m7": {
-      "speaker": "SPK_NOEN",
-      "text": "DLG_CH1_MAP_007",
       "do": {
         "set": {
-          "ch1.map_drawn": true
+          "ch1.guide_marking": true
         }
       }
     }

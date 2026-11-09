@@ -304,13 +304,36 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	for id: String in s.guide.ids():
 		assert_eq(GuideNotes.status(s.state, id), GuideNotes.UNWRITTEN, "畫地圖之前還沒寫下 %s" % id)
 	await _talk_at(tavern, "MapTable", 0)
-	assert_eq(s.state.get_flag("ch1.map_drawn"), true, "攻略畫成地圖")
 	for id: String in s.guide.ids():
-		assert_eq(GuideNotes.status(s.state, id), GuideNotes.SURE, "攻略筆記寫下 %s" % id)
+		assert_eq(GuideNotes.status(s.state, id), GuideNotes.SURE, "攻略筆記寫下 %s（預設確定）" % id)
+	assert_ne(s.state.get_flag("ch1.map_drawn", false), true, "還沒標完")
+	for i: int in 3:
+		await tree.physics_frame
+	var view: GuideMarkView = tavern.get_node_or_null("GuideMarkView") as GuideMarkView
+	assert_not_null(view, "席菈說完 → 標記畫面")
+	if view == null:
+		return
+	assert_true(tree.paused, "標記畫面打開時暫停")
+	assert_eq(view.entry_ids.size(), 6, "列出 6 條")
+	# 石拱路線：標射箭陷阱「我不確定」；燃燒劍路線：全部確定
+	if help_with_soup:
+		(view.rows["stair_arrows"] as Button).pressed.emit()
+		assert_true(view.is_unsure("stair_arrows"), "點一下 → 我不確定")
+	view.done_button.pressed.emit()
+	assert_false(tree.paused, "就這樣 → 解除暫停")
+	assert_true(_game.call("is_in_dialogue"), "標完 → 最後一句")
+	var box_line: String = (_game.get("dialogue") as DialogueRunner).current_text()
+	assert_eq(box_line, "DLG_CH1_MAP_007_SOME" if help_with_soup else "DLG_CH1_MAP_007_NONE", "最後一句跟著標了幾條")
+	await _run_dialogue(tavern, 0)
+	assert_eq(s.state.get_flag("ch1.map_drawn"), true, "攻略畫成地圖")
+	var want_arrows: String = GuideNotes.UNSURE if help_with_soup else GuideNotes.SURE
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), want_arrows, "標記寫進攻略筆記")
+	assert_eq(GuideNotes.status(s.state, "usurper"), GuideNotes.SURE, "沒標的照舊確定")
 	assert_eq(s.quests.stage_of("ch1_main"), "to_cellar")
 	tavern = await _retry()
 	assert_eq(s.quests.stage_of("ch1_main"), "to_cellar", "[ch1_map_done] 階段恢復")
-	assert_eq(GuideNotes.status(s.state, "stair_arrows"), GuideNotes.SURE, "[ch1_map_done] 攻略筆記保留")
+	assert_eq(GuideNotes.status(s.state, "stair_arrows"), want_arrows, "[ch1_map_done] 攻略筆記與標記保留")
+	assert_false(tavern.has_node("GuideMarkView"), "[ch1_map_done] 不會再開標記畫面")
 	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "[ch1_map_done] 灑湯的選擇保留")
 
 

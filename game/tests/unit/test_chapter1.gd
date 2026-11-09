@@ -118,11 +118,50 @@ func test_chapter_card_calls_done_once() -> void:
 
 func test_chapter1_dialogues_are_valid_and_translated() -> void:
 	var db: DialogueDB = DialogueDB.load_default()
-	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map"]:
+	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map", "ch1_map_end"]:
 		assert_true(db.has_dialogue(id), "有對話 %s" % id)
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
 		for key: String in ["SPK_MISHA", "SPK_KEEPER", "SPK_LEO_LETTER", "CH1_CARD_NUMBER", "CH1_CARD_TITLE",
-				"CH1_TO_BE_CONTINUED", "Q_CH1_MAIN_TITLE", "Q_CH1_OBJ_NOON", "Q_CH1_OBJ_DINNER", "Q_CH1_OBJ_MAP", "Q_CH1_OBJ_CELLAR"]:
+				"CH1_TO_BE_CONTINUED", "GUIDE_MARK_TITLE", "GUIDE_MARK_HINT", "GUIDE_MARK_DONE", "Q_CH1_MAIN_TITLE", "Q_CH1_OBJ_NOON", "Q_CH1_OBJ_DINNER", "Q_CH1_OBJ_MAP", "Q_CH1_OBJ_CELLAR"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")
+
+
+func test_guide_mark_view_toggles_and_confirms() -> void:
+	var notes: GuideNotes = GuideNotes.load_default()
+	var st := GameState.new()
+	GuideNotes.write(st, PackedStringArray(["stair_arrows", "sealed_door"]))
+	GuideNotes.set_unsure(st, "sealed_door", true)
+	var host := Node.new()
+	tree.root.add_child(host)
+	var got: Array[PackedStringArray] = []
+	var view: GuideMarkView = GuideMarkView.open_on(host, st, notes)
+	view.confirmed.connect(func(ids: PackedStringArray) -> void: got.append(ids))
+	await tree.process_frame
+	assert_eq(view.entry_ids, PackedStringArray(["stair_arrows", "sealed_door"]), "只列寫下的條目（照資料順序）")
+	assert_true(tree.paused, "打開時暫停")
+	assert_false(view.is_unsure("stair_arrows"))
+	assert_true(view.is_unsure("sealed_door"), "已經標過的照舊")
+	(view.rows["stair_arrows"] as Button).pressed.emit()
+	(view.rows["sealed_door"] as Button).pressed.emit()
+	assert_true(view.is_unsure("stair_arrows"), "點一下 → 我不確定")
+	assert_false(view.is_unsure("sealed_door"), "再點 → 確定")
+	assert_eq(GuideNotes.status(st, "stair_arrows"), GuideNotes.SURE, "按「就這樣」之前不寫進狀態")
+	view.done_button.pressed.emit()
+	assert_false(tree.paused, "就這樣 → 解除暫停")
+	assert_eq(got.size(), 1, "confirmed 一次")
+	assert_eq(got[0], PackedStringArray(["stair_arrows"]))
+	assert_eq(GuideNotes.status(st, "stair_arrows"), GuideNotes.UNSURE)
+	assert_eq(GuideNotes.status(st, "sealed_door"), GuideNotes.SURE)
+	view.confirm()
+	assert_eq(got.size(), 1, "再按也不會重複")
+	await tree.process_frame
+	# 被釋放（回標題）時不會讓遊戲停在暫停
+	var view2: GuideMarkView = GuideMarkView.open_on(host, st, notes)
+	await tree.process_frame
+	assert_true(tree.paused)
+	view2.free()
+	assert_false(tree.paused, "釋放時解除暫停")
+	host.queue_free()
+	await tree.process_frame

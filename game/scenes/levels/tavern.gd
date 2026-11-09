@@ -41,8 +41,13 @@ func _ready() -> void:
 	_init_story()
 	# 開發用：`-- --level=tavern` 直接進來時還在切片 → 把切片走完、開始第 1 章；
 	# `--ch1-stage=dinner|draw_map|to_cellar` 再往後推（截圖用）
+	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	if not Game.session.state.quests.has(QUEST):
-		dev_start_chapter(Game.session, str(App.parse_user_args(OS.get_cmdline_user_args()).get("ch1-stage", "")))
+		dev_start_chapter(Game.session, str(dev_args.get("ch1-stage", "")))
+	# 截圖用：`--ch1-stage=draw_map --guide-mark` 直接打開標記畫面（射箭陷阱先標我不確定）
+	if dev_args.has("guide-mark") and Game.session.quests.stage_of(QUEST) == "draw_map":
+		GuideNotes.set_unsure(Game.session.state, "stair_arrows", true)
+		Game.session.state.set_flag("ch1.guide_marking", true)
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
 		player.global_position = SPAWN_POS
@@ -65,9 +70,10 @@ static func dev_start_chapter(s: GameSession, stage: String) -> void:
 	var flags: PackedStringArray = ["ch1.noon_talked", "ch1.dinner_done", "ch1.map_drawn"]
 	var target: int = order.find(stage)
 	for i: int in maxi(target, 0):
-		if i == 2:
-			StoryLogic.apply({"guide_write": Array(s.guide.ids())}, s.state)
 		s.set_flag(flags[i], true)
+	# 畫地圖的對話一開始就寫下攻略筆記
+	if target >= 2:
+		StoryLogic.apply({"guide_write": Array(s.guide.ids())}, s.state)
 	s.attach_achievements(ach)
 
 
@@ -76,16 +82,35 @@ func _physics_process(_delta: float) -> void:
 	if player == null:
 		return
 	var stage: String = Game.session.quests.stage_of(QUEST)
-	if STAGE_TALKS.has(stage) and not Game.is_player_locked():
+	var marking: bool = bool(Game.session.state.get_flag("ch1.guide_marking", false))
+	# 畫地圖的對話講完（等著標記）之後不要再從頭講一次
+	if STAGE_TALKS.has(stage) and not (stage == "draw_map" and marking) and not Game.is_player_locked():
 		var spot: Array = STAGE_TALKS[stage] as Array
 		var n: Node3D = get_node_or_null(str(spot[0])) as Node3D
 		if n != null and _flat_dist(player.global_position, n.global_position) <= TALK_RANGE:
 			Game.start_dialogue(str(spot[1]))
+	# 段落 3：席菈說「把你不確定的地方也標出來」之後打開標記畫面（D-150）
+	if stage == "draw_map" and marking and not has_node("GuideMarkView") and not Game.is_player_locked():
+		open_guide_marking()
 	# 出門：段落 4（白天的霜橋鎮、艾妲的油燈）還沒做——先顯示「待續」
 	var at_door: bool = _flat_dist(player.global_position, DOOR_POS) <= 1.2
 	if at_door and not _door_inside and stage == "to_cellar":
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
 	_door_inside = at_door
+
+
+## 標記畫面（測試也用）：已經開著就回傳那一個。
+func open_guide_marking() -> GuideMarkView:
+	var existing: GuideMarkView = get_node_or_null("GuideMarkView") as GuideMarkView
+	if existing != null:
+		return existing
+	var view: GuideMarkView = GuideMarkView.open_on(self, Game.session.state, Game.session.guide)
+	view.confirmed.connect(_on_guide_marked)
+	return view
+
+
+func _on_guide_marked(_unsure: PackedStringArray) -> void:
+	Game.start_dialogue("ch1_map_end")
 
 
 static func _flat_dist(a: Vector3, b: Vector3) -> float:
