@@ -493,7 +493,7 @@ func _chapter1_daylight(city: StoryLevel) -> void:
 ## 白晝城：只有諾恩的油燈投影子（07 的場景斷言）；沒有太陽；接地陰影也拿掉；柯德、席菈、彌夏、瑪菈都在。
 func _assert_daylight(city: StoryLevel, tag: String) -> void:
 	await tree.process_frame
-	for n: String in ["Kord", "Sheila", "Misha", "Mara", "Furnace", "OnionPot", "KordHome"]:
+	for n: String in ["Kord", "Sheila", "Misha", "Mara", "Furnace", "OnionPot", "KordHome", "Ambience"]:
 		assert_true(city.has_node(n), tag + " 有 " + n)
 	assert_true(_player(city).has_oil_lamp(), tag + " 拿著油燈")
 	var lamp: OmniLight3D = city.call("lamp_light") as OmniLight3D

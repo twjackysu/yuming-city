@@ -10,6 +10,7 @@
 - ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
 - water_splash：一桶髒水從天花板倒下來（第 1 章一百七十二階）。木桶「咚」＋一陣低通噪音的嘩啦，尾巴是幾聲滴水。
 - child_laugh：樓梯深處小孩的笑聲（第 1 章）。高音的「哈、哈、哈」：脈衝串經過兩個母音共振峰，加長的回音當作「很遠、在石階下面」。
+- daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -271,6 +272,46 @@ def child_laugh(seconds=1.9, seed=23):
     return onepole_lp(out, 2400)
 
 
+def daylight_ambience(seconds=8.0, seed=29):
+    """白晝城：很慢的鐘擺聲＋遠處的水聲（07「鐘走得很慢的滴答＋遠處的水聲」）。頭尾交叉淡化成可循環。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(0.6 * RATE)
+    total = n + fade
+    # 遠處的水：低通噪音，慢慢起伏
+    bed = onepole_lp(onepole_lp(hp(noise(total, rng), 60), 700), 900)
+    out = []
+    for i in range(total):
+        t = i / RATE
+        swell = 0.55 + 0.25 * math.sin(2 * math.pi * 0.23 * t) + 0.12 * math.sin(2 * math.pi * 0.61 * t + 1.3)
+        out.append(bed[i] * swell * 0.9)
+    # 鐘擺：每 2 秒一下，一下「喀」一下「答」（第二下低一點），木頭共鳴約 1.1 kHz
+    for k in range(int(seconds / 1.0)):
+        start = int((0.25 + k * 1.0) * RATE)
+        f = 1150.0 if k % 2 == 0 else 930.0
+        amp = 0.55 if k % 2 == 0 else 0.4
+        for j in range(int(0.09 * RATE)):
+            if start + j >= total:
+                break
+            tt = j / RATE
+            click = rng.uniform(-1, 1) * math.exp(-tt * 900) * 0.6
+            ring = math.sin(2 * math.pi * f * tt) * math.exp(-tt * 55)
+            out[start + j] += amp * (ring + click)
+    # 幾滴水（很遠）
+    for _ in range(4):
+        start = int(rng.uniform(0.3, seconds - 0.2) * RATE)
+        f = rng.uniform(1300, 1900)
+        for j in range(int(0.06 * RATE)):
+            tt = j / RATE
+            out[start + j] += 0.12 * math.sin(2 * math.pi * (f + 1800 * tt) * tt) * math.exp(-tt * 60)
+    # 頭尾交叉淡化：最後 fade 個樣本疊回開頭
+    looped = out[:n]
+    for i in range(fade):
+        w = i / fade
+        looped[i] = out[i] * w + out[n + i] * (1.0 - w)
+    return looped
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -287,6 +328,7 @@ def main():
         write("ui_tick", ui_tick()),
         write("water_splash", water_splash()),
         write("child_laugh", child_laugh()),
+        write("daylight_ambience", daylight_ambience()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

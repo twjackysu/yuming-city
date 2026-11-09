@@ -100,6 +100,7 @@ func _ready() -> void:
 	_set_up_lamp()
 	_build_people()
 	_hide_contact_shadows.call_deferred()
+	_start_ambience()
 	Game.dialogue_started.connect(_on_dialogue_started)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
 	add_to_group("interact_prompts")
@@ -153,6 +154,24 @@ func _set_up_lamp() -> void:
 func lamp_light() -> OmniLight3D:
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	return player.find_child("LanternLight", true, false) as OmniLight3D if player != null else null
+
+
+## 環境音（07）：鐘走得很慢的「喀、答」＋遠處的水聲，循環播放。
+func _start_ambience() -> void:
+	var src: AudioStreamWAV = Sfx.stream("daylight_ambience") as AudioStreamWAV
+	if src == null:
+		return
+	var s: AudioStreamWAV = src.duplicate() as AudioStreamWAV
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	s.loop_begin = 0
+	s.loop_end = int(s.get_length() * float(s.mix_rate))
+	var p := AudioStreamPlayer.new()
+	p.name = "Ambience"
+	p.stream = s
+	p.bus = &"SFX"
+	p.volume_db = -12.0
+	add_child(p)
+	p.play()
 
 
 ## 人物腳下的接地陰影（D-108）在這裡也拿掉：整座城沒有影子。
