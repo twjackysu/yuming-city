@@ -130,7 +130,7 @@ const ROPE_RANGE: float = 1.3
 ## 壓住：陷進煤堆多深、往前趴多少（繞 X 軸負的是往前，D-052）
 const PIN_SINK: float = 0.55
 const PIN_TILT: float = -0.3
-const COAL: Color = Color(0.045, 0.043, 0.045)
+const COAL: Color = Color(0.09, 0.085, 0.085)
 ## 頭頂的石樑：一排排橫跨運河，縫裡透下鐘院的光
 const SLAT_Y: float = 13.0
 const SLAT_PITCH: float = 2.4
@@ -313,11 +313,12 @@ func _ready() -> void:
 		_undertaker.rotation.y = atan2(-(SLUICE_PASS_X - u_at.x), -(SLUICE_Z - 2.0 - u_at.z))
 		lower_heart(3)
 		# 站在西岸往東北看（從東岸的繩子旁看下去會被木柱和岸緣擋住）：木架上的煤車、閘道裡的牠、東岸的繩子
-		_put(player, Vector3(-3.7, 0.0, SLUICE_Z + 4.2), 0.0)
+		_put(player, Vector3(-4.0, 0.0, SLUICE_Z + 6.5), 0.0)
 		_dev_hold_edge = true
-		var look_c: Vector3 = Vector3(SLUICE_PASS_X + 0.4, 0.0, SLUICE_Z) - player.global_position
-		(player as PlayerController).yaw = atan2(-look_c.x, -look_c.z)
-		(player as PlayerController).pitch = -0.42
+		var look_c: Vector3 = Vector3(SLUICE_PASS_X, 0.0, SLUICE_Z) - player.global_position
+		# 往左多轉一點，閘道落在諾恩右邊（不被她擋住）
+		(player as PlayerController).yaw = atan2(-look_c.x, -look_c.z) + 0.3
+		(player as PlayerController).pitch = -0.5
 		(player as PlayerController).snap_camera()
 		if at == "pinned":
 			cut_rope()
@@ -1361,7 +1362,7 @@ func _build_sluice() -> void:
 	add_child(_cart)
 	_solid("CartBody", Vector3(1.0, 0.5, 0.9), Vector3(0.0, 0.42, -0.5), _mat(Color(0.2, 0.16, 0.12), 0.85), false, _cart)
 	_solid("CartBand", Vector3(1.04, 0.06, 0.94), Vector3(0.0, 0.62, -0.5), iron, false, _cart)
-	var coal: StandardMaterial3D = _mat(COAL, 0.55)
+	var coal: StandardMaterial3D = _mat(COAL, 0.38)
 	coal.metallic_specular = 0.7
 	_solid("CartCoal", Vector3(0.92, 0.2, 0.82), Vector3(0.0, 0.74, -0.5), coal, false, _cart)
 	for i: int in 6:
