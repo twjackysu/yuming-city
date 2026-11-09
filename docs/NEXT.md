@@ -1,11 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。每日排程見 `docs/design/05-vertical-slice-plan.md`（M1.1、M1.2 完成；M1.3 完成；M1.4 只剩 Jacky 實機項目（手把自動測試第 14 輪齊了）；第一眼的小毛病三項第 15 輪修完；HUD 手把圖示（含互動提示）、Steam 膠囊圖替代版第 16 輪完成；第一眼盤點第 17 輪完成，打磨順序在 PLAN 階段 2 的表；第 18 輪做完第 4、5、7、8 項；第 19 輪做完第 9、10 項，第一輪盤點 10 項全部完成；第 20 輪做第二輪盤點（PLAN 階段 2 第二張表）：第 1、4、8 項完成；CI 新增「盤點截圖」job；第 21 輪完成第 2、3、6、10 項＋石拱預覽截圖構圖；第 22 輪完成第 7、9 項與第 5 項後續，第二輪盤點 10 項全部完成；第 23 輪做第三輪盤點（PLAN 階段 2 第三張表，D-099），完成第 1～4 項與第 7 項的木桶；第 24 輪完成第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102）、第 7 項的柴堆與手推車（D-103）；第 25 輪完成第 7 項木圍欄（D-104）、第 8 項街邊雪帶（D-105）、第 9 項推車靠近鏡頭淡出（D-106）、第 10 項屋瓦（D-107），第三輪盤點全部完成；另外做了接地陰影（D-108）；第 26 輪做第四輪盤點（PLAN 階段 2 第四張表，D-109），完成第 1、2、3、5、7 項（D-110～D-113）；第 27 輪完成第 4 項廣場地上的殘雪與車轍（D-114）、第 6 項角色擋鏡頭時淡掉（D-115），第四輪盤點全部完成；第 28 輪做第五輪盤點（PLAN 階段 2 第五張表，D-116），完成第 1、3、4 項（D-117～D-119）；第 29 輪完成第五張表第 2、5、6、8 項（石板鋪法 D-120、鐘鈕 D-121、店招圖案 D-122；第 7 項 TAA 等 Jacky），做第六輪盤點（PLAN 階段 2 第六張表，D-123）並完成第 1、2 項（窄街石縫雪 D-124、重現預覽淡輪廓 D-125）；第 30 輪完成第六張表第 3 項雪帶（D-126）、第 4 項破屋頂的雪（D-127），廣場的圈不再是正圓（D-128）；第 31 輪做第七輪盤點（PLAN 階段 2 第七張表），完成第 1 項石拱是圓拱（D-129）、第 2 項廣場中央的鐘剪影（D-130）、第 3 項破屋頂露出屋瓦對齊屋瓦（D-131）；第 32 輪完成第七張表第 4 項拱石的放射縫（D-132）、第 5 項救援畫面的白色雪塊（D-133，拿掉）、第 6 項雪帶上一串腳印（D-134）；第 33 輪做第八輪盤點（PLAN 階段 2 第八張表），完成第 1 項雪帶連成一整條（D-136）、第 2 項石階的雪積在兩側（D-137）、第 3 項石階前緣下的暗線（D-138）；**第 34 輪完成第八張表第 4 項破屋頂的雪（D-139）、第 6 項廣場的鐘（D-141），動作表認 `_loop`（D-140），第 1～3 章新名詞進對照表（D-142）、07／08 的「待定」定案（D-143）。下一輪做第八張表第 5 項（廣場前景石板），做完就停止盤點，換去做商店截圖 CI 步驟（第 4 節）或第一部第 1 章的白盒**）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 35 輪完成廣場石板（D-144）、看穿小卡讓開鐵架（D-146）、商店截圖改成 Windows 實機一鍵拍（D-145）。下一輪照 PLAN 階段 2 的順序：先做成就系統（第 4 節，不依賴 GodotSteam），再開始第一部第 1 章的白盒（第 5 節）**。
 
 ## 0. 開工先確認
 
-- 上一輪（第 34 輪）最後一次程式 push 262a0ce 的 run 42541763212 **已經整個綠燈**（收尾時確認）；開工照常先跑 `scripts/check.sh`。第 34 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 294 個測試）與截圖：d150cec 破屋頂的雪（D-139）、a428aef 動作表認 `_loop`（D-140）、262a0ce 廣場的鐘（D-141，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
-- **screens 已是 262a0ce 的建置**（第 34 輪收尾看過 `06`、`03`，跟本機一致）。有新的程式 push 後再看：`06` 左半破屋頂的雪一排排跟著屋瓦起伏、邊緣不規則、沒有一圈亮白的厚度（D-139；太花或太暗就調 `snow.gdshader` 的 `tile_mottle` 0.3、`tile_drape` 0.55、`backlit_shade` 0.5）；`03`、`02` 廣場中央的鐘又高又窄、鐘口外翻、有鐘舌，不像帽子（D-141）。`07`、`08`、`11` 右側的雪帶是一整條（D-136；太平滑像白色水管就加大 `strip_height` 的細起伏 0.08）。
+- 上一輪（第 35 輪）最後一次程式 push 40fb598 的 run 42547679767（收尾時見 PROGRESS 收尾補記）；開工照常先跑 `scripts/check.sh`。第 35 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 295 個測試）與截圖：30c0a49 廣場石板（D-144）、bccfbc9 商店截圖（D-145）、40fb598 看穿小卡（D-146，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- **screens 有新的建置後**看：`03`、`04` 廣場前景的石板亮暗不一、有幾顆整顆暗（下陷積水）、一圈圈的縫在中距離就淡掉，不像靶心（D-144；太花就調 `wet_cobble.gdshader` 的 `sunken_share` 0.16、`dark_share` 0.1、`grit_amount` 0.45，圈太糊就調 `FrostbridgeLook.ARC_FAR_FADE` 1.9）；`11` 看穿小卡在送葬者鐵架右柱的右邊（D-146）。latest 的 Windows zip 裡要有 `store-shots.ps1` 與 `store_shots.txt`（D-145；CI「打包」步驟會先用 pwsh 檢查 ps1 語法，log 裡有「store-shots.ps1 語法 OK」）。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
@@ -36,8 +36,8 @@
 - 第七輪（第 32 輪）：拱石的放射縫（D-132：`half_timber.gdshader`／`restore_ghost.gdshader` 的 `arch_voussoirs`／`arch_center`／`arch_inner`／`arch_outer`／`arch_key_extra`，物件座標 varying `obj_pos`／`obj_normal`；`NineBreathSite.KEYSTONE_RISE`）、破屋頂屋簷那團雪拿掉（D-133：先把可疑物件註解掉截一張圖確認是誰，很快）、雪帶一串腳印（D-134：`SnowMound.build_bank`，UV＝(`BANK_MARK`＋沿著牆的公尺數, 離牆多遠)；`snow.gdshader` 的 `trail_from_wall`／`step_len`／`footprint_density`；雪帶座標換回世界方向用螢幕空間導數）。
 - 第八輪（第 33 輪）：雪帶連成一整條（D-136：`SnowMound.build_strip`／`strip_height`／`strip_out`，`frostbridge.gd` 的 `SNOW_BANK_HEIGHT`；`build_bank` 已經沒有關卡在用，只剩測試）、石階的雪（D-137：`_step_snow`、`STEP_PATH_HALF`、`step_snow`）、石階前緣下的暗線（D-138）。
 - 第八輪（第 34 輪）：破屋頂的雪（D-139：`SnowMound` 的 `TILES_RINGS`／`TILES_SEGMENTS`／`TILES_RAGGED`／`TILES_FALLOFF`；`snow.gdshader` 的 `tile_drape`／`tile_mottle`／`moon_to`／`backlit_shade`，沿斜面公尺數的世界梯度 `gm` 跟腳印一樣用螢幕空間導數解）、廣場的鐘（D-141：`PLAZA_BELL_H／R／FLARE／CLAPPER_R`；**地上的圖案從南邊看南北方向被壓成約四分之一**，改比例不要改方向——橫躺看起來像一支箭）。
-- **下一輪從這裡開始：PLAN 階段 2 第八張表第 5 項**（廣場前景石板一圈圈很規則、每顆一樣亮，還有一點靶心感）：`wet_cobble.gdshader` 的 `arc_paving` 那段——每顆石板亮度／高低多一點變化（用石板編號雜湊）、弧形鋪的圈在遠處（`fwidth`）淡掉。截圖 `--at=plaza`、`--pos=3.0,3.2`（梨販攤）。**做完就停止盤點**，改做第 4 節的「商店截圖」CI 步驟，或接著寫第一部的章節設計（第 33 輪寫了第 1 章草稿 `docs/design/07-chapter1-door.md`：段落、攻略筆記可信度、壽命石碑、艾妲的油燈、沒有影子的白晝城；第 2 章飯桌＋第 3 章鐘舌 Boss 草稿 `docs/design/08-chapter2-3.md`；兩份都是草稿；「待定」第 34 輪已定案（D-143）、新名詞已進 `06-terminology.md`（D-142）。12/14 起照 07 → 08 的段落順序實作，先白盒＋對話＋任務＋流程測試，美術後補）。打磨已經做了八輪，邊際效益越來越小。
-- 第七張表剩第 7 項廣場街口的收邊石（可以不改）、第 8 項 TAA（等 Jacky 看網點）；第八張表第 7 項 `07` 截圖構圖（可以不改）、第 8 項看穿小卡位置（小）。
+- **「第一眼」盤點停止（第 35 輪，D-146）**：八張表做完（第七張第 7、8 項、第八張第 7 項是截圖構圖或等 Jacky，不改）。之後的打磨只做 Jacky 試玩回饋提到的，或做章節時順手修；不要再開第九輪盤點。
+- 第七張表第 8 項 TAA 等 Jacky 看網點。廣場石板（D-144）：`wet_cobble.gdshader` 的 `sunken_share`／`dark_share`／`grit_amount`／`ring_gap_tighten`／`far_fade`（街道預設 1.2、廣場 `ARC_FAR_FADE`）。
 - 本機截圖：**Vulkan 一張 120 秒內要拍完**（`screenshot.sh` 的逾時），40 幀的 `--convoy --phase2` 第一次會超時退回 OpenGL（沒有霧、畫面很不一樣）；改用 25～30 幀。
 - 破屋頂的山牆（PrismMesh）還是 `look.mat(ROOF)` 素面；看起來沒問題就不用改。
 - 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
@@ -59,12 +59,24 @@
 - `test_gamepad_route` 涵蓋：梨販 → 敲九下、救援、灰巡者、送葬者戰、暫停選單、按鍵設定頁改鍵（第 14 輪）。手感只能等 Jacky 試玩。
 - 共用 helper：`_walk_to`、`_tap`、`_tap_physics`（戰鬥輸入在物理幀讀 just_pressed）、`_trigger_left`、`_focus_with_dpad`。鎖定是**右搖桿按下**（R3），不是 RB。
 
-## 4. 階段 2 準備（12/1 起，可以提前）
+## 4. 階段 2 準備（12/1 起，可以提前）——**下一輪從這裡開始**
 
-- Steam 準備：文案與規格草稿（D-055）、膠囊圖替代版（D-064，CI 產生，`python3 -P scripts/steam_mock.py <背景.png> <輸出資料夾> --title-shot <標題畫面.png>`）。下一步：把 `docs/steam/asset-specs.md` 截圖清單的 7 張（截圖 6 燃燒劍的旗標第 18 輪已更新成側面拍）做成 CI 的一個「商店截圖」步驟（全部 `--nohud`？——商店截圖通常要看得到 HUD 才像遊戲，挑 2～3 張不帶 HUD 就好），之後 GodotSteam（等存檔與輸入穩定）。
+- 商店截圖完成（D-145）：清單 `scripts/store_shots.txt`（改了 `check.sh` 會檢查旗標）、Windows 實機 `store-shots.ps1`（CI 放進 zip）、雲端 `scripts/store-shots.sh <資料夾> [en|zh_TW] [檔名片段]`（1920×1080，一張約 1 分鐘）。Jacky 拍了放 `art-inbox/store-shots/` 再看。
+- **下一步：成就系統（不依賴 GodotSteam）**。PLAN 階段 2 的 Steam 準備；存檔與輸入已經穩定。**設計草稿已寫好：[`docs/steam/achievements.md`](steam/achievements.md)**（8 個成就的 ID、中英名稱與說明、條件旗標、隱藏與否、實作備註），照它做。做法建議：
+  1. `game/data/achievements.json`：每個成就 id、條件（任務旗標／事件，例如敲完九下、救出三個人、兩條路線各通關一次、不讓席菈倒下打贏送葬者、看穿所有招式）、是否隱藏；名稱與說明走 i18n key（`ACH_<ID>_NAME`／`_DESC`，先查 `06-terminology.md`）。切片先 6～10 個，少而精、不劇透。
+  2. `Achievements`（autoload 或 Game 底下的服務）：聽 `Game` 的訊號與任務旗標判斷解鎖，存在 `user://achievements.json`（跟存檔槽分開：成就是帳號層級，讀舊檔不會解鎖或取消），有版本號。
+  3. Steam 後端轉接：`SteamBridge` 在 `ClassDB.class_exists("Steam")`／`Engine.has_singleton("Steam")` 時呼叫 `setAchievement`＋`storeStats`，沒有時什麼都不做（現在都沒有）。之後 Jacky 拿到 App ID、放 GodotSteam 時才接；`steam_appid.txt` 不進 git。
+  4. 測試：每個成就在流程測試裡真的被解鎖（`test_slice_playthrough` 兩條路線跑完後檢查）、重開遊戲還在、讀舊存檔不影響；圖示需求寫進 `ART_REQUESTS.md`（先程序生成替代圖示；每個成就要解鎖／未解鎖兩張，尺寸先用 WebSearch 查 Steamworks 文件再寫進 asset-specs）。
+- 之後：GodotSteam（GDExtension）要不要現在就放進 repo 等 Jacky 決定（Steamworks SDK 授權、需要他的帳號），先在 FOR_JACKY 第 2 項問；雲端存檔走 Steam Auto-Cloud（只要在後台設定 `%APPDATA%\YumingCity\saves`，不用寫程式），寫進 `docs/steam/`。
 
-## 5. 角色模型（等 Jacky 交件）
+## 5. 第一部第 1 章（12/14 起，可以提前；成就做完就開始）
 
+- 照 `docs/design/07-chapter1-door.md` 的段落順序，**先白盒＋對話＋任務＋流程測試，美術後補**（D-143：白天霜橋鎮重用切片關卡、攻略筆記是日記分頁、做不完時的保留順序）。新名詞照 `06-terminology.md`（D-142）。新章節的任務每個階段要有 `marker`（D-040）、主線流程測試補一段（`tests/flow/test_slice_playthrough.gd` 的寫法）。
+- 第一步建議：章節切換（切片結尾 → 第 1 章開頭）的流程與存檔欄位（存檔版本＋遷移：舊存檔讀進來停在切片結尾）、第 1 章任務 JSON 骨架、段落 1 的白盒關卡。
+
+## 6. 角色模型（等 Jacky 交件）
+
+- 第 35 輪（11/9 09:29）Jacky 推了**送葬者綁骨架候選**（`art-inbox/studies/undertaker/`：53,259 面、71 骨骼、3 材質、walk、鎖鏈接地、弱點材質 `M_FrameJoint`）與 CMU 握劍研究（`docs/art-trials/cmu-sword/`），README 一樣寫明未驗收、**不要接進遊戲**；意見寫在 FOR_JACKY 第 4 項（橫桿頂面一條亮白、正式版請留關節骨骼或 Marker）。**之後真的用到 CMU 動捕時，`docs/CREDITS.md` 要照 cmu-sword README 的致謝原文加上去**（CMU 允許商業使用、要求致謝、禁止轉售資料本身）。
 - 第 34 輪（11/9 08:27）Jacky 又推了**席菈試作**（`art-inbox/studies/sheila/`：GLB＋walk_loop、`docs/art-trials/sheila-rigging/` 製作腳本）與送葬者袍身試跑（`docs/art-trials/undertaker-rigging/`），README 一樣寫明未驗收、**不要接進遊戲**；意見寫在 FOR_JACKY 第 4 項（背劍像黑色看板、斗篷像圍巾＋肩內側米黃色、材質要合併）。遊戲端已認得 `walk_loop`（D-140）；她的 `weapon_socket` 骨骼正式交件時再決定要不要讓燃燒劍掛上去（`CharacterModels.HAND_BONES` 現在只找手骨骼）。
 - 第 15 輪 Jacky 推了 `docs/art-trials/noen-rigging/`（本機 MPFB 分件角色＋ACCAD walk 試作，README 明寫「不是正式交件、未換遊戲內角色」）。**不要自己把它接進遊戲**，等他放 `art-inbox/characters/noen/noen.glb`。裡面的 `godot_review/` 是獨立的檢視專案，跟 `game/` 無關。
 

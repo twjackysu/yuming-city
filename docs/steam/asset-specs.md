@@ -36,16 +36,22 @@ CI 每次 push 到 main 都會用遊戲內截圖＋標題字產生 Header／Smal
 | Community Icon | 184 × 184 JPG | 社群、好友動態 |
 | Client Icon | .ico（含 16／32 px）＋ 32 × 32 | 收藏庫列表；同一張也用在 Windows 執行檔圖示（`game/icon.svg` 之後換） |
 
-## 截圖清單（替代版，loop 會用遊戲內截圖模式產生）
+## 截圖清單（D-145：清單在 `scripts/store_shots.txt`，以那份為準）
 
-| # | 內容 | 截圖旗標 |
+| # | 內容 | 截圖旗標（摘要） |
 |---|---|---|
-| 1 | 霜橋鎮廣場夜景與通往鐘樓的主街 | `--level=frostbridge --at=plaza --quality=2` |
+| 1 | 霜橋鎮廣場夜景與通往鐘樓的主街（無 HUD） | `--at=plaza --nohud` |
 | 2 | 親手敲九下（敲鐘鏡頭） | `--cutscene=slice_bell_nine --cutscene-steps=3` |
 | 3 | 陷落的北街救援 | `--rescue` |
-| 4 | 看穿灰巡者、席菈在旁 | （沙盒）`--level=sandbox --enemies --insight` |
-| 5 | 送葬者舉起鐵架、石拱重現 | `--convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14`（D-094，跟 README 的 ninebreath.png 同一組） |
-| 6 | 燃燒劍斬斷鐵架 | `--convoy --throw=kindling --throw-t=0.6 --face=sheila --pos=2.6,6.5 --face-off=16`（從廣場側面拍、席菈在畫面右側；不加 `--pos` 時送葬者站在諾恩正後方、鏡頭會卡進他身體裡，D-074） |
+| 4 | 看穿送葬者（看穿小卡） | `--convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18`（原本是沙盒的灰巡者；沙盒是測試場景，改成霜橋鎮） |
+| 5 | 送葬者擲出鐵架、石拱重現（無 HUD） | `--convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14` |
+| 6 | 燃燒劍斬斷鐵架 | `--convoy --throw=kindling --throw-t=0.6 --face=sheila --pos=2.6,6.5 --face-off=16` |
 | 7 | 日記：被剪掉的記憶 | `--open=journal` |
 
-> 商店截圖要 1920 × 1080：在 Windows 實機用高畫質截（雲端只有軟體渲染，品質不夠上架）。這件事會寫進 FOR_JACKY（階段 2）。
+**上架用的要在 Windows 實機拍**（雲端只有軟體渲染，霧與反射品質不夠）：下載 latest 的 Windows 版、解壓，在資料夾裡執行
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\store-shots.ps1
+```
+
+會用高畫質（`--quality=2`）、1920 × 1080 拍英文與繁中各一套，輸出在 `store-shots\en\`、`store-shots\zh_TW\`（一張約幾秒）。雲端確認構圖用 `scripts/store-shots.sh <輸出資料夾> [en|zh_TW] [只拍檔名含這段字的]`。清單改了之後 `scripts/check.sh` 會檢查旗標都對得上遊戲程式。

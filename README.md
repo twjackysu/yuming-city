@@ -61,7 +61,7 @@
 
 ## Steam 上架還差什麼
 
-Steamworks 帳號、App ID、商店頁與分級問卷需由 Jacky 處理，見 [docs/FOR_JACKY.md](docs/FOR_JACKY.md)。
+Steamworks 帳號、App ID、商店頁與分級問卷需由 Jacky 處理，見 [docs/FOR_JACKY.md](docs/FOR_JACKY.md)。商店文案中英草稿與素材規格在 [docs/steam/](docs/steam/)；商店截圖在 Windows 實機用 zip 裡的 `store-shots.ps1` 一次拍完（7 張、1920×1080、英文與繁中）。還缺：正式主視覺（key art）、實機截圖與 benchmark（系統需求）、GodotSteam 成就與雲端存檔。
 
 ## 路線圖
 
