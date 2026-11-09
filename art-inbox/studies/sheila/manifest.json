@@ -1,0 +1,33 @@
+{
+  "status": "work_in_progress_not_final_art",
+  "triangles": 37636,
+  "bones": 53,
+  "materials": 12,
+  "textures": 33,
+  "files": [
+    {
+      "file": "preview.png",
+      "bytes": 303519,
+      "sha256": "b705e0e291476dc98142d4098cf985dd35e9d56a6da61e31d0df0e8d69809521"
+    },
+    {
+      "file": "sheila_walk_candidate.glb",
+      "bytes": 36385196,
+      "sha256": "00cc50e6be574e02462e4d0bae05ec255d79893a22b026f430797aa0860d405e"
+    },
+    {
+      "file": "walk_candidate.fbx",
+      "bytes": 458140,
+      "sha256": "8e1fc0f57de611ac247faadda033208036388c9a4c4aaf4fcc19c18f77c8a38c"
+    },
+    {
+      "file": "walk_preview.mp4",
+      "bytes": 1459463,
+      "sha256": "e62f85923b064f8afd21e0cbd9bea7412a8abfe9f61941203213b9eb402ef998"
+    }
+  ],
+  "maximum_texture_dimension": 2048,
+  "animation_names": [
+    "walk_loop"
+  ]
+}

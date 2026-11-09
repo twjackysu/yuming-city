@@ -67,3 +67,5 @@ TripoSR 已在本機 GPU 成功生成諾恩試驗網格並完成多角度渲染�
 已執行 TripoSG → MPFB 分件角色 → PBR 烘焙 → ACCAD 動作重定向 → Blender／Godot 4.7.2 重新匯入。製作腳本、固定版本、素材歸屬與技術驗證見 [諾恩製作試作](art-trials/noen-rigging/README.md)。此版本仍有髮絲、靴子形體、貼圖接縫、衣物碰撞及動作自然度待改善；不是正式角色交件，未達 3A 驗收，也未完成整份需求。未更換遊戲內角色。
 
 可直接開啟的 V2 GLB、FBX 與 Godot Forward+ 影片已另存為 [諾恩工作版本](../art-inbox/studies/noen/README.md)。此目錄明確標為未驗收，不取代正式交件或遊戲角色。
+
+席菈的 GLB、walk FBX、Godot Forward+ 影片與來源紀錄已加入 [工作版本](../art-inbox/studies/sheila/README.md)，製作腳本見 [席菈試作](art-trials/sheila-rigging/README.md)。送葬者已完成袍身重建試跑，仍待建模、綁定及動畫。這些均尚未通過正式美術驗收，整份需求尚未完成。
