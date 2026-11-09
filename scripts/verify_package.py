@@ -25,6 +25,7 @@ REQUIRED = [
     "i18n/slice.en.translation",
     "i18n/slice.zh_TW.translation",
     "data/quests/slice_main.json",
+    "data/achievements.json",
     "data/dialogue/slice_ada_aftermath.json",
     "data/journal/slice.json",
     "data/combat/tuning.json",

@@ -20,6 +20,8 @@ var state: GameState
 var quests: QuestRunner
 ## 最近一次自動存檔的錯誤碼（給 UI 顯示「存檔失敗」用）
 var last_autosave_error: Error = OK
+## 成就（帳號層級，D-147）；null＝這一局不算成就（測試自己建的 session、開發用）
+var achievements: AchievementTracker = null
 var _autosave_pending: bool = false
 
 
@@ -45,12 +47,33 @@ func add_flag(key: String, amount: int = 1) -> void:
 	advance()
 
 
+## 統計計數（stats.*，例如打中弱點讓灰巡者跪下幾次）：只給成就用，不推進任務、不觸發存檔。
+func add_stat(key: String, amount: int = 1) -> void:
+	StoryLogic.apply({"add": {key: amount}}, state)
+	check_achievements()
+
+
 ## 重新檢查任務條件；有進入新檢查點就自動存檔。
 func advance() -> Array[Dictionary]:
 	var changes: Array[Dictionary] = quests.evaluate()
+	check_achievements()
 	if _autosave_pending:
 		_flush_autosave()
 	return changes
+
+
+## 接上成就：現在這一局已經成立的條件不算（D-147）。
+func attach_achievements(tracker: AchievementTracker) -> void:
+	achievements = tracker
+	if achievements != null:
+		achievements.baseline(state)
+
+
+## 檢查成就（不推進任務）；有些旗標是直接寫進 state 的（例如鐵架拋擲），Game 每隔一下也會呼叫。
+func check_achievements() -> PackedStringArray:
+	if achievements == null:
+		return PackedStringArray()
+	return achievements.evaluate(state)
 
 
 func slot_path(slot: String) -> String:
@@ -94,6 +117,9 @@ func is_slice_complete() -> bool:
 
 func _bind(new_state: GameState) -> void:
 	state = new_state
+	# 讀檔／重試／新遊戲：存檔裡已經成立的條件不會解鎖成就
+	if achievements != null:
+		achievements.baseline(state)
 	quests = QuestRunner.new(db, state)
 	# 用方法而不是 lambda：lambda 會強參照 self，形成 GameSession ⇄ QuestRunner 的循環而洩漏。
 	quests.checkpoint_reached.connect(_on_checkpoint)

@@ -25,7 +25,7 @@ foreach ($locale in $Locales) {
         $name = $parts[0]
         $frames = $parts[1]
         $flags = @()
-        if ($parts.Length -gt 2) { $flags = $parts[2..($parts.Length - 1)] }
+        if ($parts.Length -gt 2) { $flags = @($parts[2..($parts.Length - 1)]) }
         if (-not ($flags -match "^--quality=")) { $flags += "--quality=$Quality" }
         $flags += "--locale=$locale"
         $png = Join-Path $dir "$name.png"

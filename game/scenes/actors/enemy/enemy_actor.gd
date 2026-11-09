@@ -210,9 +210,13 @@ func _first_player() -> PlayerController:
 
 
 func _on_damaged(_amount: float, info: Dictionary) -> void:
-	if str(info.get("weak", "")) != "":
+	var weak: bool = str(info.get("weak", "")) != ""
+	if weak:
 		_flash_weak()
-	brain.add_stagger(float(info.get("stagger", 0.0)))
+	var knelt: bool = brain.add_stagger(float(info.get("stagger", 0.0)))
+	# 成就「看穿」：打中弱點而跪下（D-147）
+	if knelt and weak and intel_id() != "":
+		Game.session.add_stat("stats.%s_weak_kneels" % intel_id())
 
 
 # ---------------------------------------------------------------- 倒下（D-052、D-054）

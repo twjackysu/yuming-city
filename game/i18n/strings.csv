@@ -148,3 +148,20 @@ CONVOY_START,"The Undertaker blocks South Street. Get the cart through the arch 
 CONVOY_THROUGH,The cart is through the crossing. Sheila's burning blade brings the Undertaker down.,車隊通過了路口。席菈用燃燒的劍把送葬者斬倒。
 HUD_STRUGGLE,Mash {key} to break free ({n}),連按 {key} 掙脫（{n}）
 TUTORIAL_INSIGHT,Hold {insight} to see its weak point · Press {cmd} to have Sheila strike it,按住 {insight} 看穿弱點・按 {cmd} 叫席菈打弱點
+ACH_UNLOCKED,Achievement unlocked,成就解鎖
+ACH_NINTH_BELL_NAME,The Ninth Bell,第九聲鐘
+ACH_NINTH_BELL_DESC,Ring the old bell nine times.,把那口舊鐘敲滿九下。
+ACH_NO_ONE_LEFT_NAME,No One Left in the Snow,沒有人被留在雪裡
+ACH_NO_ONE_LEFT_DESC,Pull three people out of the collapsed North Street.,從倒塌的北街救出三個人。
+ACH_SEEN_THROUGH_NAME,Seen Through,看穿
+ACH_SEEN_THROUGH_DESC,Hit an Ashwalker's weak point and bring it to its knees.,打中灰巡者的弱點，讓牠跪下。
+ACH_THE_TRUTH_NAME,The Truth,實話
+ACH_THE_TRUTH_DESC,Tell the truth at the first meeting.,第一次見面就說了實話。
+ACH_NINE_SECONDS_NAME,Nine Seconds of Stone,九秒的石拱
+ACH_NINE_SECONDS_DESC,Let a restored arch stop the thrown iron frame.,讓重現的石拱擋下飛來的鐵架。
+ACH_BURNING_BLADE_NAME,The Burning Blade,燃燒劍
+ACH_BURNING_BLADE_DESC,Let Sheila's burning blade cut the iron frame in two.,讓席菈的燃燒劍斬斷鐵架。
+ACH_SAFE_PASSAGE_NAME,Safe Passage,一個都沒少
+ACH_SAFE_PASSAGE_DESC,Get the convoy through South Street without anyone hurt again.,護送車隊通過南街，沒有任何傷者再受傷。
+ACH_CELLAR_DOOR_NAME,The Cellar Door,地窖的門
+ACH_CELLAR_DOOR_DESC,Live through the night in Frostbridge.,走完霜橋鎮的那一夜。

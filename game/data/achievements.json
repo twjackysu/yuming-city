@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "achievements": [
+    {"id": "ACH_NINTH_BELL", "hidden": false, "when": {"flag": "slice.bell_rings", "gte": 9}},
+    {"id": "ACH_NO_ONE_LEFT", "hidden": false, "when": {"flag": "slice.rescued_count", "gte": 3}},
+    {"id": "ACH_SEEN_THROUGH", "hidden": false, "when": {"flag": "stats.ashwalker_weak_kneels", "gte": 1}},
+    {"id": "ACH_THE_TRUTH", "hidden": true, "when": {"flag": "slice.told_truth_about_bell", "eq": true}},
+    {"id": "ACH_NINE_SECONDS", "hidden": true, "when": {"flag": "slice.frame_throw_outcome", "eq": "arch"}},
+    {"id": "ACH_BURNING_BLADE", "hidden": true, "when": {"flag": "slice.frame_throw_outcome", "eq": "kindling"}},
+    {"id": "ACH_SAFE_PASSAGE", "hidden": false, "when": {"all": [{"flag": "slice.convoy_through"}, {"flag": "slice.convoy_injured", "eq": 0}]}},
+    {"id": "ACH_CELLAR_DOOR", "hidden": false, "when": {"flag": "slice.complete"}}
+  ]
+}

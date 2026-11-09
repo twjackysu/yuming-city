@@ -89,6 +89,8 @@ func _rescue_sites(level: StoryLevel) -> Array[RescueSite]:
 
 func _playthrough(use_nine_breath: bool) -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
+	# 成就（D-147）：只在記憶體，走完再檢查兩條路線各自解鎖了哪些
+	s.attach_achievements(AchievementTracker.new(AchievementTracker.load_defs(), ""))
 	_game.set("session", s)
 	s.new_game()
 	_game.call("go_to_level", "frostbridge")
@@ -236,6 +238,26 @@ func _playthrough(use_nine_breath: bool) -> void:
 	await _step_into(_player(level), (level.get_node("CellarTrigger") as Node3D).global_position, 3)
 	assert_eq(s.state.get_flag("slice.cellar_entered"), true, "走進地窖")
 	assert_true(s.is_slice_complete(), "切片完成")
+
+	# 成就：中途重來了六次，該解鎖的照樣解鎖；另一條路線的沒有
+	var ach: AchievementTracker = s.achievements
+	var expected: Array[String] = ["ACH_NINTH_BELL", "ACH_NO_ONE_LEFT"]
+	if use_nine_breath:
+		expected.append_array(["ACH_THE_TRUTH", "ACH_NINE_SECONDS"])
+	else:
+		expected.append("ACH_BURNING_BLADE")
+	if int(s.state.get_flag("slice.convoy_injured", 0)) == 0:
+		expected.append("ACH_SAFE_PASSAGE")
+	expected.append("ACH_CELLAR_DOOR")
+	var got: Array[String] = []
+	for id: String in ach.unlocked_ids():
+		got.append(id)
+	var want: Array[String] = []
+	for id: String in ach.ids():
+		if expected.has(id):
+			want.append(id)
+	assert_eq(got, want, "成就（%s）" % ("石拱路線" if use_nine_breath else "燃燒劍路線"))
+	assert_false(ach.is_unlocked("ACH_SEEN_THROUGH"), "灰巡者是直接打倒的（沒打弱點）")
 
 
 func _cleanup() -> void:
