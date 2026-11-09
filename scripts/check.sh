@@ -27,8 +27,13 @@ fi
 echo "== import"
 # 乾淨 clone 第一次 import 時，翻譯 CSV 產生的 .translation 還不存在，編輯器載入專案設定會先報
 # 「Cannot open file *.translation」。所以第一次只負責產生匯入結果，第二次才檢查錯誤。
+# Godot 4.7.2 偶爾在第一次 import 重新匯入翻譯 CSV 時崩潰（signal 4／double free，第 47、53 輪的 CI 各一次，
+# 同樣內容重跑就過）：第一次失敗重試一次；第二次 import 照舊嚴格檢查錯誤
 "$GODOT" --headless --path game --import > "$LOG_DIR/import-first.log" 2>&1 || {
-  cat "$LOG_DIR/import-first.log"; echo "import 失敗" >&2; exit 1; }
+  echo "第一次 import 失敗（多半是引擎偶發崩潰），重試一次" >&2
+  "$GODOT" --headless --path game --import > "$LOG_DIR/import-first.log" 2>&1 || {
+    cat "$LOG_DIR/import-first.log"; echo "import 失敗" >&2; exit 1; }
+}
 "$GODOT" --headless --path game --import > "$LOG_DIR/import.log" 2>&1 || {
   cat "$LOG_DIR/import.log"; echo "import 失敗" >&2; exit 1; }
 if grep -E "^(ERROR|SCRIPT ERROR|USER ERROR)" "$LOG_DIR/import.log"; then
