@@ -21,7 +21,7 @@ SPK_KEEPER,Innkeeper,酒館老闆
 SPK_LEO_LETTER,Leo's letter,黎歐的信
 CH1_CARD_NUMBER,Chapter One,第一章
 CH1_CARD_TITLE,The Door Beyond the Guide,攻略之外的門
-CH1_TO_BE_CONTINUED,To be continued — the cellar and Daylight City are still being built.,待續——地窖與白晝城還在製作中。
+CH1_TO_BE_CONTINUED,To be continued — the 172 steps and Daylight City are still being built.,待續——一百七十二階與白晝城還在製作中。
 Q_CH1_MAIN_TITLE,The Door Beyond the Guide,攻略之外的門
 Q_CH1_OBJ_NOON,Find Sheila by the wounded,去傷者那邊找席菈
 Q_CH1_OBJ_DINNER,Night has fallen. Sit down to dinner with Sheila and Misha,入夜了，跟席菈、彌夏一起吃飯
@@ -60,3 +60,16 @@ GUIDE_MARK_HINT,Mark the parts you're not sure about.,把你不確定的地方�
 GUIDE_MARK_DONE,That's all,就這樣
 DLG_CH1_MAP_007_SOME,(You pick up the pen and circle a few places. Sheila looks at the map and says nothing.),（你拿起筆，圈了幾個地方。席菈看著那張地圖，什麼也沒說。）
 DLG_CH1_MAP_007_NONE,(You hold the pen over the paper for a long time. You don't circle anything.),（你拿著筆，在紙上停了很久。一個圈也沒畫。）
+Q_CH1_OBJ_DAY_NORTH,Walk through North Street by daylight,白天走一趟昨晚的北街
+Q_CH1_OBJ_ADA_LAMP,Ada is waiting at the pear seller's cellar,艾妲在梨販家的地窖門口等你
+Q_CH1_OBJ_STAIRS,Go down into the cellar,走下地窖
+DLG_CH1_NORTH_001,"It's clearer by daylight. Where the roofs fell in, the snow has already covered half the tiles.",白天看，比昨晚清楚。屋頂塌下去的地方，雪已經蓋住一半的瓦片。
+DLG_CH1_NORTH_002,Ada was here at first light. She wrote down the name from every house.,艾妲天一亮就來過了。每一戶的名字，她都抄下來了。
+DLG_CH1_NORTH_003,"In the guide, this street was just a cutscene.",在攻略裡，這條街只是一段過場動畫。
+DLG_CH1_NORTH_004,Then remember that it isn't. Come on. She's waiting at the cellar.,那就記住它不是。走吧，她在地窖等。
+DLG_CH1_ADA_001,"When you come back, I'm going to sue you.",你回來的時候，我要告你。
+DLG_CH1_ADA_001_FORGOT,"You forgot your own father. Don't you forget me. When you come back, I'm going to sue you.",你連你爸都忘了，別把我忘了。你回來的時候，我要告你。
+DLG_CH1_ADA_002,I know.,我知道。
+DLG_CH1_ADA_003,Don't die down there. The dead don't rebuild anyone's house.,別死在下面。死人不會替人重建房子。
+DLG_CH1_ADA_004,(Ada pushes a round brass oil lamp into your hands. It's still warm.),（艾妲把一盞圓肚的銅油燈塞進你手裡。燈還是熱的。）
+CH1_NEXT_MORNING,The next morning.,隔天早上。

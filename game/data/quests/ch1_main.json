@@ -7,27 +7,61 @@
       "objective": "Q_CH1_OBJ_NOON",
       "checkpoint": "ch1_tavern",
       "marker": "node:Sheila",
-      "done_when": {"flag": "ch1.noon_talked"}
+      "done_when": {
+        "flag": "ch1.noon_talked"
+      }
     },
     {
       "id": "dinner",
       "objective": "Q_CH1_OBJ_DINNER",
       "checkpoint": "ch1_dinner",
       "marker": "node:DinnerTable",
-      "done_when": {"flag": "ch1.dinner_done"}
+      "done_when": {
+        "flag": "ch1.dinner_done"
+      }
     },
     {
       "id": "draw_map",
       "objective": "Q_CH1_OBJ_MAP",
       "marker": "node:MapTable",
-      "done_when": {"flag": "ch1.map_drawn"}
+      "done_when": {
+        "flag": "ch1.map_drawn"
+      }
     },
     {
       "id": "to_cellar",
       "objective": "Q_CH1_OBJ_CELLAR",
       "checkpoint": "ch1_map_done",
       "marker": "node:TavernDoor",
-      "done_when": {"flag": "ch1.left_tavern"}
+      "done_when": {
+        "flag": "ch1.left_tavern"
+      }
+    },
+    {
+      "id": "day_north",
+      "objective": "Q_CH1_OBJ_DAY_NORTH",
+      "checkpoint": "ch1_day_town",
+      "marker": "node:NorthDaySpot",
+      "done_when": {
+        "flag": "ch1.saw_north_day"
+      }
+    },
+    {
+      "id": "ada_lamp",
+      "objective": "Q_CH1_OBJ_ADA_LAMP",
+      "marker": "node:Ada",
+      "done_when": {
+        "flag": "ch1.lamp_received"
+      }
+    },
+    {
+      "id": "stairs",
+      "objective": "Q_CH1_OBJ_STAIRS",
+      "checkpoint": "ch1_lamp",
+      "marker": "node:CellarTrigger",
+      "done_when": {
+        "flag": "ch1.stairs_bottom"
+      }
     }
   ]
 }

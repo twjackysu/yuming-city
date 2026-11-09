@@ -1,6 +1,6 @@
 extends StoryLevel
 ## 第 1 章段落 1～3：霜橋鎮酒館（白盒，D-149；美術在階段 2 後段，07-chapter1-door.md）。
-## 隔天中午傷者安置在這裡 → 入夜跟席菈、彌夏吃飯（左手灑湯）→ 把攻略畫成地圖 → 出門去地窖（段落 4 之後還沒做）。
+## 隔天中午傷者安置在這裡 → 入夜跟席菈、彌夏吃飯（左手灑湯）→ 把攻略畫成地圖 → 出門去地窖（換到白天的霜橋鎮，D-151）。
 ## 劇情觸發照霜橋鎮的席菈：依任務階段輪詢諾恩離「說話點」多近，到了就開對話；每個對話的每條路線最後都設那個階段的完成旗標。
 ##
 ## 房間：南北 10 m（z -5～5）、東西 14 m（x -7～7），門在南牆正中；諾恩從門口往北走進來。
@@ -27,6 +27,7 @@ const TABLE: Color = Color(0.36, 0.25, 0.16)
 const HEARTH: Color = Color(1.0, 0.62, 0.32)
 
 var _door_inside: bool = false
+var _leaving: bool = false
 var _hearth_light: OmniLight3D
 var _window_light: OmniLight3D
 var _window_mat: StandardMaterial3D
@@ -92,11 +93,20 @@ func _physics_process(_delta: float) -> void:
 	# 段落 3：席菈說「把你不確定的地方也標出來」之後打開標記畫面（D-150）
 	if stage == "draw_map" and marking and not has_node("GuideMarkView") and not Game.is_player_locked():
 		open_guide_marking()
-	# 出門：段落 4（白天的霜橋鎮、艾妲的油燈）還沒做——先顯示「待續」
+	# 出門 → 段落 4：白天的霜橋鎮（D-151）。旗標推進到 day_north（檢查點 ch1_day_town、自動存檔），再換關卡
 	var at_door: bool = _flat_dist(player.global_position, DOOR_POS) <= 1.2
-	if at_door and not _door_inside and stage == "to_cellar":
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+	if at_door and not _door_inside and stage == "to_cellar" and not Game.is_player_locked():
+		leave_tavern()
 	_door_inside = at_door
+
+
+## 走出酒館門（測試也用）：設 ch1.left_tavern，換到檢查點對應的關卡（白天的霜橋鎮）。
+func leave_tavern() -> void:
+	if _leaving:
+		return
+	_leaving = true
+	Game.session.set_flag("ch1.left_tavern", true)
+	Game.go_to_level.call_deferred(Game.level_for_checkpoint(Game.session.state.checkpoint))
 
 
 ## 標記畫面（測試也用）：已經開著就回傳那一個。

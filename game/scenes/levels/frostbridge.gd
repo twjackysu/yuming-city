@@ -36,6 +36,9 @@ const STEP_COUNT: int = 5
 const CHECKPOINT_SPAWNS: Dictionary = {
 	"rescue": Vector3(0.0, 0.05, -24.0),
 	"undertaker": Vector3(0.0, 0.05, 6.0),
+	# 第 1 章段落 4（D-151）：從廣場西邊的酒館出來；拿到油燈後在地窖門口
+	"ch1_day_town": Vector3(-8.6, 0.05, 2.0),
+	"ch1_lamp": Vector3(6.0, 0.05, -2.6),
 }
 ## `--at=` 開發用出生位置
 const DEV_SPAWNS: Dictionary = {
@@ -71,7 +74,13 @@ const WINDOW_ENERGY: float = 1.5
 
 func _ready() -> void:
 	_rng.seed = 19  # 固定種子：截圖前後可對照
-	FrostbridgeLook.build_environment(self)
+	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	# 截圖用：`--day` 照正式流程把切片與酒館走完，停在白天的霜橋鎮（`--day=ada|stairs` 再往後推）
+	if dev_args.has("day") and not is_day_chapter(Game.session):
+		var day_stage: String = str(dev_args["day"])
+		dev_start_day(Game.session, day_stage if day_stage in ["ada_lamp", "stairs"] else "day_north")
+	day = is_day_chapter(Game.session)
+	FrostbridgeLook.build_environment(self, day)
 	_build_ground()
 	_build_plaza()
 	_build_streets()
@@ -88,8 +97,9 @@ func _ready() -> void:
 	_build_story_triggers()
 	_build_cutscene_cameras()
 	_init_story()
+	if day:
+		_build_day()
 
-	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	# 截圖用：`--convoy` 先把任務推進到送葬者戰（在連接 stage_changed 之前，不會觸發席菈登場段落）
 	if dev_args.has("convoy") and StoryLevel.dev_advance_to_convoy(Game.session) and not _north_collapsed:
 		collapse_north_street(false)
@@ -105,7 +115,7 @@ func _ready() -> void:
 	# 席菈：「席菈」段落在主街北段等諾恩（救出三人後出現）；之後的檢查點一進場就在身邊
 	if stage == "meet_sheila":
 		_begin_sheila_meet()
-	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
+	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy") or day:
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
 	Game.session.stage_changed.connect(_on_stage_changed)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
@@ -322,6 +332,9 @@ func _begin_sheila_meet() -> void:
 func _physics_process(_delta: float) -> void:
 	if _dev_face != "":
 		_update_dev_face()
+	if day:
+		_update_day()
+		return
 	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	if stage == "aftermath":
 		_update_aftermath()
@@ -387,6 +400,9 @@ func _update_aftermath() -> void:
 
 
 func _on_cellar() -> void:
+	if day:
+		_on_day_cellar()
+		return
 	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "aftermath":
 		return
 	if not Game.session.state.get_flag("slice.ada_talked_aftermath", false):
@@ -407,6 +423,85 @@ func _build_cellar_hatch() -> void:
 	for i: int in 3:
 		_batch.add_box_at(Vector3(1.6, 0.04, 0.06), CELLAR_POS + Vector3(0, 0.1, -0.4 + i * 0.4), look.mat(FrostbridgeLook.ROOF), false)
 	_batch.add_box_at(Vector3(0.2, 0.06, 0.12), CELLAR_POS + Vector3(0.5, 0.12, 0.0), look.mat(Color(0.4, 0.36, 0.3), 0.4), false)
+
+
+# ---------------------------------------------------------------- 第 1 章段落 4：白天的霜橋鎮（D-151）
+
+const CH1_QUEST: String = "ch1_main"
+## 北街：諾恩走上台地（z 小於這個）就開「白天看昨晚的現場」的對話
+const NORTH_DAY_Z: float = -30.6
+const NORTH_DAY_SPOT: Vector3 = Vector3(0.0, RISE, -33.0)
+## 艾妲站在地窖門旁（地窖口的南邊，面向廣場）
+const ADA_POS: Vector3 = Vector3(6.6, 0.0, -2.9)
+
+## 第 1 章的白天版本（不生切片的敵人、車隊與觸發；路燈不點）
+var day: bool = false
+
+
+static func is_day_chapter(s: GameSession) -> bool:
+	return s.state.chapter == "ch1" and s.quests.stage_of(CH1_QUEST) in ["day_north", "ada_lamp", "stairs"]
+
+
+## 開發用：照正式流程把切片與酒館走完，推到第 1 章的 stage（day_north／ada_lamp／stairs）。
+static func dev_start_day(s: GameSession, stage: String) -> void:
+	var ach: AchievementTracker = s.achievements
+	s.achievements = null
+	if s.quests.stage_of(CH1_QUEST) in ["", "tavern_noon", "dinner", "draw_map"]:
+		load("res://scenes/levels/tavern.gd").call("dev_start_chapter", s, "to_cellar")
+	s.set_flag("ch1.left_tavern", true)
+	if stage in ["ada_lamp", "stairs"]:
+		s.set_flag("ch1.saw_north_day", true)
+	if stage == "stairs":
+		s.set_flag("ch1.lamp_received", true)
+	s.attach_achievements(ach)
+
+
+func _build_day() -> void:
+	# 路燈、攤子的燈都不點（只留諾恩的燈）；南街的石拱昨晚已經用過或塌了，白天不能重現
+	var player: Node = get_node_or_null("Player")
+	for n: Node in find_children("*", "OmniLight3D", true, false):
+		if player != null and player.is_ancestor_of(n):
+			continue
+		(n as OmniLight3D).visible = false
+	if arch_site != null:
+		arch_site.set_physics_process(false)
+	var spot := Marker3D.new()
+	spot.name = "NorthDaySpot"
+	spot.position = NORTH_DAY_SPOT + Vector3(0, 1.0, 0)
+	add_child(spot)
+	var ada := Puppet.new()
+	ada.name = "Ada"
+	ada.coat_color = Color(0.36, 0.2, 0.17)
+	ada.trim_color = Color(0.62, 0.55, 0.42)
+	ada.position = ADA_POS
+	ada.rotation_degrees.y = 200.0
+	add_child(ada)
+	var hammer: Node = ada.hand("R").get_node_or_null("BellHammer") if ada.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
+	# 從入夜的酒館走出來是隔天早上
+	if Game.session.quests.stage_of(CH1_QUEST) == "day_north":
+		_banner.call_deferred("CH1_NEXT_MORNING", 3.5)
+
+
+func _update_day() -> void:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player == null or Game.is_player_locked():
+		return
+	match Game.session.quests.stage_of(CH1_QUEST):
+		"day_north":
+			if player.global_position.z <= NORTH_DAY_Z:
+				Game.start_dialogue("ch1_north_day")
+		"ada_lamp":
+			var ada: Node3D = get_node_or_null("Ada") as Node3D
+			if ada != null and player.global_position.distance_to(ada.global_position) <= ADA_TALK_RANGE:
+				Game.start_dialogue("ch1_ada_lamp")
+
+
+## 拿著油燈走進地窖：段落 5（一百七十二階）還沒做——先顯示「待續」。
+func _on_day_cellar() -> void:
+	if Game.session.quests.stage_of(CH1_QUEST) == "stairs":
+		_banner("CH1_TO_BE_CONTINUED", 6.0)
 
 
 # ---------------------------------------------------------------- 送葬者戰

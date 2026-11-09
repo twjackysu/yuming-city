@@ -27,6 +27,9 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_tavern": "tavern",
 	"ch1_dinner": "tavern",
 	"ch1_map_done": "tavern",
+	# 段落 4：白天的霜橋鎮（D-151）；ch1_lamp 等一百七十二階做好後換成那個關卡
+	"ch1_day_town": "frostbridge",
+	"ch1_lamp": "frostbridge",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

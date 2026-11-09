@@ -335,6 +335,65 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	assert_eq(GuideNotes.status(s.state, "stair_arrows"), want_arrows, "[ch1_map_done] 攻略筆記與標記保留")
 	assert_false(tavern.has_node("GuideMarkView"), "[ch1_map_done] 不會再開標記畫面")
 	assert_eq(s.state.get_flag("ch1.sheila_soup_helped"), help_with_soup, "[ch1_map_done] 灑湯的選擇保留")
+	# --- 段落 4（D-151）：出門 → 白天的霜橋鎮 → 北街 → 艾妲的油燈 → 地窖（待續）
+	await _chapter1_day(tavern, help_with_soup)
+
+
+## 段落 4：石拱路線（paid_arch）付了父親那段記憶，艾妲的第一句不同。
+func _chapter1_day(tavern: StoryLevel, paid_arch: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var door: Node3D = tavern.get_node("TavernDoor") as Node3D
+	await _step_into(_player(tavern), door.global_position, 2)
+	assert_eq(s.state.get_flag("ch1.left_tavern"), true, "走到酒館門口 → 出門")
+	assert_eq(s.state.checkpoint, "ch1_day_town", "出門 → 白天的檢查點")
+	var town: StoryLevel = await _wait_scene()
+	assert_eq(str(town.name), "Frostbridge", "出門 → 霜橋鎮")
+	_assert_day_town(town, "[ch1_day_town]")
+	assert_eq(_objective(town), "Q_CH1_OBJ_DAY_NORTH", "[ch1_day_town] HUD 目標")
+	town = await _retry()
+	assert_eq(s.quests.stage_of("ch1_main"), "day_north", "[ch1_day_town] 重來階段恢復")
+	_assert_day_town(town, "[ch1_day_town] 重來")
+	await _step_into(_player(town), Vector3(0.0, 0.0, -32.0), 3)
+	assert_true(_game.call("is_in_dialogue"), "走上北街 → 白天看昨晚的現場")
+	await _run_dialogue(town, 0)
+	assert_eq(s.state.get_flag("ch1.saw_north_day"), true, "北街的對話講完")
+	assert_eq(s.quests.stage_of("ch1_main"), "ada_lamp")
+	var ada: Node3D = town.get_node("Ada") as Node3D
+	await _step_into(_player(town), ada.global_position + Vector3(0.0, 0.0, 1.6), 3)
+	assert_true(_game.call("is_in_dialogue"), "走到地窖門口 → 艾妲")
+	var first: String = (_game.get("dialogue") as DialogueRunner).current_text()
+	assert_eq(first, "DLG_CH1_ADA_001_FORGOT" if paid_arch else "DLG_CH1_ADA_001", "付了石拱記憶 → 「你連你爸都忘了」")
+	assert_false(_player(town).has_oil_lamp(), "還拿著提燈")
+	await _run_dialogue(town, 0)
+	assert_eq(s.state.get_flag("ch1.lamp_received"), true, "拿到油燈")
+	assert_true(_player(town).has_oil_lamp(), "油燈取代提燈")
+	assert_eq(s.quests.stage_of("ch1_main"), "stairs")
+	assert_eq(s.state.checkpoint, "ch1_lamp")
+	town = await _retry()
+	assert_eq(s.quests.stage_of("ch1_main"), "stairs", "[ch1_lamp] 階段恢復")
+	_assert_day_town(town, "[ch1_lamp]")
+	assert_true(_player(town).has_oil_lamp(), "[ch1_lamp] 重來還拿著油燈")
+	assert_eq(_objective(town), "Q_CH1_OBJ_STAIRS", "[ch1_lamp] HUD 目標")
+	await _step_into(_player(town), (town.get_node("CellarTrigger") as Node3D).global_position, 3)
+	assert_eq((town.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "走進地窖 → 待續（一百七十二階還沒做）")
+
+
+## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
+func _assert_day_town(town: StoryLevel, tag: String) -> void:
+	assert_true(bool(town.get("day")), tag + " 白天版本")
+	assert_true(town.has_node("Sun") and not town.has_node("Moon"), tag + " 陰天的太陽、沒有月光")
+	for n: String in ["Undertaker", "Ashwalker", "Caravan", "ConvoyEncounter"]:
+		assert_false(town.has_node(n), tag + " 沒有 " + n)
+	assert_true(town.has_node("Sheila"), tag + " 席菈跟著")
+	assert_true(town.has_node("Ada"), tag + " 艾妲在地窖門口")
+	var player: Node = town.get_node("Player")
+	var lit: int = 0
+	for l: Node in town.find_children("*", "OmniLight3D", true, false):
+		if (l as OmniLight3D).visible and not player.is_ancestor_of(l) and not town.get_node("Sheila").is_ancestor_of(l):
+			lit += 1
+	assert_eq(lit, 0, tag + " 路燈與攤子的燈不點")
+	for site: RescueSite in _rescue_sites(town):
+		assert_false(site.is_available(), tag + " 受困者不能再救")
 
 
 func _cleanup() -> void:

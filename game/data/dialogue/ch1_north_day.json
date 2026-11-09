@@ -1,0 +1,30 @@
+{
+  "id": "ch1_north_day",
+  "start": "n1",
+  "nodes": {
+    "n1": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_NORTH_001",
+      "next": "n2"
+    },
+    "n2": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_NORTH_002",
+      "next": "n3"
+    },
+    "n3": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_NORTH_003",
+      "next": "n4"
+    },
+    "n4": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_NORTH_004",
+      "do": {
+        "set": {
+          "ch1.saw_north_day": true
+        }
+      }
+    }
+  }
+}

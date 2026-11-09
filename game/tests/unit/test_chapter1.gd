@@ -165,3 +165,39 @@ func test_guide_mark_view_toggles_and_confirms() -> void:
 	assert_false(tree.paused, "釋放時解除暫停")
 	host.queue_free()
 	await tree.process_frame
+
+
+## 段落 4（D-151）：只有第 1 章的白天階段才是白天的霜橋鎮；開發旗標照正式流程推進；油燈的對話與翻譯。
+func test_day_town_stages_and_dialogue() -> void:
+	var Frost: GDScript = load("res://scenes/levels/frostbridge.gd") as GDScript
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	s.new_game()
+	assert_false(bool(Frost.call("is_day_chapter", s)), "切片：冬夜")
+	_play_slice(s)
+	s.set_flag("slice.cellar_entered", true)
+	assert_false(bool(Frost.call("is_day_chapter", s)), "酒館的階段：不是白天的霜橋鎮")
+	Frost.call("dev_start_day", s, "day_north")
+	assert_eq(s.quests.stage_of("ch1_main"), "day_north")
+	assert_eq(s.state.checkpoint, "ch1_day_town")
+	assert_eq(Game.level_for_checkpoint("ch1_day_town"), "frostbridge", "出門 → 霜橋鎮")
+	assert_true(bool(Frost.call("is_day_chapter", s)), "出了酒館：白天")
+	assert_eq(s.objective_key(), "Q_CH1_OBJ_DAY_NORTH")
+	Frost.call("dev_start_day", s, "stairs")
+	assert_eq(s.quests.stage_of("ch1_main"), "stairs")
+	assert_eq(s.state.checkpoint, "ch1_lamp")
+	assert_true(bool(Frost.call("is_day_chapter", s)), "拿到油燈：還在白天的霜橋鎮（一百七十二階還沒做）")
+	# 對話：付了石拱記憶 → 艾妲的第一句換成「你連你爸都忘了」
+	for paid: bool in [false, true]:
+		var st := GameState.new()
+		if paid:
+			st.memories_paid.append("arch_father_last_talk")
+		var r := DialogueRunner.new(Game.dialogues, st)
+		assert_true(r.start("ch1_ada_lamp"))
+		assert_eq(r.current_text(), "DLG_CH1_ADA_001_FORGOT" if paid else "DLG_CH1_ADA_001")
+	assert_true(Game.dialogues.has_dialogue("ch1_north_day"), "有北街的對話")
+	for loc: String in ["en", "zh_TW"]:
+		TranslationServer.set_locale(loc)
+		for key: String in ["DLG_CH1_ADA_001_FORGOT", "DLG_CH1_ADA_004", "DLG_CH1_NORTH_003", "Q_CH1_OBJ_DAY_NORTH",
+				"Q_CH1_OBJ_ADA_LAMP", "Q_CH1_OBJ_STAIRS", "CH1_NEXT_MORNING"]:
+			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
+	TranslationServer.set_locale("en")

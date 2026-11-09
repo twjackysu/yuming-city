@@ -1,0 +1,38 @@
+{
+  "id": "ch1_ada_lamp",
+  "start": "a1",
+  "nodes": {
+    "a1": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_CH1_ADA_001",
+      "text_if": [
+        {
+          "if": {
+            "memory_paid": "arch_father_last_talk"
+          },
+          "text": "DLG_CH1_ADA_001_FORGOT"
+        }
+      ],
+      "next": "a2"
+    },
+    "a2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_ADA_002",
+      "next": "a3"
+    },
+    "a3": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_CH1_ADA_003",
+      "next": "a4"
+    },
+    "a4": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_CH1_ADA_004",
+      "do": {
+        "set": {
+          "ch1.lamp_received": true
+        }
+      }
+    }
+  }
+}
