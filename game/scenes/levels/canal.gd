@@ -92,6 +92,8 @@ const HEART_REACH: float = 0.9
 const BED_LIMIT_X: float = 2.2
 ## 鏈子鬆開、掉到河床上要多久
 const DROP_SEC: float = 0.6
+## 諾恩重現時的心跳（每 NOEN_RACE_SEC 秒一聲，比假心臟快）：只在牠醒著、會聽到的時候響——讓玩家聽得出「我的心跳變快了」。
+const NOEN_RACE_SEC: float = 0.48
 ## 走到這裡（z 小於等於）＝進了閘道
 const SLUICE_REACH_Z: float = SLUICE_Z + 2.5
 ## 檢查點 ch3_lured 重來時送葬者站的位置
@@ -156,6 +158,9 @@ var _spots: Array[DecoySpot] = []
 var force_restoring: bool = false
 ## 測試用：送葬者走路的速度倍數（流程測試不用真的等十幾秒）
 var walk_scale: float = 1.0
+## 假心臟上一次「咚」是第幾拍；諾恩重現時自己的心跳聲（變快）下一次在什麼時候
+var _heart_beat_i: int = -1
+var _noen_beat_at: float = 0.0
 
 
 func _ready() -> void:
@@ -842,8 +847,18 @@ func _check_lured() -> void:
 
 
 func _update_heart() -> void:
+	if awake and noen_restoring():
+		if _t >= _noen_beat_at:
+			_noen_beat_at = _t + NOEN_RACE_SEC
+			Sfx.play_flat(self, "heartbeat", -7.0)
 	if _heart == null or not _heart.visible:
+		_heart_beat_i = -1
 		return
+	# 假心臟自己的「咚—咚」（每分鐘 RhythmTrial.TARGET_BPM 下，從河床上傳來，近的時候才聽得清楚）
+	var k: int = int(floor(_t * RhythmTrial.TARGET_BPM / 60.0))
+	if k != _heart_beat_i:
+		_heart_beat_i = k
+		Sfx.play_at(self, "heartbeat", _heart.global_position + Vector3(0, 0.15, 0), -3.0, 0.02, 3.0)
 	var hb: float = heartbeat(_t, RhythmTrial.TARGET_BPM)
 	_heart_light.light_energy = 0.5 + 3.5 * hb
 	_heart_mat.emission_energy_multiplier = 1.0 + 6.0 * hb
