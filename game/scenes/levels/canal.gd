@@ -975,8 +975,12 @@ func _build_drain() -> void:
 	for side: float in [-1.0, 1.0]:
 		_solid("DrainCurb%d" % int(side), Vector3(DRAIN_W + 0.32, 0.18, 0.16), Vector3(0.0, 0.09, side * (DRAIN_LEN * 0.5 + 0.08)), curb, false, drain)
 		_solid("DrainSide%d" % int(side), Vector3(0.16, 0.12, DRAIN_LEN), Vector3(side * (DRAIN_W * 0.5 + 0.08), 0.06, 0.0), curb, false, drain)
-	var mud: StandardMaterial3D = _mat(Color(0.07, 0.06, 0.055), 0.35)
-	mud.metallic_specular = 0.6
+	# 溝底的爛泥：河床同一個 shader、整片是濕的（暗、亮）
+	var mud := ShaderMaterial.new()
+	mud.shader = load(DRY_MUD_SHADER) as Shader
+	mud.set_shader_parameter("mud_color", Color(0.17, 0.14, 0.12))
+	mud.set_shader_parameter("wet_x", DRAIN_POS.x)
+	mud.set_shader_parameter("wet_half", 9.0)
 	_solid("DrainMud", Vector3(DRAIN_W, 0.02, DRAIN_LEN), Vector3(0.0, 0.012, 0.0), mud, false, drain)
 	_plate = Node3D.new()
 	_plate.name = "CopperPlate"

@@ -1433,6 +1433,8 @@ func _assert_canal_art(canal: StoryLevel, tag: String) -> void:
 	var bed: MeshInstance3D = canal.get_node("CanalBed") as MeshInstance3D
 	assert_eq(((bed.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/dry_mud.gdshader", tag + " 河床是龜裂的乾泥")
 	assert_true(canal.has_node("MudPatch/Main"), tag + " 東岸摔下來的地方有一片泥")
+	var drain_mud: MeshInstance3D = canal.get_node("Drain/DrainMud") as MeshInstance3D
+	assert_eq(((drain_mud.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/dry_mud.gdshader", tag + " 水溝底的爛泥跟河床同一種")
 	for n: String in ["SluiceBeam", "HangBeam", "CoalCart/CartBody", "CartDeck", "SluicePier1"]:
 		var mi: MeshInstance3D = canal.get_node(n) as MeshInstance3D
 		assert_true(mi.material_override is ShaderMaterial, tag + " " + n + " 換上了美術材質")
