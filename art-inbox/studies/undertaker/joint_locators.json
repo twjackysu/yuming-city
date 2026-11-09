@@ -1,0 +1,100 @@
+{
+  "locators": [
+    {
+      "name": "FrameJoint_L0",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        0.4000002145767212,
+        -0.6200001239776611,
+        -0.05750015377998352
+      ],
+      "bind_mesh_center": [
+        -0.40000009536743164,
+        1.180499792098999,
+        0.47750020027160645
+      ],
+      "mesh_vertices": 288
+    },
+    {
+      "name": "FrameJoint_L1",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        0.4000002145767212,
+        0.020000241696834564,
+        -0.05750003457069397
+      ],
+      "bind_mesh_center": [
+        -0.40000009536743164,
+        1.8205000162124634,
+        0.47750020027160645
+      ],
+      "mesh_vertices": 292
+    },
+    {
+      "name": "FrameJoint_L2",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        0.4000002145767212,
+        0.7500001192092896,
+        -0.05749994516372681
+      ],
+      "bind_mesh_center": [
+        -0.40000009536743164,
+        2.55049991607666,
+        0.47750023007392883
+      ],
+      "mesh_vertices": 292
+    },
+    {
+      "name": "FrameJoint_R0",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        -0.4000001549720764,
+        -0.6200001239776611,
+        -0.05750018358230591
+      ],
+      "bind_mesh_center": [
+        0.4000001549720764,
+        1.180499792098999,
+        0.4775001108646393
+      ],
+      "mesh_vertices": 288
+    },
+    {
+      "name": "FrameJoint_R1",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        -0.4000001549720764,
+        0.020000243559479713,
+        -0.057500094175338745
+      ],
+      "bind_mesh_center": [
+        0.4000001549720764,
+        1.8205000162124634,
+        0.47750014066696167
+      ],
+      "mesh_vertices": 292
+    },
+    {
+      "name": "FrameJoint_R2",
+      "parent_bone": "frame_root",
+      "bone_local_position": [
+        -0.4000001549720764,
+        0.7500001192092896,
+        -0.057499974966049194
+      ],
+      "bind_mesh_center": [
+        0.4000001549720764,
+        2.55049991607666,
+        0.47750014066696167
+      ],
+      "mesh_vertices": 292
+    }
+  ],
+  "skinning_joints": 71,
+  "binary_payload_unchanged": true,
+  "input_sha256": "b964ebfe2f31029743464c50604785232cae0f67cfa514f75c1ad7b98891491e",
+  "output_sha256": "b9848df2c4e69ea7b236c287fee02aca7e987a947ccee58f066379f703e607c5",
+  "binary_sha256": "658a942ddfc7cf9b28d36d8e3c0cc6ef7ad8828a1ffdc63cfd35f1ac509be1e9",
+  "status": "work_in_progress_not_final_art"
+}

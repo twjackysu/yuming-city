@@ -1,0 +1,13 @@
+{
+  "triangles": 39866,
+  "hair_normal_source": "MakeHuman short02_normal.png (CC0)",
+  "hair_normal_strength": 0.65,
+  "hair_specular_ior_level": 0.06,
+  "hair_roughness": 0.88,
+  "neck_blend_world_z": [
+    1.485,
+    1.52
+  ],
+  "skin_source_uv_verified_identical_topology": true,
+  "status": "work_in_progress_not_final_art"
+}

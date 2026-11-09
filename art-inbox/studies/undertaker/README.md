@@ -13,3 +13,5 @@
 腳本與重現方式見 [製作紀錄](../../../docs/art-trials/undertaker-rigging/README.md)。
 
 追加 frame_material_preview.png 顯示鐵架磨邊與鏽蝕；night_preview.png 使用遊戲共用的霜橋鎮夜景、體積霧及濕石板材質，加入暖燈測試。這些檢查仍未使本模型通過正式美術驗收。
+
+新增六個隨 frame_root 移動的定位節點 FrameJoint_L0/L1/L2、FrameJoint_R0/R1/R2（由下往上，自身左右）。joint_locators.json 記錄位置；Godot 59 幀／354 次定位檢查通過。joint_locator_preview.png 紅點是另加的檢視標記，實際 GLB 只有定位 Node3D，未加入碰撞體或擅自替換遊戲角色。骨骼、三材質、九張貼圖及原動畫二進位資料不變。

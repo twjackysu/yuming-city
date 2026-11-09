@@ -1,0 +1,220 @@
+{
+  "frames": 35,
+  "hand_vertices": 2351,
+  "maximum_band_surface_gap_m": 0.0015002128202468157,
+  "minimum_hand_front_panel_distance_m": 0.08496920764446259,
+  "minimum_lateral_clearance_m": 0.045806676149368286,
+  "samples": [
+    {
+      "frame": 2,
+      "maximum_band_surface_gap_m": 0.0015000759158283472,
+      "minimum_hand_front_panel_distance_m": 0.13092103600502014,
+      "left_hand_lateral_clearance_m": 0.07223741710186005
+    },
+    {
+      "frame": 3,
+      "maximum_band_surface_gap_m": 0.001500081503763795,
+      "minimum_hand_front_panel_distance_m": 0.11929448693990707,
+      "left_hand_lateral_clearance_m": 0.0701158344745636
+    },
+    {
+      "frame": 4,
+      "maximum_band_surface_gap_m": 0.0015000152634456754,
+      "minimum_hand_front_panel_distance_m": 0.10938873887062073,
+      "left_hand_lateral_clearance_m": 0.06706087291240692
+    },
+    {
+      "frame": 5,
+      "maximum_band_surface_gap_m": 0.0015000746352598071,
+      "minimum_hand_front_panel_distance_m": 0.10204294323921204,
+      "left_hand_lateral_clearance_m": 0.06363297998905182
+    },
+    {
+      "frame": 6,
+      "maximum_band_surface_gap_m": 0.0015001209685578942,
+      "minimum_hand_front_panel_distance_m": 0.09288222342729568,
+      "left_hand_lateral_clearance_m": 0.0518544465303421
+    },
+    {
+      "frame": 7,
+      "maximum_band_surface_gap_m": 0.0015000991988927126,
+      "minimum_hand_front_panel_distance_m": 0.08825012296438217,
+      "left_hand_lateral_clearance_m": 0.049495041370391846
+    },
+    {
+      "frame": 8,
+      "maximum_band_surface_gap_m": 0.001500015496276319,
+      "minimum_hand_front_panel_distance_m": 0.08588268607854843,
+      "left_hand_lateral_clearance_m": 0.04723381996154785
+    },
+    {
+      "frame": 9,
+      "maximum_band_surface_gap_m": 0.0015000366838648915,
+      "minimum_hand_front_panel_distance_m": 0.0862908586859703,
+      "left_hand_lateral_clearance_m": 0.046493321657180786
+    },
+    {
+      "frame": 10,
+      "maximum_band_surface_gap_m": 0.001500129932537675,
+      "minimum_hand_front_panel_distance_m": 0.08633187413215637,
+      "left_hand_lateral_clearance_m": 0.04634043574333191
+    },
+    {
+      "frame": 11,
+      "maximum_band_surface_gap_m": 0.0015000918647274375,
+      "minimum_hand_front_panel_distance_m": 0.08496920764446259,
+      "left_hand_lateral_clearance_m": 0.045806676149368286
+    },
+    {
+      "frame": 12,
+      "maximum_band_surface_gap_m": 0.0015001047868281603,
+      "minimum_hand_front_panel_distance_m": 0.08603145182132721,
+      "left_hand_lateral_clearance_m": 0.04779483377933502
+    },
+    {
+      "frame": 13,
+      "maximum_band_surface_gap_m": 0.001500102924183011,
+      "minimum_hand_front_panel_distance_m": 0.08841435611248016,
+      "left_hand_lateral_clearance_m": 0.050322383642196655
+    },
+    {
+      "frame": 14,
+      "maximum_band_surface_gap_m": 0.0015000399434939027,
+      "minimum_hand_front_panel_distance_m": 0.09235398471355438,
+      "left_hand_lateral_clearance_m": 0.05473664402961731
+    },
+    {
+      "frame": 15,
+      "maximum_band_surface_gap_m": 0.001500059850513935,
+      "minimum_hand_front_panel_distance_m": 0.09379119426012039,
+      "left_hand_lateral_clearance_m": 0.0570736825466156
+    },
+    {
+      "frame": 16,
+      "maximum_band_surface_gap_m": 0.0015000980347394943,
+      "minimum_hand_front_panel_distance_m": 0.09928669035434723,
+      "left_hand_lateral_clearance_m": 0.06108441948890686
+    },
+    {
+      "frame": 17,
+      "maximum_band_surface_gap_m": 0.0015000604325905442,
+      "minimum_hand_front_panel_distance_m": 0.10416898876428604,
+      "left_hand_lateral_clearance_m": 0.06192290782928467
+    },
+    {
+      "frame": 18,
+      "maximum_band_surface_gap_m": 0.0015000917483121157,
+      "minimum_hand_front_panel_distance_m": 0.110162153840065,
+      "left_hand_lateral_clearance_m": 0.06904579699039459
+    },
+    {
+      "frame": 19,
+      "maximum_band_surface_gap_m": 0.0015000954736024141,
+      "minimum_hand_front_panel_distance_m": 0.11749842762947083,
+      "left_hand_lateral_clearance_m": 0.07136105000972748
+    },
+    {
+      "frame": 20,
+      "maximum_band_surface_gap_m": 0.0015001294668763876,
+      "minimum_hand_front_panel_distance_m": 0.12485390901565552,
+      "left_hand_lateral_clearance_m": 0.07426430284976959
+    },
+    {
+      "frame": 21,
+      "maximum_band_surface_gap_m": 0.0015000078128650784,
+      "minimum_hand_front_panel_distance_m": 0.13515882194042206,
+      "left_hand_lateral_clearance_m": 0.07871703803539276
+    },
+    {
+      "frame": 22,
+      "maximum_band_surface_gap_m": 0.0015000945422798395,
+      "minimum_hand_front_panel_distance_m": 0.14468608796596527,
+      "left_hand_lateral_clearance_m": 0.083666130900383
+    },
+    {
+      "frame": 23,
+      "maximum_band_surface_gap_m": 0.0015000710263848305,
+      "minimum_hand_front_panel_distance_m": 0.15361730754375458,
+      "left_hand_lateral_clearance_m": 0.08770351111888885
+    },
+    {
+      "frame": 24,
+      "maximum_band_surface_gap_m": 0.0015002128202468157,
+      "minimum_hand_front_panel_distance_m": 0.1627579927444458,
+      "left_hand_lateral_clearance_m": 0.09125356376171112
+    },
+    {
+      "frame": 25,
+      "maximum_band_surface_gap_m": 0.001500125858001411,
+      "minimum_hand_front_panel_distance_m": 0.16885121166706085,
+      "left_hand_lateral_clearance_m": 0.09338219463825226
+    },
+    {
+      "frame": 26,
+      "maximum_band_surface_gap_m": 0.0015000064158812165,
+      "minimum_hand_front_panel_distance_m": 0.1744803488254547,
+      "left_hand_lateral_clearance_m": 0.09456928074359894
+    },
+    {
+      "frame": 27,
+      "maximum_band_surface_gap_m": 0.001500032958574593,
+      "minimum_hand_front_panel_distance_m": 0.1795087456703186,
+      "left_hand_lateral_clearance_m": 0.0959605723619461
+    },
+    {
+      "frame": 28,
+      "maximum_band_surface_gap_m": 0.0015000923303887248,
+      "minimum_hand_front_panel_distance_m": 0.18235968053340912,
+      "left_hand_lateral_clearance_m": 0.09446960687637329
+    },
+    {
+      "frame": 29,
+      "maximum_band_surface_gap_m": 0.0015000946586951613,
+      "minimum_hand_front_panel_distance_m": 0.18182243406772614,
+      "left_hand_lateral_clearance_m": 0.09189970791339874
+    },
+    {
+      "frame": 30,
+      "maximum_band_surface_gap_m": 0.001500099664554,
+      "minimum_hand_front_panel_distance_m": 0.17956911027431488,
+      "left_hand_lateral_clearance_m": 0.08818621933460236
+    },
+    {
+      "frame": 31,
+      "maximum_band_surface_gap_m": 0.0015000589191913605,
+      "minimum_hand_front_panel_distance_m": 0.17554126679897308,
+      "left_hand_lateral_clearance_m": 0.08241520822048187
+    },
+    {
+      "frame": 32,
+      "maximum_band_surface_gap_m": 0.0015000603161752224,
+      "minimum_hand_front_panel_distance_m": 0.1680181622505188,
+      "left_hand_lateral_clearance_m": 0.0846194475889206
+    },
+    {
+      "frame": 33,
+      "maximum_band_surface_gap_m": 0.0015001067658886313,
+      "minimum_hand_front_panel_distance_m": 0.15900906920433044,
+      "left_hand_lateral_clearance_m": 0.08647583425045013
+    },
+    {
+      "frame": 34,
+      "maximum_band_surface_gap_m": 0.0015000631101429462,
+      "minimum_hand_front_panel_distance_m": 0.14834296703338623,
+      "left_hand_lateral_clearance_m": 0.08436614274978638
+    },
+    {
+      "frame": 35,
+      "maximum_band_surface_gap_m": 0.0015001003630459309,
+      "minimum_hand_front_panel_distance_m": 0.14159707725048065,
+      "left_hand_lateral_clearance_m": 0.08460745215415955
+    },
+    {
+      "frame": 36,
+      "maximum_band_surface_gap_m": 0.0015000866260379553,
+      "minimum_hand_front_panel_distance_m": 0.13092100620269775,
+      "left_hand_lateral_clearance_m": 0.07223734259605408
+    }
+  ],
+  "passed": true
+}

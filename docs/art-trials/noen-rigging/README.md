@@ -69,3 +69,15 @@ V2 修正：烘焙前清除低面數靴子的舊自訂法線，減少配合小�
 右手不再使用一般步行擺臂：兩骨姿勢解算讓前臂護在腹前，手指微彎。冬衣袖口 144 頂點從手／指骨重配給前臂，避免轉腕拉扯；夾板及綁帶仍固定於 RightForeArm。檢查記錄涵蓋 FBX 無模型／30 fps／原地／循環、35 幀夾板邊長與肩腕距離，以及 glTF 夾板的單一骨權重。不是所有動作的碰撞或美術驗收。
 
 新的 Godot 檢視在 godot_review_guarded；放入輸出的 noen_walk_preview.glb，先 import，再執行 check_ground.gd。這版接地檢查覆蓋全部 35 幀，另有實際引擎影片。night_review.tscn 可重用遊戲共用夜空／月光／霧／濕石板；先執行 prepare_lighting_review.py（需要時設定 YUMING_REPO 為專案根目錄），再 import。這是材質光照檢視，尚未把候選角色換進正式關卡。
+
+## 開發端第四點回饋：表面與接觸修整（2026-11-09）
+
+沿用骨折保護步態工作版本，新增 `refine_noen_surfaces.py` → `fit_noen_linen_bands.py` → `retarget_contact_safe_walk.py` → `export_walk_rest_bind.py` → `check_noen_guarded_fbx.py` → `review_walk_export.py` → `check_noen_guarded_pose.py` → `check_noen_contact_walk.py`。各動畫／接觸腳本使用 YUMING_NOEN_WORK，請指向新的工作目錄，避免覆蓋輸入版本。
+
+表面修整額外需要 YUMING_NOEN_SOURCE_BLEND（先前骨折步態的靜態 .blend）、YUMING_NOEN_SKIN_DRIVER（先前 tailored_projected.blend，保有原始皮膚 UV）；兩者身體拓撲與座標逐點比對後才複製 UV。輸出仍是 tailored_noen.blend 與 tailored_candidate.glb。皮膚與頭髮法線取既有 MPFB 使用者素材，不下載任何新資產。這一步只做一次；之後再執行會重設後續的綁帶修整。
+
+綁帶以 Blender 的實際 loop triangle 射線求袖面／夾板最外層輪廓，再留 1.5mm；接觸三角形袖面頂點與綁帶同綁 RightForeArm，避免動起來再分離。先前使用任意圓柱形綁帶，頂點與袖面最大相差約 28.4mm。原四邊面 BVH 與 GLB 三角化的對角線可能不同，必須按 loop triangle 計算。
+
+左手與大衣的檢查限定於原始身體座標 abs(x)<0.24m、z<1.1m 的前襟／裙襬面片；不把本來就應重疊的手腕／袖口算成穿衣。35 幀測得綁帶最大表面距離 1.5003mm 以下，左手與前襟最短距離 84.9mm 以上、保守側向間距 45.8mm 以上。這不是全角色任意動作的碰撞保證。
+
+頭髮保留原型與 UV，補回 short02_normal.png（CC0），不採用未達品質的 AI 髮片實驗。皮膚只以原始膚色平滑修正頸部；32 張嵌入 PNG 逐一驗證最大 2048。仍有 11 個材質，尚未達正式版 2～3 個材質的要求。

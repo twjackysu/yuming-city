@@ -1,0 +1,7 @@
+{
+  "band_vertices": 192,
+  "locked_sleeve_vertices": 87,
+  "radial_clearance_m": 0.0015,
+  "surface_radius_min_m": 0.028644364327192307,
+  "surface_radius_max_m": 0.05881530046463013
+}

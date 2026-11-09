@@ -5,6 +5,5 @@
   "shoulder_to_wrist_vertical_drop_min_m": 0.27989983558654785,
   "shoulder_to_wrist_vertical_drop_max_m": 0.2800312042236328,
   "loop_max_matrix_error": 6.034970283508301e-07,
-  "passed": true,
-  "glb_splint_single_joint": "mixamorig:RightForeArm"
+  "passed": true
 }

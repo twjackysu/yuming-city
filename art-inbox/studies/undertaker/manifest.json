@@ -28,8 +28,8 @@
     },
     {
       "file": "undertaker_walk_candidate.glb",
-      "bytes": 21969616,
-      "sha256": "b964ebfe2f31029743464c50604785232cae0f67cfa514f75c1ad7b98891491e"
+      "bytes": 21970936,
+      "sha256": "b9848df2c4e69ea7b236c287fee02aca7e987a947ccee58f066379f703e607c5"
     },
     {
       "file": "walk_candidate.fbx",
@@ -45,6 +45,19 @@
       "file": "weakpoint_preview.png",
       "bytes": 696586,
       "sha256": "983656decf4e65c4df108801b7c4c25cbfcb54437af4d2031ce3c752f5b76bb2"
+    },
+    {
+      "file": "joint_locator_preview.png",
+      "bytes": 697057,
+      "sha256": "fe950be9bc893f5685d67a64113660c48b3bc282e4fa3936fedcf4189e4d97fe"
     }
+  ],
+  "joint_locators": [
+    "FrameJoint_L0",
+    "FrameJoint_L1",
+    "FrameJoint_L2",
+    "FrameJoint_R0",
+    "FrameJoint_R1",
+    "FrameJoint_R2"
   ]
 }

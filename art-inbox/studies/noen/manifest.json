@@ -3,37 +3,49 @@
   "triangles": 39866,
   "bones": 60,
   "materials": 11,
-  "textures": 30,
+  "textures": 32,
   "files": [
     {
       "file": "night_preview.png",
-      "bytes": 432201,
-      "sha256": "8674bab40d2a8f22f6de2d2936c595246dcb54a80dee5fcb774b2c9d95a3a431"
+      "bytes": 439906,
+      "sha256": "3cf3549f91851071ebcd72dc25e65675b5c0e03fad1a9b971c1453ee40649f55"
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 36797952,
-      "sha256": "bfa6075d6b24e7aae5832c574e5bdedea44f940426dc61406e4c5f270b6b6a31"
+      "bytes": 38454012,
+      "sha256": "214616e70f2687dc63c21c046e72b113f7d0caa887780fe314cc065dd99bff28"
+    },
+    {
+      "file": "portrait_front.png",
+      "bytes": 1526831,
+      "sha256": "34d7dd047e7dc43654bc28526b0b582be7c4ebda33198be988ce927d2b06b339"
+    },
+    {
+      "file": "portrait_threequarter.png",
+      "bytes": 1526069,
+      "sha256": "190bc0e37c61909d34813f3407c324e93bde93daac08fc5f9832a79d4f55d7ba"
     },
     {
       "file": "preview.png",
-      "bytes": 727333,
-      "sha256": "0032dc6e73728934670a55932a57369c81138a49bed9ac031c46b57c01ed3ef2"
+      "bytes": 739139,
+      "sha256": "737e7c0316adc41458d601424b78ee6356c306b708d90f193ae356ccbcf183d9"
     },
     {
       "file": "walk_candidate.fbx",
-      "bytes": 516460,
-      "sha256": "8f08fd9415d552fe193f634c653a3b3e3923ed21503e01c001d16b78458697d8"
+      "bytes": 516012,
+      "sha256": "5ca6aad61d67b1a1c1e673d2e3dcae9b91c503a3e24af374dff43dc9419b95e8"
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 409669,
-      "sha256": "743f792cd728c5745cd658f5ec64115b27aeeab44b968bb54aad4bd271934513"
+      "bytes": 403568,
+      "sha256": "1d5b00b2ddf36490258dab983d4c2eecf2966d5ee82d26252253398e2713f748"
     }
   ],
   "maximum_texture_dimension": 2048,
   "animation_names": [
     "walk_loop"
   ],
-  "motion_variant": "fractured_right_forearm_guarded_walk"
+  "motion_variant": "fracture_guard_with_left_hand_coat_clearance",
+  "embedded_images": 32,
+  "surface_variant": "continuous_neck_skin_and_authored_hair_normal"
 }
