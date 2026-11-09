@@ -1,0 +1,23 @@
+{
+  "id": "ch2_main",
+  "title": "Q_CH2_MAIN_TITLE",
+  "stages": [
+    {
+      "id": "isa_table",
+      "objective": "Q_CH2_OBJ_TABLE",
+      "checkpoint": "ch2_start",
+      "marker": "node:IsaChair",
+      "done_when": {
+        "flag": "ch2.table_seated"
+      }
+    },
+    {
+      "id": "isa_volunteer",
+      "objective": "Q_CH2_OBJ_VOLUNTEER",
+      "marker": "node:Isa",
+      "done_when": {
+        "flag": "ch2.volunteer_talked"
+      }
+    }
+  ]
+}

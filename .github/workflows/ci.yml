@@ -207,6 +207,8 @@ jobs:
           shot 15-ch1-daylight 30 --level=daylight --daylight-at=stele --locale=zh_TW
           shot 16-ch1-dinner 30 --level=daylight --daylight-at=dinner --locale=zh_TW
           shot 17-ch1-bell-yard-road 30 --level=daylight --daylight-at=yard --locale=zh_TW
+          shot 18-ch2-table 30 --level=bell_hall --hall-at=table --locale=zh_TW
+          shot 19-ch2-hall 30 --level=bell_hall --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

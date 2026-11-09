@@ -118,12 +118,13 @@ func test_chapter_card_calls_done_once() -> void:
 
 func test_chapter1_dialogues_are_valid_and_translated() -> void:
 	var db: DialogueDB = DialogueDB.load_default()
-	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map", "ch1_map_end"]:
+	for id: String in ["ch1_noon", "ch1_dinner", "ch1_map", "ch1_map_end", "ch2_table"]:
 		assert_true(db.has_dialogue(id), "有對話 %s" % id)
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
 		for key: String in ["SPK_MISHA", "SPK_KEEPER", "SPK_LEO_LETTER", "CH1_CARD_NUMBER", "CH1_CARD_TITLE",
-				"CH1_TO_BE_CONTINUED", "GUIDE_MARK_TITLE", "GUIDE_MARK_HINT", "GUIDE_MARK_DONE", "Q_CH1_MAIN_TITLE", "Q_CH1_OBJ_NOON", "Q_CH1_OBJ_DINNER", "Q_CH1_OBJ_MAP", "Q_CH1_OBJ_CELLAR"]:
+				"CH1_TO_BE_CONTINUED", "GUIDE_MARK_TITLE", "GUIDE_MARK_HINT", "GUIDE_MARK_DONE", "Q_CH1_MAIN_TITLE", "Q_CH1_OBJ_NOON", "Q_CH1_OBJ_DINNER", "Q_CH1_OBJ_MAP", "Q_CH1_OBJ_CELLAR",
+				"CH2_CARD_NUMBER", "CH2_CARD_TITLE", "Q_CH2_MAIN_TITLE", "Q_CH2_OBJ_TABLE", "Q_CH2_OBJ_VOLUNTEER", "SPK_ISA"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")
 
@@ -390,3 +391,35 @@ func test_kord_dinner_choices_and_checkpoint() -> void:
 				"DLG_CH1_RABBIT_008", "DLG_CH1_PILLAR_002"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")
+
+
+## 第 2 章銜接（D-157）：第 1 章走到鐘院門口 → ch1_main 完成 → 第 2 章主線、章節、檢查點在鐘院；舊存檔補開第 2 章。
+func test_chapter1_complete_starts_chapter2() -> void:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	s.new_game()
+	load("res://scenes/levels/bell_hall.gd").call("dev_start_chapter2", s)
+	assert_true(s.quests.is_done("ch1_main"), "第 1 章完成")
+	assert_eq(s.state.get_flag("ch1.complete"), true)
+	assert_eq(s.main_quest(), "ch2_main", "主線換成第 2 章")
+	assert_eq(s.quests.stage_of("ch2_main"), "isa_table")
+	assert_eq(s.state.chapter, "ch2")
+	assert_eq(s.state.checkpoint, "ch2_start")
+	assert_eq(s.objective_key(), "Q_CH2_OBJ_TABLE")
+	assert_eq(Game.level_for_checkpoint("ch2_start"), "bell_hall", "第 2 章的檢查點在鐘院")
+	s.set_flag("ch2.table_seated", true)
+	assert_eq(s.quests.stage_of("ch2_main"), "isa_volunteer", "坐下吃過 → 問弟弟")
+	var other := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(other.load_slot(GameSession.AUTO_SLOT), SaveCodec.Status.OK)
+	assert_eq(other.state.checkpoint, "ch2_start", "自動存檔在第 2 章開頭")
+	assert_eq(other.quests.stage_of("ch2_main"), "isa_table")
+	# 舊存檔：第 1 章完成了、沒有第 2 章 → 補開
+	var old := GameState.new()
+	old.checkpoint = "ch1_after_dinner"
+	old.quests = {"slice_main": StoryLogic.QUEST_DONE, "ch1_main": StoryLogic.QUEST_DONE}
+	old.chapter = "ch1"
+	DirAccess.make_dir_recursive_absolute(_dir)
+	assert_eq(SaveCodec.write_file(_dir.path_join("slot2.json"), old), OK)
+	var up := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(up.load_slot("slot2"), SaveCodec.Status.OK)
+	assert_eq(up.main_quest(), "ch2_main", "舊存檔補開第 2 章")
+	assert_eq(up.state.chapter, "ch2")

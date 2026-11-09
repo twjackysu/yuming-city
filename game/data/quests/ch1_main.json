@@ -1,6 +1,15 @@
 {
   "id": "ch1_main",
   "title": "Q_CH1_MAIN_TITLE",
+  "on_complete": {
+    "set": {
+      "ch1.complete": true
+    },
+    "chapter": "ch2",
+    "start_quest": [
+      "ch2_main"
+    ]
+  },
   "stages": [
     {
       "id": "tavern_noon",

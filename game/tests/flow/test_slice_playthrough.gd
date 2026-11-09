@@ -553,7 +553,71 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	await _run_dialogue(city, 0)
 	await _step_into(_player(city), city.get("BELL_YARD_POS") as Vector3, 3)
 	assert_false(_game.call("is_in_dialogue"), "撞過一次就不會再開")
-	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "鐘院門口 → 待續（第 1 章結尾與第 2 章章節卡下一輪做）")
+	assert_true(s.quests.is_done("ch1_main"), "走到鐘院門口 → 第 1 章完成")
+	assert_eq(s.state.get_flag("ch1.complete"), true)
+	await _chapter2(city)
+
+
+## 第 2 章（D-157）：章節卡 → 鐘院（城主的飯廳）→ 伊薩拉椅子、支架吱一聲 → 飯桌的對話 → 待續（段落 2 下一輪做）。
+func _chapter2(city: StoryLevel) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(s.main_quest(), "ch2_main", "第 1 章完成 → 主線換成第 2 章")
+	assert_eq(s.state.chapter, "ch2", "章節換成 ch2")
+	assert_eq(s.state.checkpoint, "ch2_start", "第 2 章的第一個檢查點")
+	var card: ChapterCard = city.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card, "鐘院門口 → 第 2 章章節卡")
+	if card == null:
+		return
+	assert_eq(card.title_text(), tr("CH2_CARD_TITLE"), "章節卡的章名：城主的飯桌")
+	card.finish()
+	var hall: StoryLevel = await _wait_scene()
+	assert_eq(str(hall.name), "BellHall", "章節卡之後換到鐘院")
+	await _assert_bell_hall(hall, "[ch2_start]")
+	hall = await _retry()
+	assert_eq(str(hall.name), "BellHall", "[ch2_start] 重來還在鐘院")
+	assert_eq(_objective(hall), "Q_CH2_OBJ_TABLE", "[ch2_start] HUD 目標")
+	assert_false(bool(hall.call("is_seated")), "[ch2_start] 還沒坐下")
+	await _assert_bell_hall(hall, "[ch2_start] 重來")
+	await _step_into(_player(hall), hall.get("CHAIR_POS") as Vector3 + Vector3(0.0, 0.0, 1.2), 3)
+	assert_true(bool(hall.call("is_seated")), "走到桌邊 → 伊薩拉椅子")
+	assert_true(_game.call("is_in_dialogue"), "→ 飯桌的對話")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	var lines: PackedStringArray = []
+	for i: int in 12:
+		if not runner.is_running():
+			break
+		lines.append(runner.current_text())
+		runner.advance()
+	assert_true("DLG_CH2_TABLE_003" in lines, "伊薩先問席菈的手")
+	assert_true("DLG_CH2_TABLE_007" in lines, "他為什麼進了鐘院？")
+	await _run_dialogue(hall, 0)
+	assert_eq(s.state.get_flag("ch2.table_seated"), true)
+	assert_eq(s.quests.stage_of("ch2_main"), "isa_volunteer", "→ 問伊薩彌夏的弟弟在哪裡")
+	for i: int in 3:
+		await tree.physics_frame
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 2（他自願的）待續")
+
+
+## 鐘院：還在白晝城裡——只有油燈投影子、沒有太陽、接地陰影拿掉；桌上三盤煮豆、一鍋稀粥、四個碗；伊薩右腿有支架。
+func _assert_bell_hall(hall: StoryLevel, tag: String) -> void:
+	await tree.process_frame
+	for n: String in ["Isa", "Sheila", "Misha", "DinnerTable", "IsaChair", "PorridgePot", "InnerDoor", "Curtain"]:
+		assert_true(hall.has_node(n), tag + " 有 " + n)
+	for i: int in 3:
+		assert_true(hall.has_node("BeanPlate%d" % i), tag + " 三盤煮豆")
+	for i: int in 4:
+		assert_true(hall.has_node("Bowl%d/Chip" % i), tag + " 四個缺口不一樣的碗")
+	assert_true(bool(hall.call("has_leg_brace")), tag + " 伊薩右腿的金屬支架")
+	assert_true(_player(hall).has_oil_lamp(), tag + " 拿著油燈")
+	var lamp: OmniLight3D = hall.call("lamp_light") as OmniLight3D
+	var shadowed: PackedStringArray = []
+	for l: Node in hall.find_children("*", "Light3D", true, false):
+		if l is DirectionalLight3D or ((l as Light3D).shadow_enabled and l != lamp):
+			shadowed.append(str(l.get_path()))
+	assert_eq(shadowed.size(), 0, tag + " 除了油燈以外沒有投影子的光：%s" % ", ".join(shadowed))
+	assert_true(lamp != null and lamp.shadow_enabled, tag + " 油燈投影子")
+	for c: Node in hall.find_children(ContactShadow.NODE_NAME, "", true, false):
+		assert_false((c as Node3D).visible, tag + " 接地陰影拿掉：" + str(c.get_parent().name))
 
 
 static func _flat_dist(a: Vector3, b: Vector3) -> float:

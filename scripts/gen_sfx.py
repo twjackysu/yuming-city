@@ -11,6 +11,7 @@
 - water_splash：一桶髒水從天花板倒下來（第 1 章一百七十二階）。木桶「咚」＋一陣低通噪音的嘩啦，尾巴是幾聲滴水。
 - child_laugh：樓梯深處小孩的笑聲（第 1 章）。高音的「哈、哈、哈」：脈衝串經過兩個母音共振峰，加長的回音當作「很遠、在石階下面」。
 - daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
+- brace_creak：伊薩右腿金屬支架的「吱」一聲（第 2 章）。生鏽的鉸鏈：基頻從 620 Hz 往上滑到 900 Hz 再掉回來的摩擦音（調頻＋顆粒），帶一點金屬泛音，0.5 秒。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -312,6 +313,31 @@ def daylight_ambience(seconds=8.0, seed=29):
     return looped
 
 
+def brace_creak(seconds=0.5, seed=31):
+    """金屬支架的吱聲：滑動的摩擦音（基頻上滑再回落）＋顆粒（黏滑）＋兩個金屬泛音。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    out = []
+    phase = 0.0
+    stick = 0.0
+    for i in range(n):
+        t = i / RATE
+        u = t / seconds
+        f = 620 + 280 * math.sin(math.pi * min(u * 1.3, 1.0)) + 25 * math.sin(2 * math.pi * 31 * t)
+        phase += 2 * math.pi * f / RATE
+        if rng.random() < 0.02:
+            stick = rng.uniform(0.4, 1.0)
+        stick *= 0.996
+        tone = math.sin(phase) + 0.45 * math.sin(phase * 2.01) + 0.2 * math.sin(phase * 3.7)
+        env = min(t / 0.03, 1.0) * max(0.0, 1.0 - u) ** 1.5
+        out.append(0.5 * tone * env * (0.5 + 0.5 * stick))
+    grit = onepole_lp(hp(noise(n, rng), 1200), 5000)
+    for i in range(n):
+        u = i / n
+        out[i] += 0.12 * grit[i] * max(0.0, 1.0 - u)
+    return out
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -329,6 +355,7 @@ def main():
         write("water_splash", water_splash()),
         write("child_laugh", child_laugh()),
         write("daylight_ambience", daylight_ambience()),
+        write("brace_creak", brace_creak()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

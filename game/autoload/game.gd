@@ -23,6 +23,7 @@ const LEVELS: Dictionary = {
 	"tavern": "res://scenes/levels/tavern.tscn",
 	"stairs": "res://scenes/levels/stairs.tscn",
 	"daylight": "res://scenes/levels/daylight.tscn",
+	"bell_hall": "res://scenes/levels/bell_hall.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
 const CHECKPOINT_LEVELS: Dictionary = {
@@ -37,6 +38,8 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_daylight": "daylight",
 	# 段落 8：柯德家的晚餐吃完（D-155，屋內也在 daylight 關卡裡）
 	"ch1_after_dinner": "daylight",
+	# 第 2 章：城主的飯桌（D-157，鐘院另開關卡）
+	"ch2_start": "bell_hall",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

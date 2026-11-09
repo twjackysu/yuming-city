@@ -1,0 +1,16 @@
+keys,en,zh_TW
+CH2_CARD_NUMBER,Chapter Two,第二章
+CH2_CARD_TITLE,The Lord's Table,城主的飯桌
+Q_CH2_MAIN_TITLE,The Lord's Table,城主的飯桌
+Q_CH2_OBJ_TABLE,The lord of Daylight City has invited you to eat. Take a seat,白晝城的城主請你們吃飯。去桌邊坐下
+Q_CH2_OBJ_VOLUNTEER,Ask Isa where Misha's brother is,問伊薩，彌夏的弟弟在哪裡
+SPK_ISA,Isa,伊薩
+DLG_CH2_TABLE_001,"(No poison. No ambush. Three plates of boiled beans, a pot of thin porridge, and four bowls — each one chipped in a different place.)",（沒有毒。沒有埋伏。三盤煮豆，一鍋稀粥，和四個缺口不一樣的碗。）
+DLG_CH2_TABLE_002,"(The lord's name was Isa — a middle-aged man who hadn't shaved very well. When he pulled out our chairs, the metal brace on his right leg creaked.)",（城主名叫伊薩，是個鬍子刮得不乾淨的中年人。他替我們拉椅子時，右腿的金屬支架吱了一聲。）
+DLG_CH2_TABLE_003,"Your hand — there's a very good doctor in the city. I'll ask her to come by.",妳的手——城裡有位很好的醫師，我請她過來看看。
+DLG_CH2_TABLE_004,"And you're the clockmaker looking for her brother. Have you found him?",妳是來找弟弟的那位鐘匠吧。找到他了嗎？
+DLG_CH2_TABLE_005,Not yet.,還沒。
+DLG_CH2_TABLE_006,The bell yard's shift runs until midnight today. You can wait for him here.,鐘院的輪值今天到午夜。妳可以在這裡等他。
+DLG_CH2_TABLE_007,Why did he go into the bell yard?,他為什麼進了鐘院？
+DLG_CH2_TABLE_008,(Isa didn't answer right away.),（伊薩沒有立刻回答。）
+DLG_CH2_TABLE_009,(Misha put down her spoon.),（彌夏放下湯匙。）

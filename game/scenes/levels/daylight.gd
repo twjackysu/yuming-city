@@ -8,7 +8,8 @@ extends StoryLevel
 ## 諾恩按在石碑上只會得到「上面沒有你的名字」。柯德帶路，走到他家門口 → 黑一下換到屋裡（段落 8 晚餐，D-155）：
 ## 柯德把自己那份切成五片、自己喝水；小女兒問「你們買東西不會變老？」；席菈把乾糧放到桌子中央，玩家可以跟著放。
 ## 吃完回到街上，柯德往街尾的鐘院走（段落 9 兔子，D-156）：路上一個小女孩摸了席菈背上的斷劍 → 劍柄上的兔子 →
-## 「看路，攻略先生。」→ 街中間一根通到穹頂的石柱，諾恩真的會撞上去（碰撞＋彌夏的笑聲）→ 鐘院門口顯示「待續」。
+## 「看路，攻略先生。」→ 街中間一根通到穹頂的石柱，諾恩真的會撞上去（碰撞＋彌夏的笑聲）→
+## 鐘院門口：第 1 章結束 → 第 2 章章節卡 → 鐘院關卡（D-157）。
 ## 柯德家的屋內蓋在街區外面（HOUSE_ORIGIN，x = 40），不另開關卡：同一個環境（沒有影子）、同一盞油燈。
 ##
 ## 座標：門在南邊（z = GATE_Z），街往 -Z 走到底（z = END_Z）；兩個路口各一塊石碑。
@@ -124,7 +125,8 @@ func _ready() -> void:
 	_wood_mat = _mat(WOOD, 0.85)
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	# 開發用：`-- --level=daylight` 直接進來 → 照正式流程走到進城（段落 6 結束）
-	if not (Game.session.quests.stage_of(QUEST) in STAGES):
+	# 第 1 章已經完成（開發旗標從後面的章節直接進來）就不動
+	if not (Game.session.quests.stage_of(QUEST) in STAGES) and not Game.session.quests.is_done(QUEST):
 		dev_start_daylight(Game.session)
 	# 截圖用：`--daylight-at=stele` 看完爐子、站在第一塊石碑前（瑪菈換水之前）
 	var at: String = str(dev_args.get("daylight-at", ""))
@@ -282,13 +284,26 @@ func _physics_process(delta: float) -> void:
 				and _flat(pos, PILLAR_POS) <= PILLAR_RADIUS + BUMP_REACH:
 			bump_pillar()
 			return
-	# 吃完飯：跟著柯德走到街尾的鐘院門口 → 待續（第 1 章結尾＋第 2 章章節卡下一輪做）
+	# 吃完飯：跟著柯德走到街尾的鐘院門口 → 第 1 章結束 → 第 2 章章節卡 → 鐘院（D-157）
 	var at_yard: bool = _flat(pos, BELL_YARD_POS) <= BELL_YARD_RANGE
 	if at_yard and not _yard_inside and stage == "bell_yard":
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+		reach_bell_yard()
 	_yard_inside = at_yard
 	if Input.is_action_just_pressed("interact") and nearest_stele() != "":
 		touch_stele()
+
+
+## 走到鐘院門口（測試也用）：第 1 章完成（ch1_main 的 on_complete 開第 2 章、檢查點 ch2_start 自動存檔）→
+## 第 2 章章節卡 → 換到檢查點對應的關卡（鐘院）。只做一次。
+func reach_bell_yard() -> void:
+	if has_node("ChapterCard"):
+		return
+	Game.session.set_flag("ch1.reached_bell_yard", true)
+	var next_level: String = Game.level_for_checkpoint(Game.session.state.checkpoint)
+	if next_level != "daylight" and Game.LEVELS.has(next_level):
+		ChapterCard.play(self, "CH2_CARD_NUMBER", "CH2_CARD_TITLE", Game.go_to_level.bind(next_level))
+	else:
+		_banner("CH1_TO_BE_CONTINUED", 6.0)
 
 
 ## 走到爐子旁邊（測試也用）：攻略筆記「入口的淨化爐」被推翻 → 對話。
