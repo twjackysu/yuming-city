@@ -8,10 +8,11 @@ extends RefCounted
 const DIR: String = "res://assets/characters"
 
 ## Puppet 狀態 → 動作表（art-inbox/README.md）名稱，依序找第一個存在的
+## 循環動作也認 `_loop` 結尾（D-140：Jacky 的席菈試作把走路匯出成 walk_loop）
 const ANIM_MAP: Dictionary = {
-	"idle": ["idle", "sword_idle"],
-	"walk": ["walk"],
-	"run": ["run", "sprint"],
+	"idle": ["idle", "idle_loop", "sword_idle"],
+	"walk": ["walk", "walk_loop"],
+	"run": ["run", "run_loop", "sprint"],
 	"dodge": ["dodge_roll"],
 	"attack": ["light_attack_01"],
 }

@@ -93,6 +93,18 @@ func test_missing_dodge_falls_back_to_roll() -> void:
 	await tree.process_frame
 
 
+## 循環動作的 `_loop` 結尾也認得（D-140：席菈試作的 GLB 走路叫 walk_loop）；照樣循環播放
+func test_loop_suffixed_animations_are_found() -> void:
+	var p: Puppet = _puppet(_fake_model(["Armature|idle_loop", "Armature|walk_loop"], true, ""))
+	assert_eq(p.model_animation, "Armature|idle_loop", "idle_loop 當 idle")
+	p.set_move_speed(1.6)
+	p.advance(0.05)
+	assert_eq(p.model_animation, "Armature|walk_loop", "walk_loop 當 walk")
+	assert_eq(p.anim.get_animation("Armature|walk_loop").loop_mode, Animation.LOOP_LINEAR, "走路循環")
+	p.queue_free()
+	await tree.process_frame
+
+
 func test_model_without_skeleton_is_rejected() -> void:
 	var p: Puppet = _puppet(_fake_model(["idle"], false))
 	assert_false(p.uses_model(), "沒有骨架的模型不用")
