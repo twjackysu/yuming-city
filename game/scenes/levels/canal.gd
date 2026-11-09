@@ -14,13 +14,17 @@ extends StoryLevel
 ## 段落 3「假心臟」（D-165）：（第五夜）彌夏把做好的假心臟交給我們（對話 ch3_decoy_make）→ 東岸三個點（`DecoySpot0～2`）：
 ## 站在點上按互動鍵，把假心臟綁著繩子垂到河床上 → 送葬者聽到（HeartTargets：9 m 內）就鬆開鏈子掉下來、往心跳走 →
 ## 走到旁邊停下來聽 → 收上來、換下一個點（太遠牠聽不到、不會動；所以只能一段一段帶）→ 走到閘道口 → 檢查點 ch3_lured →
-## 段落 4 煤車待續。**重現會讓諾恩的心跳變快**：在這裡按住重現鍵，牠會停下來轉向諾恩（不是禁止，是自己會發現的規則）。
+## 段落 4「煤車」（D-166）。**重現會讓諾恩的心跳變快**：在這裡按住重現鍵，牠會停下來轉向諾恩（不是禁止，是自己會發現的規則）。
+## 段落 4：閘道（河道裡兩道矮石牆收窄的一段）上方的木架上停著一台堆滿煤的車，車尾的繩子綁在東岸的木柱上（對話 ch3_cart_plan）→
+## 把假心臟垂到閘道另一邊（第 3 點，或牠走過頭之後用第 2 點拉回來）→ 牠從煤車底下走過去 → 站在木柱旁按互動鍵割斷繩子 →
+## CoalDrop 判定「煤落下那一刻牠在哪」：壓住 → 黑色粉塵、油燈晃 → ch3.cart_dropped → 檢查點 ch3_pinned → 段落 5 倒吊待續；
+## 太早／太晚 → 牠掙脫 → 回到檢查點 ch3_lured（掙脫後的戰鬥分支還沒做）。按住重現讓牠停在正下方再割，一定壓得住。
 ##
 ## 座標：運河沿 Z（南 Z_SOUTH → 北 Z_NORTH），河道 x -CANAL_HALF_W～CANAL_HALF_W，兩岸各寬 BANK_W、岸頂 y＝0；
 ## 諾恩從東岸南端進來，岸邊有矮牆（不會掉下去）。北邊有一座閘道（段落 3 把送葬者引進去的地方，現在只是剪影）。
 
 const QUEST: String = "ch3_main"
-const STAGES: PackedStringArray = ["canal_bank", "observe", "decoy", "lure", "coal_cart"]
+const STAGES: PackedStringArray = ["canal_bank", "observe", "decoy", "lure", "coal_cart", "hang"]
 const BED_Y: float = -4.5
 const CANAL_HALF_W: float = 3.0
 const BANK_W: float = 6.0
@@ -81,7 +85,10 @@ const DECOY_TALK_DELAY: float = 4.3
 const MISHA_TALK_RANGE: float = 3.2
 ## 東岸放假心臟的三個點：人站在 (DECOY_BANK_X, 0, z)，假心臟垂到河床的 (DECOY_BED_X, BED_Y, z)。
 ## 第 0 點離吊樑 3.5 m（聽得到）；第 1、2 點從吊樑都超過 HeartTargets.HEAR_RANGE——只能一段一段帶（第 0 點不在石橋底下）
-const DECOY_ZS: PackedFloat32Array = [-17.5, -24.0, -27.6]
+const DECOY_ZS: PackedFloat32Array = [-17.5, -24.0, -27.6, -34.0]
+## 段落 3 用前三個點；段落 4 用閘道兩邊的第 2、3 點（第 3 點在閘道另一邊，D-166）
+const LURE_SPOTS: int = 3
+const CART_SPOTS: PackedInt32Array = [2, 3]
 const DECOY_BANK_X: float = 3.6
 const DECOY_BED_X: float = 2.4
 const DECOY_RANGE: float = 1.6
@@ -102,6 +109,28 @@ const NOEN_RACE_SEC: float = 0.48
 const SLUICE_REACH_Z: float = SLUICE_Z + 2.5
 ## 檢查點 ch3_lured 重來時送葬者站的位置
 const LURED_POS: Vector3 = Vector3(2.0, BED_Y, SLUICE_Z + 2.4)
+# 段落 4 煤車（D-166）
+## 閘道裡兩道矮石牆的高度（從河床算）：比送葬者矮，從岸上看得到牠露出上半身
+const SLUICE_PIER_H: float = 2.0
+## 閘道的石牆內緣之間，牠走的那一條線（x）；石牆那一段 |x| 夾在 SLUICE_HALF 以內
+const SLUICE_PASS_X: float = 0.4
+const SLUICE_HALF: float = 1.0
+const SLUICE_PIER_HALF_Z: float = 0.7
+## 從閘道的哪裡算「穿過去了」（離 SLUICE_Z 多遠）：目標在閘道另一邊時，先往這個出口走
+const SLUICE_EXIT: float = 0.9
+## 煤車：木架橫樑底的高度、煤落下的位置（沿運河）就是閘道正中
+const GANTRY_Y: float = 2.4
+const CART_Z: float = SLUICE_Z
+const CART_TIP: float = 1.35
+const CART_TALK: String = "ch3_cart_plan"
+const CART_TALK_DELAY: float = 4.3
+## 割繩子的位置：東岸北側木柱旁（離第 2、3 點都夠遠，按互動鍵不會搶）
+const ROPE_POS: Vector3 = Vector3(3.7, 0.0, SLUICE_Z - 1.2)
+const ROPE_RANGE: float = 1.3
+## 壓住：陷進煤堆多深、往前趴多少（繞 X 軸負的是往前，D-052）
+const PIN_SINK: float = 0.55
+const PIN_TILT: float = -0.3
+const COAL: Color = Color(0.045, 0.043, 0.045)
 ## 頭頂的石樑：一排排橫跨運河，縫裡透下鐘院的光
 const SLAT_Y: float = 13.0
 const SLAT_PITCH: float = 2.4
@@ -147,7 +176,7 @@ var _plate: Node3D
 var _dev_hold_edge: bool = false
 ## 段落 3：假心臟垂在哪一點（-1＝在手上）、送葬者走到過哪些點、醒了沒（掉到河床上）、正在掉
 var heart_spot: int = -1
-var reached: Array[bool] = [false, false, false]
+var reached: Array[bool] = [false, false, false, false]
 var awake: bool = false
 var _dropping: bool = false
 ## 送葬者現在跟著什麼（HeartTargets.NONE／DECOY／NOEN；測試讀）
@@ -165,6 +194,27 @@ var walk_scale: float = 1.0
 ## 假心臟上一次「咚」是第幾拍；諾恩重現時自己的心跳聲（變快）下一次在什麼時候
 var _heart_beat_i: int = -1
 var _noen_beat_at: float = 0.0
+# 段落 4
+## 牠沿運河走的速度（公尺／秒，帶正負；停著是 0）：割繩子那一刻交給 CoalDrop
+var walk_vz: float = 0.0
+var cart_cut: bool = false
+var cut_result: String = ""
+var pinned: bool = false
+var _freed: bool = false
+var _coal_landed: bool = false
+## 失敗（太早／太晚）後幾秒回到檢查點（測試會調小）
+var fail_retry_sec: float = 4.5
+var _cart_talk_wait: float = -1.0
+var _cart: Node3D
+var _cart_rope: MeshInstance3D
+var _coal_mass: Node3D
+var _coal_heap: Node3D
+var _cart_tween: Tween
+var _task_heart: MarkerPoint
+var _task_rope: MarkerPoint
+## 割太早／太晚之後重來（回到 ch3_lured）：不再重講一次煤車的對話（檢查點之後設的旗標會被重讀的存檔蓋掉，
+## 所以記在 GameSession 物件的 meta 上，不進存檔；static var 會讓整個腳本在結束時漏掉）
+const RETRY_META: StringName = &"ch3_cart_failed"
 
 
 func _ready() -> void:
@@ -230,13 +280,48 @@ func _ready() -> void:
 		(player as PlayerController).yaw = atan2(-look.x, -look.z)
 		(player as PlayerController).pitch = -0.95
 		(player as PlayerController).snap_camera()
-	# 檢查點 ch3_lured（段落 3 做完）：送葬者已經在閘道口的河床上
-	if Game.session.quests.stage_of(QUEST) == "coal_cart":
+	# 檢查點 ch3_lured（段落 3 做完）：送葬者已經在閘道口的河床上 → 看一眼上面的煤車（對話 ch3_cart_plan）
+	var stage: String = Game.session.quests.stage_of(QUEST)
+	if stage == "coal_cart":
 		_wake_undertaker(false)
 		_undertaker.global_position = LURED_POS
 		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		_cart_talk_wait = -1.0 if Game.session.has_meta(RETRY_META) else 1.0
+		Game.session.remove_meta(RETRY_META)
+	# 檢查點 ch3_pinned（段落 4 做完）：煤已經倒下去、牠被壓在閘道裡 → 段落 5 倒吊待續
+	elif stage == "hang":
+		_wake_undertaker(false)
+		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		cart_cut = true
+		cut_result = CoalDrop.PINNED
+		_cart.rotation.x = CART_TIP
+		_cart_rope.visible = false
+		_show_heap()
+		_pin_undertaker()
 		_continued_shown = true
 		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
+	# 截圖用：`--canal-at=cart` 站在繩子旁、假心臟垂在第 3 點、牠正走進閘道（煤車在頭頂）；
+	# `--canal-at=pinned` 同一個位置，煤已經倒下去壓住牠（粉塵剛揚起來）
+	if at in ["cart", "pinned"] and player != null:
+		dev_start_cart(Game.session)
+		_wake_undertaker(false)
+		Game.session.set_flag("ch3.cart_planned", true)
+		_cart_talk_wait = -1.0
+		var u_at: Vector3 = Vector3(1.0, BED_Y, SLUICE_Z + 1.2) if at == "cart" else Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.global_position = u_at
+		_undertaker.rotation.y = atan2(-(SLUICE_PASS_X - u_at.x), -(SLUICE_Z - 2.0 - u_at.z))
+		lower_heart(3)
+		# 站在西岸往東北看（從東岸的繩子旁看下去會被木柱和岸緣擋住）：木架上的煤車、閘道裡的牠、東岸的繩子
+		_put(player, Vector3(-3.7, 0.0, SLUICE_Z + 4.2), 0.0)
+		_dev_hold_edge = true
+		var look_c: Vector3 = Vector3(SLUICE_PASS_X + 0.4, 0.0, SLUICE_Z) - player.global_position
+		(player as PlayerController).yaw = atan2(-look_c.x, -look_c.z)
+		(player as PlayerController).pitch = -0.42
+		(player as PlayerController).snap_camera()
+		if at == "pinned":
+			cut_rope()
+			finish_cut()
 
 
 ## 開發旗標與測試用：照正式流程把第 2 章走完（第 3 章跟著開始）。已經開始第 3 章就不動。
@@ -267,6 +352,15 @@ static func dev_start_lure(s: GameSession) -> void:
 		s.set_flag(RhythmTrial.FLAG_FOUND, true)
 	if s.quests.stage_of(QUEST) == "decoy":
 		s.set_flag("ch3.decoy_received", true)
+
+
+## 開發旗標與測試用：照正式流程推到段落 4（牠在閘道口，檢查點 ch3_lured）。
+static func dev_start_cart(s: GameSession) -> void:
+	dev_start_lure(s)
+	if s.quests.stage_of(QUEST) == "lure":
+		for i: int in LURE_SPOTS:
+			s.state.set_flag("ch3.decoy_reached_%d" % i, true)
+		s.set_flag("ch3.decoy_done", true)
 
 
 func _put(node: Node3D, p: Vector3, yaw: float) -> void:
@@ -338,8 +432,19 @@ func _physics_process(delta: float) -> void:
 	elif stage == "lure":
 		if Input.is_action_just_pressed("interact") and nearest_spot() >= 0:
 			use_spot(nearest_spot())
+	elif stage == "coal_cart":
+		if _cart_talk_wait >= 0.0 and not bool(Game.session.state.get_flag("ch3.cart_planned", false)):
+			_cart_talk_wait -= delta
+			if _cart_talk_wait < 0.0:
+				Game.start_dialogue(CART_TALK)
+		if Input.is_action_just_pressed("interact"):
+			if near_rope():
+				cut_rope()
+			elif nearest_spot() >= 0:
+				use_spot(nearest_spot())
 	if awake and not _dropping:
 		_update_follow(player, delta)
+	_place_task_marker()
 
 
 func _process(delta: float) -> void:
@@ -386,6 +491,9 @@ func _look_into_canal() -> void:
 func _on_dialogue_ended(dialogue_id: String) -> void:
 	if dialogue_id == RHYTHM_TALK:
 		_on_rhythm_ended()
+		return
+	if dialogue_id == CART_TALK:
+		Game.session.state.set_flag("ch3.cart_planned", true)
 		return
 	if dialogue_id == DECOY_TALK:
 		# 跳過也一樣：拿到假心臟 → 段落 3 正式開始（檢查點 ch3_decoy）
@@ -691,11 +799,16 @@ func heart_bed_pos(i: int) -> Vector3:
 
 ## 這一點現在能不能動手（目標指引也用）：假心臟在手上 → 送葬者還沒走到過的點；垂下去了 → 只有垂著的那一點。
 func spot_actionable(i: int) -> bool:
-	if Game.session.quests.stage_of(QUEST) != "lure" or _dropping:
+	var stage: String = Game.session.quests.stage_of(QUEST)
+	if _dropping:
 		return false
-	if heart_spot < 0:
-		return not reached[i]
-	return heart_spot == i
+	if stage == "lure":
+		if heart_spot < 0:
+			return i < LURE_SPOTS and not reached[i]
+		return heart_spot == i
+	if stage == "coal_cart" and not cart_cut and i in CART_SPOTS:
+		return heart_spot < 0 or heart_spot == i
+	return false
 
 
 ## 諾恩站在哪一點旁邊（而且能動手）；沒有回傳 -1。
@@ -710,6 +823,8 @@ func nearest_spot() -> int:
 
 
 func interact_hint() -> Dictionary:
+	if near_rope():
+		return {"fmt": TranslationServer.translate("CH3_CART_CUT_HINT"), "action": "interact", "progress": -1.0}
 	var i: int = nearest_spot()
 	if i < 0:
 		return {}
@@ -804,6 +919,9 @@ func noen_restoring() -> bool:
 ## 醒著的送葬者：問 HeartTargets 現在聽起來最近的心跳 → 轉過去；是假心臟就走過去、走到旁邊停下來聽；
 ## 是重現中的諾恩就停下來轉向他（第一次提示「牠聽得到」）；走到閘道口 → 段落 3 完成。
 func _update_follow(player: PlayerController, delta: float) -> void:
+	walk_vz = 0.0
+	if pinned or _freed:
+		return
 	var from: Vector3 = _undertaker.global_position
 	var decoys: Array[Vector3] = []
 	if heart_spot >= 0:
@@ -821,8 +939,14 @@ func _update_follow(player: PlayerController, delta: float) -> void:
 	var target: Vector3 = pick["pos"] as Vector3
 	var to: Vector3 = Vector3(target.x - from.x, 0.0, target.z - from.z)
 	var dist: float = to.length()
-	if dist > 0.01:
-		_undertaker.rotation.y = rotate_toward(_undertaker.rotation.y, atan2(-to.x, -to.z), TURN_RATE * delta)
+	# 目標在閘道另一邊：先往閘道出口走（石牆中間那條線），穿過去再轉向假心臟
+	var aim: Vector3 = steer_through_sluice(from, target) if kind == HeartTargets.DECOY else target
+	var to_aim: Vector3 = Vector3(aim.x - from.x, 0.0, aim.z - from.z)
+	if to_aim.length() < 0.02:
+		aim = target
+		to_aim = to
+	if to_aim.length() > 0.01:
+		_undertaker.rotation.y = rotate_toward(_undertaker.rotation.y, atan2(-to_aim.x, -to_aim.z), TURN_RATE * delta)
 	if kind != HeartTargets.DECOY:
 		return
 	# x 被河道寬度夾住時只會無限逼近 HEART_REACH，留一點餘裕
@@ -833,11 +957,34 @@ func _update_follow(player: PlayerController, delta: float) -> void:
 			Game.session.state.set_flag("ch3.decoy_reached_%d" % heart_spot, true)
 		_check_lured()
 		return
-	var np: Vector3 = from + to / dist * minf(WALK_SPEED * walk_scale * delta, dist - HEART_REACH)
-	np.x = clampf(np.x, -BED_LIMIT_X, BED_LIMIT_X)
+	var step: float = WALK_SPEED * walk_scale * delta
+	var np: Vector3
+	if aim == target:
+		np = from + to / dist * minf(step, dist - HEART_REACH)
+	else:
+		np = from + to_aim.normalized() * minf(step, to_aim.length())
+	var lim: float = bed_limit_x(np.z)
+	np.x = clampf(np.x, -lim, lim)
+	walk_vz = (np.z - from.z) / maxf(delta, 0.0001)
 	_undertaker.global_position = np
 	_gait(true)
 	_check_lured()
+
+
+## 河床能走的寬度（|x| 上限）：閘道石牆那一段比較窄。
+static func bed_limit_x(z: float) -> float:
+	return SLUICE_HALF if absf(z - SLUICE_Z) <= SLUICE_PIER_HALF_Z else BED_LIMIT_X
+
+
+## 目標在閘道另一邊（還沒穿過出口、目標在出口外）→ 先往出口那一點走；否則直接走向目標。
+static func steer_through_sluice(from: Vector3, target: Vector3) -> Vector3:
+	var s: float = signf(target.z - SLUICE_Z)
+	if s == 0.0:
+		return target
+	var exit_z: float = SLUICE_Z + s * SLUICE_EXIT
+	if (from.z - exit_z) * s < 0.0 and (target.z - exit_z) * s > 0.0:
+		return Vector3(SLUICE_PASS_X, target.y, exit_z + s * 0.2)
+	return target
 
 
 ## 沒有走路動畫的白盒步伐：走的時候整隻一頓一頓地往上抬、左右晃（沉重、拖著鐵架）；停下來就站穩。
@@ -862,9 +1009,8 @@ func _check_lured() -> void:
 	raise_heart()
 	Game.session.set_flag("ch3.decoy_done", true)
 	_banner("CH3_LURED_NOTE", 4.0)
-	if not _continued_shown:
-		_continued_shown = true
-		get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+	# 段落 4：停一下，抬頭看見閘道上面的煤車（對話 ch3_cart_plan）
+	_cart_talk_wait = CART_TALK_DELAY
 
 
 func _update_heart() -> void:
@@ -884,6 +1030,176 @@ func _update_heart() -> void:
 	_heart_light.light_energy = 0.5 + 3.5 * hb
 	_heart_mat.emission_energy_multiplier = 1.0 + 6.0 * hb
 	_heart.scale = Vector3.ONE * (1.0 + 0.1 * hb)
+
+
+# ---------------------------------------------------------------- 段落 4：煤車（D-166）
+
+## 諾恩站在繩子旁邊（而且還能割）。
+func near_rope() -> bool:
+	if cart_cut or Game.session.quests.stage_of(QUEST) != "coal_cart":
+		return false
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	return player != null and _flat(player.global_position, ROPE_POS) <= ROPE_RANGE
+
+
+## 目標指引（MarkerPoint）：「heart」＝假心臟在手上、「rope」＝已經垂下去了（該去繩子那裡等）。
+func marker_available(query: String) -> bool:
+	if cart_cut or Game.session.quests.stage_of(QUEST) != "coal_cart" or Game.is_in_dialogue():
+		return false
+	if query == "heart":
+		return heart_spot < 0
+	if query == "rope":
+		return heart_spot >= 0
+	return false
+
+
+## 放心臟的指引點跟著牠在哪一邊換：牠在煤車南邊 → 閘道另一邊的第 3 點；已經走過頭 → 第 2 點（拉回來）。
+func _place_task_marker() -> void:
+	if _task_heart == null or _undertaker == null:
+		return
+	var i: int = 3 if _undertaker.global_position.z > CART_Z else 2
+	_task_heart.position = Vector3(DECOY_BANK_X, 0.0, DECOY_ZS[i])
+
+
+## 割斷繩子（測試也用）：這一刻就照 CoalDrop 判定（看煤落下那一刻牠在哪）；煤車往南傾倒、一團煤落下 FALL_SEC 秒。
+func cut_rope() -> void:
+	if cart_cut or _undertaker == null or Game.session.quests.stage_of(QUEST) != "coal_cart":
+		return
+	cart_cut = true
+	cut_result = CoalDrop.judge(_undertaker.global_position.z, signf(walk_vz), absf(walk_vz), CART_Z)
+	_cart_rope.visible = false
+	Sfx.play_at(self, "whoosh", ROPE_POS + Vector3(0, 1.0, 0), -6.0, 0.05)
+	Sfx.play_at(self, "brace_creak", _cart.global_position, -2.0, 0.05)
+	_coal_mass.global_position = _cart.global_position + Vector3(0.0, 0.5, 0.2)
+	_coal_mass.visible = true
+	_cart_tween = create_tween()
+	_cart_tween.set_parallel(true)
+	_cart_tween.tween_property(_cart, "rotation:x", CART_TIP, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	var land: Vector3 = Vector3(SLUICE_PASS_X, BED_Y + 0.45, CART_Z)
+	_cart_tween.tween_property(_coal_mass, "global_position", land, CoalDrop.FALL_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_cart_tween.chain().tween_callback(_on_coal_landed)
+
+
+## 測試用：煤直接落地。
+func finish_cut() -> void:
+	if not cart_cut or _coal_landed:
+		return
+	if _cart_tween != null and _cart_tween.is_valid():
+		_cart_tween.kill()
+	_cart.rotation.x = CART_TIP
+	_on_coal_landed()
+
+
+## 煤落地：煤堆、黑色粉塵、震動、油燈晃。壓住 → ch3.cart_dropped（檢查點 ch3_pinned）；太早／太晚 → 牠掙脫 → 回到 ch3_lured。
+func _on_coal_landed() -> void:
+	if _coal_landed:
+		return
+	_coal_landed = true
+	_coal_mass.visible = false
+	_show_heap()
+	_coal_dust(Vector3(SLUICE_PASS_X, BED_Y + 0.3, CART_Z))
+	Sfx.play_at(self, "rubble_scrape", Vector3(SLUICE_PASS_X, BED_Y + 0.5, CART_Z), 0.0, 0.05)
+	Sfx.play_flat(self, "deep_rumble", -6.0)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player != null:
+		player.shake(0.55)
+	_sway_lamp()
+	if cut_result == CoalDrop.PINNED:
+		_pin_undertaker()
+		Sfx.play_at(self, "iron_clang", _undertaker.global_position + Vector3(0, 1.0, 0), -4.0, 0.05)
+		Game.session.set_flag("ch3.cart_dropped", true)
+		_banner("CH3_CART_PINNED", 4.0)
+		if not _continued_shown:
+			_continued_shown = true
+			get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
+		return
+	_shake_free()
+	_banner("CH3_CART_EARLY" if cut_result == CoalDrop.EARLY else "CH3_CART_LATE", fail_retry_sec)
+	get_tree().create_timer(fail_retry_sec).timeout.connect(_fail_retry)
+
+
+func _show_heap() -> void:
+	_coal_heap.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+	_coal_heap.visible = true
+
+
+## 壓住：陷進煤堆、往前趴，不再跟著心跳走；胸口的鐘舌還在亮（段落 5 要切開的地方）。
+func _pin_undertaker() -> void:
+	pinned = true
+	follow_kind = ""
+	walk_vz = 0.0
+	raise_heart()
+	_undertaker.global_position.y = BED_Y - PIN_SINK
+	_undertaker.rotation = Vector3(PIN_TILT, _undertaker.rotation.y, 0.0)
+
+
+## 太早／太晚：煤沒有壓住，牠甩了一下、轉向諾恩（掙脫後的戰鬥分支還沒做，D-166）。
+func _shake_free() -> void:
+	_freed = true
+	follow_kind = ""
+	walk_vz = 0.0
+	raise_heart()
+	_gait(false)
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null:
+		var to: Vector3 = player.global_position - _undertaker.global_position
+		_undertaker.rotation.y = atan2(-to.x, -to.z)
+	var tw := create_tween()
+	tw.tween_property(_undertaker, "rotation:z", 0.22, 0.12)
+	tw.tween_property(_undertaker, "rotation:z", -0.18, 0.16)
+	tw.tween_property(_undertaker, "rotation:z", 0.0, 0.2)
+	Sfx.play_at(self, "chain_creak", _undertaker.global_position + Vector3(0, 1.5, 0), 0.0, 0.05)
+
+
+## 失敗回到段落 3 的檢查點（ch3_lured）。關卡已經換掉（測試先重來）就不動。
+func _fail_retry() -> void:
+	if not is_inside_tree() or cut_result == CoalDrop.PINNED or Game.session.quests.stage_of(QUEST) != "coal_cart":
+		return
+	Game.session.set_meta(RETRY_META, true)
+	Game.retry()
+
+
+## 煤落地揚起的黑色粉塵（柔邊圓點，D-056）：被縫裡的光照到才看得見。
+func _coal_dust(at: Vector3) -> void:
+	var ps := CPUParticles3D.new()
+	ps.name = "CoalDust"
+	ps.one_shot = true
+	ps.explosiveness = 0.85
+	ps.amount = 70
+	ps.lifetime = 2.6
+	ps.direction = Vector3.UP
+	ps.spread = 80.0
+	ps.initial_velocity_min = 0.8
+	ps.initial_velocity_max = 3.0
+	ps.gravity = Vector3(0, -0.5, 0)
+	ps.damping_min = 1.2
+	ps.damping_max = 2.4
+	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	ps.emission_box_extents = Vector3(1.3, 0.3, 1.0)
+	ps.scale_amount_min = 1.0
+	ps.scale_amount_max = 2.6
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.7, 0.7)
+	quad.material = ParticleLook.material(Color(0.2, 0.19, 0.18, 0.85))
+	ps.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 0.9))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	ps.color_ramp = ramp
+	add_child(ps)
+	ps.global_position = at
+	ps.emitting = true
+
+
+## 油燈晃：燈光一明一暗幾下再回來。
+func _sway_lamp() -> void:
+	var l: OmniLight3D = lamp_light()
+	if l == null:
+		return
+	var tw := create_tween()
+	for k: float in [0.35, 1.25, 0.55, 1.1, 0.8]:
+		tw.tween_property(l, "light_energy", LAMP_ENERGY * k, 0.14)
+	tw.tween_property(l, "light_energy", LAMP_ENERGY, 0.3)
 
 
 # ---------------------------------------------------------------- 場景
@@ -1018,15 +1334,131 @@ func _build_bridge() -> void:
 		_solid("BridgeHaunch%d" % int(side), Vector3(0.6, 0.9, BRIDGE_W), Vector3(side * (CANAL_HALF_W - 0.3), -DECK_T - 0.45, BRIDGE_Z), stone, false)
 
 
-## 北邊的閘道：河道裡兩座石墩、上面一根木樑、一扇拉起來的木閘門（段落 3 把送葬者引進來的地方）。
+## 北邊的閘道：河道裡兩道矮石牆把河道收窄（比送葬者矮，從岸上看得到牠露出上半身）；
+## 上方一座木架（兩岸各兩根立柱、兩根橫樑、樑上鋪木板），木板上停著一台堆滿煤的車，往南邊的邊緣斜著，
+## 車尾一條繩子拉到東岸北側的木柱上綁著（段落 4，D-166）。拉起來的木閘門掛在北邊的橫樑下。
 func _build_sluice() -> void:
 	var stone: StandardMaterial3D = _mat(STONE, 0.9)
 	var wood: StandardMaterial3D = _mat(WOOD, 0.9)
-	var h: float = -BED_Y + 2.2
+	var iron: StandardMaterial3D = _mat(IRON, 0.6)
+	iron.metallic = 0.6
 	for side: float in [-1.0, 1.0]:
-		_solid("SluicePier%d" % int(side), Vector3(0.9, h, 1.4), Vector3(side * 1.7, BED_Y + h * 0.5, SLUICE_Z), stone, false)
-	_solid("SluiceBeam", Vector3(4.4, 0.45, 0.5), Vector3(0.0, BED_Y + h + 0.22, SLUICE_Z), wood, false)
-	_solid("SluiceGate", Vector3(2.5, 1.6, 0.18), Vector3(0.0, BED_Y + h - 1.0, SLUICE_Z + 0.3), wood, false)
+		_solid("SluicePier%d" % int(side), Vector3(0.9, SLUICE_PIER_H, SLUICE_PIER_HALF_Z * 2.0), Vector3(side * 1.7, BED_Y + SLUICE_PIER_H * 0.5, SLUICE_Z), stone, false)
+		_solid("SluiceCap%d" % int(side), Vector3(1.0, 0.12, SLUICE_PIER_HALF_Z * 2.0 + 0.1), Vector3(side * 1.7, BED_Y + SLUICE_PIER_H + 0.06, SLUICE_Z), _mat(STONE_LIGHT, 0.85), false)
+		for zz: float in [SLUICE_Z + 0.1, SLUICE_Z - 1.2]:
+			_solid("GantryPost%d_%d" % [int(side), int(absf(zz) * 10.0)], Vector3(0.26, GANTRY_Y, 0.26), Vector3(side * (CANAL_HALF_W + 0.22), GANTRY_Y * 0.5, zz), wood, false)
+	var span: float = (CANAL_HALF_W + 0.35) * 2.0
+	_solid("SluiceBeam", Vector3(span, 0.3, 0.3), Vector3(0.0, GANTRY_Y + 0.15, SLUICE_Z + 0.1), wood, false)
+	_solid("SluiceBeamN", Vector3(span, 0.3, 0.3), Vector3(0.0, GANTRY_Y + 0.15, SLUICE_Z - 1.2), wood, false)
+	_solid("CartDeck", Vector3(2.2, 0.08, 1.6), Vector3(SLUICE_PASS_X, GANTRY_Y + 0.34, SLUICE_Z - 0.55), wood, false)
+	_solid("SluiceGate", Vector3(2.5, 1.2, 0.12), Vector3(0.0, GANTRY_Y - 0.6, SLUICE_Z - 1.4), wood, false)
+	# 煤車：轉軸在木板南緣（往南傾倒），車身在轉軸北邊；一開始就微微往南斜，靠繩子拉住
+	var deck_top: float = GANTRY_Y + 0.38
+	_cart = Node3D.new()
+	_cart.name = "CoalCart"
+	_cart.position = Vector3(SLUICE_PASS_X, deck_top, SLUICE_Z + 0.2)
+	_cart.rotation.x = 0.1
+	add_child(_cart)
+	_solid("CartBody", Vector3(1.0, 0.5, 0.9), Vector3(0.0, 0.42, -0.5), _mat(Color(0.2, 0.16, 0.12), 0.85), false, _cart)
+	_solid("CartBand", Vector3(1.04, 0.06, 0.94), Vector3(0.0, 0.62, -0.5), iron, false, _cart)
+	var coal: StandardMaterial3D = _mat(COAL, 0.55)
+	coal.metallic_specular = 0.7
+	_solid("CartCoal", Vector3(0.92, 0.2, 0.82), Vector3(0.0, 0.74, -0.5), coal, false, _cart)
+	for i: int in 6:
+		var lump: MeshInstance3D = _solid("CartLump%d" % i, Vector3(0.22, 0.16, 0.2), Vector3(-0.32 + 0.13 * i, 0.86 + 0.04 * (i % 2), -0.5 + 0.18 * sin(i * 1.7)), coal, false, _cart)
+		lump.rotation = Vector3(0.4 * i, 0.7 * i, 0.2)
+	for wx: float in [-0.42, 0.42]:
+		for wz: float in [-0.15, -0.85]:
+			var wheel := MeshInstance3D.new()
+			wheel.name = "CartWheel"
+			var wm := CylinderMesh.new()
+			wm.top_radius = 0.13
+			wm.bottom_radius = 0.13
+			wm.height = 0.06
+			wheel.mesh = wm
+			wheel.material_override = iron
+			wheel.position = Vector3(wx * 1.12, 0.13, wz)
+			wheel.rotation.z = PI * 0.5
+			_cart.add_child(wheel)
+	# 繩子：車尾 → 東岸北側木柱上的繩樁
+	var tail: Vector3 = _cart.position + Vector3(0.3, 0.55, -0.95)
+	var cleat: Vector3 = Vector3(CANAL_HALF_W + 0.22, 1.05, ROPE_POS.z)
+	_cart_rope = _line_between("CartRopeLine", tail, cleat, 0.014, _mat(Color(0.42, 0.36, 0.26), 1.0))
+	_solid("RopeCleat", Vector3(0.1, 0.1, 0.3), cleat, iron, false)
+	# 倒下去的煤：落下途中的一團（補間）＋落地之後的煤堆
+	_coal_mass = Node3D.new()
+	_coal_mass.name = "CoalMass"
+	_coal_mass.visible = false
+	add_child(_coal_mass)
+	for i: int in 7:
+		var chunk: MeshInstance3D = _solid("Chunk%d" % i, Vector3(0.5, 0.35, 0.45) * (0.7 + 0.12 * (i % 3)), Vector3(0.35 * sin(i * 2.1), 0.3 * cos(i * 1.3), 0.3 * cos(i * 2.7)), coal, false, _coal_mass)
+		chunk.rotation = Vector3(0.6 * i, 0.9 * i, 0.3 * i)
+	_coal_heap = Node3D.new()
+	_coal_heap.name = "CoalHeap"
+	_coal_heap.visible = false
+	add_child(_coal_heap)
+	var mound := MeshInstance3D.new()
+	mound.name = "Mound"
+	var sm := SphereMesh.new()
+	sm.radius = 1.35
+	sm.height = 2.7
+	sm.radial_segments = 20
+	sm.rings = 10
+	mound.mesh = sm
+	mound.material_override = coal
+	mound.scale = Vector3(1.0, 0.42, 0.85)
+	_coal_heap.add_child(mound)
+	for i: int in 9:
+		var a: float = i * TAU / 9.0
+		var lump2: MeshInstance3D = _solid("HeapLump%d" % i, Vector3(0.28, 0.2, 0.26), Vector3(cos(a) * 1.25, 0.08, sin(a) * 1.05), coal, false, _coal_heap)
+		lump2.rotation = Vector3(0.5 * i, 1.1 * i, 0.2 * i)
+	# 正好有一道縫的光落在煤車正下方（跟斜光同一個方向的窄聚光）：陷阱在哪裡一眼看得到，牠走進去時也被照亮
+	var spot := SpotLight3D.new()
+	spot.name = "SlitOnSluice"
+	spot.light_color = SLIT_COLOR
+	spot.light_energy = SLIT_SPOT_ENERGY * 0.8
+	spot.light_volumetric_fog_energy = 1.0
+	spot.spot_range = 12.0
+	spot.spot_angle = 14.0
+	spot.shadow_enabled = false
+	var sluice_target: Vector3 = Vector3(SLUICE_PASS_X, BED_Y + 1.2, CART_Z + 0.3)
+	var slit_dir: Vector3 = Basis.from_euler(SLIT_LIGHT_ROT * PI / 180.0) * Vector3.FORWARD
+	add_child(spot)
+	spot.look_at_from_position(sluice_target - slit_dir * 8.0, sluice_target)
+	# 目標指引：假心臟在手上 → 指向閘道另一邊的點；垂下去了 → 指向繩子
+	_task_heart = MarkerPoint.new()
+	_task_heart.name = "CartTaskHeart"
+	_task_heart.query = "heart"
+	_task_heart.level = self
+	_task_heart.position = Vector3(DECOY_BANK_X, 0.0, DECOY_ZS[3])
+	add_child(_task_heart)
+	_task_rope = MarkerPoint.new()
+	_task_rope.name = "CartTaskRope"
+	_task_rope.query = "rope"
+	_task_rope.level = self
+	_task_rope.position = ROPE_POS
+	add_child(_task_rope)
+
+
+## 兩點之間的一條細圓柱（繩子）。
+func _line_between(node_name: String, a: Vector3, b: Vector3, radius: float, mat: Material) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = a.distance_to(b)
+	mi.mesh = cm
+	mi.material_override = mat
+	add_child(mi)
+	mi.global_position = (a + b) * 0.5
+	var up: Vector3 = (b - a).normalized()
+	var side: Vector3 = up.cross(Vector3.FORWARD)
+	if side.length() < 0.01:
+		side = up.cross(Vector3.RIGHT)
+	side = side.normalized()
+	mi.global_basis = Basis(side, up, side.cross(up)).orthonormalized()
+	return mi
 
 
 ## 頭頂的石樑：一排排橫跨整個運河（含兩岸），之間留縫——鐘院的光從縫裡透下來。

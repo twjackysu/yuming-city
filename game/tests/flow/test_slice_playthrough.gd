@@ -1019,8 +1019,102 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 	var u2: Node3D = canal.call("undertaker") as Node3D
 	assert_true(bool(canal.get("awake")), "[ch3_lured] 牠已經在河床上")
 	assert_true(u2.global_position.z <= float(canal.get("SLUICE_REACH_Z")) and absf(u2.global_position.y - float(canal.get("BED_Y"))) < 0.01, "[ch3_lured] 站在閘道口")
+	await _chapter3_cart(canal, alt)
+
+
+## 段落 4 煤車（D-166）：抬頭看見閘道上面的煤車（對話）→ 把假心臟垂到閘道另一邊 → 牠從煤車底下走過去 → 站在繩子旁割斷 →
+## 壓住 → 檢查點 ch3_pinned → 段落 5 待續。alt：先割太早（牠掙脫 → 回到 ch3_lured、不再重講對話），再按住重現讓牠停在正下方割；
+## 否則看牠走路的時機割（提早 FALL_SEC 秒的路程）。
+func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	canal.set("_cart_talk_wait", 0.0)
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(_game.call("is_in_dialogue"), "[ch3_lured] 抬頭看見閘道上的煤車")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_cart_plan")
+	for i: int in 10:
+		if not runner.is_running():
+			break
+		runner.advance()
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_lured] 段落 4 待續")
+	assert_false(_game.call("is_in_dialogue"), "煤車的對話講完")
+	assert_eq(s.state.get_flag("ch3.cart_planned"), true)
+	assert_true(canal.has_node("CoalCart") and canal.has_node("DecoySpot3") and canal.has_node("CartRopeLine"), "閘道上有煤車和繩子、另一邊有放心臟的點")
+	var player: PlayerController = _player(canal)
+	var spot3: Vector3 = (canal.get_node("DecoySpot3") as Node3D).global_position
+	var rope_pos: Vector3 = canal.get("ROPE_POS") as Vector3
+	var guide: Vector3 = ObjectiveGuide.resolve_target(canal, s.quests.marker_spec("ch3_main"), player.global_position)
+	assert_true(Vector2(guide.x - spot3.x, guide.z - spot3.z).length() < 0.01, "目標指引：假心臟在手上 → 閘道另一邊的點")
+	assert_false(bool(canal.call("spot_actionable", 0)), "段落 4 只用閘道兩邊的點")
+	if alt:
+		canal.call("use_spot", 3)
+		await _step_into(player, rope_pos, 2)
+		canal.set("fail_retry_sec", 0.05)
+		canal.call("cut_rope")
+		assert_eq(str(canal.get("cut_result")), CoalDrop.EARLY, "牠還在閘道口就割：太早")
+		canal.call("finish_cut")
+		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_CART_EARLY", "提示：太早了，牠掙脫了")
+		assert_eq(s.quests.stage_of("ch3_main"), "coal_cart", "沒壓住：還在段落 4")
+		for i: int in 60:
+			await tree.process_frame
+			if _level() != canal:
+				break
+		canal = await _wait_scene()
+		assert_eq(str(canal.name), "Canal", "[ch3_lured] 掙脫 → 重來還在乾運河")
+		assert_eq(s.state.checkpoint, "ch3_lured", "[ch3_lured] 回到段落 3 的檢查點")
+		assert_false(bool(canal.get("cart_cut")), "[ch3_lured] 煤車回到原位")
+		assert_true(float(canal.get("_cart_talk_wait")) < 0.0, "[ch3_lured] 失敗重來不再重講一次")
+		player = _player(canal)
+	var u: Node3D = canal.call("undertaker") as Node3D
+	canal.call("use_spot", 3)
+	assert_eq(int(canal.get("heart_spot")), 3, "垂在閘道另一邊")
+	await _step_into(player, rope_pos, 2)
+	guide = ObjectiveGuide.resolve_target(canal, s.quests.marker_spec("ch3_main"), player.global_position)
+	assert_true(Vector2(guide.x - rope_pos.x, guide.z - rope_pos.z).length() < 0.01, "目標指引：心臟垂下去了 → 繩子")
+	assert_true(bool(canal.call("near_rope")), "站在繩子旁邊")
+	assert_eq(str((canal.call("interact_hint") as Dictionary).get("fmt", "")), str(TranslationServer.translate("CH3_CART_CUT_HINT")), "提示：割斷繩子")
+	canal.set("walk_scale", 2.0)
+	var cart_z: float = float(canal.get("CART_Z"))
+	var ready_to_cut: bool = false
+	for i: int in 400:
+		await tree.physics_frame
+		var vz: float = float(canal.get("walk_vz"))
+		if alt:
+			if absf(u.global_position.z - cart_z) < 0.3:
+				canal.set("force_restoring", true)
+				for k: int in 3:
+					await tree.physics_frame
+				assert_eq(str(canal.get("follow_kind")), HeartTargets.NOEN, "在煤車下面按住重現：牠停下來轉向諾恩")
+				assert_eq(float(canal.get("walk_vz")), 0.0, "停著")
+				ready_to_cut = true
+				break
+		elif absf(CoalDrop.landing_z(u.global_position.z, signf(vz), absf(vz)) - cart_z) < 0.3:
+			assert_true(vz < 0.0, "牠正往北走進閘道")
+			ready_to_cut = true
+			break
+	assert_true(ready_to_cut, "牠走到煤車底下")
+	assert_true(absf(u.global_position.x) <= float(canal.get("SLUICE_HALF")) + 0.01 or absf(u.global_position.z - cart_z) > float(canal.get("SLUICE_PIER_HALF_Z")), "從閘道石牆中間走過去")
+	canal.call("cut_rope")
+	assert_eq(str(canal.get("cut_result")), CoalDrop.PINNED, "時機對：壓住")
+	canal.call("finish_cut")
+	canal.set("force_restoring", false)
+	assert_true(bool(canal.get("pinned")), "煤壓住了牠")
+	assert_true(u.global_position.y < float(canal.get("BED_Y")), "陷進煤堆")
+	assert_true((canal.get_node("CoalHeap") as Node3D).visible, "閘道裡一堆煤")
+	assert_true(canal.has_node("CoalDust"), "黑色粉塵")
+	assert_eq(ParticleLook.untextured(canal), [] as Array[String], "粉塵是柔邊圓點")
+	assert_eq(s.state.get_flag("ch3.cart_dropped"), true)
+	assert_eq(s.quests.stage_of("ch3_main"), "hang", "→ 段落 5 倒吊")
+	assert_eq(s.state.checkpoint, "ch3_pinned", "檢查點 ch3_pinned")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_CART_PINNED")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_pinned] 重來還在乾運河")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_HANG", "[ch3_pinned] HUD 目標：煤壓住了牠")
+	assert_true(bool(canal.get("pinned")), "[ch3_pinned] 牠還被壓著")
+	assert_true((canal.get_node("CoalHeap") as Node3D).visible and not (canal.get_node("CartRopeLine") as Node3D).visible, "[ch3_pinned] 煤堆還在、繩子斷了")
+	await tree.process_frame
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_pinned] 段落 5 待續")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。

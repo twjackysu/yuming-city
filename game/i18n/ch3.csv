@@ -50,7 +50,7 @@ DLG_CH3_RHY_F2,"(When Sheila stopped, it kept staring at the copper plate for a 
 DLG_CH3_RHY_F3,Give me one night. I'll make one that beats at that speed.,給我一晚。我照這個速度，做一顆會跳的。
 DLG_CH3_RHY_F4,"(Under the blank line in my guide notes, I wrote one line myself. The first one I didn't remember. We saw it ourselves.)",（我在攻略筆記那條空白底下，自己寫了一行。這是第一條不是我記得的，是我們自己看到的。）
 Q_CH3_OBJ_LURE,"Lower the fake heart from the bank, one spot at a time, and lead it into the sluice",從岸上把假心臟垂到河床，一段一段把牠引進閘道
-Q_CH3_OBJ_CART,It's in the sluice. The coal cart is up above,牠進了閘道。煤車就在上面
+Q_CH3_OBJ_CART,"Lower the heart past the sluice. When it's right under the coal cart, cut the rope",把假心臟垂到閘道另一邊；牠走到煤車正下方時，割斷繩子
 DLG_CH3_DECOY_001,(The fifth night. Misha hadn't slept. Her fingers were covered in copper filings.),（第五夜。彌夏一整晚沒睡，手指上全是銅屑。）
 DLG_CH3_DECOY_002,Done.,做好了。
 DLG_CH3_DECOY_003,"(She opened her hand. A small copper box was beating in her palm, thud by thud, as fast as Sheila had knocked last night.)",（她攤開手。一個小銅盒在她掌心裡一下一下地跳，跟昨晚席菈敲的一樣快。）
@@ -63,3 +63,13 @@ CH3_DECOY_TOO_FAR,(It didn't move. Too far. It can't hear it.),（牠沒有動�
 CH3_DECOY_WOKE,(The chains gave. It dropped onto the canal bed and turned toward the beating.),（鏈子鬆了。牠掉到河床上，轉向那個心跳。）
 CH3_HEARS_NOEN,(It turned toward me. Restoring makes my heart race. It can hear that.),（牠轉向我了。重現的時候我的心跳會變快——牠聽得到。）
 CH3_LURED_NOTE,"(It stopped at the mouth of the sluice, head bowed, listening.)",（牠停在閘道口，低著頭，在聽。）
+Q_CH3_OBJ_HANG,It's pinned under the coal. The clapper is in its chest,煤壓住了牠。鐘舌就在牠的胸口
+DLG_CH3_CART_001,"(On the timber frame above the sluice sat a cart heaped with coal. A rope ran from its tail to a post on the east bank.)",（閘道上方的木架上，停著一台堆滿煤的車。車尾一條繩子，拉到東岸的木柱上綁著。）
+DLG_CH3_CART_002,"Cut the rope and the whole cart tips over.",繩子一斷，整車煤就倒下去。
+DLG_CH3_CART_003,"Only when it's right underneath. Too early and it misses. Too late and it only gets the frame.",要等牠走到正下方。太早砸不到，太晚只砸到鐵架。
+DLG_CH3_CART_004,"Lower the heart on the far side of the sluice. It'll walk right under.",把心臟垂到閘道另一邊。牠會從底下走過去。
+DLG_CH3_CART_005,(I looked at the rope. There was nothing about this in the guide.),（我看著那條繩子。攻略裡沒有這一段。）
+CH3_CART_CUT_HINT,Press {key} — cut the rope,按 {key}　割斷繩子
+CH3_CART_PINNED,(The whole cart tipped. Coal poured down and buried most of it.),（整車煤傾下去，壓住了牠大半個身子。）
+CH3_CART_EARLY,"(Too early. The coal landed in front of it. It climbed over the heap and shook itself free—)",（太早了。煤落在牠前面——牠爬過煤堆，掙脫了。）
+CH3_CART_LATE,"(Too late. The coal only caught its frame. It tore itself loose—)",（太晚了。煤只砸到牠背後的鐵架——牠掙脫了。）

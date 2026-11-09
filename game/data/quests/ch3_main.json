@@ -47,9 +47,18 @@
       "id": "coal_cart",
       "objective": "Q_CH3_OBJ_CART",
       "checkpoint": "ch3_lured",
-      "marker": "node:SluiceBeam",
+      "marker": "nearest:CartTask",
       "done_when": {
         "flag": "ch3.cart_dropped"
+      }
+    },
+    {
+      "id": "hang",
+      "objective": "Q_CH3_OBJ_HANG",
+      "checkpoint": "ch3_pinned",
+      "marker": "node:ClapperUndertaker",
+      "done_when": {
+        "flag": "ch3.clapper_taken"
       }
     }
   ]

@@ -1,0 +1,30 @@
+{
+  "id": "ch3_cart_plan",
+  "start": "c0",
+  "nodes": {
+    "c0": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_CART_001",
+      "next": "c1"
+    },
+    "c1": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_CART_002",
+      "next": "c2"
+    },
+    "c2": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_CART_003",
+      "next": "c3"
+    },
+    "c3": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_CART_004",
+      "next": "c4"
+    },
+    "c4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_CART_005"
+    }
+  }
+}
