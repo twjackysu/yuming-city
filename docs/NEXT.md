@@ -4,8 +4,8 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 34 輪）最後一次程式 push 262a0ce 的 run 42541763212：收尾狀態見 PROGRESS 第 34 輪的「收尾補記」；開工照常先跑 `scripts/check.sh`。第 34 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 294 個測試）與截圖：d150cec 破屋頂的雪（D-139）、a428aef 動作表認 `_loop`（D-140）、262a0ce 廣場的鐘（D-141，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
-- **screens 應該是 262a0ce 的建置**（收尾補記會寫有沒有看過）。開工看：`06` 左半破屋頂的雪一排排跟著屋瓦起伏、邊緣不規則、沒有一圈亮白的厚度（D-139；太花或太暗就調 `snow.gdshader` 的 `tile_mottle` 0.3、`tile_drape` 0.55、`backlit_shade` 0.5）；`03`、`02` 廣場中央的鐘又高又窄、鐘口外翻、有鐘舌，不像帽子（D-141）。`07`、`08`、`11` 右側的雪帶是一整條（D-136；太平滑像白色水管就加大 `strip_height` 的細起伏 0.08）。
+- 上一輪（第 34 輪）最後一次程式 push 262a0ce 的 run 42541763212 **已經整個綠燈**（收尾時確認）；開工照常先跑 `scripts/check.sh`。第 34 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 294 個測試）與截圖：d150cec 破屋頂的雪（D-139）、a428aef 動作表認 `_loop`（D-140）、262a0ce 廣場的鐘（D-141，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- **screens 已是 262a0ce 的建置**（第 34 輪收尾看過 `06`、`03`，跟本機一致）。有新的程式 push 後再看：`06` 左半破屋頂的雪一排排跟著屋瓦起伏、邊緣不規則、沒有一圈亮白的厚度（D-139；太花或太暗就調 `snow.gdshader` 的 `tile_mottle` 0.3、`tile_drape` 0.55、`backlit_shade` 0.5）；`03`、`02` 廣場中央的鐘又高又窄、鐘口外翻、有鐘舌，不像帽子（D-141）。`07`、`08`、`11` 右側的雪帶是一整條（D-136；太平滑像白色水管就加大 `strip_height` 的細起伏 0.08）。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
