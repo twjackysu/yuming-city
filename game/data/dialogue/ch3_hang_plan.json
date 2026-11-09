@@ -1,0 +1,30 @@
+{
+  "id": "ch3_hang_plan",
+  "start": "h0",
+  "nodes": {
+    "h0": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_HANG_001",
+      "next": "h1"
+    },
+    "h1": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_HANG_002",
+      "next": "h2"
+    },
+    "h2": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH3_HANG_003",
+      "next": "h3"
+    },
+    "h3": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_CH3_HANG_004",
+      "next": "h4"
+    },
+    "h4": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_HANG_005"
+    }
+  }
+}

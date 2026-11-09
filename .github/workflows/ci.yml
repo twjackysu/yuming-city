@@ -220,6 +220,8 @@ jobs:
           shot 28-ch3-drain 40 --level=canal --canal-at=turn --locale=zh_TW
           shot 29-ch3-heart 34 --level=canal --canal-at=heart --locale=zh_TW
           shot 30-ch3-pinned 34 --level=canal --canal-at=pinned --locale=zh_TW
+          shot 31-ch3-hang 34 --level=canal --canal-at=hang --locale=zh_TW
+          shot 32-ch3-mud 40 --level=canal --canal-at=mud --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

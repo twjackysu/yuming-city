@@ -216,6 +216,41 @@ var _task_rope: MarkerPoint
 ## 所以記在 GameSession 物件的 meta 上，不進存檔；static var 會讓整個腳本在結束時漏掉）
 const RETRY_META: StringName = &"ch3_cart_failed"
 
+# ---------------------------------------------------------------- 段落 5：倒吊（D-167）
+const HANG_TALK: String = "ch3_hang_plan"
+const HANG_END_TALK: String = "ch3_hang_end"
+## 諾恩站在東岸抓繩子的位置（閘道木架南邊那根橫樑旁）
+const HANG_SPOT: Vector3 = Vector3(3.8, 0.0, SLUICE_Z + 0.9)
+const HANG_RANGE: float = 1.4
+## 繩子掛過木架橫樑的點：席菈從這裡倒吊下去
+const HANG_ANCHOR: Vector3 = Vector3(SLUICE_PASS_X, GANTRY_Y + 0.15, SLUICE_Z + 0.5)
+## 擺盪 ±1（撞到鐵架）時繩子偏幾度（弧度）
+const HANG_SWAY_RAD: float = 0.2
+## 倒吊時的鏡頭（從東岸邊上斜斜往下看：站在岸上的過肩鏡頭會被岸緣擋住）；席菈左右晃＝畫面左右
+const HANG_CAM_POS: Vector3 = Vector3(3.2, 1.7, SLUICE_Z + 3.4)
+const HANG_CAM_LOOK: Vector3 = Vector3(SLUICE_PASS_X, BED_Y + 1.2, SLUICE_Z + 0.3)
+## 抓到鐘舌 → 煤堆塌了 → 幾秒後三個人摔進泥裡
+const COLLAPSE_SEC: float = 1.4
+## 摔進泥裡（東岸，三個人並排仰躺、頭朝南；諾恩、席菈、彌夏）
+const MUD_SPOTS: PackedVector3Array = [Vector3(4.3, 0.0, SLUICE_Z + 3.0), Vector3(5.1, 0.0, SLUICE_Z + 3.1), Vector3(5.9, 0.0, SLUICE_Z + 2.9)]
+## 摔進泥裡的鏡頭：從他們頭頂那一側往下看
+const MUD_CAM_POS: Vector3 = Vector3(5.1, 2.6, SLUICE_Z + 5.7)
+const MUD_CAM_LOOK: Vector3 = Vector3(5.1, 0.1, SLUICE_Z + 3.5)
+
+var hang: HangRope = null
+var hang_active: bool = false
+## 自動測試、截圖用：按住＋照著擺盪往反方向推（HangRope.counter_steer）
+var hang_autopilot: bool = false
+var clapper_taken: bool = false
+var _collapsing: bool = false
+var _in_mud: bool = false
+var _hang_pivot: Node3D
+var _hang_mount: Node3D
+var _hang_rope_up: MeshInstance3D
+var _hang_cut_sfx: float = 0.0
+var _hang_cam: Camera3D
+var _prev_cam: Camera3D
+
 
 func _ready() -> void:
 	_rng.seed = 3006
@@ -230,6 +265,11 @@ func _ready() -> void:
 	_build_undertaker()
 	_build_drain()
 	_build_decoy()
+	# 段落 5 的目標指引：諾恩站在東岸抓繩子的地方
+	var hang_spot := Node3D.new()
+	hang_spot.name = "HangSpot"
+	add_child(hang_spot)
+	hang_spot.position = HANG_SPOT
 	_init_story()
 	add_to_group("interact_prompts")
 	var player: Node3D = get_node_or_null("Player") as Node3D
@@ -299,6 +339,18 @@ func _ready() -> void:
 		_cart_rope.visible = false
 		_show_heap()
 		_pin_undertaker()
+	# 檢查點 ch3_clapper（段落 5 做完）：鐘舌拿到了 → 段落 6 彌夏的圖待續
+	elif stage == "misha_map":
+		_wake_undertaker(false)
+		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		cart_cut = true
+		cut_result = CoalDrop.PINNED
+		_cart.rotation.x = CART_TIP
+		_cart_rope.visible = false
+		_show_heap()
+		_pin_undertaker()
+		_take_clapper()
 		_continued_shown = true
 		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
 	# 截圖用：`--canal-at=cart` 站在繩子旁、假心臟垂在第 3 點、牠正走進閘道（煤車在頭頂）；
@@ -323,6 +375,26 @@ func _ready() -> void:
 		if at == "pinned":
 			cut_rope()
 			finish_cut()
+	# 截圖用：`--canal-at=hang` 段落 5：席菈倒吊在閘道裡、往右晃一點（鏡頭從東岸往下看）；
+	# `--canal-at=mud` 抓到鐘舌、三個人摔在泥裡（對話第一句）
+	if at in ["hang", "mud"] and player != null:
+		dev_start_cart(Game.session)
+		_wake_undertaker(false)
+		Game.session.set_flag("ch3.cart_planned", true)
+		_cart_talk_wait = -1.0
+		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		cut_rope()
+		finish_cut()
+		_begin_hang()
+		_dev_hold_edge = true
+		if at == "hang":
+			hang.sway = 0.35
+			hang.progress = 0.4
+			_update_hang_rig()
+		else:
+			_grab_clapper()
+			_fall_in_mud.call_deferred()
 
 
 ## 開發旗標與測試用：照正式流程把第 2 章走完（第 3 章跟著開始）。已經開始第 3 章就不動。
@@ -443,6 +515,13 @@ func _physics_process(delta: float) -> void:
 				cut_rope()
 			elif nearest_spot() >= 0:
 				use_spot(nearest_spot())
+	elif stage == "hang":
+		if hang_active:
+			var hold: bool = hang_autopilot or Input.is_action_pressed("interact")
+			var steer: float = HangRope.counter_steer(hang) if hang_autopilot else Input.get_axis("move_left", "move_right")
+			hang_tick(delta, hold, steer)
+		elif near_hang_spot() and Input.is_action_just_pressed("interact"):
+			grab_hang_rope()
 	if awake and not _dropping:
 		_update_follow(player, delta)
 	_place_task_marker()
@@ -495,6 +574,12 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 		return
 	if dialogue_id == CART_TALK:
 		Game.session.state.set_flag("ch3.cart_planned", true)
+		return
+	if dialogue_id == HANG_TALK:
+		_begin_hang()
+		return
+	if dialogue_id == HANG_END_TALK:
+		_on_hang_end()
 		return
 	if dialogue_id == DECOY_TALK:
 		# 跳過也一樣：拿到假心臟 → 段落 3 正式開始（檢查點 ch3_decoy）
@@ -573,6 +658,12 @@ func _puppet_of(who: Node3D) -> Puppet:
 func is_lying(who: Node3D) -> bool:
 	var pup: Puppet = _puppet_of(who)
 	return pup != null and pup.lying == "front"
+
+
+## 仰躺著（段落 5 摔進泥裡）。
+func is_on_back(who: Node3D) -> bool:
+	var pup: Puppet = _puppet_of(who)
+	return pup != null and pup.lying == "back"
 
 
 func _on_dialogue_started(runner: DialogueRunner) -> void:
@@ -824,6 +915,10 @@ func nearest_spot() -> int:
 
 
 func interact_hint() -> Dictionary:
+	if hang_active and hang != null:
+		return {"fmt": TranslationServer.translate("CH3_HANG_HOLD_HINT"), "action": "interact", "progress": hang.progress}
+	if near_hang_spot():
+		return {"fmt": TranslationServer.translate("CH3_HANG_GRAB_HINT"), "action": "interact", "progress": -1.0}
 	if near_rope():
 		return {"fmt": TranslationServer.translate("CH3_CART_CUT_HINT"), "action": "interact", "progress": -1.0}
 	var i: int = nearest_spot()
@@ -1110,9 +1205,6 @@ func _on_coal_landed() -> void:
 		Sfx.play_at(self, "iron_clang", _undertaker.global_position + Vector3(0, 1.0, 0), -4.0, 0.05)
 		Game.session.set_flag("ch3.cart_dropped", true)
 		_banner("CH3_CART_PINNED", 4.0)
-		if not _continued_shown:
-			_continued_shown = true
-			get_tree().create_timer(4.3).timeout.connect(_banner.bind("CH1_TO_BE_CONTINUED", 6.0))
 		return
 	_shake_free()
 	_banner("CH3_CART_EARLY" if cut_result == CoalDrop.EARLY else "CH3_CART_LATE", fail_retry_sec)
@@ -1132,6 +1224,272 @@ func _pin_undertaker() -> void:
 	raise_heart()
 	_undertaker.global_position.y = BED_Y - PIN_SINK
 	_undertaker.rotation = Vector3(PIN_TILT, _undertaker.rotation.y, 0.0)
+
+
+# ---------------------------------------------------------------- 段落 5：倒吊（D-167）
+
+## 站在東岸抓繩子的地方（段落 5 還沒開始）。
+func near_hang_spot() -> bool:
+	if hang_active or clapper_taken or _collapsing or Game.session.quests.stage_of(QUEST) != "hang":
+		return false
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	return player != null and _flat(player.global_position, HANG_SPOT) <= HANG_RANGE
+
+
+## 按互動鍵抓住繩子（測試也用）：先講一段（席菈綁繩子、彌夏催），講完／跳過才倒吊下去。
+func grab_hang_rope() -> void:
+	if hang_active or clapper_taken or _collapsing or Game.is_in_dialogue():
+		return
+	Game.start_dialogue(HANG_TALK)
+
+
+## 倒吊開始：諾恩站定抓著繩子、鏡頭往下看；席菈倒過來掛在木架橫樑下、頭在牠胸口上方。
+func _begin_hang() -> void:
+	if hang_active or clapper_taken:
+		return
+	hang = HangRope.new()
+	hang_active = true
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player != null:
+		player.held_in_place = true
+		player.global_position = HANG_SPOT
+		player.velocity = Vector3.ZERO
+		var body: Node3D = player.get_node_or_null("Body") as Node3D
+		if body != null:
+			body.rotation.y = hang_yaw()
+		player.yaw = hang_yaw()
+		player.snap_camera()
+	_build_hang_rig()
+	_use_hang_camera(true)
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		var pup: Puppet = _puppet_of(ally)
+		if pup != null:
+			pup.set_move_speed(0.0)
+		ally.process_mode = Node.PROCESS_MODE_DISABLED
+	_update_hang_rig()
+	if _misha != null:
+		_misha.global_position = HANG_SPOT + Vector3(0.6, -0.05, 1.3)
+		_misha.rotation.y = hang_yaw()
+
+
+## 倒吊鏡頭的朝向（水平）：擺盪的軸跟著它，左右晃就是畫面左右。
+static func hang_yaw() -> float:
+	var to: Vector3 = HANG_CAM_LOOK - HANG_CAM_POS
+	return atan2(-to.x, -to.z)
+
+
+## 倒吊時換成固定的鏡頭；結束換回玩家的鏡頭。
+func _use_hang_camera(on: bool) -> void:
+	if on:
+		if _hang_cam == null:
+			_hang_cam = Camera3D.new()
+			_hang_cam.name = "HangCam"
+			_hang_cam.fov = 62.0
+			add_child(_hang_cam)
+			_hang_cam.look_at_from_position(HANG_CAM_POS, HANG_CAM_LOOK)
+		_prev_cam = get_viewport().get_camera_3d()
+		_hang_cam.make_current()
+	elif _hang_cam != null:
+		_hang_cam.current = false
+		if _prev_cam != null and is_instance_valid(_prev_cam):
+			_prev_cam.make_current()
+
+
+## 繩子從諾恩手上拉到木架橫樑、再垂下去綁在席菈腰上（倒吊的時候她跟著轉軸擺）。
+func _build_hang_rig() -> void:
+	if _hang_pivot != null:
+		_hang_pivot.visible = true
+		return
+	var rope_mat: StandardMaterial3D = _mat(Color(0.42, 0.36, 0.26), 1.0)
+	_hang_pivot = Node3D.new()
+	_hang_pivot.name = "HangPivot5"
+	add_child(_hang_pivot)
+	_hang_pivot.global_position = HANG_ANCHOR
+	_hang_pivot.rotation = Vector3(0.0, hang_yaw(), 0.0)
+	var length: float = hang_rope_length()
+	var down := MeshInstance3D.new()
+	down.name = "HangRopeDown"
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.016
+	cm.bottom_radius = 0.016
+	cm.height = length
+	cm.radial_segments = 6
+	cm.material = rope_mat
+	down.mesh = cm
+	down.position = Vector3(0.0, -length * 0.5, 0.0)
+	down.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_hang_pivot.add_child(down)
+	# 倒過來（繞 X 轉半圈：頭朝下、臉朝東岸的鏡頭）；腳在上、腰在繩子末端
+	_hang_mount = Node3D.new()
+	_hang_mount.name = "HangMount"
+	_hang_mount.position = Vector3(0.0, -length + Puppet.HIP_HEIGHT, 0.0)
+	_hang_mount.rotation = Vector3(PI, 0.0, 0.0)
+	_hang_pivot.add_child(_hang_mount)
+	var hand: Vector3 = HANG_SPOT + Vector3(-0.35, 1.05, 0.0)
+	_hang_rope_up = _line_between("HangRopeUp", hand, HANG_ANCHOR, 0.016, rope_mat)
+
+
+## 繩子多長：倒吊下去之後她的頭剛好在鐘舌上方一點。
+func hang_rope_length() -> float:
+	var target_y: float = BED_Y + 1.0
+	if _clapper_light != null and _clapper_light.is_inside_tree():
+		target_y = _clapper_light.global_position.y
+	# 腳到頭約 1.7 m，腰在腳下 HIP_HEIGHT
+	return clampf(HANG_ANCHOR.y - (target_y + 0.35) - (1.7 - Puppet.HIP_HEIGHT), 2.0, 7.0)
+
+
+func _update_hang_rig() -> void:
+	if _hang_pivot == null or hang == null:
+		return
+	_hang_pivot.rotation.z = hang.sway * HANG_SWAY_RAD
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	# 摔進泥裡之後就不再跟著繩子（繩子猛拉的補間結束時還會叫一次）
+	if ally != null and _hang_mount != null and not _in_mud:
+		ally.global_transform = _hang_mount.global_transform
+
+
+## 倒吊的一幀（測試也用）：hold＝按住拉住、steer＝左右（-1～1）。切完 → 抓到鐘舌。
+func hang_tick(delta: float, hold: bool, steer: float) -> void:
+	if not hang_active or hang == null:
+		return
+	var bumped: bool = hang.step(delta, hold, steer)
+	_update_hang_rig()
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if bumped:
+		var ally: Node3D = get_node_or_null("Sheila") as Node3D
+		var at: Vector3 = ally.global_position if ally != null else HANG_ANCHOR
+		Sfx.play_at(self, "iron_clang", at, -8.0, 0.08)
+		if player != null:
+			player.shake(0.18)
+		_banner("CH3_HANG_BUMP", 1.6)
+	_hang_cut_sfx -= delta
+	if hang.cutting() and _hang_cut_sfx <= 0.0:
+		_hang_cut_sfx = 0.55
+		Sfx.play_at(self, "whoosh", _undertaker.global_position + Vector3(0.0, 1.5, 0.0), -12.0, 0.1)
+	if hang.done:
+		_grab_clapper()
+
+
+## 她抓到鐘舌的瞬間煤堆塌了：繩子猛拉、畫面一震、彌夏撲過來壓住繩尾 → COLLAPSE_SEC 秒後三個人摔進泥裡。
+func _grab_clapper() -> void:
+	if _collapsing or clapper_taken:
+		return
+	hang_active = false
+	_collapsing = true
+	_take_clapper()
+	var heap_at: Vector3 = Vector3(SLUICE_PASS_X, BED_Y + 0.3, CART_Z)
+	_coal_dust(heap_at)
+	Sfx.play_at(self, "rubble_scrape", heap_at, 0.0, 0.05)
+	Sfx.play_flat(self, "deep_rumble", -4.0)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player != null:
+		player.shake(0.9)
+	_sway_lamp()
+	if _coal_heap != null:
+		var tw_heap := create_tween()
+		tw_heap.tween_property(_coal_heap, "scale:y", _coal_heap.scale.y * 0.55, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# 繩子猛地一拉：她整個人往上彈
+	if _hang_pivot != null:
+		var tw := create_tween()
+		tw.tween_property(_hang_pivot, "position:y", _hang_pivot.position.y + 1.1, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_callback(_update_hang_rig)
+	if _misha != null:
+		_misha.global_position = HANG_SPOT + Vector3(0.45, -0.05, 0.7)
+	get_tree().create_timer(COLLAPSE_SEC).timeout.connect(_fall_in_mud)
+
+
+## 鐘舌被拿走：胸口不再亮。
+func _take_clapper() -> void:
+	clapper_taken = true
+	if _clapper_light != null:
+		_clapper_light.visible = false
+	if _undertaker != null:
+		var rod: Node3D = _undertaker.find_child("Clapper", true, false) as Node3D
+		if rod != null:
+			rod.visible = false
+
+
+## 測試用：不等 COLLAPSE_SEC，直接摔進泥裡。
+func finish_collapse() -> void:
+	_fall_in_mud()
+
+
+## 三個人一起摔在泥裡（黑一下）：仰躺在東岸 → 對話 ch3_hang_end（高手。嗯？下次換你倒吊。）
+func _fall_in_mud() -> void:
+	if _in_mud or not is_inside_tree() or not _collapsing:
+		return
+	_in_mud = true
+	_cut_black(1.0)
+	if _hang_pivot != null:
+		_hang_pivot.visible = false
+	if _hang_rope_up != null:
+		_hang_rope_up.visible = false
+	if _hang_cam != null:
+		_hang_cam.look_at_from_position(MUD_CAM_POS, MUD_CAM_LOOK)
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		ally.process_mode = Node.PROCESS_MODE_INHERIT
+		ally.rotation = Vector3.ZERO
+	var people: Array[Node3D] = [player, ally, _misha]
+	for i: int in people.size():
+		var who: Node3D = people[i]
+		if who == null:
+			continue
+		who.global_position = MUD_SPOTS[i] + Vector3(0.0, 0.03, 0.0)
+		# 仰躺、頭朝南（+Z，鏡頭那一側）
+		if who is PlayerController:
+			var pc: PlayerController = who as PlayerController
+			pc.held_in_place = false
+			pc.velocity = Vector3.ZERO
+			pc.rotation.y = 0.0
+			var body: Node3D = pc.get_node_or_null("Body") as Node3D
+			if body != null:
+				body.rotation.y = 0.0
+			# 站起來之後的鏡頭：往北看閘道
+			pc.yaw = 0.0
+			pc.pitch = -0.3
+			pc.snap_camera()
+		else:
+			who.rotation.y = 0.0
+		var pup: Puppet = _puppet_of(who)
+		if pup != null:
+			pup.lying = "back"
+	Game.start_dialogue(HANG_END_TALK)
+
+
+## 對話講完／跳過：站起來、鐘舌拿到了（日記多一條「乾運河的泥」）→ 檢查點 ch3_clapper → 段落 6 待續。
+func _on_hang_end() -> void:
+	_stand_up()
+	_use_hang_camera(false)
+	_collapsing = false
+	if bool(Game.session.state.get_flag("ch3.clapper_taken", false)):
+		return
+	Game.session.set_flag("ch3.clapper_taken", true)
+	if not _continued_shown:
+		_continued_shown = true
+		_banner("CH1_TO_BE_CONTINUED", 6.0)
+
+
+## 畫面黑一下再亮回來（摔進泥裡的那一下）。
+func _cut_black(seconds: float) -> void:
+	var old: Node = get_node_or_null("CutFade")
+	if old != null:
+		old.free()
+	var layer := CanvasLayer.new()
+	layer.name = "CutFade"
+	layer.layer = 5
+	var rect := ColorRect.new()
+	rect.color = Color.BLACK
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	add_child(layer)
+	var tw: Tween = layer.create_tween()
+	tw.tween_interval(seconds * 0.3)
+	tw.tween_property(rect, "color:a", 0.0, seconds * 0.7)
+	tw.tween_callback(layer.queue_free)
 
 
 ## 太早／太晚：煤沒有壓住，牠甩了一下、轉向諾恩（掙脫後的戰鬥分支還沒做，D-166）。

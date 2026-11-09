@@ -53,6 +53,8 @@ var last_weak_hits: int = 0
 var lock_target: Node3D = null
 var lock_blocked: float = 0.0
 ## 被抓（送葬者抓取）：抓住的人、剩餘秒數、已掙扎次數、需要幾次
+## 關卡要玩家站著不動（例如第 3 章倒吊時抓著繩子）：移動、閃避、攻擊都不吃；左右輸入交給關卡
+var held_in_place: bool = false
 var grabbed_by: Node3D = null
 var grab_left: float = 0.0
 var struggle: int = 0
@@ -255,7 +257,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var talking: bool = Game.is_player_locked()
+	var talking: bool = Game.is_player_locked() or held_in_place
 	if talking:
 		input = Vector2.ZERO
 	insight_active = Input.is_action_pressed("insight") and not talking and not health.is_dead()

@@ -16,6 +16,23 @@
       "unlocked_when": {
         "flag": "slice.saw_south_arch"
       }
+    },
+    {
+      "id": "ch3_first_laugh",
+      "title": "JM_CH3_LAUGH_TITLE",
+      "context": "JM_CH3_LAUGH_CONTEXT",
+      "body": "JM_CH3_LAUGH_BODY",
+      "residue": "JM_CH3_LAUGH_RESIDUE",
+      "people": [
+        "sheila",
+        "misha"
+      ],
+      "places": [
+        "dry_canal"
+      ],
+      "unlocked_when": {
+        "flag": "ch3.clapper_taken"
+      }
     }
   ]
 }

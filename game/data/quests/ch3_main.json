@@ -56,9 +56,18 @@
       "id": "hang",
       "objective": "Q_CH3_OBJ_HANG",
       "checkpoint": "ch3_pinned",
-      "marker": "node:ClapperUndertaker",
+      "marker": "node:HangSpot",
       "done_when": {
         "flag": "ch3.clapper_taken"
+      }
+    },
+    {
+      "id": "misha_map",
+      "objective": "Q_CH3_OBJ_MAP",
+      "checkpoint": "ch3_clapper",
+      "marker": "node:Misha",
+      "done_when": {
+        "flag": "ch3.misha_map_given"
       }
     }
   ]

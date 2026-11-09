@@ -1023,7 +1023,7 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 
 
 ## 段落 4 煤車（D-166）：抬頭看見閘道上面的煤車（對話）→ 把假心臟垂到閘道另一邊 → 牠從煤車底下走過去 → 站在繩子旁割斷 →
-## 壓住 → 檢查點 ch3_pinned → 段落 5 待續。alt：先割太早（牠掙脫 → 回到 ch3_lured、不再重講對話），再按住重現讓牠停在正下方割；
+## 壓住 → 檢查點 ch3_pinned → 段落 5 倒吊（_chapter3_hang）。alt：先割太早（牠掙脫 → 回到 ch3_lured、不再重講對話），再按住重現讓牠停在正下方割；
 ## 否則看牠走路的時機割（提早 FALL_SEC 秒的路程）。
 func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 	var s: GameSession = _game.get("session") as GameSession
@@ -1113,8 +1113,88 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 	assert_eq(_objective(canal), "Q_CH3_OBJ_HANG", "[ch3_pinned] HUD 目標：煤壓住了牠")
 	assert_true(bool(canal.get("pinned")), "[ch3_pinned] 牠還被壓著")
 	assert_true((canal.get_node("CoalHeap") as Node3D).visible and not (canal.get_node("CartRopeLine") as Node3D).visible, "[ch3_pinned] 煤堆還在、繩子斷了")
+	await _chapter3_hang(canal, alt)
+
+
+## 段落 5 倒吊（D-167）：走到東岸抓繩子的地方 → 對話 ch3_hang_plan → 按住拉住＋左右修正 → 抓到鐘舌、煤堆塌了
+## → 三個人摔進泥裡（仰躺）→ 對話 ch3_hang_end → 日記「乾運河的泥」→ 檢查點 ch3_clapper → 段落 6 待續。
+## alt：先放開（切不到）、再按住但不修正（撞到鐵架），最後才穩住。
+func _chapter3_hang(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var player: PlayerController = _player(canal)
+	var hang_spot: Vector3 = canal.get("HANG_SPOT") as Vector3
+	var guide: Vector3 = ObjectiveGuide.resolve_target(canal, s.quests.marker_spec("ch3_main"), player.global_position)
+	assert_true(Vector2(guide.x - hang_spot.x, guide.z - hang_spot.z).length() < 0.01, "目標指引：東岸抓繩子的地方")
+	await _step_into(player, hang_spot, 2)
+	assert_true(bool(canal.call("near_hang_spot")), "站在抓繩子的地方")
+	assert_eq(str((canal.call("interact_hint") as Dictionary).get("fmt", "")), str(TranslationServer.translate("CH3_HANG_GRAB_HINT")), "提示：抓住席菈的繩子")
+	canal.call("grab_hang_rope")
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_pinned] 段落 5 待續")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_true(_game.call("is_in_dialogue"), "抓繩子之前先講一段")
+	assert_eq(runner.dialogue_id, "ch3_hang_plan")
+	for i: int in 10:
+		if not runner.is_running():
+			break
+		runner.advance()
+	await tree.process_frame
+	assert_true(bool(canal.get("hang_active")), "倒吊開始")
+	assert_true(player.held_in_place, "諾恩站著抓繩子，不會走掉")
+	var ally: Node3D = canal.get_node("Sheila") as Node3D
+	assert_true(ally.global_basis.y.y < -0.9, "席菈倒過來、頭朝下")
+	var head: Vector3 = ally.global_position + ally.global_basis.y * 1.7
+	var clapper: Vector3 = (canal.call("clapper_light") as Node3D).global_position
+	assert_true(head.distance_to(clapper) < 1.2, "她的頭在鐘舌附近（差 %.2f m）" % head.distance_to(clapper))
+	var hang: HangRope = canal.get("hang") as HangRope
+	var dt: float = 1.0 / 60.0
+	if alt:
+		for i: int in 120:
+			canal.call("hang_tick", dt, false, 0.0)
+		assert_eq(hang.progress, 0.0, "沒按住：切不到")
+		for i: int in 60 * 8:
+			canal.call("hang_tick", dt, true, 0.0)
+		assert_true(hang.bumps >= 1, "按住但不修正：撞到鐵架")
+		assert_false(hang.done, "撞來撞去還沒切完")
+		assert_eq(str((canal.call("interact_hint") as Dictionary).get("fmt", "")), str(TranslationServer.translate("CH3_HANG_HOLD_HINT")), "提示：按住拉住、左右修正")
+	var sway_seen: float = 0.0
+	for i: int in 60 * 20:
+		if not bool(canal.get("hang_active")):
+			break
+		canal.call("hang_tick", dt, true, HangRope.counter_steer(hang))
+		sway_seen = maxf(sway_seen, absf((canal.get_node("HangPivot5") as Node3D).rotation.z))
+	assert_true(hang.done, "穩住：切開了")
+	assert_true(sway_seen > 0.01, "繩子跟著擺")
+	assert_true(bool(canal.get("clapper_taken")), "抓到鐘舌")
+	assert_false((canal.call("clapper_light") as Node3D).visible, "牠胸口不亮了")
+	assert_true(canal.has_node("CoalDust"), "煤堆塌了：粉塵")
+	canal.call("finish_collapse")
+	await tree.process_frame
+	assert_true(_game.call("is_in_dialogue"), "摔進泥裡")
+	runner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_hang_end")
+	assert_true(bool(canal.call("is_on_back", player)) and bool(canal.call("is_on_back", ally)) and bool(canal.call("is_on_back", canal.get_node("Misha"))), "三個人一起仰躺在泥裡")
+	assert_true(ally.global_basis.y.y > 0.9, "席菈翻回來了")
+	assert_false(player.held_in_place, "放開繩子")
+	for i: int in 10:
+		if not runner.is_running():
+			break
+		runner.advance()
+	await tree.process_frame
+	assert_false(_game.call("is_in_dialogue"), "講完")
+	assert_false(bool(canal.call("is_on_back", player)), "站起來")
+	assert_eq(s.state.get_flag("ch3.clapper_taken"), true)
+	var journal: Journal = Journal.load_default()
+	assert_true(journal.visible_ids(s.state).has("ch3_first_laugh"), "日記多一條：乾運河的泥")
+	assert_eq(s.quests.stage_of("ch3_main"), "misha_map", "→ 段落 6 彌夏的圖")
+	assert_eq(s.state.checkpoint, "ch3_clapper", "檢查點 ch3_clapper")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 6 待續")
+	canal = await _retry()
+	assert_eq(str(canal.name), "Canal", "[ch3_clapper] 重來還在乾運河")
+	assert_eq(_objective(canal), "Q_CH3_OBJ_MAP", "[ch3_clapper] HUD 目標：彌夏有話要說")
+	assert_true(bool(canal.get("clapper_taken")) and bool(canal.get("pinned")), "[ch3_clapper] 鐘舌拿到了、牠還壓在煤下")
+	assert_false((canal.call("clapper_light") as Node3D).visible, "[ch3_clapper] 胸口不亮")
+	await tree.process_frame
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_clapper] 段落 6 待續")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。

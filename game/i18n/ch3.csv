@@ -73,3 +73,22 @@ CH3_CART_CUT_HINT,Press {key} — cut the rope,按 {key}　割斷繩子
 CH3_CART_PINNED,(The whole cart tipped. Coal poured down and buried most of it.),（整車煤傾下去，壓住了牠大半個身子。）
 CH3_CART_EARLY,"(Too early. The coal landed in front of it. It climbed over the heap and shook itself free—)",（太早了。煤落在牠前面——牠爬過煤堆，掙脫了。）
 CH3_CART_LATE,"(Too late. The coal only caught its frame. It tore itself loose—)",（太晚了。煤只砸到牠背後的鐵架——牠掙脫了。）
+Q_CH3_OBJ_MAP,"On the way back, Misha has something to say",回程的路上，彌夏有話要說
+DLG_CH3_HANG_001,"(Sheila looped the rope twice around her waist, knotted it, and pushed the other end into my hands.)",（席菈把繩子在腰上繞了兩圈、打了個結，另一頭塞進我手裡。）
+DLG_CH3_HANG_002,I'm going down. You hold on.,我下去。你抓著。
+DLG_CH3_HANG_003,Sword in my left hand. The right one's for the thing in its chest.,左手拿劍。右手要抓牠胸口那根東西。
+DLG_CH3_HANG_004,That heap won't hold for long. Hurry.,煤堆撐不了多久。快。
+DLG_CH3_HANG_005,"(Don't let go. Whichever way she swings, pull the other way.)",（按住別放。她往哪邊晃，就往反方向拉。）
+DLG_CH3_HANG_END_001,"(The moment her hand closed on the clapper, the coal heap gave way. The rope snapped taut. Misha threw herself onto the end of it—and the three of us went down in the mud.)",（她抓到鐘舌的那一刻，煤堆塌了。繩子猛地一緊，彌夏撲過來壓住繩尾——我們三個人一起摔在泥裡。）
+DLG_CH3_HANG_END_002,(Sheila lay on her back and held the clapper up high.),（席菈仰躺著，把鐘舌高高舉起。）
+DLG_CH3_HANG_END_003,Expert.,高手。
+DLG_CH3_HANG_END_004,Hm?,嗯？
+DLG_CH3_HANG_END_005,"Next time, you're the one hanging upside down.",下次換你倒吊。
+DLG_CH3_HANG_END_006,(I laughed. I laughed until everything that hurt started to throb.),（我笑了，笑到身上的傷一抽一抽地痛。）
+CH3_HANG_GRAB_HINT,Press {key} — take hold of Sheila's rope,按 {key}　抓住席菈的繩子
+CH3_HANG_HOLD_HINT,Hold {key} — keep her steady (left / right to stop the swing),按住 {key}　拉住繩子（左右修正擺盪）
+CH3_HANG_BUMP,(She swung into the iron frame—),（她撞到鐵架了——）
+JM_CH3_LAUGH_TITLE,Mud in the Dry Canal,乾運河的泥
+JM_CH3_LAUGH_CONTEXT,Sheila went down head-first for the clapper. I held the rope on the bank.,席菈倒吊下去拿鐘舌，我在岸上抓著繩子。
+JM_CH3_LAUGH_BODY,"When the coal heap gave way, all three of us went down in the mud. She lay on her back and held the clapper up high. ""Expert."" ""Hm?"" ""Next time, you're the one hanging upside down."" I laughed. The first time I'd laughed since I came to this world.",煤堆塌下來的時候，我們三個人一起摔進泥裡。她仰躺著，把鐘舌舉得高高的。「高手。」「嗯？」「下次換你倒吊。」我笑了。來到這個世界以後，第一次笑。
+JM_CH3_LAUGH_RESIDUE,I still remember the smell of the mud. I can't remember why I laughed.,泥的味道還在。為什麼笑，想不起來了。
