@@ -349,6 +349,7 @@ func _ready() -> void:
 	_build_bridge()
 	_build_sluice()
 	_build_sluice_lamp()
+	_build_mud_patch()
 	_build_ceiling()
 	_build_undertaker()
 	_build_drain()
@@ -2351,6 +2352,64 @@ func deck_mat() -> ShaderMaterial:
 
 func cart_mat() -> ShaderMaterial:
 	return interior.plank("canal_cart", Color(0.2, 0.155, 0.11), 0.125, 1.2, {"seam_dark": 0.9, "base_roughness": 0.84})
+
+
+## 段落 5 三個人摔下來的那一片泥（東岸 MUD_SPOTS 一帶）：不規則的一大片＋幾滴濺出去的小泥點，
+## 用河床同一個 shader 但整片是濕的（暗、亮）；平的扇形 mesh 貼在石板上 1 cm。一開始就在（地底到處是爛泥）。
+const MUD_PATCH_CENTER: Vector3 = Vector3(5.25, 0.0, SLUICE_Z + 3.0)
+const MUD_PATCH_RADIUS: Vector2 = Vector2(1.35, 0.95)
+const MUD_PATCH_LIFT: float = 0.01
+
+
+func _build_mud_patch() -> void:
+	var m := ShaderMaterial.new()
+	m.shader = load(DRY_MUD_SHADER) as Shader
+	m.set_shader_parameter("mud_color", Color(0.22, 0.17, 0.125))
+	m.set_shader_parameter("wet_x", MUD_PATCH_CENTER.x)
+	m.set_shader_parameter("wet_half", 9.0)
+	var root := Node3D.new()
+	root.name = "MudPatch"
+	root.position = MUD_PATCH_CENTER + Vector3(0.0, MUD_PATCH_LIFT, 0.0)
+	add_child(root)
+	var main := MeshInstance3D.new()
+	main.name = "Main"
+	main.mesh = mud_blob_mesh(MUD_PATCH_RADIUS, 7)
+	main.material_override = m
+	main.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(main)
+	for i: int in 6:
+		var a: float = i * TAU / 6.0 + 0.4 * sin(i * 3.1)
+		var d: float = 1.0 + 0.25 * float(i % 3)
+		var splat := MeshInstance3D.new()
+		splat.name = "Splat%d" % i
+		var r: float = 0.09 + 0.05 * float((i * 7) % 3)
+		splat.mesh = mud_blob_mesh(Vector2(r, r * 0.8), 20 + i)
+		splat.material_override = m
+		splat.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		splat.position = Vector3(cos(a) * MUD_PATCH_RADIUS.x * d, 0.0, sin(a) * MUD_PATCH_RADIUS.y * d)
+		root.add_child(splat)
+
+
+## 不規則的扁平泥塊（XZ 平面、朝上）：半徑 radius（x、z），邊緣用幾個正弦疊出凹凸；seed 換形狀。
+static func mud_blob_mesh(radius: Vector2, seed_i: int) -> ArrayMesh:
+	var n: int = 28
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3.UP)
+	var rim: PackedVector3Array = []
+	for i: int in n:
+		var a: float = float(i) / float(n) * TAU
+		var k: float = 1.0 + 0.16 * sin(a * 3.0 + seed_i * 1.7) + 0.09 * sin(a * 7.0 + seed_i * 0.9) + 0.05 * sin(a * 13.0 + seed_i * 2.3)
+		rim.append(Vector3(cos(a) * radius.x * k, 0.0, sin(a) * radius.y * k))
+	for i: int in n:
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3.ZERO)
+		st.set_normal(Vector3.UP)
+		st.add_vertex(rim[i])
+		st.set_normal(Vector3.UP)
+		st.add_vertex(rim[(i + 1) % n])
+	st.index()
+	return st.commit()
 
 
 ## 兩岸（岸頂 y＝0）、河床（龜裂的乾泥＋中間一條還沒乾的淺水）、岸邊的壓頂石與矮牆、最外側的岩壁、南北兩端的牆。

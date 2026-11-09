@@ -36,3 +36,25 @@ func test_half_timber_tide_defaults_off() -> void:
 	# 鎮上與室內的牆不受影響：tide_amount 預設 0
 	var sh: Shader = load(FrostbridgeLook.HALF_TIMBER_SHADER) as Shader
 	assert_true(sh.code.contains("uniform float tide_amount : hint_range(0.0, 1.0) = 0.0;"), "半木構 shader 的舊水位線預設關掉")
+
+
+func test_mud_patch_under_the_fall_spots() -> void:
+	var c: Vector3 = _const("MUD_PATCH_CENTER") as Vector3
+	var r: Vector2 = _const("MUD_PATCH_RADIUS") as Vector2
+	for p: Vector3 in _const("MUD_SPOTS") as PackedVector3Array:
+		var q := Vector2((p.x - c.x) / r.x, (p.z - c.z) / r.y)
+		assert_true(q.length() < 0.85, "摔下來的位置 %s 在泥裡" % str(p))
+	assert_true(c.x - r.x * 1.3 > float(_const("CANAL_HALF_W")) + 0.4, "泥（含凸出去的邊）不壓到矮牆")
+
+
+func test_mud_blob_mesh_faces_up() -> void:
+	var script: GDScript = load(CANAL) as GDScript
+	var mesh: ArrayMesh = script.call("mud_blob_mesh", Vector2(1.0, 0.6), 3) as ArrayMesh
+	assert_eq(mesh.get_surface_count(), 1, "一個 surface")
+	var faces: PackedVector3Array = mesh.get_faces()
+	assert_true(faces.size() >= 28 * 3, "邊緣有 28 段")
+	for i: int in range(0, faces.size(), 3):
+		var nrm: Vector3 = (faces[i + 2] - faces[i]).cross(faces[i + 1] - faces[i])
+		assert_true(nrm.y > 0.0, "第 %d 個三角形朝上（Godot 順時針是正面）" % (i / 3))
+		if nrm.y <= 0.0:
+			break
