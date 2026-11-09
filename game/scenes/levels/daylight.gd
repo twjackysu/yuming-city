@@ -511,17 +511,32 @@ func _build_rabbit_street() -> void:
 
 
 ## 柯德家的屋內：木地板、白灰牆、關著的窗板、一盞不投影子的白燈；桌上五片麵包（孩子各兩片、太太一片）、柯德面前只有一杯水。
+## 柯德家的室內材質（第 53 輪，D-171，InteriorLook）：木板地、牆腳石塊＋舊灰泥（沒有木框：地底城的房子是石頭砌的，
+## 灰泥上只有髒污、雨痕與天花板下的煙燻）、天花板木板、桌面、門板與櫥櫃直排木板。
+const HOUSE_STONE_H: float = 0.5
+var interior := InteriorLook.new()
+
+
+func house_wall_mat() -> ShaderMaterial:
+	return interior.wall("kord", PLASTER, STONE, HOUSE_STONE_H, {
+		"floor_height": 99.0, "post_spacing": 99.0, "brace_chance": 0.0, "beam_width": 0.1,
+		"block_scale": 0.7, "soot": 0.65, "soot_top": HOUSE_HEIGHT, "soot_depth": 1.4,
+	})
+
+
 func _build_house() -> void:
 	var o: Vector3 = HOUSE_ORIGIN
 	var hx: float = HOUSE_HALF.x
 	var hz: float = HOUSE_HALF.y
-	var floor_mat := _mat(Color(0.42, 0.33, 0.24), 0.9)
+	var floor_mat := interior.plank("kord_floor", Color(0.36, 0.28, 0.2), 0.17, 2.0, {"wear": 0.7, "seam_dark": 0.7})
 	_solid("HouseFloor", Vector3(hx * 2.0 + 0.6, 0.4, hz * 2.0 + 0.6), o + Vector3(0, -0.2, 0), floor_mat)
-	_solid("HouseCeiling", Vector3(hx * 2.0 + 0.6, 0.3, hz * 2.0 + 0.6), o + Vector3(0, HOUSE_HEIGHT + 0.15, 0), _plaster_mat)
-	_solid("HouseWallN", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, -hz - 0.15), _plaster_mat)
-	_solid("HouseWallS", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, hz + 0.15), _plaster_mat)
-	_solid("HouseWallW", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(-hx - 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
-	_solid("HouseWallE", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(hx + 0.15, HOUSE_HEIGHT * 0.5, 0), _plaster_mat)
+	var ceiling := interior.plank("kord_ceiling", Color(0.3, 0.24, 0.18), 0.15, 2.6, {"along_z": true, "seam_dark": 0.5})
+	_solid("HouseCeiling", Vector3(hx * 2.0 + 0.6, 0.3, hz * 2.0 + 0.6), o + Vector3(0, HOUSE_HEIGHT + 0.15, 0), ceiling)
+	var wall := house_wall_mat()
+	_solid("HouseWallN", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, -hz - 0.15), wall)
+	_solid("HouseWallS", Vector3(hx * 2.0 + 0.6, HOUSE_HEIGHT, 0.3), o + Vector3(0, HOUSE_HEIGHT * 0.5, hz + 0.15), wall)
+	_solid("HouseWallW", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(-hx - 0.15, HOUSE_HEIGHT * 0.5, 0), wall)
+	_solid("HouseWallE", Vector3(0.3, HOUSE_HEIGHT, hz * 2.0), o + Vector3(hx + 0.15, HOUSE_HEIGHT * 0.5, 0), wall)
 	# 屋裡不要穹頂下的白霧（全域的體積霧在小房間裡像起霧）：一個負密度的 FogVolume 把它扣掉
 	var clear := FogVolume.new()
 	clear.name = "HouseFogClear"
@@ -533,10 +548,12 @@ func _build_house() -> void:
 	add_child(clear)
 	# 牆腳一圈石砌、南牆的門（關著）、西牆關著的窗板、東牆的櫥櫃
 	for side: int in [-1, 1]:
-		_solid("HousePlinth", Vector3(0.06, 0.5, hz * 2.0), o + Vector3(side * (hx - 0.03), 0.25, 0), _stone_mat, false)
-	_solid("HouseInnerDoor", Vector3(1.0, 2.1, 0.08), o + Vector3(-1.6, 1.05, hz - 0.04), _wood_mat, false)
-	_solid("HouseShutter", Vector3(0.08, 1.0, 1.2), o + Vector3(-hx + 0.04, 1.6, -1.2), _shutter_mat, false)
-	_solid("HouseCupboard", Vector3(0.6, 1.8, 1.4), o + Vector3(hx - 0.3, 0.9, -1.8), _wood_mat)
+		_solid("HousePlinth", Vector3(0.06, HOUSE_STONE_H, hz * 2.0), o + Vector3(side * (hx - 0.03), HOUSE_STONE_H * 0.5, 0), wall, false)
+	var boards := interior.plank("kord_door", WOOD, 0.22, 4.0, {"vertical_planks": true, "seam_dark": 0.8})
+	_solid("HouseInnerDoor", Vector3(1.0, 2.1, 0.08), o + Vector3(-1.6, 1.05, hz - 0.04), boards, false)
+	_solid("HouseShutter", Vector3(0.08, 1.0, 1.2), o + Vector3(-hx + 0.04, 1.6, -1.2),
+		interior.plank("kord_shutter", SHUTTER, 0.2, 4.0, {"vertical_planks": true, "seam_dark": 0.8}), false)
+	_solid("HouseCupboard", Vector3(0.6, 1.8, 1.4), o + Vector3(hx - 0.3, 0.9, -1.8), boards)
 	# 白晝城的燈：天花板上一顆小白燈（不是光源；屋裡一樣沒有影子，只有油燈）
 	var bulb := MeshInstance3D.new()
 	bulb.name = "HouseLamp"
@@ -550,7 +567,8 @@ func _build_house() -> void:
 	add_child(bulb)
 	# 桌子：桌面＋四隻腳
 	var t: Vector3 = o + TABLE_POS
-	_solid("DinnerTable", Vector3(TABLE_SIZE.x, 0.08, TABLE_SIZE.y), t + Vector3(0, TABLE_TOP - 0.04, 0), _wood_mat)
+	var table_top := interior.plank("kord_table", WOOD.lightened(0.1), 0.25, 3.0, {"base_roughness": 0.62, "seam_dark": 0.6})
+	_solid("DinnerTable", Vector3(TABLE_SIZE.x, 0.08, TABLE_SIZE.y), t + Vector3(0, TABLE_TOP - 0.04, 0), table_top)
 	for leg: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
 		var lp := Vector3(leg.x * (TABLE_SIZE.x * 0.5 - 0.08), (TABLE_TOP - 0.08) * 0.5, leg.y * (TABLE_SIZE.y * 0.5 - 0.08))
 		_solid("DinnerTableLeg", Vector3(0.07, TABLE_TOP - 0.08, 0.07), t + lp, _wood_mat, false)

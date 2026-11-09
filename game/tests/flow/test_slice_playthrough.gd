@@ -534,6 +534,11 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	assert_true(_flat_dist(_player(city).global_position, house) < 3.0, "諾恩在屋裡的桌邊")
 	for n: String in ["KordWife", "KordDaughter", "KordSon", "DinnerTable", "KordWater"]:
 		assert_true(city.has_node(n), "屋裡有 " + n)
+	# 室內材質（第 53 輪，D-171）：木板地、室內牆（不積雪）
+	var house_floor: ShaderMaterial = (city.get_node("HouseFloor") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(house_floor != null and house_floor.shader.resource_path == InteriorLook.PLANK_SHADER, "柯德家是木板地")
+	var house_wall: ShaderMaterial = (city.get_node("HouseWallN") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(house_wall != null and float(house_wall.get_shader_parameter("exterior")) == 0.0, "柯德家的牆是室內牆")
 	assert_true(_flat_dist((city.get_node("Kord") as Node3D).global_position, house) < 3.0, "柯德也在桌邊")
 	assert_true(_flat_dist((city.get_node("Sheila") as Node3D).global_position, house) < 3.0, "席菈也在桌邊")
 	assert_false((city.get_node("RationsSheila") as Node3D).visible, "席菈還沒放乾糧")

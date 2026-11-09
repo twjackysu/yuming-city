@@ -46,7 +46,7 @@ var _leaving: bool = false
 var _hearth_light: OmniLight3D
 var _window_light: OmniLight3D
 var _window_mat: StandardMaterial3D
-var _mats: Dictionary = {}
+var _look := InteriorLook.new()
 var _candle_light: OmniLight3D
 var _candle_flame: MeshInstance3D
 var _dev_face: String = ""
@@ -285,40 +285,18 @@ static func _cyl(top_r: float, bottom_r: float, h: float, segments: int = 16) ->
 	return cm
 
 
-## 室內木板（plank_wood.gdshader）：同一個 key 共用一個材質。
+## 室內木板（InteriorLook.plank，plank_wood.gdshader）：同一個 key 共用一個材質。
 func plank(key: String, color: Color, width: float, length: float, opts: Dictionary = {}) -> ShaderMaterial:
-	if _mats.has(key):
-		return _mats[key] as ShaderMaterial
-	var m := ShaderMaterial.new()
-	m.shader = load(PLANK_SHADER) as Shader
-	m.set_shader_parameter("wood_color", color)
-	m.set_shader_parameter("plank_width", width)
-	m.set_shader_parameter("plank_length", length)
-	for k: String in opts:
-		m.set_shader_parameter(k, opts[k])
-	_mats[key] = m
-	return m
+	return _look.plank(key, color, width, length, opts)
 
 
 ## 室內牆（half_timber.gdshader，exterior 0）：牆腳一圈石塊、上面灰泥＋深色木框，天花板下燻黑。
 ## stone_h 設大＝整面石頭（壁爐）。
 func interior_wall(key: String, stone_h: float, block_scale: float, soot: float, soot_top: float, soot_depth: float) -> ShaderMaterial:
-	if _mats.has(key):
-		return _mats[key] as ShaderMaterial
-	var m := ShaderMaterial.new()
-	m.shader = load(FrostbridgeLook.HALF_TIMBER_SHADER) as Shader
-	m.set_shader_parameter("plaster_color", PLASTER)
-	m.set_shader_parameter("stone_color", WALL_STONE)
-	m.set_shader_parameter("stone_height", stone_h)
-	m.set_shader_parameter("floor_height", TIMBER_FLOOR_H)
-	m.set_shader_parameter("post_spacing", POST_SPACING)
-	m.set_shader_parameter("block_scale", block_scale)
-	m.set_shader_parameter("exterior", 0.0)
-	m.set_shader_parameter("soot", soot)
-	m.set_shader_parameter("soot_top", soot_top)
-	m.set_shader_parameter("soot_depth", soot_depth)
-	_mats[key] = m
-	return m
+	return _look.wall(key, PLASTER, WALL_STONE, stone_h, {
+		"floor_height": TIMBER_FLOOR_H, "post_spacing": POST_SPACING, "block_scale": block_scale,
+		"soot": soot, "soot_top": soot_top, "soot_depth": soot_depth,
+	})
 
 
 func wall_mat() -> ShaderMaterial:
@@ -335,7 +313,7 @@ func table_mat() -> ShaderMaterial:
 
 ## 整根木頭（橫樑、桌腳、框）：板寬拉大＝沒有板縫、只有木紋
 func timber_mat() -> ShaderMaterial:
-	return plank("timber", Color(0.17, 0.12, 0.085), 8.0, 60.0, {"base_roughness": 0.82})
+	return _look.timber(Color(0.17, 0.12, 0.085))
 
 
 func _build_room() -> void:
