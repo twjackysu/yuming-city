@@ -61,4 +61,5 @@
 .\YumingCity.exe ++ --level=sandbox --enemies               # 沙盒裡的灰巡者
 .\YumingCity.exe ++ --level=canal                           # 第 3 章開頭：乾運河
 .\YumingCity.exe ++ --level=canal --canal-at=drain          # 第 3 章段落 2：趴在水溝裡選節奏
+.\YumingCity.exe ++ --level=canal --canal-at=heart          # 第 3 章段落 3：假心臟垂在河床上、送葬者走過來
 ```
