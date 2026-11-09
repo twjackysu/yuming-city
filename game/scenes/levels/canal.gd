@@ -132,6 +132,7 @@ func _ready() -> void:
 		_put(player, SPAWN, 0.0)
 	_set_up_lamp()
 	_build_people()
+	_start_ambience()
 	Game.dialogue_ended.connect(_on_dialogue_ended)
 	Game.dialogue_started.connect(_on_dialogue_started)
 	# 截圖用：`--canal-at=bank` 站在岸邊、對話第一句；`--canal-at=edge` 站在岸邊（不開對話）；`--canal-at=after` 岸邊的對話講完
@@ -198,6 +199,24 @@ func _set_up_lamp() -> void:
 		light.omni_range = LAMP_RANGE
 		light.light_energy = LAMP_ENERGY
 		light.shadow_enabled = true
+
+
+## 地底的環境音（空洞的低風、有回音的滴水、吊樑的嘎吱；10 秒循環，照 daylight 的做法）。
+func _start_ambience() -> void:
+	var src: AudioStreamWAV = Sfx.stream("canal_ambience") as AudioStreamWAV
+	if src == null:
+		return
+	var s: AudioStreamWAV = src.duplicate() as AudioStreamWAV
+	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	s.loop_begin = 0
+	s.loop_end = int(s.get_length() * float(s.mix_rate))
+	var p := AudioStreamPlayer.new()
+	p.name = "Ambience"
+	p.stream = s
+	p.bus = &"SFX"
+	p.volume_db = -10.0
+	add_child(p)
+	p.play()
 
 
 func lamp_light() -> OmniLight3D:

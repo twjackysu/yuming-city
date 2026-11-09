@@ -15,6 +15,7 @@
 - deep_rumble：窗外那堵黑牆「動了一下」（第 2 章段落 5）。很低的隆隆聲：30～70 Hz 的低通噪音＋兩個慢慢拍頻的低音，0.4 秒湧上來、2.6 秒退掉，像隔著石牆感覺到的震動。
 - cloth_knock：席菈用布包著的小石頭隔著銅片敲（第 3 章段落 2）。悶悶的「咚」：200 Hz 往下滑的短正弦＋很淡的銅片泛音（1.3／2.9 kHz，快速衰減，被布蓋住），0.25 秒。
 - chain_creak：掛著的送葬者要轉頭之前，鏈子先響（第 3 章段落 2 的觀察提示音）。三下很輕的鐵環碰撞「喀啦」＋一聲低低的摩擦，0.7 秒。
+- canal_ambience：乾運河的環境音（第 3 章，可循環 10 秒）。地底空空的低風聲（很低的低通噪音、慢慢起伏）＋遠處幾滴水（帶石牆的回音）＋吊樑很輕的一聲木頭嘎吱；頭尾交叉淡化，循環時沒有接縫。
 - slap：彌夏打黎歐的那一巴掌（第 2 章段落 3）。不重：很短的一聲帶通噪音「啪」（1～4 kHz、60 毫秒內衰減）＋一點點低頻的肉聲，0.2 秒。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
@@ -412,6 +413,48 @@ def chain_creak(seconds=0.7, seed=47):
     return [v / peak * 0.7 for v in out]
 
 
+def canal_ambience(seconds=10.0, seed=53):
+    """乾運河：空洞的低風＋有回音的滴水＋吊樑一聲嘎吱。頭尾交叉淡化成可循環。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(0.8 * RATE)
+    total = n + fade
+    wind = onepole_lp(onepole_lp(hp(noise(total, rng), 40), 260), 320)
+    out = []
+    for i in range(total):
+        t = i / RATE
+        swell = 0.6 + 0.3 * math.sin(2 * math.pi * 0.11 * t) + 0.15 * math.sin(2 * math.pi * 0.37 * t + 2.1)
+        out.append(wind[i] * swell * 2.2)
+    # 滴水：三個回音（石牆），越後面越小越悶
+    for at in (1.3, 4.6, 7.9):
+        f = rng.uniform(1100, 1500)
+        for echo, (delay, amp) in enumerate([(0.0, 0.2), (0.19, 0.08), (0.41, 0.04)]):
+            start = int((at + delay) * RATE)
+            for j in range(int(0.07 * RATE)):
+                if start + j >= total:
+                    break
+                tt = j / RATE
+                out[start + j] += amp * math.sin(2 * math.pi * (f - echo * 150 + 1500 * tt) * tt) * math.exp(-tt * 55)
+    # 吊樑：很輕的一聲木頭嘎吱（低頻摩擦，慢慢滑上去）
+    start = int(5.8 * RATE)
+    m = int(0.9 * RATE)
+    grain = onepole_lp(noise(m, rng), 2500)
+    phase = 0.0
+    for j in range(m):
+        tt = j / RATE
+        f = 210 + 120 * (tt / 0.9)
+        phase += 2 * math.pi * f / RATE
+        env = math.sin(math.pi * tt / 0.9) ** 2
+        saw = (phase / math.pi) % 2.0 - 1.0
+        out[start + j] += 0.07 * env * (0.6 * saw + 0.4 * grain[j]) * (0.7 + 0.3 * math.sin(2 * math.pi * 17 * tt))
+    looped = out[:n]
+    for i in range(fade):
+        w = i / fade
+        looped[i] = out[i] * w + out[n + i] * (1.0 - w)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.6 for v in looped]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -434,6 +477,7 @@ def main():
         write("deep_rumble", deep_rumble()),
         write("cloth_knock", cloth_knock()),
         write("chain_creak", chain_creak()),
+        write("canal_ambience", canal_ambience()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

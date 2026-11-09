@@ -951,6 +951,10 @@ func _assert_canal(canal: StoryLevel, tag: String) -> void:
 	assert_false(light.shadow_enabled, tag + " 鐘舌的銅光不投影子")
 	assert_true(light.light_color.r > light.light_color.b, tag + " 鐘舌是銅色的光")
 	assert_true(canal.has_node("BankEdge") and canal.has_node("Sheila") and canal.has_node("Misha"), tag + " 說話點、席菈、彌夏")
+	var amb: AudioStreamPlayer = canal.get_node_or_null("Ambience") as AudioStreamPlayer
+	assert_not_null(amb, tag + " 地底的環境音")
+	if amb != null:
+		assert_eq((amb.stream as AudioStreamWAV).loop_mode, AudioStreamWAV.LOOP_FORWARD, tag + " 環境音會循環")
 
 
 ## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。
