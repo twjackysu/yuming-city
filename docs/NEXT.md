@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 43 輪）的程式 commit：c1d4016 段落 3 鐘院內室（run 42595857204）、f546457 段落 4 牆上的紋路（run 42596957503）——收尾時的狀態見 PROGRESS 第 43 輪補記；**開工先看整個綠燈**，紅了看 log 修。screens 的 `21-ch2-inner`、`22-ch2-inner-after`、`23-ch2-carvings` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 325 個測試）。
+- 上一輪（第 43 輪）的程式 commit：c1d4016 段落 3 鐘院內室（run 42595857204 全綠，screens 的 `21-ch2-inner`、`22-ch2-inner-after` 看過）、f546457 段落 4 牆上的紋路（**run 42596957503：「Import、測試、匯出」已綠，盤點截圖、smoke test、打包收尾時還在跑——開工先看整個綠燈**，紅了看 log 修；`23-ch2-carvings` 還沒在 CI 上看過，本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 325 個測試）。
 - 上一輪（第 42 輪）的程式 commit：79ed43e 第 1 章結尾＋第 2 章飯桌（run 42587923930 全綠）、25219e8 看穿伊薩（run 42589085968：「測試與匯出」全綠，盤點截圖收尾時還在跑）、533ca34 段落 2（run 被下一個取代）、03b132a 湯慢慢涼（**run 42590378750：「Import、測試、匯出」已綠，smoke test、打包、盤點截圖收尾時還在跑——開工先看整個綠燈**，紅了看 log 修）；screens 的 `18-ch2-table`、`19-ch2-hall`、`20-ch2-isa-insight` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 324 個測試）。
 - 第 41 輪的程式 commit：84389e8 段落 8 晚餐（run 42580729105）、3ad9e6e 屋裡的構圖（run 被取消，內容在下一個裡）、d41419f 段落 9 兔子（**run 42581764946：測試、匯出、盤點截圖已綠，smoke test 與打包收尾時還在跑——開工先看整個綠燈**；screens 的 `16-ch1-dinner`、`17-ch1-bell-yard-road` 第 41 輪已看過）。開工照常先跑 `scripts/check.sh`（最後 322 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 40 輪的 run 都被 Jacky 的 c3059c8 run 42576367758 取代、已全綠（第 41 輪開工確認）。latest 的 `achievement-icons.zip` 第 41 輪看過：8 個成就 × 已解鎖／未解鎖，256×256，圖案都清楚。**第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
