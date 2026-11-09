@@ -579,6 +579,7 @@ func _chapter2(city: StoryLevel) -> void:
 	assert_eq(_objective(hall), "Q_CH2_OBJ_TABLE", "[ch2_start] HUD 目標")
 	assert_false(bool(hall.call("is_seated")), "[ch2_start] 還沒坐下")
 	await _assert_bell_hall(hall, "[ch2_start] 重來")
+	assert_eq(float(hall.get("steam_level")), 1.0, "剛端上來的粥冒著熱氣")
 	await _step_into(_player(hall), hall.get("CHAIR_POS") as Vector3 + Vector3(0.0, 0.0, 1.2), 3)
 	assert_true(bool(hall.call("is_seated")), "走到桌邊 → 伊薩拉椅子")
 	assert_true(_game.call("is_in_dialogue"), "→ 飯桌的對話")
@@ -622,6 +623,9 @@ func _chapter2(city: StoryLevel) -> void:
 	assert_eq(most, 2, "道歉／不說話")
 	assert_eq(s.state.get_flag("ch2.noen_apologized"), see_through, "諾恩有沒有先開口道歉記下來（第 5 章伊薩的台詞）")
 	assert_eq(s.quests.stage_of("ch2_main"), "inner_room", "→ 跟著伊薩走進鐘院內室")
+	await tree.process_frame
+	assert_true(absf(float(hall.get("steam_level")) - float(hall.get("STEAM_COLD"))) < 0.001, "桌上的湯涼了（熱氣變淡）")
+	assert_eq(ParticleLook.untextured(hall), [] as Array[String], "鐘院的粒子都有圓形貼圖")
 	assert_eq(s.state.checkpoint, "ch2_volunteer")
 	hall = await _retry()
 	assert_eq(str(hall.name), "BellHall", "[ch2_volunteer] 重來還在鐘院")
@@ -638,7 +642,7 @@ func _chapter2(city: StoryLevel) -> void:
 ## 鐘院：還在白晝城裡——只有油燈投影子、沒有太陽、接地陰影拿掉；桌上三盤煮豆、一鍋稀粥、四個碗；伊薩右腿有支架。
 func _assert_bell_hall(hall: StoryLevel, tag: String) -> void:
 	await tree.process_frame
-	for n: String in ["Isa", "Sheila", "Misha", "DinnerTable", "IsaChair", "PorridgePot", "InnerDoor", "Curtain"]:
+	for n: String in ["Isa", "Sheila", "Misha", "DinnerTable", "IsaChair", "PorridgePot", "PorridgePot/PorridgeSteam", "InnerDoor", "Curtain"]:
 		assert_true(hall.has_node(n), tag + " 有 " + n)
 	for i: int in 3:
 		assert_true(hall.has_node("BeanPlate%d" % i), tag + " 三盤煮豆")

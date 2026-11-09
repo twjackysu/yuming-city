@@ -40,6 +40,9 @@ const TABLE_TALK: String = "ch2_table"
 ## 段落 2「他自願的」（D-158）：看穿伊薩劃完、放開之後開始；沒去看穿的話，坐著沉默這麼久也會開始（伊薩沒有立刻回答）
 const VOLUNTEER_TALK: String = "ch2_volunteer"
 const SILENCE_SEC: float = 12.0
+## 「桌上的湯慢慢涼了」（08 段落 2 的時間流逝）：粥鍋上的熱氣在坐下之後這麼多秒內從 1 淡到 STEAM_COLD；他自願的講完就是涼的
+const COOL_SEC: float = 24.0
+const STEAM_COLD: float = 0.12
 const INNER_DOOR_POS: Vector3 = Vector3(0.0, 0.0, -4.9)
 ## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
 const ISA_INSIGHT_RANGE: float = 9.0
@@ -62,6 +65,9 @@ var _continued_shown: bool = false
 var _strike: StrikeCard
 ## 坐下之後、沒按看穿的沉默秒數
 var silence: float = 0.0
+## 粥鍋上的熱氣（1＝剛端上來，STEAM_COLD＝涼了）
+var steam_level: float = 1.0
+var _steam: CPUParticles3D
 ## 截圖用：小卡停在指定的按住秒數
 var _dev_insight: bool = false
 
@@ -182,6 +188,7 @@ func _build_isa_insight() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_steam(delta)
 	var player: PlayerController = get_node_or_null("Player") as PlayerController
 	if _dev_insight:
 		update_isa_insight(0.0, true)
@@ -212,6 +219,17 @@ func interact_hint() -> Dictionary:
 	if _flat(player.global_position, _isa.global_position) > ISA_INSIGHT_RANGE:
 		return {}
 	return {"fmt": TranslationServer.translate("CH2_ISA_INSIGHT_HINT"), "action": "insight", "progress": -1.0}
+
+
+## 湯慢慢涼了：坐下之後熱氣一直變淡；「他自願的」講完（或讀檔時已經講完）就是涼的。
+func _update_steam(delta: float) -> void:
+	var st: GameState = Game.session.state
+	if bool(st.get_flag("ch2.volunteer_talked", false)):
+		steam_level = STEAM_COLD
+	elif _seated:
+		steam_level = maxf(STEAM_COLD, steam_level - delta * (1.0 - STEAM_COLD) / COOL_SEC)
+	if _steam != null:
+		_steam.color = Color(1.0, 1.0, 1.0, steam_level)
 
 
 func strike_card() -> StrikeCard:
@@ -393,9 +411,10 @@ func _build_table() -> void:
 		_cylinder("BeanPlate%d" % i, self, 0.17, 0.025, p + Vector3(0, 0.0125, 0), clay)
 		var mound: MeshInstance3D = _cylinder("Beans%d" % i, self, 0.12, 0.04, p + Vector3(0, 0.04, 0), beans)
 		mound.scale = Vector3(1.0, 1.0, 0.85)
-	# 一鍋稀粥（伊薩那一頭）
-	var pot: MeshInstance3D = _cylinder("PorridgePot", self, 0.16, 0.2, top + Vector3(-1.05, 0.1, -0.15), _mat(IRON, 0.5))
+	# 一鍋稀粥（桌子北邊、伊薩伸手拿得到；從諾恩這邊看得到熱氣）
+	var pot: MeshInstance3D = _cylinder("PorridgePot", self, 0.16, 0.2, top + Vector3(0.4, 0.1, -0.37), _mat(IRON, 0.5))
 	_cylinder("Porridge", pot, 0.145, 0.01, Vector3(0, 0.095, 0), _mat(PORRIDGE, 0.4))
+	_steam = _build_steam(pot)
 	# 四個碗，缺口在不同的地方（碗緣一小塊深色）
 	var bowl_at: Array[Vector3] = [Vector3(0.55, 0, 0.35), Vector3(-0.55, 0, 0.35), Vector3(1.05, 0, -0.3), Vector3(-0.45, 0, -0.38)]
 	var chip_mat: StandardMaterial3D = _mat(Color(0.3, 0.24, 0.18), 0.9)
@@ -416,6 +435,41 @@ func _build_table() -> void:
 	_build_chair("SheilaChair", Vector3(-0.55, 0.0, -0.05), 0.0)
 	_build_chair("MishaChair", Vector3(1.6, 0.0, -0.9), PI * 0.5)
 	_build_chair("IsaOwnChair", Vector3(-0.45, 0.0, -1.55), PI)
+
+
+## 粥鍋上的熱氣：幾縷很淡的白煙往上飄（粒子材質照 D-056 用 ParticleLook）；濃淡由 steam_level 控制。
+func _build_steam(pot: Node3D) -> CPUParticles3D:
+	var steam := CPUParticles3D.new()
+	steam.name = "PorridgeSteam"
+	steam.amount = 10
+	steam.lifetime = 2.4
+	steam.preprocess = 3.0
+	steam.position = Vector3(0, 0.12, 0)
+	steam.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	steam.emission_sphere_radius = 0.08
+	steam.direction = Vector3(0, 1, 0)
+	steam.spread = 10.0
+	steam.initial_velocity_min = 0.12
+	steam.initial_velocity_max = 0.2
+	steam.gravity = Vector3(0.0, 0.04, 0.0)
+	steam.damping_min = 0.02
+	steam.damping_max = 0.04
+	var grow := Curve.new()
+	grow.add_point(Vector2(0.0, 0.3))
+	grow.add_point(Vector2(1.0, 1.0))
+	steam.scale_amount_curve = grow
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.28, 0.28)
+	quad.material = ParticleLook.material(Color(0.95, 0.96, 0.98, 1.0), false, BaseMaterial3D.BILLBOARD_PARTICLES)
+	steam.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1.0, 1.0, 1.0, 0.0))
+	ramp.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	ramp.add_point(0.15, Color(1.0, 1.0, 1.0, 0.32))
+	ramp.add_point(0.6, Color(1.0, 1.0, 1.0, 0.14))
+	steam.color_ramp = ramp
+	pot.add_child(steam)
+	return steam
 
 
 ## 一張木椅（座面＋靠背＋四隻腳），靠背朝 +Z（yaw 轉向）。
