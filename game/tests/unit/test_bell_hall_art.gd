@@ -48,3 +48,15 @@ func test_hall_wall_is_quiet_interior() -> void:
 	var src: String = (load(HALL) as GDScript).source_code
 	assert_true(src.contains("\"brace_chance\": 0.0"), "城主家的牆沒有斜撐")
 	assert_true(src.contains("\"soot\": 0.0"), "沒有爐火、不燻黑")
+
+
+func test_flagstone_is_plank_without_grain() -> void:
+	var look := InteriorLook.new()
+	var m: ShaderMaterial = look.flagstone("t", Color(0.3, 0.3, 0.3), 0.9, {"wear": 0.4})
+	assert_eq(m.shader.resource_path, InteriorLook.PLANK_SHADER, "石板沿用木板 shader")
+	assert_eq(float(m.get_shader_parameter("grain_amount")), 0.0, "沒有木紋")
+	assert_true(is_equal_approx(float(m.get_shader_parameter("plank_length")), 0.9 * 1.4), "長是寬的 1.4 倍")
+	assert_eq(float(m.get_shader_parameter("wear")), 0.4, "opts 蓋過預設")
+	assert_true(look.flagstone("t", Color.WHITE, 2.0) == m, "同一個 key 共用材質")
+	var code: String = (load(InteriorLook.PLANK_SHADER) as Shader).code
+	assert_true(code.contains("uniform float grain_amount : hint_range(0.0, 1.0) = 1.0;"), "預設有木紋（酒館、柯德家不變）")

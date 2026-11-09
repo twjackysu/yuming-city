@@ -1159,11 +1159,13 @@ func _build_inner_room() -> void:
 	var far: float = INNER_Z_FAR
 	var depth: float = near - far
 	var mid: float = (near + far) * 0.5
-	var stone: StandardMaterial3D = _mat(Color(0.34, 0.31, 0.29), 0.88)
+	# D-172：整面大方石（一排約 0.5 m 高）、地板與天花板是大石板——跟飯廳的灰泥與木頭不一樣，這裡是機器的房間
+	var stone: ShaderMaterial = inner_wall_mat()
 	# 地板從飯廳地板的北緣（z -5.5）接起，不重疊
 	var floor_from: float = -ROOM_HALF.y - 0.5
-	_solid("InnerFloor", Vector3(hx * 2.0 + 0.6, 0.4, floor_from - far + 0.5), Vector3(0, -0.2, (floor_from + far - 0.5) * 0.5), _mat(Color(0.36, 0.32, 0.28), 0.85))
-	_solid("InnerCeiling", Vector3(hx * 2.0 + 0.6, 0.3, depth + 0.6), Vector3(0, INNER_H + 0.15, mid), stone, false)
+	_solid("InnerFloor", Vector3(hx * 2.0 + 0.6, 0.4, floor_from - far + 0.5), Vector3(0, -0.2, (floor_from + far - 0.5) * 0.5), inner_floor_mat())
+	_solid("InnerCeiling", Vector3(hx * 2.0 + 0.6, 0.3, depth + 0.6), Vector3(0, INNER_H + 0.15, mid),
+		interior.flagstone("bell_inner_ceiling", Color(0.24, 0.21, 0.185), 1.0, {"seam_dark": 0.7}), false)
 	_solid("InnerWallWest", Vector3(WALL_T, INNER_H, depth), Vector3(-hx - WALL_T * 0.5, INNER_H * 0.5, mid), stone)
 	# 東牆中間留一扇高窗（段落 5，D-161）：窗的南邊、北邊、窗台下、窗楣上四段
 	var wx: float = hx + WALL_T * 0.5
@@ -1195,6 +1197,18 @@ func _build_inner_room() -> void:
 		l.omni_range = float(spec[3])
 		l.shadow_enabled = false
 		add_child(l)
+
+
+## 內室的牆：整面方石（stone_h 99＝沒有灰泥），灰縫比飯廳深一點。
+func inner_wall_mat() -> ShaderMaterial:
+	return interior.wall("bell_inner", HALL_PLASTER, Color(0.37, 0.33, 0.29), 99.0, {
+		"block_scale": 1.4, "mortar_color": Color(0.17, 0.145, 0.125), "soot": 0.0,
+	})
+
+
+## 內室的地板：錯縫的大石板，常走的地方磨亮一點。
+func inner_floor_mat() -> ShaderMaterial:
+	return interior.flagstone("bell_inner_floor", Color(0.33, 0.29, 0.25), 0.9, {"wear": 0.5, "seam_dark": 0.65})
 
 
 func _metal(color: Color, metallic: float, rough: float) -> StandardMaterial3D:

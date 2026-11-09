@@ -16,6 +16,8 @@ uniform bool vertical_planks = false;
 uniform float seam_dark : hint_range(0.0, 1.0) = 0.7;
 uniform float wear : hint_range(0.0, 1.0) = 0.0;
 uniform float base_roughness = 0.78;
+// 木紋與節疤的量：0＝石板（D-172：鐘院內室的地板與天花板；改成大片斑駁）
+uniform float grain_amount : hint_range(0.0, 1.0) = 1.0;
 uniform vec4 wet_spot = vec4(0.0, 0.0, 0.0, 0.0);
 
 varying vec3 world_pos;
@@ -90,10 +92,13 @@ void fragment() {
 	float g_coord = (across * 38.0 + hash(cell) * 9.0) + fbm(vec2(along * 0.7, across * 6.0) + cell) * 3.2;
 	float grain = 0.5 + 0.5 * sin(g_coord * 3.14159);
 	grain = mix(0.9, 1.06, grain);
-	col *= mix(1.0, grain, detail);
+	col *= mix(1.0, grain, detail * grain_amount);
+	// 石板：每片自己的大片斑駁＋細碎的石粒
+	float stone = 1.0 - grain_amount;
+	col *= mix(1.0, mix(0.84, 1.1, fbm(wp * 2.2 + cell * 3.7)) * mix(0.94, 1.04, noise(wp * 23.0) * detail + (1.0 - detail) * 0.5), stone);
 	// 偶爾一個節疤
 	float knot_h = hash(cell + 57.0);
-	if (knot_h > 0.7) {
+	if (knot_h > 0.7 && grain_amount > 0.5) {
 		vec2 kc = vec2((0.2 + 0.6 * hash(cell + 3.0)) * len, (0.3 + 0.4 * hash(cell + 9.0)) * plank_width);
 		vec2 kp = vec2(fl * len, fa * plank_width) - kc;
 		float kd = length(kp * vec2(0.45, 1.0));

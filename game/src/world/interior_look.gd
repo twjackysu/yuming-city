@@ -4,6 +4,7 @@ extends RefCounted
 ## - plank()：plank_wood.gdshader（世界座標木板：地板、天花板、桌面、門板、櫥櫃；不靠 CSG／BoxMesh 的 UV）
 ## - wall()：half_timber.gdshader 的室內版（exterior 0：不積雪、牆腳不濕）——牆腳石塊＋灰泥＋木框，天花板下燻黑
 ## - timber()：整根木頭（板寬拉大＝沒有板縫、只有木紋）：橫樑、桌腳、門框
+## - flagstone()：石板（plank_wood.gdshader 關掉木紋）：鐘院內室的地板與天花板（第 54 輪，D-172）
 
 const PLANK_SHADER: String = "res://src/world/plank_wood.gdshader"
 
@@ -48,3 +49,12 @@ func wall(key: String, plaster: Color, stone: Color, stone_h: float, opts: Dicti
 		m.set_shader_parameter(p, opts[p])
 	_mats[k] = m
 	return m
+
+
+
+## 石板（地板，也可以當石頭天花板）：plank_wood.gdshader 關掉木紋（grain_amount 0）＝錯縫的長方形石板＋斑駁。
+## size＝石板寬（公尺），長是寬的 1.4 倍上下浮動。opts 同 plank()。
+func flagstone(key: String, color: Color, size: float, opts: Dictionary = {}) -> ShaderMaterial:
+	var o: Dictionary = {"grain_amount": 0.0, "seam_dark": 0.6, "base_roughness": 0.72}
+	o.merge(opts, true)
+	return plank("stone/" + key, color, size, size * 1.4, o)

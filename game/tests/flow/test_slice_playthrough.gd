@@ -1488,6 +1488,10 @@ func _assert_bell_hall(hall: StoryLevel, tag: String) -> void:
 		assert_true(hall.has_node(n), tag + " 有 " + n)
 	var frames: Array = hall.get("FADED_FRAMES") as Array
 	assert_true(hall.has_node("FadedFrame%d" % (frames.size() - 1)), tag + " 每一塊白印都有")
+	var inner_floor: ShaderMaterial = (hall.get_node("InnerFloor") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(inner_floor != null and float(inner_floor.get_shader_parameter("grain_amount")) == 0.0, tag + " 內室是石板地")
+	var inner_wall: ShaderMaterial = (hall.get_node("InnerWallNorth") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(inner_wall != null and float(inner_wall.get_shader_parameter("stone_height")) > float(hall.get("INNER_H")), tag + " 內室整面方石")
 
 
 static func _flat_dist(a: Vector3, b: Vector3) -> float:
