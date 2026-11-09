@@ -130,7 +130,27 @@ const IRON: Color = Color(0.22, 0.2, 0.19)
 const CLAY: Color = Color(0.62, 0.5, 0.38)
 const BEANS: Color = Color(0.45, 0.33, 0.2)
 const PORRIDGE: Color = Color(0.86, 0.83, 0.74)
+## 飯廳的美術（第 54 輪，D-172）：城主的家比酒館講究——深色寬木板地（擦得亮、很少磨損）、牆腳 1.1 m 細石塊、
+## 上面冷白灰泥＋深色壁柱（沒有斜撐、不燻黑）、天花板深色木板＋四根橫樑落在東西牆的壁柱上；
+## 但值錢的東西都換成糧食了：灰泥上幾塊比較白的長方形＝原本掛畫與掛毯的地方，留著釘子（FADED_FRAMES）。
+const DADO_H: float = 1.1
+const POST_SPACING: float = 3.0
+const HALL_PLASTER: Color = Color(0.76, 0.76, 0.74)
+const HALL_STONE: Color = Color(0.4, 0.38, 0.35)
+## 石塊之間的灰縫：比預設（外牆的深色）淺很多——室內的牆腳是磨平的方石，不要像磚牆
+const HALL_MORTAR: Color = Color(0.27, 0.26, 0.24)
+const DARK_WOOD: Color = Color(0.17, 0.12, 0.085)
+const BEAM_ZS: Array[float] = [-4.5, -1.5, 1.5, 4.5]
+## 掛畫留下的白印：[牆（"N"／"W"／"E"）, 沿牆的中心（北牆＝x，東西牆＝z）, 中心高度, 寬, 高]
+const FADED_FRAMES: Array[Array] = [
+	["N", -3.0, 2.3, 1.5, 1.05],
+	["N", 3.0, 2.25, 1.1, 1.3],
+	["W", 0.0, 2.4, 1.9, 1.8],
+	["E", -3.0, 2.2, 0.8, 1.0],
+	["E", 0.0, 2.2, 0.8, 1.0],
+]
 
+var interior := InteriorLook.new()
 var _isa: Puppet
 var _misha: Puppet
 var _chair: Node3D
@@ -530,14 +550,40 @@ func _cylinder(node_name: String, parent: Node3D, radius: float, height: float, 
 	return mi
 
 
+## 飯廳的材質（D-172）：牆（石塊牆腳＋灰泥＋壁柱）、地板、天花板、門板、整根木頭。
+func wall_mat() -> ShaderMaterial:
+	return interior.wall("bell_hall", HALL_PLASTER, HALL_STONE, DADO_H, {
+		"floor_height": 99.0, "post_spacing": POST_SPACING, "beam_width": 0.16, "brace_chance": 0.0,
+		"block_scale": 0.95, "soot": 0.0, "mortar_color": HALL_MORTAR,
+	})
+
+
+func floor_mat() -> ShaderMaterial:
+	return interior.plank("bell_floor", Color(0.22, 0.155, 0.11), 0.28, 3.4,
+		{"along_z": true, "wear": 0.3, "seam_dark": 0.75, "base_roughness": 0.42})
+
+
+func door_mat() -> ShaderMaterial:
+	return interior.plank("bell_door", Color(0.24, 0.17, 0.12), 0.2, 4.0, {"vertical_planks": true, "seam_dark": 0.85})
+
+
+func timber_mat() -> ShaderMaterial:
+	return interior.timber(DARK_WOOD)
+
+
 ## 石地板、白灰牆、兩扇門（南：進來的門；北：鐘院內室，關著）、天花板一盞不投影子的白燈。
 func _build_room() -> void:
 	var hx: float = ROOM_HALF.x
 	var hz: float = ROOM_HALF.y
-	var plaster: StandardMaterial3D = _mat(PLASTER, 0.93)
-	var wood: StandardMaterial3D = _mat(WOOD, 0.85)
-	_solid("Floor", Vector3(hx * 2.0 + 1.0, 0.4, hz * 2.0 + 1.0), Vector3(0, -0.2, 0), _mat(FLOOR, 0.9))
-	_solid("Ceiling", Vector3(hx * 2.0 + 1.0, 0.3, hz * 2.0 + 1.0), Vector3(0, WALL_H + 0.15, 0), plaster, false)
+	var plaster: ShaderMaterial = wall_mat()
+	var wood: ShaderMaterial = door_mat()
+	var timber: ShaderMaterial = timber_mat()
+	_solid("Floor", Vector3(hx * 2.0 + 1.0, 0.4, hz * 2.0 + 1.0), Vector3(0, -0.2, 0), floor_mat())
+	# 天花板：橫樑之間的深色木板（沿南北，橫過橫樑）；橫樑東西向，兩端落在東西牆的壁柱上
+	var ceiling := interior.plank("bell_ceiling", Color(0.19, 0.14, 0.1), 0.17, 3.0, {"along_z": true, "seam_dark": 0.7})
+	_solid("Ceiling", Vector3(hx * 2.0 + 1.0, 0.3, hz * 2.0 + 1.0), Vector3(0, WALL_H + 0.15, 0), ceiling, false)
+	for i: int in BEAM_ZS.size():
+		_solid("CeilingBeam%d" % i, Vector3(hx * 2.0, 0.26, 0.2), Vector3(0, WALL_H - 0.13, BEAM_ZS[i]), timber, false)
 	# 北牆中間留內室的門洞（段落 3）：左右兩段＋門楣；門洞平常由 InnerDoorBlock 擋住，伊薩推開門才拿掉
 	var side_w: float = hx - DOOR_W * 0.5
 	for sx: float in [-1.0, 1.0]:
@@ -581,11 +627,15 @@ func _build_room() -> void:
 	block.add_child(_door_block)
 	block.position = Vector3(0, DOOR_H * 0.5, -hz - WALL_T * 0.5)
 	add_child(block)
-	# 牆腳一圈深色的石條（白盒裡讀得出地板與牆的交界）
-	var skirting: StandardMaterial3D = _mat(Color(0.44, 0.42, 0.4), 0.9)
-	_solid("SkirtNorth", Vector3(hx * 2.0, 0.18, 0.06), Vector3(0, 0.09, -hz + 0.03), skirting, false)
-	_solid("SkirtWest", Vector3(0.06, 0.18, hz * 2.0), Vector3(-hx + 0.03, 0.09, 0), skirting, false)
-	_solid("SkirtEast", Vector3(0.06, 0.18, hz * 2.0), Vector3(hx - 0.03, 0.09, 0), skirting, false)
+	# 牆腳一圈往外突出一點的石條（同一個牆材質＝跟牆腳的石塊連在一起）
+	_solid("SkirtNorth", Vector3(hx * 2.0, 0.18, 0.06), Vector3(0, 0.09, -hz + 0.03), plaster, false)
+	_solid("SkirtWest", Vector3(0.06, 0.18, hz * 2.0), Vector3(-hx + 0.03, 0.09, 0), plaster, false)
+	_solid("SkirtEast", Vector3(0.06, 0.18, hz * 2.0), Vector3(hx - 0.03, 0.09, 0), plaster, false)
+	# 門框（D-172）：兩扇門四周一圈深色木條，貼在牆面上
+	_door_casing("InnerCasing", 0.0, -hz, DOOR_W, DOOR_H, -1.0, timber)
+	_door_casing("HallCasing", 0.0, hz, 1.2, 2.2, 1.0, timber)
+	_build_faded_frames()
+	_build_ceiling_lamp()
 	var lamp := OmniLight3D.new()
 	lamp.name = "CeilingLamp"
 	lamp.light_color = Color(0.92, 0.95, 1.0)
@@ -597,14 +647,125 @@ func _build_room() -> void:
 	_ceiling_lamp = lamp
 
 
+## 門框：門洞四周貼在牆面上的深色木條（兩根立柱＋門楣）。side：牆在房間的哪一邊（-1＝北牆、+1＝南牆）。
+func _door_casing(node_name: String, cx: float, wall_z: float, w: float, h: float, side: float, mat: Material) -> void:
+	var z: float = wall_z - side * 0.03
+	var post_w: float = 0.16
+	for sx: float in [-1.0, 1.0]:
+		_solid(node_name + ("W" if sx < 0.0 else "E"), Vector3(post_w, h + post_w, 0.06),
+			Vector3(cx + sx * (w * 0.5 + post_w * 0.5), (h + post_w) * 0.5, z), mat, false)
+	_solid(node_name + "Head", Vector3(w + post_w * 2.0, post_w, 0.06), Vector3(cx, h + post_w * 0.5, z), mat, false)
+
+
+## 掛畫留下的白印（D-172）：比四周乾淨的灰泥長方形，上緣正中一根釘子。名字 FadedFrame0…
+func _build_faded_frames() -> void:
+	# 只比四周乾淨一點（灰泥平均約是 HALL_PLASTER 的八成）：太白會像一張白紙或一扇窗（第 54 輪截圖）
+	var clean := _mat(HALL_PLASTER * 0.97, 0.95)
+	var nail := _mat(IRON, 0.5)
+	var hx: float = ROOM_HALF.x
+	var hz: float = ROOM_HALF.y
+	for i: int in FADED_FRAMES.size():
+		var f: Array = FADED_FRAMES[i]
+		var u: float = float(f[1])
+		var y: float = float(f[2])
+		var w: float = float(f[3])
+		var h: float = float(f[4])
+		var pos: Vector3
+		var size: Vector3
+		var out: Vector3
+		match str(f[0]):
+			"N":
+				pos = Vector3(u, y, -hz + 0.006)
+				size = Vector3(w, h, 0.012)
+				out = Vector3(0, 0, 1)
+			"W":
+				pos = Vector3(-hx + 0.006, y, u)
+				size = Vector3(0.012, h, w)
+				out = Vector3(1, 0, 0)
+			_:
+				pos = Vector3(hx - 0.006, y, u)
+				size = Vector3(0.012, h, w)
+				out = Vector3(-1, 0, 0)
+		var patch := _solid("FadedFrame%d" % i, size, pos, clean, false)
+		patch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var n := _solid("FadedFrameNail%d" % i, Vector3(0.025, 0.025, 0.025), pos + Vector3(0, h * 0.5 + 0.1, 0) + out * 0.015, nail, false)
+		n.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## 天花板的白燈（白晝城的燈＝一顆發白光的球，不投影子；D-172）：鏈子＋鐵環＋燈球。名字 HallLamp。
+func _build_ceiling_lamp() -> void:
+	var root := Node3D.new()
+	root.name = "HallLamp"
+	root.position = Vector3(0, WALL_H - 0.4, -0.6)
+	add_child(root)
+	var iron := _mat(IRON, 0.55)
+	iron.metallic = 0.6
+	var chain := MeshInstance3D.new()
+	chain.name = "Chain"
+	var cb := BoxMesh.new()
+	cb.size = Vector3(0.025, 0.4, 0.025)
+	chain.mesh = cb
+	chain.material_override = iron
+	chain.position = Vector3(0, 0.2, 0)
+	root.add_child(chain)
+	var ring := MeshInstance3D.new()
+	ring.name = "Ring"
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.2
+	tm.outer_radius = 0.235
+	tm.rings = 24
+	tm.ring_segments = 8
+	ring.mesh = tm
+	ring.material_override = iron
+	root.add_child(ring)
+	# 三根吊桿把鐵環吊在鏈子底下
+	for k: int in 3:
+		var a: float = TAU * float(k) / 3.0
+		var rod := MeshInstance3D.new()
+		rod.name = "Rod%d" % k
+		var rb := BoxMesh.new()
+		rb.size = Vector3(0.012, 0.3, 0.012)
+		rod.mesh = rb
+		rod.material_override = iron
+		# 上端在鏈子上（y 0.2）、下端在鐵環上（半徑 0.22）：往外斜 atan(0.22 / 0.2)
+		rod.position = Vector3(cos(a) * 0.11, 0.1, sin(a) * 0.11)
+		rod.rotation = Vector3(-sin(a) * 0.83, 0, cos(a) * 0.83)
+		root.add_child(rod)
+	var bulb := MeshInstance3D.new()
+	bulb.name = "Bulb"
+	var sm := SphereMesh.new()
+	sm.radius = 0.1
+	sm.height = 0.2
+	bulb.mesh = sm
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color(0.95, 0.97, 1.0)
+	glow.emission_enabled = true
+	glow.emission = Color(0.92, 0.95, 1.0)
+	glow.emission_energy_multiplier = 4.0
+	bulb.material_override = glow
+	bulb.position = Vector3(0, -0.04, 0)
+	root.add_child(bulb)
+	for c: Node in root.get_children():
+		(c as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
 ## 長桌：三盤煮豆、一鍋稀粥、四個缺口不一樣的碗；桌邊的木椅（伊薩替諾恩拉的那張是 IsaChair）。
 func _build_table() -> void:
-	var wood: StandardMaterial3D = _mat(WOOD, 0.8)
-	_solid("DinnerTable", Vector3(TABLE_SIZE.x, 0.06, TABLE_SIZE.y), TABLE_POS + Vector3(0, TABLE_TOP - 0.03, 0), wood)
+	# 桌子（D-172）：厚桌面（深色木板、擦得亮）＋裙板＋四支方腳＋腳底一圈橫撐（城主家的桌子比酒館的重）
+	var top_mat := interior.plank("bell_table", Color(0.25, 0.17, 0.11), 0.27, 3.0, {"base_roughness": 0.38, "seam_dark": 0.55})
+	var wood: ShaderMaterial = timber_mat()
+	_solid("DinnerTable", Vector3(TABLE_SIZE.x, 0.07, TABLE_SIZE.y), TABLE_POS + Vector3(0, TABLE_TOP - 0.035, 0), top_mat)
+	var inset: Vector2 = Vector2(TABLE_SIZE.x * 0.5 - 0.13, TABLE_SIZE.y * 0.5 - 0.13)
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			_solid("TableLeg%d%d" % [int(sx + 1.0), int(sz + 1.0)], Vector3(0.08, TABLE_TOP - 0.06, 0.08),
-					TABLE_POS + Vector3(sx * (TABLE_SIZE.x * 0.5 - 0.1), (TABLE_TOP - 0.06) * 0.5, sz * (TABLE_SIZE.y * 0.5 - 0.1)), wood, false)
+			_solid("TableLeg%d%d" % [int(sx + 1.0), int(sz + 1.0)], Vector3(0.1, TABLE_TOP - 0.07, 0.1),
+					TABLE_POS + Vector3(sx * inset.x, (TABLE_TOP - 0.07) * 0.5, sz * inset.y), wood, false)
+	for sz: float in [-1.0, 1.0]:
+		_solid("TableApron", Vector3(inset.x * 2.0, 0.12, 0.035), TABLE_POS + Vector3(0, TABLE_TOP - 0.13, sz * inset.y), wood, false)
+	for sx: float in [-1.0, 1.0]:
+		_solid("TableApron", Vector3(0.035, 0.12, inset.y * 2.0), TABLE_POS + Vector3(sx * inset.x, TABLE_TOP - 0.13, 0), wood, false)
+		_solid("TableStretcher", Vector3(0.05, 0.05, inset.y * 2.0), TABLE_POS + Vector3(sx * inset.x, 0.14, 0), wood, false)
+	_solid("TableStretcher", Vector3(inset.x * 2.0, 0.05, 0.05), TABLE_POS + Vector3(0, 0.14, 0), wood, false)
 	var top: Vector3 = TABLE_POS + Vector3(0, TABLE_TOP, 0)
 	var clay: StandardMaterial3D = _mat(CLAY, 0.7)
 	var beans: StandardMaterial3D = _mat(BEANS, 0.6)
@@ -617,6 +778,23 @@ func _build_table() -> void:
 	# 一鍋稀粥（桌子北邊、伊薩伸手拿得到；從諾恩這邊看得到熱氣）
 	var pot: MeshInstance3D = _cylinder("PorridgePot", self, 0.16, 0.2, top + Vector3(0.4, 0.1, -0.37), _mat(IRON, 0.5))
 	_cylinder("Porridge", pot, 0.145, 0.01, Vector3(0, 0.095, 0), _mat(PORRIDGE, 0.4))
+	# 鍋緣一圈、兩邊的提耳（D-172）
+	var pot_iron := _mat(IRON, 0.45)
+	pot_iron.metallic = 0.5
+	_cylinder("PotRim", pot, 0.172, 0.025, Vector3(0, 0.09, 0), pot_iron)
+	for sx: float in [-1.0, 1.0]:
+		var lug := MeshInstance3D.new()
+		lug.name = "PotLug"
+		var lt := TorusMesh.new()
+		lt.inner_radius = 0.03
+		lt.outer_radius = 0.042
+		lt.rings = 12
+		lt.ring_segments = 6
+		lug.mesh = lt
+		lug.material_override = pot_iron
+		lug.position = Vector3(sx * 0.19, 0.06, 0)
+		lug.rotation.x = PI * 0.5
+		pot.add_child(lug)
 	_steam = _build_steam(pot)
 	# 四個碗，缺口在不同的地方（碗緣一小塊深色）
 	var bowl_at: Array[Vector3] = [Vector3(0.55, 0, 0.35), Vector3(-0.55, 0, 0.35), Vector3(1.05, 0, -0.3), Vector3(-0.45, 0, -0.38)]
@@ -637,7 +815,7 @@ func _build_table() -> void:
 	_chair = _build_chair("IsaChair", CHAIR_POS, 0.0)
 	_build_chair("SheilaChair", Vector3(-0.55, 0.0, -0.05), 0.0)
 	_build_chair("MishaChair", Vector3(1.6, 0.0, -0.9), PI * 0.5)
-	_build_chair("IsaOwnChair", Vector3(-0.45, 0.0, -1.55), PI)
+	_build_chair("IsaOwnChair", Vector3(-0.45, 0.0, -1.55), PI, true)
 
 
 ## 粥鍋上的熱氣：幾縷很淡的白煙往上飄（粒子材質照 D-056 用 ParticleLook）；濃淡由 steam_level 控制。
@@ -675,27 +853,42 @@ func _build_steam(pot: Node3D) -> CPUParticles3D:
 	return steam
 
 
-## 一張木椅（座面＋靠背＋四隻腳），靠背朝 +Z（yaw 轉向）。
-func _build_chair(node_name: String, pos: Vector3, yaw: float) -> Node3D:
+## 一張木椅，靠背朝 +Z（yaw 轉向）。D-172：座面是木板、後腳一路往上長成靠背的兩根立柱（頂上一根橫木＋三根直條）、
+## 四腳之間有橫撐；arms＝有扶手（伊薩自己的椅子：主人座，但跟其他椅子同一套木頭，沒有比較華麗）。
+func _build_chair(node_name: String, pos: Vector3, yaw: float, arms: bool = false) -> Node3D:
 	var chair := Node3D.new()
 	chair.name = node_name
 	chair.position = pos
 	chair.rotation.y = yaw
 	add_child(chair)
-	var wood: StandardMaterial3D = _mat(Color(0.36, 0.27, 0.18), 0.85)
+	var wood: ShaderMaterial = timber_mat()
+	var seat_mat := interior.plank("bell_chair_seat", Color(0.24, 0.165, 0.11), 0.14, 0.6, {"base_roughness": 0.5, "seam_dark": 0.6})
+	var seat_w: float = 0.5 if arms else 0.44
+	var hw: float = seat_w * 0.5 - 0.025
+	var back_h: float = 1.08 if arms else 0.98
+	# [大小, 位置, 材質]
 	var parts: Array[Array] = [
-		[Vector3(0.42, 0.04, 0.4), Vector3(0, 0.45, 0)],
-		[Vector3(0.42, 0.5, 0.04), Vector3(0, 0.72, 0.19)],
+		[Vector3(seat_w, 0.045, 0.42), Vector3(0, 0.455, 0), seat_mat],
+		[Vector3(seat_w - 0.02, 0.07, 0.035), Vector3(0, back_h - 0.05, 0.19), wood],
 	]
 	for sx: float in [-1.0, 1.0]:
-		for sz: float in [-1.0, 1.0]:
-			parts.append([Vector3(0.04, 0.45, 0.04), Vector3(sx * 0.18, 0.225, sz * 0.17)])
+		# 後腳＝靠背立柱（往後微微傾一點不做，白盒先直的）、前腳
+		parts.append([Vector3(0.045, back_h, 0.045), Vector3(sx * hw, back_h * 0.5, 0.19), wood])
+		parts.append([Vector3(0.045, 0.43, 0.045), Vector3(sx * hw, 0.215, -0.18), wood])
+		# 側邊橫撐
+		parts.append([Vector3(0.025, 0.03, 0.34), Vector3(sx * hw, 0.13, 0.005), wood])
+		if arms:
+			parts.append([Vector3(0.05, 0.035, 0.44), Vector3(sx * hw, 0.7, -0.01), wood])
+			parts.append([Vector3(0.035, 0.25, 0.035), Vector3(sx * hw, 0.585, -0.19), wood])
+	parts.append([Vector3(seat_w - 0.05, 0.03, 0.025), Vector3(0, 0.2, -0.18), wood])
+	for k: int in 3:
+		parts.append([Vector3(0.035, back_h - 0.6, 0.02), Vector3((float(k) - 1.0) * 0.1, 0.48 + (back_h - 0.6) * 0.5, 0.19), wood])
 	for part: Array in parts:
 		var mi := MeshInstance3D.new()
 		var bm := BoxMesh.new()
 		bm.size = part[0] as Vector3
 		mi.mesh = bm
-		mi.material_override = wood
+		mi.material_override = part[2] as Material
 		mi.position = part[1] as Vector3
 		chair.add_child(mi)
 	return chair

@@ -1477,6 +1477,17 @@ func _assert_bell_hall(hall: StoryLevel, tag: String) -> void:
 	assert_true(lamp != null and lamp.shadow_enabled, tag + " 油燈投影子")
 	for c: Node in hall.find_children(ContactShadow.NODE_NAME, "", true, false):
 		assert_false((c as Node3D).visible, tag + " 接地陰影拿掉：" + str(c.get_parent().name))
+	# 飯廳的美術（第 54 輪，D-172）：木板地、石塊牆腳＋灰泥＋壁柱、掛畫留下的白印、白燈
+	var floor_mat: ShaderMaterial = (hall.get_node("Floor") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(floor_mat != null and floor_mat.shader.resource_path == InteriorLook.PLANK_SHADER, tag + " 飯廳是木板地")
+	var wall_mat: ShaderMaterial = (hall.get_node("WallWest") as MeshInstance3D).material_override as ShaderMaterial
+	assert_true(wall_mat != null and wall_mat.shader.resource_path == FrostbridgeLook.HALF_TIMBER_SHADER, tag + " 飯廳的牆是石塊＋灰泥")
+	if wall_mat != null:
+		assert_eq(float(wall_mat.get_shader_parameter("exterior")), 0.0, tag + " 室內牆不積雪")
+	for n: String in ["HallLamp/Bulb", "InnerCasingHead", "HallCasingHead", "CeilingBeam0", "FadedFrame0", "FadedFrameNail0", "TableStretcher", "IsaChair", "IsaOwnChair"]:
+		assert_true(hall.has_node(n), tag + " 有 " + n)
+	var frames: Array = hall.get("FADED_FRAMES") as Array
+	assert_true(hall.has_node("FadedFrame%d" % (frames.size() - 1)), tag + " 每一塊白印都有")
 
 
 static func _flat_dist(a: Vector3, b: Vector3) -> float:
