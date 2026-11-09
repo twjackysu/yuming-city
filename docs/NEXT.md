@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 50 輪）的程式 commit：b031f69 段落 7 轉角（含 CI 盤點截圖 `34-ch3-corner`、`35-part1-end`；**run 42658889619 收尾時的狀態見 PROGRESS 第 50 輪，開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=corner|end` 拍不出來）。screens 的 `33`～`35` 還沒在 CI 上看過（`34`、`35` 本機看過）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。
+- 上一輪（第 50 輪）的程式 commit：b031f69 段落 7 轉角（含 CI 盤點截圖 `34-ch3-corner`、`35-part1-end`；**run 42658889619 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑；Jacky 的 ce168d5 run 42659052614 也含本輪程式——開工先看這兩個的整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=corner|end` 拍不出來）。screens 的 `33`～`35` 還沒在 CI 上看過（`34`、`35` 本機看過）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。
 - 上一輪（第 49 輪）的程式 commit：7c36446 段落 5 倒吊（run 42647985244 全綠）、e4fce4a 段落 6 彌夏的圖、072a766 CI 盤點截圖 `33-ch3-map`（這兩個的 run 被 Jacky 的 c597dfa 取代；**c597dfa run 42649881926「測試與匯出」已綠，盤點截圖 job 收尾時還在跑——開工先看它是不是綠的**，紅了多半是 `--canal-at=map` 拍不出來）。screens 的 `31-ch3-hang`、`32-ch3-mud`、`33-ch3-map` 還沒在 CI 上看過（本機看過，見第 5 節第 49 輪）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。
 - 上一輪（第 48 輪）的程式 commit：c25654f 段落 4 煤車、fed7ddd 煤的顏色＋截圖構圖＋CI 盤點截圖 `30-ch3-pinned`（c25654f run 42638607537 全綠；**fed7ddd run 42638892653 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包還在跑——開工先看整個綠燈**，紅了看 log 修；盤點截圖 job 紅了多半是 `--canal-at=pinned` 拍不出來）。screens 的 `30-ch3-pinned` 還沒在 CI 上看過（本機看過：很暗，見第 5 節「還可以」）。開工照常先跑 `scripts/check.sh`（最後 344 個測試）。
 - 第 47 輪的程式 commit：b2319e1 段落 3 假心臟、d21f055 假心臟的心跳聲、aed5964 `CoalDrop`、9a84a8c 送葬者的白盒步伐（**最後一個，run 42630485948：「Import、測試、匯出」已綠，截圖、smoke test、打包收尾時還在跑——開工先看整個綠燈**，紅了看 log 修）。d21f055、aed5964 的 run 被取代；b2319e1 的 run 42628885777 在 import 時 Godot 偶發崩潰（`double free or corruption`，重新匯入 `strings.csv` 時），同樣內容在 9a84a8c 已經過了——**再遇到就重跑那個 run**，常發生再查。screens 的 `29-ch3-heart` 還沒在 CI 上看過（本機截圖看過：從西岸往下看，東牆腳一條繩子、一點銅光，送葬者在河床上走過去）。開工照常先跑 `scripts/check.sh`（最後 341 個測試）。
@@ -167,6 +167,7 @@
 
 ## 6. 角色模型（等 Jacky 交件）
 
+- **ce168d5（11/10 00:50）席菈大劍漸窄＋諾恩 walk 衣襬修整**（回應 FOR_JACKY 第 4 項）第 50 輪看過 `blade_night_preview`、`coat_side_preview`：衣襬好很多；劍面在暖燈下像米黃色紙板、還是比背寬（意見寫在 FOR_JACKY 第 4 項）。
 - **c3b30f7（11/10 00:34）諾恩 run**（`run_loop`＋`run_candidate.fbx`：ACCAD Male1_C03_Run 動捕、in place、約 0.63 秒一個週期、保留右前臂護傷；同一個 GLB 裡 idle／walk／run 三段）第 50 輪看過 `run_preview`／`run_night_preview`，意見寫在 FOR_JACKY 第 4 項（左臂抬到肩高、手腕往下折像爪子）。**正式接進遊戲時**：ACCAD 動捕要在 `docs/CREDITS.md` 註明出處（照 Jacky 製作紀錄寫的授權原文）；跑步速度參考 4.49 m/s，遊戲裡諾恩跑步是 `PlayerController` 的速度，接的時候照速度調播放速率。照舊沒放到 `art-inbox/characters/` 就不要接進遊戲。
 - **c597dfa（11/9 23:57）諾恩護傷 idle**（`idle_loop`＋`walk_loop` 同一個 GLB，Godot 匯入成 `idle`／`walk`；右前臂夾板護在身前）與**席菈大劍重製＋三材質**（713e843，23:24）第 49 輪看過，意見寫在 FOR_JACKY 第 4 項。Jacky 新增 `docs/ART_DELIVERY_STATUS.md`（逐項交件狀態，正式驗收 0 件）——角色進度以這份為準。照舊沒放到 `art-inbox/characters/` 就不要接進遊戲；正式接諾恩時 `idle` 是護傷姿勢，只在有夾板（`Puppet.set_splint`）的時候用，沒夾板的段落要另一段一般待機。
 - **c3059c8（11/9 14:58）諾恩三材質版本**（`M_Noen_Skin`／`M_Noen_Clothes`／`M_Noen_Hair`，各一組 2K base color＋normal＋ORM；三角面與 60 根骨骼不變）第 41 輪看過，意見寫在 FOR_JACKY 第 4 項（大衣前襬下緣還是像硬板往外翹、雙腳離地）。**正式接進遊戲時**：Godot 4.7.2 匯入 GLB 不吃 `KHR_materials_specular`，頭髮高光會回到 0.5——Jacky 的 `noen_material_import.gd` 把 `M_Noen_Hair` 設成 0.06；遊戲端在 `CharacterModels` 載入後照名字把這個材質的 `metallic_specular` 設 0.06（不用 import script）。照舊沒放到 `art-inbox/characters/` 就不要接進遊戲。
