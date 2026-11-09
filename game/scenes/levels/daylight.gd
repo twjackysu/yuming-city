@@ -7,7 +7,8 @@ extends StoryLevel
 ## 路口立著壽命石碑（Residents）：名字＋「還能活 N 天」；看到瑪菈用一天換半壺水（19 → 18）。
 ## 諾恩按在石碑上只會得到「上面沒有你的名字」。柯德帶路，走到他家門口 → 黑一下換到屋裡（段落 8 晚餐，D-155）：
 ## 柯德把自己那份切成五片、自己喝水；小女兒問「你們買東西不會變老？」；席菈把乾糧放到桌子中央，玩家可以跟著放。
-## 吃完回到街上，柯德往街尾的鐘院走，走到鐘院門口顯示「待續」（段落 9 兔子下一輪做）。
+## 吃完回到街上，柯德往街尾的鐘院走（段落 9 兔子，D-156）：路上一個小女孩摸了席菈背上的斷劍 → 劍柄上的兔子 →
+## 「看路，攻略先生。」→ 街中間一根通到穹頂的石柱，諾恩真的會撞上去（碰撞＋彌夏的笑聲）→ 鐘院門口顯示「待續」。
 ## 柯德家的屋內蓋在街區外面（HOUSE_ORIGIN，x = 40），不另開關卡：同一個環境（沒有影子）、同一盞油燈。
 ##
 ## 座標：門在南邊（z = GATE_Z），街往 -Z 走到底（z = END_Z）；兩個路口各一塊石碑。
@@ -43,7 +44,7 @@ const KORD_STOPS: Dictionary = {
 	"daylight_furnace": Vector3(2.4, 0.0, 15.2),
 	"daylight_stele": Vector3(0.9, 0.0, 4.6),
 	"kord_home": Vector3(-1.6, 0.0, -23.2),
-	"bell_yard": Vector3(1.1, 0.0, -28.4),
+	"bell_yard": Vector3(1.4, 0.0, -28.6),
 }
 const KORD_SPEED: float = 2.4
 const MISHA_GAP: float = 3.0
@@ -54,8 +55,17 @@ const LAMP_ENERGY: float = 3.0
 ## 吃完飯走出門站的地方（柯德家門口往街中央一點，面向街尾）
 const AFTER_DINNER_OFFSET: Vector3 = Vector3(1.7, 0.0, 0.3)
 ## 鐘院門口（街尾）：走到這裡顯示「待續」
-const BELL_YARD_POS: Vector3 = Vector3(0.0, 0.0, -29.0)
-const BELL_YARD_RANGE: float = 3.2
+const BELL_YARD_POS: Vector3 = Vector3(0.0, 0.0, -29.8)
+const BELL_YARD_RANGE: float = 1.8
+## 段落 9（D-156）：小女孩與母親站的地方、走過這條線（z）就開「兔子」的對話
+const RABBIT_GIRL_POS: Vector3 = Vector3(1.6, 0.0, -25.5)
+const RABBIT_Z: float = -24.9
+const RABBIT: String = "ch1_rabbit"
+## 街中間通到穹頂的石柱：「看路，攻略先生。」之後走過去會撞上（真的擋人；靠到這個距離就算撞到）
+const PILLAR_POS: Vector3 = Vector3(-0.8, 0.0, -27.0)
+const PILLAR_RADIUS: float = 0.3
+const BUMP_REACH: float = 0.42
+const PILLAR_TALK: String = "ch1_pillar"
 
 ## 柯德家（段落 8，D-155）：一間小室內，蓋在街區外面；屋內 x ±HOUSE_HALF.x、z ±HOUSE_HALF.y，門在南牆
 const HOUSE_ORIGIN: Vector3 = Vector3(40.0, 0.0, -24.0)
@@ -118,14 +128,18 @@ func _ready() -> void:
 		dev_start_daylight(Game.session)
 	# 截圖用：`--daylight-at=stele` 看完爐子、站在第一塊石碑前（瑪菈換水之前）
 	var at: String = str(dev_args.get("daylight-at", ""))
-	if at in ["stele", "home", "dinner"]:
+	if at in ["stele", "home", "dinner", "yard"]:
 		Game.session.state.set_flag("ch1.daylight_intro", true)
 		Game.session.set_flag("ch1.saw_empty_furnace", true)
 		Game.session.state.set_flag("ch1.furnace_talked", true)
-	if at in ["home", "dinner"]:
+	if at in ["home", "dinner", "yard"]:
 		Game.session.set_flag("ch1.saw_stele_trade", true)
 		Game.session.state.set_flag("ch1.mara_traded", true)
 		Game.session.set_flag(Residents.FLAG_PREFIX + TRADE_RESIDENT, residents.days_left(Game.session.state, TRADE_RESIDENT) - 1)
+	# 截圖用：`--daylight-at=yard` 吃完飯站在柯德家門口（往鐘院的路：小女孩、石柱）
+	if at == "yard":
+		Game.session.state.set_flag("ch1.sheila_shared", true)
+		Game.session.set_flag("ch1.kord_dinner_done", true)
 	_build_environment()
 	_build_ground_and_dome()
 	_build_square()
@@ -259,7 +273,16 @@ func _physics_process(delta: float) -> void:
 		enter_home()
 		return
 	_home_inside = at_home
-	# 吃完飯：跟著柯德走到街尾的鐘院門口 → 待續（段落 9 兔子下一輪做）
+	# 段落 9（D-156）：往鐘院的路上——兔子、撞柱子
+	if stage == "bell_yard" and not in_house:
+		if not bool(st.get_flag("ch1.rabbit_seen", false)) and pos.z <= RABBIT_Z:
+			Game.start_dialogue(RABBIT)
+			return
+		if bool(st.get_flag("ch1.rabbit_seen", false)) and not bool(st.get_flag("ch1.bumped_pillar", false)) \
+				and _flat(pos, PILLAR_POS) <= PILLAR_RADIUS + BUMP_REACH:
+			bump_pillar()
+			return
+	# 吃完飯：跟著柯德走到街尾的鐘院門口 → 待續（第 1 章結尾＋第 2 章章節卡下一輪做）
 	var at_yard: bool = _flat(pos, BELL_YARD_POS) <= BELL_YARD_RANGE
 	if at_yard and not _yard_inside and stage == "bell_yard":
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
@@ -330,6 +353,21 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 		mara_trade()
 	elif dialogue_id == DINNER and in_house:
 		leave_home()
+	elif dialogue_id == RABBIT:
+		# 跳過對話也照樣算看過兔子
+		Game.session.state.set_flag("ch1.rabbit_seen", true)
+
+
+## 諾恩撞上石柱（測試也用）：咚的一聲＋彌夏的笑聲 → 一句旁白。只撞一次。
+func bump_pillar() -> void:
+	var st: GameState = Game.session.state
+	if bool(st.get_flag("ch1.bumped_pillar", false)):
+		return
+	st.set_flag("ch1.bumped_pillar", true)
+	Sfx.play_at(self, "blunt_weak", PILLAR_POS + Vector3(0, 1.6, 0), -6.0)
+	var laugh_at: Vector3 = _misha.global_position if _misha != null else PILLAR_POS
+	Sfx.play_at(self, "child_laugh", laugh_at + Vector3(0, 1.4, 0), -8.0)
+	Game.start_dialogue(PILLAR_TALK)
 
 
 # ---------------------------------------------------------------- 段落 8：柯德家的晚餐（D-155）
@@ -421,6 +459,40 @@ func _update_table() -> void:
 		_rations_sheila.visible = bool(st.get_flag("ch1.sheila_shared", false))
 	if _rations_noen != null:
 		_rations_noen.visible = st.get_flag("ch1.shared_rations", false) == true
+
+
+## 段落 9（D-156）：往鐘院的路上——小女孩與母親（縮小的程序人偶）、街中間一根通到穹頂的石柱（真的擋人）。
+func _build_rabbit_street() -> void:
+	var girl: Puppet = _puppet("RabbitGirl", Color(0.6, 0.44, 0.38), Color(0.76, 0.74, 0.7))
+	girl.scale = Vector3.ONE * 0.55
+	girl.global_position = RABBIT_GIRL_POS
+	girl.rotation.y = deg_to_rad(60.0)
+	var mother: Puppet = _puppet("RabbitMother", Color(0.4, 0.4, 0.44), Color(0.72, 0.7, 0.66))
+	mother.global_position = RABBIT_GIRL_POS + Vector3(0.6, 0.0, -0.35)
+	mother.rotation.y = deg_to_rad(70.0)
+	var h: float = CEILING_Y
+	var pillar := MeshInstance3D.new()
+	pillar.name = "StreetPillar"
+	var pm := CylinderMesh.new()
+	pm.top_radius = PILLAR_RADIUS
+	pm.bottom_radius = PILLAR_RADIUS
+	pm.height = h
+	pm.radial_segments = 16
+	pillar.mesh = pm
+	pillar.material_override = _stone_mat
+	pillar.position = PILLAR_POS + Vector3(0, h * 0.5, 0)
+	add_child(pillar)
+	_solid("StreetPillarBase", Vector3(0.8, 0.3, 0.8), PILLAR_POS + Vector3(0, 0.15, 0), _stone_mat, false)
+	var body := StaticBody3D.new()
+	body.name = "StreetPillarBody"
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = PILLAR_RADIUS
+	shape.height = h
+	cs.shape = shape
+	body.add_child(cs)
+	body.position = PILLAR_POS + Vector3(0, h * 0.5, 0)
+	add_child(body)
 
 
 ## 柯德家的屋內：木地板、白灰牆、關著的窗板、一盞不投影子的白燈；桌上五片麵包（孩子各兩片、太太一片）、柯德面前只有一杯水。
@@ -524,6 +596,7 @@ func _build_house() -> void:
 	mine.rotation.y = 0.25
 	_rations_noen.add_child(mine)
 	_update_table()
+	_build_rabbit_street()
 	# 柯德的太太、兩個孩子（小女兒、兒子：縮小的程序人偶）
 	var family: Dictionary = {
 		"KordWife": ["wife", Color(0.44, 0.38, 0.34), 1.0],

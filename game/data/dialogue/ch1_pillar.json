@@ -1,0 +1,15 @@
+{
+  "id": "ch1_pillar",
+  "start": "p1",
+  "nodes": {
+    "p1": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_PILLAR_001",
+      "next": "p2"
+    },
+    "p2": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_PILLAR_002"
+    }
+  }
+}

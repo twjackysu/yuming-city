@@ -386,6 +386,7 @@ func test_kord_dinner_choices_and_checkpoint() -> void:
 	for loc: String in ["en", "zh_TW"]:
 		TranslationServer.set_locale(loc)
 		for key: String in ["SPK_KORD_DAUGHTER", "Q_CH1_OBJ_BELL_YARD", "DLG_CH1_HOME_C_ANSWER", "DLG_CH1_HOME_C_SILENT",
-				"DLG_CH1_HOME_C_SHARE", "DLG_CH1_HOME_C_KEEP", "DLG_CH1_HOME_R_ANSWER2", "DLG_CH1_HOME_R_SHARE2", "DLG_CH1_HOME_R_KEEP"]:
+				"DLG_CH1_HOME_C_SHARE", "DLG_CH1_HOME_C_KEEP", "DLG_CH1_HOME_R_ANSWER2", "DLG_CH1_HOME_R_SHARE2", "DLG_CH1_HOME_R_KEEP",
+				"DLG_CH1_RABBIT_008", "DLG_CH1_PILLAR_002"]:
 			assert_ne(tr(key), key, "%s 有翻譯：%s" % [loc, key])
 	TranslationServer.set_locale("en")

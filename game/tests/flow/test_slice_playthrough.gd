@@ -529,8 +529,31 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 		await tree.physics_frame
 	assert_false(_game.call("is_in_dialogue"), "[ch1_after_dinner] 不會又開晚餐")
 	assert_eq(s.state.get_flag("ch1.shared_rations"), share, "[ch1_after_dinner] 乾糧的選項保留")
+	# --- 段落 9（D-156）：往鐘院的路上——兔子、「看路，攻略先生。」、撞上柱子
+	for n: String in ["RabbitGirl", "RabbitMother", "StreetPillar", "StreetPillarBody"]:
+		assert_true(city.has_node(n), "街上有 " + n)
+	await _step_into(_player(city), (city.get("KORD_HOME") as Vector3) + Vector3(2.0, 0.0, -1.4), 3)
+	assert_true(_game.call("is_in_dialogue"), "往鐘院走 → 小女孩摸了席菈背上的斷劍")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	var lines: PackedStringArray = []
+	for i: int in 12:
+		if not runner.is_running():
+			break
+		lines.append(runner.current_text())
+		runner.advance()
+	assert_true("DLG_CH1_RABBIT_002" in lines and "DLG_CH1_RABBIT_006" in lines, "劍柄上的兔子、「很醜。我知道。」")
+	assert_true("DLG_CH1_RABBIT_008" in lines, "看路，攻略先生。")
+	await _run_dialogue(city, 0)
+	assert_eq(s.state.get_flag("ch1.rabbit_seen"), true)
+	assert_false(_game.call("is_in_dialogue"), "兔子之後不會一直重開")
+	var pillar: Vector3 = city.get("PILLAR_POS") as Vector3
+	await _step_into(_player(city), pillar + Vector3(0.0, 0.0, 0.7), 3)
+	assert_eq(s.state.get_flag("ch1.bumped_pillar"), true, "走到柱子前 → 撞上去")
+	assert_true(_game.call("is_in_dialogue"), "→ 我撞上了柱子；彌夏笑得扶住鐘箱")
+	await _run_dialogue(city, 0)
 	await _step_into(_player(city), city.get("BELL_YARD_POS") as Vector3, 3)
-	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "鐘院門口 → 待續（段落 9 兔子下一輪做）")
+	assert_false(_game.call("is_in_dialogue"), "撞過一次就不會再開")
+	assert_eq((city.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "鐘院門口 → 待續（第 1 章結尾與第 2 章章節卡下一輪做）")
 
 
 static func _flat_dist(a: Vector3, b: Vector3) -> float:
