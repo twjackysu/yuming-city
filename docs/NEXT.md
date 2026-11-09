@@ -4,8 +4,8 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 33 輪）最後一次程式 push 見 PROGRESS 第 33 輪收尾補記，**先確認它整個綠燈**。第 33 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 292 個測試）與截圖：a68b334 雪帶連成一整條（D-136）、8ab3c16 石階的雪（D-137）、37d87bd 石階前緣下的暗線（D-138，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
-- **看 screens 的新圖**（先 `unzip -l screens.zip` 看時間，確定是 37d87bd 之後的建置）：`07`、`08`、`11` 右側的雪帶是一整條、不再一節一節（D-136；**特別看**：太平滑像一條白色水管就加大 `strip_height` 的細起伏 0.08，或 `strip_out` 的小缺口 0.06）、腳印不像一排黑點；`05` 石階中間露出濕石板、兩側有雪（D-137）、每一級前緣下有暗線（D-138；踢面還是偏灰白是已知的）。
+- 上一輪（第 33 輪）最後一次程式 push 37d87bd 的 run 42536874261 **已經整個綠燈**（收尾時確認）；開工照常先跑 `scripts/check.sh`。第 33 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 292 個測試）與截圖：a68b334 雪帶連成一整條（D-136）、8ab3c16 石階的雪（D-137）、37d87bd 石階前緣下的暗線（D-138，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
+- **screens 已是 37d87bd 的建置**（第 33 輪收尾看過 `05`、`07`：雪帶連續、石階兩側有雪，沒問題）。下一輪有新的程式 push 後再看：`07`、`08`、`11` 右側的雪帶是一整條、不再一節一節（D-136；**特別看**：太平滑像一條白色水管就加大 `strip_height` 的細起伏 0.08，或 `strip_out` 的小缺口 0.06）、腳印不像一排黑點；`05` 石階中間露出濕石板、兩側有雪（D-137）、每一級前緣下有暗線（D-138；踢面還是偏灰白是已知的）。
 - `docs/PROGRESS.md` 約 200 行（第 30 輪已把第 19～23 輪合併成每日摘要）；超過約 300 行時把第 24～28 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
