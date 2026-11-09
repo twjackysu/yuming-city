@@ -1,9 +1,10 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。第 42 輪完成第 1 章結尾 → 第 2 章章節卡 → 新關卡 `bell_hall`（鐘院）段落 1 飯桌＋看穿伊薩劃字（D-157、D-158）＋段落 2 他自願的。第 43 輪完成段落 3 鐘院內室（D-159）＋段落 4 牆上的紋路（D-160）。第 44 輪完成段落 5 窗簾與眼睛（D-161）＝第 2 章白盒完成。第 45 輪完成第 3 章章節銜接＋新關卡乾運河＋段落 1（D-163）。第 46 輪完成段落 2「趴在水溝裡（觀察）」（D-164）。第 47 輪完成段落 3「假心臟」（D-165）＋段落 4 的時機判定 `CoalDrop`。第 48 輪完成段落 4「煤車」的理想路線＋失敗回檢查點（D-166）。第 49 輪完成段落 5「倒吊」＋段落 6「彌夏的圖」（D-167）。第 50 輪完成段落 7「轉角」＝第 3 章結束＝12/31 版本的結尾（D-168）：切片到第 3 章現在可以從頭玩到尾。**第 51 輪完成段落 4 的掙脫戰（D-169，第 3 章唯一的戰鬥）＋閘道的小油燈。下一輪接第 5 節「下一步」1**（白天的霜橋鎮還可以的三項），之後照「下一步」往下做白盒的打磨與美術。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。第 42 輪完成第 1 章結尾 → 第 2 章章節卡 → 新關卡 `bell_hall`（鐘院）段落 1 飯桌＋看穿伊薩劃字（D-157、D-158）＋段落 2 他自願的。第 43 輪完成段落 3 鐘院內室（D-159）＋段落 4 牆上的紋路（D-160）。第 44 輪完成段落 5 窗簾與眼睛（D-161）＝第 2 章白盒完成。第 45 輪完成第 3 章章節銜接＋新關卡乾運河＋段落 1（D-163）。第 46 輪完成段落 2「趴在水溝裡（觀察）」（D-164）。第 47 輪完成段落 3「假心臟」（D-165）＋段落 4 的時機判定 `CoalDrop`。第 48 輪完成段落 4「煤車」的理想路線＋失敗回檢查點（D-166）。第 49 輪完成段落 5「倒吊」＋段落 6「彌夏的圖」（D-167）。第 50 輪完成段落 7「轉角」＝第 3 章結束＝12/31 版本的結尾（D-168）：切片到第 3 章現在可以從頭玩到尾。第 51 輪完成段落 4 的掙脫戰（D-169，第 3 章唯一的戰鬥）＋閘道的小油燈。**第 52 輪完成白天的霜橋鎮三項（D-170：死者名單、蓋著毛毯的受困者、白天的窗）。下一輪接第 5 節「下一步」1：酒館的美術**（第 1 章第一個新場景），之後照「下一步」往下做。
 
 ## 0. 開工先確認
 
+- 上一輪（第 52 輪）的程式 commit：04bc275 白天的霜橋鎮三項（含 CI 盤點截圖 `37-ch1-dead-list`；CI 狀態見 PROGRESS 第 52 輪的收尾補記，**開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--at=list --face=list` 拍不出來）。`37` 本機看過；screens 的 `33`～`36` 也還沒在 CI 上看過。開工照常先跑 `scripts/check.sh`（最後 357 個測試）。
 - 上一輪（第 51 輪）的程式 commit：94b8b0f 掙脫戰（含 CI 盤點截圖 `36-ch3-struggle`）、2f3ac7f 閘道的小油燈、bf36f5f 掙脫戰的 HUD 目標（94b8b0f run 42667540276 全綠含盤點截圖；**bf36f5f run 42669199093 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑——開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=struggle` 拍不出來）。screens 的 `33`～`36` 還沒在 CI 上看過（`36` 本機看過）；`30-ch3-pinned`、`31-ch3-hang` 加了油燈之後也看一眼。開工照常先跑 `scripts/check.sh`（最後 353 個測試）。
 - 第 50 輪的程式 commit：b031f69 段落 7 轉角（含 CI 盤點截圖 `34-ch3-corner`、`35-part1-end`；**run 42658889619 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑；Jacky 的 ce168d5 run 42659052614 也含本輪程式——開工先看這兩個的整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=corner|end` 拍不出來）。screens 的 `33`～`35` 還沒在 CI 上看過（`34`、`35` 本機看過）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。
 - 上一輪（第 49 輪）的程式 commit：7c36446 段落 5 倒吊（run 42647985244 全綠）、e4fce4a 段落 6 彌夏的圖、072a766 CI 盤點截圖 `33-ch3-map`（這兩個的 run 被 Jacky 的 c597dfa 取代；**c597dfa run 42649881926「測試與匯出」已綠，盤點截圖 job 收尾時還在跑——開工先看它是不是綠的**，紅了多半是 `--canal-at=map` 拍不出來）。screens 的 `31-ch3-hang`、`32-ch3-mud`、`33-ch3-map` 還沒在 CI 上看過（本機看過，見第 5 節第 49 輪）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。
@@ -166,9 +167,15 @@
   - 截圖 `--canal-at=struggle`（諾恩站 `STRUGGLE_SHOT_NOEN`、牠剛爬上岸、席菈在旁邊、彌夏躲好）。流程測試 `_chapter3_cart()` 的 alt 路線、單元 `test_undertaker::test_struggle_mode_drops_charge_and_phase_two`、`test_canal_sluice` 的落點與彌夏。
   - 掙脫戰中 HUD 的目標換成 `CH3_STRUGGLE_OBJ`「跟席菈一起把牠打到跪下」（`Hud.override_objective(key)`，空字串換回；任務換階段、重來會自動換回；暫停選單與日記還是顯示任務本身的目標）。
   - 還可以：爬上岸只是位置補間（正式模型要攀爬動作）；席菈「用肩膀撞」只有旁白（可以讓她跑到牠旁邊再撞）；`pinned` 那張從西岸遠看只多了東牆一片暖光（實機看看夠不夠，不夠就把燈再往河道中間移或調亮）；掙脫戰的難度只能等 Jacky 試玩（失衡上限 140、彌夏躲的位置）。
+- **已完成（第 52 輪，D-170）**：白天的霜橋鎮三項，在 `frostbridge` 的 `_build_day` 裡。
+  - 死者名單 `scenes/world/dead_list_board.gd`（`DeadListBoard`：`dead_count(state)`＝D-037 同一套條件、`north_unrescued(state)`、`papers_mesh(n)`（紙＋墨兩個 surface）、`read()`、`is_near()`、`interact_hint()`、`paper_count`）；位置 `DEAD_LIST_POS`／`DEAD_LIST_YAW_DEG`；對話 `ch1_dead_list`（text_if 依結果換句，講完 `ch1.read_dead_list`）。
+  - 沒救出來的受困者：`RescueSite.set_aftermath()`（提燈收掉；沒救出來的 `_show_cleared()`＋`Shroud`，`shroud_mesh()` 人形高度場、暗紅褐、往街中間挪 0.7 m）、`is_covered()`。
+  - 白天的窗：`_day_window(lit, pos)`、`DAY_LIT_KEEP` 0.3、`day_unlit_windows`。
+  - 截圖 `--level=frostbridge --day=ada_lamp --at=list --face=list`（名單前）／`--at=north --face=shroud`（北街的毛毯）。測試 `test_dead_list.gd`、流程 `_chapter1_day` 看名單、`_assert_day_town`。
+  - 還可以：名單上的字是墨痕（近看不是字；要的話用 Label3D 印幾個名字，但要先想好名字從哪來）；毛毯被推開的瓦礫擋住一部分；艾妲寫名單的動作只有台詞。
 - **下一步（依序）**：
-  1. 白天的霜橋鎮還可以：亮窗白天還是暖黃（屋裡有人點燈，說得通；太多就在 `_build_day` 把部分窗調暗）、死者名單牆（07 原本寫的，白盒先省略；可以在梨販攤旁加一塊貼滿紙的木板＋互動看名字）、北街未救出的受困者白天還躺在原地（`RescueSite` 不能互動；要不要換成蓋著布的樣子再決定）。
-  2. 酒館、樓梯、白晝城、柯德家、乾運河的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。
+  1. **酒館的美術**（第 1 章第一個新場景，`scenes/levels/tavern.gd`）：現在是素色方塊＋程序人偶。照 `03-art-audio-direction.md` 與霜橋鎮的做法：牆用半木構 shader（`FrostbridgeLook` 的灰泥＋木樑）、地板用木板（`door.gdshader` 的木箱模式）、吧台與桌椅改成有厚度的木作、一個壁爐（暖光＋火粒子 `ParticleLook`）當主光、窗外是夜色／白天。先拍 `--level=tavern`、`--ch1-stage=dinner` 前後對照。
+  2. 樓梯、白晝城、柯德家、乾運河的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。每個場景一輪，先做玩家停最久的那一角。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
 - 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。白天的霜橋鎮：`--level=frostbridge --day --at=north`（一進北街就開對話）、`--day=stairs --face=ada --face-off=-25`（一張約 2 分鐘）。
 
