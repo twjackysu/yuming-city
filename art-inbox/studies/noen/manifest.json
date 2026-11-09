@@ -2,33 +2,33 @@
   "status": "work_in_progress_not_final_art",
   "triangles": 39866,
   "bones": 60,
-  "materials": 11,
-  "textures": 32,
+  "materials": 3,
+  "textures": 9,
   "files": [
     {
       "file": "night_preview.png",
-      "bytes": 439906,
-      "sha256": "3cf3549f91851071ebcd72dc25e65675b5c0e03fad1a9b971c1453ee40649f55"
+      "bytes": 437531,
+      "sha256": "c14afc342e1b7459b666f1b4bb26299b1cd7d25463bbbb645e8030ab09c6226a"
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 38454012,
-      "sha256": "214616e70f2687dc63c21c046e72b113f7d0caa887780fe314cc065dd99bff28"
+      "bytes": 24831224,
+      "sha256": "33c7d3cab648c527abd90a194da6a3ffc645bb7084074f00fc2afcda697a2d03"
     },
     {
       "file": "portrait_front.png",
-      "bytes": 1526831,
-      "sha256": "34d7dd047e7dc43654bc28526b0b582be7c4ebda33198be988ce927d2b06b339"
+      "bytes": 1516798,
+      "sha256": "e96f35c82fd7b1dc14af5dd7932f1d074483476462bf445477e4ca790461fbd3"
     },
     {
       "file": "portrait_threequarter.png",
-      "bytes": 1526069,
-      "sha256": "190bc0e37c61909d34813f3407c324e93bde93daac08fc5f9832a79d4f55d7ba"
+      "bytes": 1516896,
+      "sha256": "51e4cf6b28dd984be91c4cd2b382e7299833af01fa9550348e65864357dd09ca"
     },
     {
       "file": "preview.png",
-      "bytes": 739139,
-      "sha256": "737e7c0316adc41458d601424b78ee6356c306b708d90f193ae356ccbcf183d9"
+      "bytes": 736287,
+      "sha256": "e4a3caa36a0b5c849c866912b60df499e1f4c204fc6cbeacc26115c6f3909b5a"
     },
     {
       "file": "walk_candidate.fbx",
@@ -37,8 +37,8 @@
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 403568,
-      "sha256": "1d5b00b2ddf36490258dab983d4c2eecf2966d5ee82d26252253398e2713f748"
+      "bytes": 398631,
+      "sha256": "a5256cef03f813678697cf4638077fc43975284ca4e923f6c8bfff2efb61ef39"
     }
   ],
   "maximum_texture_dimension": 2048,
@@ -46,6 +46,13 @@
     "walk_loop"
   ],
   "motion_variant": "fracture_guard_with_left_hand_coat_clearance",
-  "embedded_images": 32,
-  "surface_variant": "continuous_neck_skin_and_authored_hair_normal"
+  "embedded_images": 9,
+  "surface_variant": "three_2k_pbr_atlases_continuous_neck_authored_hair_normal",
+  "material_names": [
+    "M_Noen_Clothes",
+    "M_Noen_Hair",
+    "M_Noen_Skin"
+  ],
+  "godot_import_script": "noen_material_import.gd",
+  "glb_bytes": 24831224
 }

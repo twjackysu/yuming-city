@@ -81,3 +81,19 @@ V2 修正：烘焙前清除低面數靴子的舊自訂法線，減少配合小�
 左手與大衣的檢查限定於原始身體座標 abs(x)<0.24m、z<1.1m 的前襟／裙襬面片；不把本來就應重疊的手腕／袖口算成穿衣。35 幀測得綁帶最大表面距離 1.5003mm 以下，左手與前襟最短距離 84.9mm 以上、保守側向間距 45.8mm 以上。這不是全角色任意動作的碰撞保證。
 
 頭髮保留原型與 UV，補回 short02_normal.png（CC0），不採用未達品質的 AI 髮片實驗。皮膚只以原始膚色平滑修正頸部；32 張嵌入 PNG 逐一驗證最大 2048。仍有 11 個材質，尚未達正式版 2～3 個材質的要求。
+
+## 三材質 2K 整併（2026-11-09）
+
+完成上述表面／綁帶／雙手接觸修整後，先保存含 walk 的 GLB 作為基準。再以 YUMING_NOEN_SOURCE_BLEND 指向修整後靜態 .blend、YUMING_NOEN_ATLAS_WORK 指向另一個新目錄，執行 bake_noen_three_materials.py。它合併為 Skin、Clothes、Hair 三個網格與材質，重排 UV，重新烘焙切線 Normal、BaseColor／Alpha、ORM，輸出九張 2048×2048 圖；不是簡單把舊切線法線貼到新 UV。頭髮保留 blended alpha；皮膚／眼睛用 cutout。
+
+把已檢查的 walk_trial.fbx 複製到新目錄，改設 YUMING_NOEN_WORK 為此目錄，再執行 review_walk_export.py。YUMING_NOEN_BASELINE_GLB 指向前述基準動畫 GLB；執行 check_noen_atlas_geometry.py，以 30fps 匯入兩版，在 35 幀對實際蒙皮頂點做雙向最近點比對。本次最大位置差為 0m、容許 0.01mm，三角面仍為 39,866。合併後不再有獨立 Noen_Coat／Wood_Splint 節點，因此舊接觸／剛性檢查要在合併前跑；合併後的等價檢查確認同一動作保留接觸修正，不是忽略這些檢查。
+
+Godot 檢視改用 godot_review_atlas：
+
+1. 複製最終 noen_walk_preview.glb，先 `godot --headless --editor --path DIR --import`。
+2. 執行該目錄的 configure_material_import.py，再跑一次 import。這會將 Import Script 指向 noen_material_import.gd。
+3. 執行 check_ground.gd（35 幀，所有蒙皮網格，逐個實際索引頂點），再播放 review.tscn；夜景沿用 prepare_lighting_review.py 及既有 YUMING_REPO 設定。
+
+Godot 4.7.2 本機實測：GLB 的 KHR_materials_specular.specularFactor=0.12 未反映為髮材預期的低高光，匯入 material.metallic_specular 仍為 0.5。匯入腳本只將 M_Noen_Hair 設為 0.06；實測值 0.0599999986589，其他欄位與兩材質不動。這是資產專屬 profile，不是引擎所有 glTF 的通用修補。預覽影片及夜景截圖使用此腳本，獨立開 GLB 的其他軟體依自身支援處理 KHR 擴充。參考 [Godot 官方 EditorScenePostImport](https://docs.godotengine.org/en/stable/classes/class_editorscenepostimport.html)。
+
+正式遊戲目前仍未接入候選角色；開發端將來接入時也需設定這個 Import Script。三材質僅解決材質數／貼圖組數，尚未達 3A 美術驗收或全部動畫需求。

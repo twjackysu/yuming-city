@@ -1,0 +1,5 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+MATERIAL M_Noen_Clothes specular=0.5 roughness=1.0 normal_scale=1.0 transparency=0
+MATERIAL M_Noen_Hair specular=0.0599999986589 roughness=1.0 normal_scale=1.0 transparency=4
+MATERIAL M_Noen_Skin specular=0.5 roughness=1.0 normal_scale=1.0 transparency=2
