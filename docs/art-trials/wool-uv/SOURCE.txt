@@ -1,0 +1,7 @@
+Poly Haven Poly Wool Herringbone, CC0.
+https://polyhaven.com/a/poly_wool_herringbone
+https://polyhaven.com/license
+Photography: colormass. Processing: Rico Cilliers.
+Modified: cold-black dye, world-scale box projection, wet/grime blend, UV atlas rebake.
+Underlying Undertaker geometry and original skin source: see ../undertaker-rigging/SOURCE.txt.
+This material study is not an accepted final character or a runtime replacement.

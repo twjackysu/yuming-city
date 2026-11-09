@@ -2,7 +2,7 @@ import os
 import bpy,bmesh,math,json
 from pathlib import Path
 from mathutils import Vector
-root=Path(os.environ.get('UNDERTAKER_PRODUCTION', str(Path.home() / 'Documents\\undertaker-production')));bpy.ops.wm.open_mainfile(filepath=os.environ.get('UNDERTAKER_ANATOMY', str(Path.home() / 'Documents\\noen-production\\anatomy.blend')));human=bpy.data.objects['Noen_Anatomy'];rig=bpy.data.objects['Noen_Skeleton'];rig.name='Undertaker_Skeleton'
+root=Path(os.environ.get('UNDERTAKER_PRODUCTION',str(Path.home()/'Documents/undertaker-production')));bpy.ops.wm.open_mainfile(filepath=os.environ.get('UNDERTAKER_ANATOMY', str(Path.home() / 'Documents\\noen-production\\anatomy.blend')));human=bpy.data.objects['Noen_Anatomy'];rig=bpy.data.objects['Noen_Skeleton'];rig.name='Undertaker_Skeleton'
 bpy.ops.object.select_all(action='DESELECT');human.select_set(True);bpy.context.view_layer.objects.active=human
 for modifier in human.modifiers:
  if modifier.type=='ARMATURE':modifier.show_viewport=False
@@ -23,7 +23,7 @@ for side,sx in [('L',1),('R',-1)]:
   points=[(sx*.4,.46,z) for z in [1.145,.845,.545,.245,.045]]+[(sx*.6,.46,.012)]
   bone=rig.data.edit_bones.new('Chain_'+side+'_'+str(part));bone.head=points[part];bone.tail=points[part+1];bone.parent=previous;bone.use_connect=part>0;previous=bone
 bpy.ops.object.mode_set(mode='OBJECT')
-bpy.ops.import_scene.gltf(filepath=str(root/'triposg/body_baked/undertaker_body.glb'));body=next(o for o in bpy.context.selected_objects if o.type=='MESH');body.name='Undertaker_Robes';bpy.context.view_layer.objects.active=body;bpy.ops.object.transform_apply(location=True,rotation=True,scale=True)
+bpy.ops.import_scene.gltf(filepath=os.environ.get('UNDERTAKER_BODY',str(root/'triposg/body_baked/undertaker_body.glb')));body=next(o for o in bpy.context.selected_objects if o.type=='MESH');body.name='Undertaker_Robes';bpy.context.view_layer.objects.active=body;bpy.ops.object.transform_apply(location=True,rotation=True,scale=True)
 # Fit wrist joints to the reconstructed cuffs before transferring weights.
 deltas={}
 for side,sign in [('Left',1),('Right',-1)]:

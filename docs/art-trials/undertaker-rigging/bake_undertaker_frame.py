@@ -70,6 +70,9 @@ for obj in meshes:
   if uv.name!='BakedAtlas':obj.data.uv_layers.remove(uv)
  stats.append({'mesh':obj.name,'triangles':sum(len(p.vertices)-2 for p in obj.data.polygons)})
  print('BAKED',obj.name,flush=True)
+for mesh in meshes:
+ for attribute in list(mesh.data.color_attributes):
+  if attribute.name=='ForgeBoxCoords':mesh.data.color_attributes.remove(attribute)
 rig=bpy.data.objects['Undertaker_Skeleton'];bpy.ops.object.select_all(action='DESELECT');rig.select_set(True)
 for o in [*meshes,bpy.data.objects['Undertaker_Robes']]:o.select_set(True)
 rig.rotation_euler.z=math.pi

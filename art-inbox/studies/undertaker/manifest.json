@@ -12,14 +12,24 @@
   "glb_presentation_clearance_m": 0.0005,
   "files": [
     {
+      "file": "frame_material_preview.png",
+      "bytes": 1444210,
+      "sha256": "fcf630cb8a323ac5b545b6aacf3b3b45f2135d5581c1f414fa368931c5cd1749"
+    },
+    {
+      "file": "night_preview.png",
+      "bytes": 583624,
+      "sha256": "287982b246ecb1cd25777ebb3e375ec4acac13dc83564fd55af2520574082436"
+    },
+    {
       "file": "preview.png",
-      "bytes": 723971,
-      "sha256": "1a150f8be8bf100f943cb17a2e406d7b74ffdf0a7c3a24e7b44bf54d25822b64"
+      "bytes": 716762,
+      "sha256": "28ac1811024beea8099f75a2296fbf784dd76a175c4fc477a6685838bef0df8e"
     },
     {
       "file": "undertaker_walk_candidate.glb",
-      "bytes": 19884532,
-      "sha256": "c3d771e8110557260d5033657d9253503d23427c2f9ef764b441a80108334c13"
+      "bytes": 21969616,
+      "sha256": "b964ebfe2f31029743464c50604785232cae0f67cfa514f75c1ad7b98891491e"
     },
     {
       "file": "walk_candidate.fbx",
@@ -28,13 +38,13 @@
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 719734,
-      "sha256": "0f85b091de15d927e8e263bdee24b44e821faa649a3628a25817dcb33128e9d8"
+      "bytes": 716804,
+      "sha256": "7499f521efa635ccd25c8f1e1d881d9edc1a87d37ea1dbf7c10564ad1d13ae0f"
     },
     {
       "file": "weakpoint_preview.png",
-      "bytes": 703254,
-      "sha256": "b48896082c2aec9f5a84ad96301dc7e86a63efca86b3e0801f97ac816d044716"
+      "bytes": 696586,
+      "sha256": "983656decf4e65c4df108801b7c4c25cbfcb54437af4d2031ce3c752f5b76bb2"
     }
   ]
 }

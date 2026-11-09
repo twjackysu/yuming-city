@@ -1,0 +1,5 @@
+{
+  "attention_cuda_finite": true,
+  "spconv_cuda_finite": true,
+  "image_pipeline_imported": true
+}

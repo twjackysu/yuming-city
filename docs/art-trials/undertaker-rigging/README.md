@@ -6,7 +6,7 @@
 
 Blender 5.2.3 命令：`blender -b --offline-mode --python-exit-code 1 --python SCRIPT.py`。先沿用 ../noen-rigging 的 `run_triposg_production.py`，輸入 inputs/undertaker_body_input.png、seed 81、50 steps、depth 9。輸出保留歷史檔名 noen_triposg.glb。
 
-製作順序：`bake_undertaker_body.py` → `assemble_undertaker.py` → `bake_undertaker_frame.py`。環境變數 `UNDERTAKER_GEOMETRY` 指向 TripoSG 輸出資料夾，`UNDERTAKER_PRODUCTION` 指向組裝工作目錄，`UNDERTAKER_ANATOMY` 指向先前 MPFB anatomy.blend，`UNDERTAKER_REAR_IMAGE` 指向 inputs/undertaker_rear_material.png。骨架來源需先完成諾恩製作流程。
+製作順序：`bake_undertaker_body.py` → `assemble_undertaker.py` → `polish_undertaker_metal.py` → `bake_undertaker_frame.py`。環境變數 `UNDERTAKER_GEOMETRY` 指向 TripoSG 輸出資料夾，`UNDERTAKER_PRODUCTION` 指向組裝工作目錄，`UNDERTAKER_ANATOMY` 指向先前 MPFB anatomy.blend，`UNDERTAKER_REAR_IMAGE` 指向 inputs/undertaker_rear_material.png。骨架來源需先完成諾恩製作流程。
 
 動畫目錄由 `UNDERTAKER_WORK` 指定；先將 undertaker_baked.blend 複製為 tailored_noen.blend、undertaker_candidate.glb 複製為 tailored_candidate.glb。`YUMING_WALK_BVH` 指向官方 ACCAD Male1_B3_Walk.bvh。執行 retarget → export → check FBX → review。FBX 匯出使用 frame 0 身分姿勢作 bind rest，正式範圍 1–59，30 fps Without Skin。GLB roundtrip 2–60。輸出 GLB 加 0.5mm 展示接地餘量，以容納引擎匯入後的插值／蒙皮差異。
 
@@ -15,3 +15,7 @@ Blender 5.2.3 命令：`blender -b --offline-mode --python-exit-code 1 --python 
 把 undertaker_walk_preview.glb 放進 godot_review，使用 Godot 4.7.2 `--editor --headless --import` 後執行。check_ground.gd 量測所有 59 幀的實際蒙皮頂點，不只骨頭位置；weakpoint_review.tscn 驗證只有一個材質槽被設為發光。截圖採 Forward+；一般啟動需指定 `--rendering-method forward_plus`。
 
 仍待處理：袍身與手部拓撲、投射光影與接縫、金屬磨損分布、更多極端姿勢、五個其他送葬者動作，以及 Godot 正式關卡夜景整合。不能用本次技術檢查宣稱符合 3A 品質。
+
+鐵架材質另以每個零件的局部包圍盒座標計算磨邊，讓磨損落在邊緣。座標先存成 ForgeBoxCoords 屬性，合併烘焙後移除，避免誤輸出為頂點顏色而改變金屬底色；氧化沿重力方向延伸，對應金屬度與粗糙度不同。
+
+新增 night_review.tscn：執行 godot_review/prepare_lighting_review.py，會複製目前遊戲的 FrostbridgeLook、夜空及濕石板 shader 到被忽略的本機目錄，再 `--editor --headless --import`。夜景測試重用遊戲的 AgX、月光、體積霧、濕石板，另加暖色燈觀察材質；這是光照檢視場景，仍不是正式關卡的角色整合。拍攝所用來源雜湊見 night_source_snapshot.json。

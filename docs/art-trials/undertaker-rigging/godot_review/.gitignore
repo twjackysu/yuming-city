@@ -1,5 +1,6 @@
 .godot/
 frames/
+src/
 *.glb
 *.mp4
 *.import
