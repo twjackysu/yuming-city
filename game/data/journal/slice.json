@@ -33,6 +33,22 @@
       "unlocked_when": {
         "flag": "ch3.clapper_taken"
       }
+    },
+    {
+      "id": "ch3_collar",
+      "title": "JM_CH3_COLLAR_TITLE",
+      "context": "JM_CH3_COLLAR_CONTEXT",
+      "body": "JM_CH3_COLLAR_BODY",
+      "residue": "JM_CH3_COLLAR_RESIDUE",
+      "people": [
+        "sheila"
+      ],
+      "places": [
+        "dry_canal"
+      ],
+      "unlocked_when": {
+        "flag": "ch3.corner_talked"
+      }
     }
   ]
 }

@@ -206,6 +206,19 @@ func _face(n: Node3D, delta: float = -1.0) -> void:
 	_body.rotation.y = face if delta < 0.0 else lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
 
 
+## 劇情用：馬上轉向某個位置（例如對話開始時看著諾恩）。
+func face_toward(p: Vector3) -> void:
+	var d: Vector3 = p - global_position
+	if Vector2(d.x, d.z).length() < 0.01:
+		return
+	_body.rotation.y = atan2(-d.x, -d.z) - rotation.y
+
+
+## 劇情用：她現在面向哪裡（世界座標的 yaw，-Z＝0）。
+func facing_yaw() -> float:
+	return _body.global_rotation.y
+
+
 ## 打弱點：一步踏到目標身邊（演出用的短位移，不穿過目標）。
 func _dash_to(n: Node3D) -> void:
 	if n == null:

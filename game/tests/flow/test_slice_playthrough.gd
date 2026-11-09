@@ -1222,11 +1222,97 @@ func _chapter3_map(canal: StoryLevel, alt: bool) -> void:
 	assert_eq(s.state.get_flag("ch3.misha_map_given"), true, "圖都會被塞進手裡")
 	assert_eq(s.quests.stage_of("ch3_main"), "corner", "→ 段落 7 轉角")
 	assert_eq(s.state.checkpoint, "ch3_map", "檢查點 ch3_map")
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 7 待續")
+	assert_true(bool(canal.get("misha_gone")), "彌夏交完圖先走了")
+	assert_true(bool(canal.call("is_sheila_waiting")), "席菈先走到轉角等")
 	canal = await _retry()
 	assert_eq(_objective(canal), "Q_CH3_OBJ_CORNER", "[ch3_map] HUD 目標：席菈在轉角等我")
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_map] 段落 7 待續")
+	assert_false((canal.get_node("Misha") as Node3D).visible, "[ch3_map] 彌夏已經走了")
+	assert_true(bool(canal.call("is_sheila_waiting")), "[ch3_map] 席菈在轉角等")
+	await _chapter3_corner(canal, alt)
+
+
+## 段落 7 轉角（D-168）：往南走，席菈在牆角的另一邊等 → 對話 ch3_corner（是我敲的鐘／不說話；不敢動／我沒有鬆手；
+## 第 1 章替她拿過湯匙的話最後一句不同）→ 日記多一條「轉角的衣領」→ ch3.corner_talked → 第 3 章完成（自動存檔）→ 結尾卡。
+## alt：兩題都選第二個選項（湯匙、圖的那兩句照前面的旗標檢查）。
+func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var player: PlayerController = _player(canal)
+	var wait: Vector3 = canal.get("CORNER_WAIT") as Vector3
+	var ally: Node3D = canal.get_node("Sheila") as Node3D
+	assert_true(Vector2(ally.global_position.x - wait.x, ally.global_position.z - wait.z).length() < 0.6, "[ch3_map] 席菈站在轉角")
+	assert_true(player.global_position.z < float(canal.get("CORNER_WALL_Z")) - 10.0, "[ch3_map] 諾恩還在拿到圖的地方")
+	var guide: Vector3 = ObjectiveGuide.resolve_target(canal, s.quests.marker_spec("ch3_main"), player.global_position)
+	assert_true(Vector2(guide.x - ally.global_position.x, guide.z - ally.global_position.z).length() < 0.01, "目標指引：席菈")
+	assert_true(canal.has_node("CornerWall") and canal.call("corner_lamp") != null, "牆角與小油燈")
+	var lamp: OmniLight3D = canal.call("corner_lamp") as OmniLight3D
+	assert_true(lamp.light_color.r > lamp.light_color.b, "牆角的燈是暖色")
+	await _step_into(player, Vector3(5.4, 0.0, float(canal.get("CORNER_WALL_Z")) - 6.0), 2)
+	assert_false(_game.call("is_in_dialogue"), "還沒走到")
+	await _step_into(player, Vector3(5.6, 0.0, float(canal.get("CORNER_WALL_Z")) - 0.3), 2)
+	await tree.physics_frame
+	assert_true(_game.call("is_in_dialogue"), "走到轉角：開始講")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_corner")
+	assert_true((canal.get_node("CornerCam") as Camera3D).current, "換成對話的固定鏡頭")
+	var gap_before: float = float(canal.call("sheila_gap"))
+	var saw_refused: bool = false
+	var saw_soup: bool = false
+	var closest: float = INF
+	for i: int in 30:
+		if not runner.is_running():
+			break
+		var key: String = runner.current_text()
+		if key == "DLG_CH3_CORNER_003_REFUSED":
+			saw_refused = true
+		if key == "DLG_CH3_CORNER_013_SOUP":
+			saw_soup = true
+		if key == "DLG_CH3_CORNER_007":
+			for f: int in 30:
+				await tree.process_frame
+			closest = float(canal.call("sheila_gap"))
+		if not runner.visible_choices.is_empty():
+			runner.choose(1 if alt else 0)
+		else:
+			runner.advance()
+	assert_eq(saw_refused, s.state.get_flag("ch3.map_accepted") == false, "不收圖的話，「我沒回答」那句不一樣")
+	assert_eq(saw_soup, s.state.get_flag("ch1.sheila_soup_helped") == true, "第 1 章替她拿過湯匙：「上次是一支湯匙，這次是主椅。」")
+	assert_true(closest < gap_before - 0.3, "抓住領口：她走近一步（%.2f → %.2f m）" % [gap_before, closest])
+	await tree.process_frame
+	assert_false(_game.call("is_in_dialogue"), "講完")
+	assert_false((canal.get_node("CornerCam") as Camera3D).current, "換回玩家的鏡頭")
+	assert_eq(s.state.get_flag("ch3.corner_answer"), "silent" if alt else "bell", "是我敲的鐘／不說話")
+	assert_eq(s.state.get_flag("ch3.collar_reply"), "held" if alt else "still", "不敢動／我沒有鬆手")
+	assert_eq(s.state.get_flag("ch3.collar_fixed"), true, "她把衣領拉出來（第二部用）")
+	var journal: Journal = Journal.load_default()
+	assert_true(journal.visible_ids(s.state).has("ch3_collar"), "日記多一條：轉角的衣領")
+	assert_true(s.quests.is_done("ch3_main"), "第 3 章完成")
+	assert_eq(s.state.get_flag("ch3.complete"), true, "ch3.complete")
+	assert_eq(_objective(canal), "", "HUD 沒有目標了")
+	assert_true(s.has_save(GameSession.AUTO_SLOT), "完成時自動存檔")
+	# 結尾卡：不真的回標題
+	var ended: Array[bool] = [false]
+	canal.set("end_card_done", func() -> void: ended[0] = true)
+	canal.set("_end_card_wait", 0.01)
+	for i: int in 4:
+		await tree.process_frame
+	var card: ChapterCard = canal.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card, "講完幾秒後結尾卡")
+	if card != null:
+		assert_eq(card.title_text(), str(TranslationServer.translate("PART1_END_TITLE")), "結尾卡：前半　完")
+		card.finish()
+	assert_true(ended[0], "結尾卡播完 → 回標題")
+	# 讀檔（＝標題的「繼續」）：站在轉角、「下一章還在製作中」，不會再講一次
+	canal = await _retry()
+	await tree.process_frame
+	assert_eq(str(canal.name), "Canal", "[完成] 讀檔回到乾運河")
+	assert_true(s.quests.is_done("ch3_main") or (_game.get("session") as GameSession).quests.is_done("ch3_main"), "[完成] 存檔裡第 3 章做完了")
+	player = _player(canal)
+	assert_true(_flat_dist(player.global_position, canal.get("CORNER_NOEN") as Vector3) < 0.5, "[完成] 站在轉角")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_END_BANNER", "[完成] 下一章還在製作中")
+	for i: int in 4:
+		await tree.physics_frame
+	assert_false(_game.call("is_in_dialogue"), "[完成] 不會再講一次")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。

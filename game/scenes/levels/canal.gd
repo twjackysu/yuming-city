@@ -19,6 +19,9 @@ extends StoryLevel
 ## 把假心臟垂到閘道另一邊（第 3 點，或牠走過頭之後用第 2 點拉回來）→ 牠從煤車底下走過去 → 站在木柱旁按互動鍵割斷繩子 →
 ## CoalDrop 判定「煤落下那一刻牠在哪」：壓住 → 黑色粉塵、油燈晃 → ch3.cart_dropped → 檢查點 ch3_pinned → 段落 5 倒吊待續；
 ## 太早／太晚 → 牠掙脫 → 回到檢查點 ch3_lured（掙脫後的戰鬥分支還沒做）。按住重現讓牠停在正下方再割，一定壓得住。
+## 段落 5 倒吊、段落 6 彌夏的圖（D-167）→ 檢查點 ch3_map：彌夏先走、席菈走到東岸回程路上的牆角等 →
+## 段落 7 轉角（D-168）：走到牆角 → 對話 ch3_corner（固定鏡頭；抓住領口、換班的鐘聲）→ 日記「轉角的衣領」→
+## ch3.corner_talked → 第 3 章完成（自動存檔）→ 結尾卡「第一部　死去的攻略／前半　完」→ 回標題。讀檔回來站在牆角、「下一章還在製作中」。
 ##
 ## 座標：運河沿 Z（南 Z_SOUTH → 北 Z_NORTH），河道 x -CANAL_HALF_W～CANAL_HALF_W，兩岸各寬 BANK_W、岸頂 y＝0；
 ## 諾恩從東岸南端進來，岸邊有矮牆（不會掉下去）。北邊有一座閘道（段落 3 把送葬者引進去的地方，現在只是剪影）。
@@ -242,6 +245,48 @@ const MAP_TALK: String = "ch3_misha_map"
 ## 回程：往南走過這條線，彌夏拉住諾恩（落後席菈幾步）
 const MAP_TRIGGER_Z: float = SLUICE_Z + 7.0
 
+# ---------------------------------------------------------------- 段落 7：轉角（D-168）
+const CORNER_TALK: String = "ch3_corner"
+## 回程路上東岸的一道舊牆（從外側岩壁伸出來，擋住半個岸）：席菈在牆角的另一邊等
+const CORNER_WALL_Z: float = 2.0
+const CORNER_WALL_X0: float = 6.5
+const CORNER_WALL_H: float = 3.2
+const CORNER_WALL_T: float = 1.0
+## 席菈等的地方（牆角南邊）、對話時諾恩站的地方（牆角北邊）
+const CORNER_WAIT: Vector3 = Vector3(6.3, 0.0, 3.1)
+const CORNER_NOEN: Vector3 = Vector3(5.7, 0.0, 1.6)
+## 走到離她這麼近就開始講
+const CORNER_RANGE: float = 2.6
+## 牆角的小油燈（回程唯一的暖光，掛在牆的端面上）
+const CORNER_LAMP_POS: Vector3 = Vector3(CORNER_WALL_X0 - 0.16, 2.55, CORNER_WALL_Z)
+const CORNER_LAMP_COLOR: Color = Color(1.0, 0.66, 0.36)
+const CORNER_LAMP_ENERGY: float = 0.9
+const CORNER_LAMP_RANGE: float = 5.5
+## 對話的鏡頭：從河道那一側斜斜看兩個人（過肩鏡頭靠太近會把席菈淡掉，D-115）
+const CORNER_CAM_POS: Vector3 = Vector3(3.5, 1.5, 4.9)
+const CORNER_CAM_LOOK: Vector3 = Vector3(6.1, 1.35, 2.2)
+## 抓住領口那一句：她走到這麼近；鬆開手那一句：退回一點
+const COLLAR_LINE: String = "DLG_CH3_CORNER_005"
+const COLLAR_GAP: float = 0.72
+const LET_GO_LINE: String = "DLG_CH3_CORNER_012"
+const LET_GO_GAP: float = 1.05
+## 換班的鐘聲（對話裡那一句出現時，遠遠的一聲）
+const SHIFT_BELL_LINE: String = "DLG_CH3_CORNER_011"
+## 講完 → 幾秒後結尾卡（「第一部　死去的攻略」「前半　完」）→ 回標題
+const END_CARD_DELAY: float = 2.4
+const END_CARD_SCALE: float = 1.5
+## 彌夏交完圖就先走了：往南走過牆角就不見
+const MISHA_EXIT: Vector3 = Vector3(5.0, 0.0, Z_SOUTH - 1.0)
+var misha_gone: bool = false
+var end_card_shown: bool = false
+## 結尾卡播完要做什麼（空的＝回標題；測試會換掉，不要真的回標題）
+var end_card_done: Callable = Callable()
+var _end_card_wait: float = -1.0
+var _corner_node: Node3D
+var _corner_cam: Camera3D
+var _corner_tween: Tween
+var _sheila_follow_dist: float = -1.0
+
 var hang: HangRope = null
 var hang_active: bool = false
 ## 自動測試、截圖用：按住＋照著擺盪往反方向推（HangRope.counter_steer）
@@ -270,6 +315,7 @@ func _ready() -> void:
 	_build_undertaker()
 	_build_drain()
 	_build_decoy()
+	_build_corner()
 	# 段落 5 的目標指引：諾恩站在東岸抓繩子的地方
 	var hang_spot := Node3D.new()
 	hang_spot.name = "HangSpot"
@@ -358,20 +404,22 @@ func _ready() -> void:
 		_take_clapper()
 		if player != null:
 			_put(player, MUD_SPOTS[0], PI)
-	# 檢查點 ch3_map（段落 6 做完）：圖收進口袋了 → 段落 7 轉角待續
-	elif stage == "corner":
-		_wake_undertaker(false)
-		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
-		_undertaker.rotation = Vector3(0.0, PI, 0.0)
-		cart_cut = true
-		cut_result = CoalDrop.PINNED
-		_cart.rotation.x = CART_TIP
-		_cart_rope.visible = false
-		_show_heap()
-		_pin_undertaker()
-		_take_clapper()
-		_continued_shown = true
-		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
+	# 檢查點 ch3_map（段落 6 做完）：圖收進口袋了、彌夏先走了 → 往南走，席菈在轉角等（段落 7）
+	# 第 3 章做完（ch3_main 完成＝第一部前半的結尾，存檔還是 ch3_map）：站在轉角，「下一章還在製作中」
+	elif stage == "corner" or Game.session.quests.is_done(QUEST):
+		_settle_after_clapper()
+		if stage == "corner":
+			if player != null:
+				_put(player, Vector3(5.2, 0.0, MAP_TRIGGER_Z + 0.5), PI)
+			_sheila_waits(true)
+		else:
+			if player != null:
+				_put(player, CORNER_NOEN, PI)
+			var ally_end: Node3D = get_node_or_null("Sheila") as Node3D
+			if ally_end != null:
+				ally_end.global_position = CORNER_WAIT + Vector3(0.0, 0.05, 0.0)
+			_continued_shown = true
+			_banner.call_deferred("CH3_END_BANNER", 8.0)
 	# 截圖用：`--canal-at=cart` 站在繩子旁、假心臟垂在第 3 點、牠正走進閘道（煤車在頭頂）；
 	# `--canal-at=pinned` 同一個位置，煤已經倒下去壓住牠（粉塵剛揚起來）
 	if at in ["cart", "pinned"] and player != null:
@@ -431,6 +479,23 @@ func _ready() -> void:
 		(player as PlayerController).snap_camera()
 		_dev_hold_edge = true
 		talk_misha_map.call_deferred()
+	# 截圖用：`--canal-at=corner` 段落 7：轉角，她抓住領口那一句（鏡頭換成對話的固定鏡頭）；
+	# `--canal-at=end` 講完之後的結尾卡（停在字完整出現）
+	if at in ["corner", "end"] and player != null:
+		dev_start_cart(Game.session)
+		for flag: String in ["ch3.cart_planned", "ch3.cart_dropped", "ch3.clapper_taken", "ch3.map_accepted", "ch3.misha_map_given"]:
+			Game.session.set_flag(flag, true)
+		_cart_talk_wait = -1.0
+		_settle_after_clapper()
+		_sheila_waits(true)
+		_put(player, CORNER_NOEN + Vector3(0.0, 0.0, -0.6), PI)
+		(player as PlayerController).snap_camera()
+		_dev_hold_edge = true
+		if at == "corner":
+			_dev_corner_to_collar.call_deferred()
+		else:
+			end_card_done = func() -> void: pass
+			_dev_end_card.call_deferred()
 
 
 ## 開發旗標與測試用：照正式流程把第 2 章走完（第 3 章跟著開始）。已經開始第 3 章就不動。
@@ -561,6 +626,10 @@ func _physics_process(delta: float) -> void:
 	elif stage == "misha_map":
 		if player.global_position.z >= MAP_TRIGGER_Z:
 			talk_misha_map()
+	elif stage == "corner":
+		_update_corner_wait(player)
+		if _flat(player.global_position, CORNER_WAIT) <= CORNER_RANGE:
+			talk_corner()
 	if awake and not _dropping:
 		_update_follow(player, delta)
 	_place_task_marker()
@@ -568,6 +637,10 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _end_card_wait >= 0.0:
+		_end_card_wait -= delta
+		if _end_card_wait < 0.0:
+			play_end_card()
 	if _pivot != null:
 		_pivot.rotation.z = deg_to_rad(SWAY_DEG) * sin(_t * SWAY_RATE)
 		_pivot.rotation.x = deg_to_rad(SWAY_DEG * 0.45) * sin(_t * SWAY_RATE * 0.71 + 1.3)
@@ -621,12 +694,14 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 		_on_hang_end()
 		return
 	if dialogue_id == MAP_TALK:
-		# 跳過也一樣：圖一定會被塞進手裡（收不收只記旗標）→ 檢查點 ch3_map → 段落 7 待續
+		# 跳過也一樣：圖一定會被塞進手裡（收不收只記旗標）→ 檢查點 ch3_map → 彌夏先走、席菈走到轉角等（段落 7）
 		if not bool(Game.session.state.get_flag("ch3.misha_map_given", false)):
 			Game.session.set_flag("ch3.misha_map_given", true)
-			if not _continued_shown:
-				_continued_shown = true
-				_banner("CH1_TO_BE_CONTINUED", 6.0)
+			_misha_leaves(false)
+			_sheila_waits(false)
+		return
+	if dialogue_id == CORNER_TALK:
+		_on_corner_end()
 		return
 	if dialogue_id == DECOY_TALK:
 		# 跳過也一樣：拿到假心臟 → 段落 3 正式開始（檢查點 ch3_decoy）
@@ -716,6 +791,8 @@ func is_on_back(who: Node3D) -> bool:
 func _on_dialogue_started(runner: DialogueRunner) -> void:
 	if runner != null and runner.dialogue_id == RHYTHM_TALK and not runner.line_shown.is_connected(_on_rhythm_line):
 		runner.line_shown.connect(_on_rhythm_line)
+	if runner != null and runner.dialogue_id == CORNER_TALK and not runner.line_shown.is_connected(_on_corner_line):
+		runner.line_shown.connect(_on_corner_line)
 
 
 ## 「敲」那一句出現：照剛剛選的節奏判定（寫進 ch3.react，下一句讀它），送葬者照結果演。
@@ -858,9 +935,11 @@ func _place_company() -> void:
 
 
 func _follow_misha(player: Node3D, delta: float) -> void:
-	if _misha == null or Game.is_player_locked() or _dev_hold_edge:
+	if _misha == null or Game.is_player_locked() or _dev_hold_edge or misha_gone:
 		if _misha != null:
 			_misha.set_move_speed(0.0)
+		if misha_gone and _misha != null and _misha.visible and not Game.is_player_locked():
+			_misha_walk_off(delta)
 		return
 	var gap: Vector3 = Vector3(_misha.global_position.x - player.global_position.x, 0.0, _misha.global_position.z - player.global_position.z)
 	var dist: float = gap.length()
@@ -1535,6 +1614,247 @@ func talk_misha_map() -> void:
 		# 席菈走在前面幾步
 		ally.global_position = player.global_position + Vector3(-0.6, 0.0, 4.5)
 	Game.start_dialogue(MAP_TALK)
+
+
+# ---------------------------------------------------------------- 段落 7：轉角（D-168）
+
+## 東岸回程路上的一道舊牆（從外側岩壁伸出來、擋住半個岸）＋牆頂的壓頂石＋端面上的小油燈；席菈等的點（目標指引跟著她）。
+func _build_corner() -> void:
+	var stone: StandardMaterial3D = _mat(STONE, 0.9)
+	var x1: float = CANAL_HALF_W + BANK_W
+	var w: float = x1 - CORNER_WALL_X0
+	_solid("CornerWall", Vector3(w, CORNER_WALL_H, CORNER_WALL_T), Vector3(CORNER_WALL_X0 + w * 0.5, CORNER_WALL_H * 0.5, CORNER_WALL_Z), stone)
+	_solid("CornerCoping", Vector3(w + 0.1, 0.14, CORNER_WALL_T + 0.12), Vector3(CORNER_WALL_X0 + w * 0.5 - 0.05, CORNER_WALL_H + 0.07, CORNER_WALL_Z), _mat(STONE_LIGHT, 0.85), false)
+	# 牆角磨圓的護角石（一塊塊疊上去，看得出是轉角）
+	for i: int in 4:
+		var h: float = CORNER_WALL_H / 4.0
+		var q: MeshInstance3D = _solid("CornerQuoin%d" % i, Vector3(0.28, h - 0.04, CORNER_WALL_T + (0.08 if i % 2 == 0 else 0.0)), Vector3(CORNER_WALL_X0 + 0.12, h * (i + 0.5), CORNER_WALL_Z), _mat(STONE_LIGHT, 0.9), false)
+		q.position.x -= 0.02
+	# 油燈：鐵臂＋小燈罩（自發光）＋一盞暖色的點光（投影子：席菈的影子落在牆上）
+	var iron: StandardMaterial3D = _mat(IRON, 0.6)
+	_solid("CornerLampArm", Vector3(0.3, 0.04, 0.04), CORNER_LAMP_POS + Vector3(0.1, 0.22, 0.0), iron, false)
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color(0.3, 0.2, 0.12)
+	glow.emission_enabled = true
+	glow.emission = CORNER_LAMP_COLOR
+	glow.emission_energy_multiplier = 1.6
+	_solid("CornerLampHousing", Vector3(0.16, 0.24, 0.16), CORNER_LAMP_POS, glow, false)
+	var light := OmniLight3D.new()
+	light.name = "CornerLamp"
+	light.light_color = CORNER_LAMP_COLOR
+	light.light_energy = CORNER_LAMP_ENERGY
+	light.omni_range = CORNER_LAMP_RANGE
+	light.omni_attenuation = 1.4
+	light.shadow_enabled = true
+	light.light_volumetric_fog_energy = 0.6
+	light.position = CORNER_LAMP_POS + Vector3(-0.15, -0.05, 0.0)
+	add_child(light)
+	_corner_node = Node3D.new()
+	_corner_node.name = "CornerWait"
+	add_child(_corner_node)
+	_corner_node.position = CORNER_WAIT
+
+
+func corner_lamp() -> OmniLight3D:
+	return get_node_or_null("CornerLamp") as OmniLight3D
+
+
+## 檢查點 ch3_map 之後（重來、讀檔、截圖）：煤堆壓著牠、鐘舌拿走了、彌夏先走了。
+func _settle_after_clapper() -> void:
+	_wake_undertaker(false)
+	_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+	_undertaker.rotation = Vector3(0.0, PI, 0.0)
+	cart_cut = true
+	cut_result = CoalDrop.PINNED
+	_cart.rotation.x = CART_TIP
+	_cart_rope.visible = false
+	_show_heap()
+	_pin_undertaker()
+	_take_clapper()
+	_misha_leaves(true)
+
+
+## 彌夏交完圖就先走了（原作「她離開後」）：往南走、過了牆角就不見。now＝直接不見（重來、截圖）。
+func _misha_leaves(now: bool) -> void:
+	misha_gone = true
+	if _misha != null and now:
+		_misha.visible = false
+		_misha.global_position = MISHA_EXIT
+
+
+func _misha_walk_off(delta: float) -> void:
+	var to: Vector3 = MISHA_EXIT - _misha.global_position
+	to.y = 0.0
+	var d: float = to.length()
+	if d < 0.3 or _misha.global_position.z > CORNER_WALL_Z + 2.5:
+		_misha.visible = false
+		_misha.set_move_speed(0.0)
+		return
+	var step: float = minf(MISHA_SPEED * 1.15 * delta, d)
+	_misha.global_position += to / d * step
+	_misha.rotation.y = atan2(-to.x, -to.z)
+	_misha.set_move_speed(step / maxf(delta, 0.0001))
+
+
+## 席菈先走到轉角等（跟著的對象換成轉角的點、跟得很近＝走到那裡停下）。snap＝直接站在那裡（重來、截圖）。
+func _sheila_waits(snap: bool) -> void:
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	if ally == null or _corner_node == null:
+		return
+	if _sheila_follow_dist < 0.0:
+		_sheila_follow_dist = ally.brain.follow_dist
+	ally.leader = _corner_node
+	ally.brain.follow_dist = 0.35
+	if snap:
+		ally.global_position = CORNER_WAIT + Vector3(0.0, 0.05, 0.0)
+		ally.face_toward(CORNER_NOEN + Vector3(0.0, 0.0, -3.0))
+
+
+## 她站好了就看著諾恩走過來。
+func _update_corner_wait(player: Node3D) -> void:
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	if ally != null and ally.leader == _corner_node and _flat(ally.global_position, CORNER_WAIT) < 0.6:
+		ally.face_toward(player.global_position)
+
+
+func is_sheila_waiting() -> bool:
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	return ally != null and ally.leader == _corner_node
+
+
+## 走到轉角（測試也用）：兩個人站好、鏡頭換成對話的固定鏡頭 → 對話 ch3_corner。只開一次。
+func talk_corner() -> void:
+	if Game.is_in_dialogue() or Game.session.quests.stage_of(QUEST) != "corner":
+		return
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	if player != null:
+		_put(player, CORNER_NOEN, 0.0)
+		player.velocity = Vector3.ZERO
+	if ally != null:
+		ally.global_position = CORNER_WAIT + Vector3(0.0, 0.05, 0.0)
+		ally.velocity = Vector3.ZERO
+		if player != null:
+			ally.face_toward(player.global_position)
+			_face_noen_to(ally.global_position)
+	_use_corner_camera(true)
+	Game.start_dialogue(CORNER_TALK)
+
+
+func _face_noen_to(p: Vector3) -> void:
+	var player: PlayerController = get_node_or_null("Player") as PlayerController
+	if player == null:
+		return
+	var to: Vector3 = p - player.global_position
+	var yaw: float = atan2(-to.x, -to.z)
+	var body: Node3D = player.get_node_or_null("Body") as Node3D
+	if body != null:
+		body.global_rotation.y = yaw
+	player.yaw = yaw
+	player.pitch = -0.1
+	player.snap_camera()
+
+
+## 對話的固定鏡頭（從河道那一側斜斜看兩個人、牆角的油燈在後面）；結束換回玩家的鏡頭。
+func _use_corner_camera(on: bool) -> void:
+	if on:
+		if _corner_cam == null:
+			_corner_cam = Camera3D.new()
+			_corner_cam.name = "CornerCam"
+			_corner_cam.fov = 50.0
+			add_child(_corner_cam)
+			_corner_cam.look_at_from_position(CORNER_CAM_POS, CORNER_CAM_LOOK)
+		var cur: Camera3D = get_viewport().get_camera_3d()
+		if cur != _corner_cam:
+			_prev_cam = cur
+		_corner_cam.make_current()
+	elif _corner_cam != null:
+		_corner_cam.current = false
+		if _prev_cam != null and is_instance_valid(_prev_cam):
+			_prev_cam.make_current()
+
+
+## 對話裡的幾句：抓住領口 → 她走到很近；換班的鐘聲（遠遠的一聲）；鬆開手 → 退回一點。
+func _on_corner_line(_speaker_key: String, text_key: String) -> void:
+	if text_key == COLLAR_LINE:
+		_sheila_step_to(COLLAR_GAP)
+	elif text_key == LET_GO_LINE:
+		_sheila_step_to(LET_GO_GAP)
+	elif text_key == SHIFT_BELL_LINE:
+		Sfx.play_flat(self, "bell", -17.0)
+
+
+func _sheila_step_to(gap: float) -> void:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if player == null or ally == null:
+		return
+	var away: Vector3 = ally.global_position - player.global_position
+	away.y = 0.0
+	if away.length() < 0.01:
+		return
+	var goal: Vector3 = player.global_position + away.normalized() * gap
+	goal.y = ally.global_position.y
+	if _corner_tween != null and _corner_tween.is_valid():
+		_corner_tween.kill()
+	_corner_tween = create_tween()
+	_corner_tween.tween_property(ally, "global_position", goal, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func sheila_gap() -> float:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if player == null or ally == null:
+		return INF
+	return _flat(player.global_position, ally.global_position)
+
+
+## 對話講完／跳過：日記多一條「轉角的衣領」→ ch3.corner_talked → 第 3 章完成（ch3.complete，自動存檔）→ 幾秒後結尾卡 → 回標題。
+func _on_corner_end() -> void:
+	_use_corner_camera(false)
+	var ally: Sheila = get_node_or_null("Sheila") as Sheila
+	if ally != null:
+		ally.leader = get_node_or_null("Player") as Node3D
+		if _sheila_follow_dist > 0.0:
+			ally.brain.follow_dist = _sheila_follow_dist
+	if bool(Game.session.state.get_flag("ch3.corner_talked", false)):
+		return
+	Game.session.set_flag("ch3.corner_talked", true)
+	_end_card_wait = END_CARD_DELAY
+
+
+## 結尾卡（重用章節卡）：「第一部　死去的攻略」「前半　完」→ 回標題（end_card_done 測試會換掉）。
+func play_end_card() -> ChapterCard:
+	_end_card_wait = -1.0
+	if end_card_shown:
+		return get_node_or_null("ChapterCard") as ChapterCard
+	end_card_shown = true
+	var done: Callable = end_card_done if end_card_done.is_valid() else Game.back_to_title
+	return ChapterCard.play(self, "PART1_END_NUMBER", "PART1_END_TITLE", done, END_CARD_SCALE)
+
+
+## 截圖用：轉角的對話推到她抓住領口那一句。
+func _dev_corner_to_collar() -> void:
+	talk_corner()
+	var runner: DialogueRunner = Game.dialogue
+	if runner == null:
+		return
+	for i: int in 12:
+		if not runner.is_running() or runner.current_text() == COLLAR_LINE:
+			break
+		if not runner.visible_choices.is_empty():
+			runner.choose(0)
+		else:
+			runner.advance()
+	if _corner_tween != null and _corner_tween.is_valid():
+		_corner_tween.custom_step(1.0)
+
+
+## 截圖用：結尾卡停在字完整出現。
+func _dev_end_card() -> void:
+	var card: ChapterCard = play_end_card()
+	if card != null:
+		card.hold_still()
 
 
 ## 畫面黑一下再亮回來（摔進泥裡的那一下）。
