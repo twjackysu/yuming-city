@@ -1,14 +1,15 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。**第 42 輪完成第 1 章結尾 → 第 2 章章節卡 → 新關卡 `bell_hall`（鐘院）段落 1 飯桌＋看穿伊薩劃字（D-157、D-158）＋段落 2 他自願的。下一輪接第 5 節「下一步」：第 2 章段落 3 鐘院內室**（照 `08-chapter2-3.md`）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。第 42 輪完成第 1 章結尾 → 第 2 章章節卡 → 新關卡 `bell_hall`（鐘院）段落 1 飯桌＋看穿伊薩劃字（D-157、D-158）＋段落 2 他自願的。**第 43 輪完成段落 3 鐘院內室（D-159）＋段落 4 牆上的紋路（D-160）。下一輪接第 5 節「下一步」：第 2 章段落 5 窗簾與眼睛（第 2 章結尾）**（照 `08-chapter2-3.md`）。
 
 ## 0. 開工先確認
 
+- 上一輪（第 43 輪）的程式 commit：c1d4016 段落 3 鐘院內室（run 42595857204）、f546457 段落 4 牆上的紋路（run 42596957503）——收尾時的狀態見 PROGRESS 第 43 輪補記；**開工先看整個綠燈**，紅了看 log 修。screens 的 `21-ch2-inner`、`22-ch2-inner-after`、`23-ch2-carvings` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 325 個測試）。
 - 上一輪（第 42 輪）的程式 commit：79ed43e 第 1 章結尾＋第 2 章飯桌（run 42587923930 全綠）、25219e8 看穿伊薩（run 42589085968：「測試與匯出」全綠，盤點截圖收尾時還在跑）、533ca34 段落 2（run 被下一個取代）、03b132a 湯慢慢涼（**run 42590378750：「Import、測試、匯出」已綠，smoke test、打包、盤點截圖收尾時還在跑——開工先看整個綠燈**，紅了看 log 修）；screens 的 `18-ch2-table`、`19-ch2-hall`、`20-ch2-isa-insight` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 324 個測試）。
 - 第 41 輪的程式 commit：84389e8 段落 8 晚餐（run 42580729105）、3ad9e6e 屋裡的構圖（run 被取消，內容在下一個裡）、d41419f 段落 9 兔子（**run 42581764946：測試、匯出、盤點截圖已綠，smoke test 與打包收尾時還在跑——開工先看整個綠燈**；screens 的 `16-ch1-dinner`、`17-ch1-bell-yard-road` 第 41 輪已看過）。開工照常先跑 `scripts/check.sh`（最後 322 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 40 輪的 run 都被 Jacky 的 c3059c8 run 42576367758 取代、已全綠（第 41 輪開工確認）。latest 的 `achievement-icons.zip` 第 41 輪看過：8 個成就 × 已解鎖／未解鎖，256×256，圖案都清楚。**第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
 - 第 39 輪的 d497b9d run 42570417322、2089466 run 42569871509 已全綠（第 40 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
-- `docs/PROGRESS.md` 約 190 行（第 38 輪已把第 29～33 輪合併成每日摘要）；超過約 300 行時把第 34～37 輪合併。
+- `docs/PROGRESS.md` 約 290 行（第 38 輪已把第 29～33 輪合併成每日摘要）；**超過約 300 行了就把第 34～38 輪合併成每日摘要**（下一輪應該就要做）。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 15 張（`01-settings`～`11-convoy-insight`，第 38～40 輪加 `12-ch1-tavern`、`13-ch1-day-north`、`14-ch1-stairs`、`15-ch1-daylight`）；release 剛被新建置換掉時可能抓到舊檔，看 `unzip -l` 裡的時間確認是哪次建置。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
 - **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
@@ -97,9 +98,16 @@
   - 截圖 `--level=bell_hall [--hall-at=table|seated] [--hall-insight=秒]`（一張約 30 秒）。流程測試 `_chapter2()`＋`_assert_bell_hall()`（兩條路線：看穿＋道歉／沉默＋不說話）。
   - 湯慢慢涼了（03b132a）：粥鍋 `PorridgeSteam`（`ParticleLook` 白煙），坐下之後 `COOL_SEC` 24 秒內淡到 `STEAM_COLD`，`ch2.volunteer_talked` 之後就是涼的；`steam_level` 可以在測試裡讀。白牆前的白煙不太明顯，美術後補時可以考慮深一點的背景。
   - 還可以：程序人偶沒有坐姿（大家站在桌邊）；伊薩拉椅子只有椅子往後滑，沒有手的動作。
+- **已完成（第 43 輪，D-159／D-160）**：段落 3＋4，都在 `bell_hall` 關卡裡。
+  - 內室蓋在飯廳北邊（`INNER_HALF_X`／`INNER_Z_NEAR`／`INNER_Z_FAR`／`INNER_H`），北牆是左右兩段＋門楣（`WallNorthW`／`WallNorthE`／`WallNorthLintel`），門是轉軸 `InnerDoor`（鉸鏈在西邊，`rotation.y` 1.75 往內室推開）＋`InnerDoorBlock` 碰撞（`is_door_open()`）。`enter_inner_room()`（走到 `INNER_DOOR_POS + (0,0,0.6)` 的 `ENTER_RANGE` 內）→ `_place_inner(after)`（`INNER_SPOTS`：noen／noen_after／sheila／isa／misha_door／misha）→ 過場 `ch2_leo`（鏡頭 `InnerCamWide`／`InnerCamLeo`／`InnerCamMisha`／`InnerCamTwo`；事件 `misha_walk`、`slap`；`_on_cutscene_ended` 跳過也把彌夏放到黎歐旁邊）。`is_in_inner_room()`；`mood`（0～1，`_update_mood()`／`_apply_mood()`：背景、環境光、飯廳天花板白燈）。
+  - 道具：`BellDial`（`Face`／`Rim`／`InnerRing`／`Hub`／`Tick0～8`）、`MainSeat`（銅，面向 +Z）、`LifeTubes`（`_build_tubes()`／`_add_tube()`／`tube_ends(i)`，SurfaceTool 一個 mesh；shader `src/world/life_tube.gdshader` 的 `spacing`／`flow_speed`／`pulse_len`／`glow_energy`）、暖光 `DialGlow`／`SeatGlow`／`InnerFill`／`EastFill`（都不投影子）。黎歐 `Leo`（`Puppet.sitting`，`leo()`）。
+  - 浮雕：`WallCarvings/Carving0～3`（`CARVING_X`、`CARVING_ZS`、`READ_RANGE`）、`nearest_carving()`、`read_carving(i)`（旗標 `ch2.carving_<i>`）、`carvings_read()`、`carving_lit(i)`、`_update_carvings()`；對話 `ch2_carving_0～3`、`ch2_carvings_end`（講完／跳過設 `ch2.read_wall_carvings`）。
+  - 主線 `meet_leo` → `wall_carvings`（檢查點 `ch2_inner`）→ `curtain`（檢查點 `ch2_carvings`，marker `node:Isa`，done_when `ch2.curtain_opened` 還沒有人設；現在顯示「待續」）。
+  - 截圖 `--level=bell_hall --hall-at=inner [--hall-shot=N]`（過場；lavapipe 很慢，時長鏡頭會自己往前跑，N 抓前一個）／`--hall-at=leo`（過場看完）／`--hall-at=carved`（紋路看完、刻痕都亮）。流程測試 `_chapter2_inner()`、`_chapter2_carvings()`、`_assert_inner_room()`。
+  - 還可以：主椅的椅背是一整片銅板（可以加花紋或鏤空）；黎歐坐姿的外套下擺像一團（正式模型再說）；彌夏捧臉只有旁白（程序人偶的手臂每幀被姿勢蓋掉，要做的話在 Puppet 加一個「伸手」姿勢）；內室的南牆內側是飯廳的白灰牆（從內室看是白的，可以在內側貼一層石牆）；諾恩自己的身體擋油燈，右半邊很暗（D-118 `SELF_LAYER` 查一下）。
 - **下一步（依序）**：
-  1. **第 2 章段落 3 鐘院內室**（照 08）：走到 `InnerDoor`（marker）→ 設 `ch2.inner_room_entered` → 內室（建議蓋在同一個關卡的北邊，門打開走進去，或照柯德家的做法黑一下換到 x=40 的室內）。黎歐坐在銅椅（主椅）上、背後十幾條細管接進牆上的巨大鐘盤；**全章唯一的暖光**（銅椅與鐘盤反光、細管裡慢慢流動的微光＝被抽走的壽命，可以用 emission＋UV 捲動的 shader）。過場（可跳過，`CutsceneRunner`）：「妳剪頭髮了。」→「我信裡說別來，魚是不是把那段吃掉了？」→ 彌夏一巴掌、捧住他的臉。新名詞「主椅」已在 06。檢查點建議 `ch2_inner`。之後段落 4 牆上的紋路（4 塊浮雕，`ch2.read_wall_carvings` 推翻 `burn_route`）、段落 5 窗簾與眼睛（吞日獸）。
-  2. 第 2 章段落 4、5（牆上的紋路、窗簾後的眼睛），然後第 3 章（08）。
+  1. **第 2 章段落 5 窗簾與眼睛（第 2 章結尾）**（照 08）：在 `curtain` 階段走到伊薩旁邊 → 對話：席菈「把人撤走。」→ 伊薩「七千多人，出口一次只能過兩個。至少十天。而且一離開這裡，登記還在。」→「那毀掉鐘。」→「深層的東西就會上來。」（08：對話選項＝玩家想得到的方案，全部被現實擋下；原作在 1-6 開頭 531 行附近還有後續）→ 伊薩拉開窗簾（飯廳西牆的 `Curtain`，要走回飯廳；或在內室另開一扇窗——決定後記 DECISIONS）→ 玻璃外一堵黑牆動了一下＝一隻眼睛（吞日獸；08：一張大的程序 shader，黑色、慢慢收縮的瞳孔、屏障的冷光網格在前面）→ `ch2.curtain_opened` → `ch2_main` 完成 → 第 3 章（照 D-149 的章節銜接：`MAIN_QUESTS`、`CHAPTER_CHAIN`、`CH3_CARD_*`、檢查點）。
+  2. 第 3 章「不准替我答應」（08；12/31 版本到第 3 章結束）。
   3. 白天的霜橋鎮還可以：亮窗白天還是暖黃（屋裡有人點燈，說得通；太多就在 `_build_day` 把部分窗調暗）、死者名單牆（07 原本寫的，白盒先省略；可以在梨販攤旁加一塊貼滿紙的木板＋互動看名字）、北街未救出的受困者白天還躺在原地（`RescueSite` 不能互動；要不要換成蓋著布的樣子再決定）。
   4. 酒館、樓梯、白晝城、柯德家的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
