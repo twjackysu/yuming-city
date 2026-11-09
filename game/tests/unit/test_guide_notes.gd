@@ -108,3 +108,39 @@ func test_migrate_v1_save_gets_empty_guide() -> void:
 	assert_eq(st.checkpoint, "aftermath", "切片的存檔照樣停在原本的檢查點")
 	assert_true(st.has_paid_memory("arch_father_last_talk"))
 	assert_eq(GuideNotes.status(st, "stair_arrows"), GuideNotes.UNWRITTEN, "切片還沒寫下攻略")
+
+
+func test_journal_shows_guide_section() -> void:
+	var game: Node = tree.root.get_node("Game")
+	var original: GameSession = game.get("session") as GameSession
+	var s := GameSession.new(QuestDB.load_default(), "user://test_guide_view_%d" % Time.get_ticks_usec())
+	s.state = GameState.new()
+	game.set("session", s)
+	var view := JournalView.new()
+	tree.root.add_child(view)
+	await tree.process_frame
+	view.open()
+	assert_eq(view.guide_rows_shown.size(), 0, "切片：還沒寫下攻略，整段不出現")
+	assert_true(view.find_child("GuideHead", true, false) == null)
+	view.close()
+	JournalView.guide_demo(s)
+	view.open()
+	await tree.process_frame
+	assert_eq(view.guide_rows_shown.size(), 6, "寫下 6 條")
+	assert_not_null(view.find_child("GuideHead", true, false), "有「攻略筆記」小標")
+	assert_eq(view.shown_entry_count(), 0, "記憶條目數不含攻略筆記")
+	var stair: Node = view.find_child("Guide_stair_arrows", true, false)
+	assert_not_null(stair)
+	assert_not_null(stair.find_child("Strike", true, false), "被推翻的整句劃掉")
+	assert_eq((stair.find_child("Real", true, false) as Label).text, "GUIDE_STAIR_ARROWS_WRONG", "下面是現實裡看到的事")
+	var door: Node = view.find_child("Guide_sealed_door", true, false)
+	assert_true(door.find_child("Strike", true, false) == null, "還沒推翻的不劃")
+	assert_eq((door.find_child("Status", true, false) as Label).text, "GUIDE_STATUS_SURE")
+	assert_eq((view.find_child("Guide_purifier", true, false).find_child("Status", true, false) as Label).text, "GUIDE_STATUS_UNSURE")
+	var strike: ColorRect = stair.find_child("Strike", true, false) as ColorRect
+	assert_true(strike.size.x > 40.0, "墨線跟著字的寬度")
+	view.close()
+	view.queue_free()
+	game.set("session", original)
+	tree.paused = false
+	await tree.process_frame
