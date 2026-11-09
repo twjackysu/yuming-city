@@ -237,6 +237,11 @@ const MUD_SPOTS: PackedVector3Array = [Vector3(4.3, 0.0, SLUICE_Z + 3.0), Vector
 const MUD_CAM_POS: Vector3 = Vector3(5.1, 2.6, SLUICE_Z + 5.7)
 const MUD_CAM_LOOK: Vector3 = Vector3(5.1, 0.1, SLUICE_Z + 3.5)
 
+# ---------------------------------------------------------------- 段落 6：彌夏的圖（D-167）
+const MAP_TALK: String = "ch3_misha_map"
+## 回程：往南走過這條線，彌夏拉住諾恩（落後席菈幾步）
+const MAP_TRIGGER_Z: float = SLUICE_Z + 7.0
+
 var hang: HangRope = null
 var hang_active: bool = false
 ## 自動測試、截圖用：按住＋照著擺盪往反方向推（HangRope.counter_steer）
@@ -351,6 +356,20 @@ func _ready() -> void:
 		_show_heap()
 		_pin_undertaker()
 		_take_clapper()
+		if player != null:
+			_put(player, MUD_SPOTS[0], PI)
+	# 檢查點 ch3_map（段落 6 做完）：圖收進口袋了 → 段落 7 轉角待續
+	elif stage == "corner":
+		_wake_undertaker(false)
+		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		cart_cut = true
+		cut_result = CoalDrop.PINNED
+		_cart.rotation.x = CART_TIP
+		_cart_rope.visible = false
+		_show_heap()
+		_pin_undertaker()
+		_take_clapper()
 		_continued_shown = true
 		_banner.call_deferred("CH1_TO_BE_CONTINUED", 6.0)
 	# 截圖用：`--canal-at=cart` 站在繩子旁、假心臟垂在第 3 點、牠正走進閘道（煤車在頭頂）；
@@ -395,6 +414,23 @@ func _ready() -> void:
 		else:
 			_grab_clapper()
 			_fall_in_mud.call_deferred()
+	# 截圖用：`--canal-at=map` 段落 6：回程往南走，彌夏拉住諾恩（對話第一句）
+	if at == "map" and player != null:
+		dev_start_cart(Game.session)
+		_wake_undertaker(false)
+		Game.session.set_flag("ch3.cart_planned", true)
+		_cart_talk_wait = -1.0
+		_undertaker.global_position = Vector3(SLUICE_PASS_X, BED_Y, CART_Z)
+		_undertaker.rotation = Vector3(0.0, PI, 0.0)
+		cut_rope()
+		finish_cut()
+		_take_clapper()
+		Game.session.set_flag("ch3.clapper_taken", true)
+		_put(player, Vector3(5.2, 0.0, MAP_TRIGGER_Z + 0.5), PI)
+		(player as PlayerController).yaw = PI + 0.5
+		(player as PlayerController).snap_camera()
+		_dev_hold_edge = true
+		talk_misha_map.call_deferred()
 
 
 ## 開發旗標與測試用：照正式流程把第 2 章走完（第 3 章跟著開始）。已經開始第 3 章就不動。
@@ -522,6 +558,9 @@ func _physics_process(delta: float) -> void:
 			hang_tick(delta, hold, steer)
 		elif near_hang_spot() and Input.is_action_just_pressed("interact"):
 			grab_hang_rope()
+	elif stage == "misha_map":
+		if player.global_position.z >= MAP_TRIGGER_Z:
+			talk_misha_map()
 	if awake and not _dropping:
 		_update_follow(player, delta)
 	_place_task_marker()
@@ -580,6 +619,14 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 		return
 	if dialogue_id == HANG_END_TALK:
 		_on_hang_end()
+		return
+	if dialogue_id == MAP_TALK:
+		# 跳過也一樣：圖一定會被塞進手裡（收不收只記旗標）→ 檢查點 ch3_map → 段落 7 待續
+		if not bool(Game.session.state.get_flag("ch3.misha_map_given", false)):
+			Game.session.set_flag("ch3.misha_map_given", true)
+			if not _continued_shown:
+				_continued_shown = true
+				_banner("CH1_TO_BE_CONTINUED", 6.0)
 		return
 	if dialogue_id == DECOY_TALK:
 		# 跳過也一樣：拿到假心臟 → 段落 3 正式開始（檢查點 ch3_decoy）
@@ -1396,7 +1443,10 @@ func _grab_clapper() -> void:
 		tw.tween_callback(_update_hang_rig)
 	if _misha != null:
 		_misha.global_position = HANG_SPOT + Vector3(0.45, -0.05, 0.7)
-	get_tree().create_timer(COLLAPSE_SEC).timeout.connect(_fall_in_mud)
+	# 補間綁在關卡上：關卡換掉（重來）就一起停掉
+	var wait := create_tween()
+	wait.tween_interval(COLLAPSE_SEC)
+	wait.tween_callback(_fall_in_mud)
 
 
 ## 鐘舌被拿走：胸口不再亮。
@@ -1467,9 +1517,24 @@ func _on_hang_end() -> void:
 	if bool(Game.session.state.get_flag("ch3.clapper_taken", false)):
 		return
 	Game.session.set_flag("ch3.clapper_taken", true)
-	if not _continued_shown:
-		_continued_shown = true
-		_banner("CH1_TO_BE_CONTINUED", 6.0)
+
+
+# ---------------------------------------------------------------- 段落 6：彌夏的圖（D-167）
+
+## 回程往南走（測試也用）：彌夏拉住諾恩 → 對話 ch3_misha_map（重置主椅要有人接替；收下／不收都會被塞進手裡）。只開一次。
+func talk_misha_map() -> void:
+	if Game.is_in_dialogue() or Game.session.quests.stage_of(QUEST) != "misha_map":
+		return
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null and _misha != null:
+		_misha.global_position = player.global_position + Vector3(0.9, -0.05, -0.8)
+		var to: Vector3 = player.global_position - _misha.global_position
+		_misha.rotation.y = atan2(-to.x, -to.z)
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null and player != null:
+		# 席菈走在前面幾步
+		ally.global_position = player.global_position + Vector3(-0.6, 0.0, 4.5)
+	Game.start_dialogue(MAP_TALK)
 
 
 ## 畫面黑一下再亮回來（摔進泥裡的那一下）。

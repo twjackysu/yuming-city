@@ -1187,14 +1187,46 @@ func _chapter3_hang(canal: StoryLevel, alt: bool) -> void:
 	assert_true(journal.visible_ids(s.state).has("ch3_first_laugh"), "日記多一條：乾運河的泥")
 	assert_eq(s.quests.stage_of("ch3_main"), "misha_map", "→ 段落 6 彌夏的圖")
 	assert_eq(s.state.checkpoint, "ch3_clapper", "檢查點 ch3_clapper")
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 6 待續")
 	canal = await _retry()
 	assert_eq(str(canal.name), "Canal", "[ch3_clapper] 重來還在乾運河")
 	assert_eq(_objective(canal), "Q_CH3_OBJ_MAP", "[ch3_clapper] HUD 目標：彌夏有話要說")
 	assert_true(bool(canal.get("clapper_taken")) and bool(canal.get("pinned")), "[ch3_clapper] 鐘舌拿到了、牠還壓在煤下")
 	assert_false((canal.call("clapper_light") as Node3D).visible, "[ch3_clapper] 胸口不亮")
+	await _chapter3_map(canal, alt)
+
+
+## 段落 6 彌夏的圖（D-167）：回程往南走 → 彌夏拉住諾恩（對話 ch3_misha_map）→ 收下／不收（都會被塞進手裡，記 ch3.map_accepted）
+## → 檢查點 ch3_map → 段落 7 轉角待續。alt：不收。
+func _chapter3_map(canal: StoryLevel, alt: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var player: PlayerController = _player(canal)
+	var trigger_z: float = float(canal.get("MAP_TRIGGER_Z"))
+	assert_true(player.global_position.z < trigger_z, "[ch3_clapper] 站在摔倒的地方（還沒往回走）")
+	assert_false(_game.call("is_in_dialogue"), "還沒開始講")
+	await _step_into(player, Vector3(player.global_position.x, 0.0, trigger_z + 0.6), 2)
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(_game.call("is_in_dialogue"), "往回走：彌夏拉住我")
+	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
+	assert_eq(runner.dialogue_id, "ch3_misha_map")
+	for i: int in 20:
+		if not runner.is_running():
+			break
+		if not runner.visible_choices.is_empty():
+			runner.choose(1 if alt else 0)
+		else:
+			runner.advance()
 	await tree.process_frame
-	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_clapper] 段落 6 待續")
+	assert_false(_game.call("is_in_dialogue"), "講完")
+	assert_eq(s.state.get_flag("ch3.map_accepted"), not alt, "收下／不收記下來")
+	assert_eq(s.state.get_flag("ch3.misha_map_given"), true, "圖都會被塞進手裡")
+	assert_eq(s.quests.stage_of("ch3_main"), "corner", "→ 段落 7 轉角")
+	assert_eq(s.state.checkpoint, "ch3_map", "檢查點 ch3_map")
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 7 待續")
+	canal = await _retry()
+	assert_eq(_objective(canal), "Q_CH3_OBJ_CORNER", "[ch3_map] HUD 目標：席菈在轉角等我")
+	await tree.process_frame
+	assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "[ch3_map] 段落 7 待續")
 
 
 ## 乾運河：投影子的斜光（整座地底城只有這裡有）、頭頂一排排石樑、吊樑下掛著的送葬者（不在敵人名單裡、胸口的鐘舌會亮）。

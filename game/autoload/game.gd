@@ -52,6 +52,7 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch3_lured": "canal",
 	"ch3_pinned": "canal",
 	"ch3_clapper": "canal",
+	"ch3_map": "canal",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"

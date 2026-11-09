@@ -29,7 +29,12 @@
     },
     "e5": {
       "speaker": "SPK_NOEN",
-      "text": "DLG_CH3_HANG_END_006"
+      "text": "DLG_CH3_HANG_END_006",
+      "next": "e6"
+    },
+    "e6": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH3_HANG_END_007"
     }
   }
 }

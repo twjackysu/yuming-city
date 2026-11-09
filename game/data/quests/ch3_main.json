@@ -69,6 +69,15 @@
       "done_when": {
         "flag": "ch3.misha_map_given"
       }
+    },
+    {
+      "id": "corner",
+      "objective": "Q_CH3_OBJ_CORNER",
+      "checkpoint": "ch3_map",
+      "marker": "node:Sheila",
+      "done_when": {
+        "flag": "ch3.corner_talked"
+      }
     }
   ]
 }

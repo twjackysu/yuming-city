@@ -90,5 +90,24 @@ CH3_HANG_HOLD_HINT,Hold {key} — keep her steady (left / right to stop the swin
 CH3_HANG_BUMP,(She swung into the iron frame—),（她撞到鐵架了——）
 JM_CH3_LAUGH_TITLE,Mud in the Dry Canal,乾運河的泥
 JM_CH3_LAUGH_CONTEXT,Sheila went down head-first for the clapper. I held the rope on the bank.,席菈倒吊下去拿鐘舌，我在岸上抓著繩子。
-JM_CH3_LAUGH_BODY,"When the coal heap gave way, all three of us went down in the mud. She lay on her back and held the clapper up high. ""Expert."" ""Hm?"" ""Next time, you're the one hanging upside down."" I laughed. The first time I'd laughed since I came to this world.",煤堆塌下來的時候，我們三個人一起摔進泥裡。她仰躺著，把鐘舌舉得高高的。「高手。」「嗯？」「下次換你倒吊。」我笑了。來到這個世界以後，第一次笑。
+JM_CH3_LAUGH_BODY,"When the coal heap gave way, all three of us went down in the mud. She lay on her back and held the clapper up high. ""Expert."" ""Hm?"" ""Next time, you're the one hanging upside down."" I laughed. The first time I'd laughed since I rang the bell.",煤堆塌下來的時候，我們三個人一起摔進泥裡。她仰躺著，把鐘舌舉得高高的。「高手。」「嗯？」「下次換你倒吊。」我笑了。敲鐘以來，第一次笑。
 JM_CH3_LAUGH_RESIDUE,I still remember the smell of the mud. I can't remember why I laughed.,泥的味道還在。為什麼笑，想不起來了。
+DLG_CH3_HANG_END_007,(The first time I'd laughed since I rang the bell.),（那是敲鐘以來，我第一次笑。）
+Q_CH3_OBJ_CORNER,Sheila is waiting at the corner,席菈在轉角等我
+DLG_CH3_MAP_001,"(On the way back, Misha caught my sleeve and let Sheila get a few steps ahead.)",（回程時，彌夏忽然拉住我，落後席菈幾步。）
+DLG_CH3_MAP_002,"Putting the clapper back only stops it speeding up. To call off the order to burn the city, someone has to reset the main seat.",把鐘舌裝回去，只能讓它不再加速。要取消燒掉整座城的命令，得重置主椅。
+DLG_CH3_MAP_003,What happens to Leo?,黎歐會怎樣？
+DLG_CH3_MAP_004,Someone has to take his place. Someone with at least forty years of natural life left.,得有另一個人接替他。至少還有四十年自然壽命的人。
+DLG_CH3_MAP_005,(I understood why she was looking at me.),（我明白她為什麼看著我。）
+DLG_CH3_MAP_006,"You can restore things that get destroyed, right? If I burn my own registration on the main seat, you can bring it back for nine seconds. Nine seconds is enough to get Leo out.",你能把毀掉的東西重現回來，對吧？如果我把自己在主椅上的登記燒掉，你能重現它九秒。九秒夠我把黎歐換出來。
+DLG_CH3_MAP_007,You'll die.,妳會死。
+DLG_CH3_MAP_008,Slowly. So will he.,慢慢死。他也是。
+DLG_CH3_MAP_C_TAKE,(Take it.),（收下。）
+DLG_CH3_MAP_C_REFUSE,I'm not taking that.,我不收。
+DLG_CH3_MAP_T0,(I held out my hand. She put a folded sheet of paper in it.),（我伸出手。她把一張折好的圖放進我掌心。）
+DLG_CH3_MAP_R0,I'm not taking that.,我不收。
+DLG_CH3_MAP_R1,(She didn't argue. She just pried my fingers open and pressed a folded sheet of paper into my palm.),（她沒有回嘴，只是把我的手指一根根扳開，把一張折好的圖塞進我掌心。）
+DLG_CH3_MAP_009,Don't tell him. Don't tell Sheila either. She'll stop me.,別告訴他。也別告訴席菈。她會阻止。
+DLG_CH3_MAP_010,"(After she left, I unfolded it. In one corner was a tiny doodle—a person wearing glasses.)",（她離開後，我把圖攤開。紙角有個很小的塗鴉，是一個戴眼鏡的人。）
+DLG_CH3_MAP_011,"(I don't wear glasses. But the night before, I'd told her the person I used to be did.)",（我沒有戴眼鏡。但那天晚上，我跟她說過，前世的自己戴。）
+DLG_CH3_MAP_012,(That little drawing made the map harder to hold steady than any farewell letter.),（那幅畫讓這張圖比任何遺書都難拿穩。）
