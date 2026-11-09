@@ -535,7 +535,7 @@ func _build_shaft() -> void:
 	var top: float = CEILING_Y
 	var tall: float = top - bottom + 1.0
 	var mid_y: float = (top + bottom - 1.0) * 0.5
-	var wall_mat: StandardMaterial3D = _mat(WALL, 0.97)
+	var wall_mat: ShaderMaterial = shaft_wall_mat()
 	# 中間的石柱（走道內緣）
 	var ph: float = H - W * 0.5
 	_box_at("Pillar", Vector3(ph * 2.0, tall, ph * 2.0), Vector3(0, mid_y, 0), wall_mat)
@@ -547,7 +547,7 @@ func _build_shaft() -> void:
 	_box_at("WallW", Vector3(t, tall, oh * 2.0), Vector3(-oh - t * 0.5, mid_y, 0), wall_mat)
 	_box_at("WallE", Vector3(t, tall, oh * 2.0), Vector3(oh + t * 0.5, mid_y, 0), wall_mat)
 	# 頂上：天花板＋地窖口（白天的光從上面漏下來）
-	_box_at("Ceiling", Vector3(oh * 2.0, 0.3, oh * 2.0), Vector3(0, top + 0.15, 0), wall_mat, false)
+	_box_at("Ceiling", Vector3(oh * 2.0, 0.3, oh * 2.0), Vector3(0, top + 0.15, 0), floor_slab_mat(), false)
 	var c0: Vector3 = corner(0)
 	var hatch := _box_at("Hatch", Vector3(1.0, 0.05, 0.8), Vector3(c0.x, top - 0.01, c0.z), _glow_mat(DAYLIGHT, 2.4), false)
 	hatch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -563,7 +563,7 @@ func _build_shaft() -> void:
 	# 頂層平台後面（還沒有上一段樓梯的地方）擋一道牆，不然會掉到下一圈
 	_box_at("TopStop", Vector3(W, top, 0.3), Vector3(c0.x, top * 0.5, c0.z - W * 0.5 - 0.15), wall_mat)
 	# 井底的地板（最後一段走完的高度）
-	_box_at("ShaftFloor", Vector3(oh * 2.0, 0.3, oh * 2.0), Vector3(0, bottom - 0.15, 0), _dark_mat)
+	_box_at("ShaftFloor", Vector3(oh * 2.0, 0.3, oh * 2.0), Vector3(0, bottom - 0.15, 0), floor_slab_mat())
 
 
 func _glow_mat(color: Color, energy: float) -> StandardMaterial3D:
@@ -580,7 +580,7 @@ func _build_flights() -> void:
 	for k: int in FLIGHTS + 1:
 		var c: Vector3 = corner(k)
 		# 轉角平台
-		_box_at("Landing%d" % k, Vector3(W, 0.35, W), c + Vector3(0, -0.175, 0), _stone_mat, k < FLIGHTS)
+		_box_at("Landing%d" % k, Vector3(W, 0.35, W), c + Vector3(0, -0.175, 0), landing_mat(), k < FLIGHTS)
 		if k == FLIGHTS:
 			break
 		var dir: Vector3 = path_dir(float(k) * SIDE + 0.1)
@@ -598,7 +598,7 @@ func _build_flights() -> void:
 			var p: Vector3 = a + dir * u
 			p.y = top_y - 0.16
 			var worn: float = _rng.randf_range(-0.02, 0.02)
-			var step := _box_at("Step%d_%d" % [k, i], Vector3(W - 0.04, 0.32 + worn, step_len + 0.02), Vector3.ZERO, _stone_mat, false)
+			var step := _box_at("Step%d_%d" % [k, i], Vector3(W - 0.04, 0.32 + worn, step_len + 0.02), Vector3.ZERO, step_mat(k, i), false)
 			step.transform = Transform3D(Basis.looking_at(dir, Vector3.UP), p)
 
 
@@ -689,3 +689,36 @@ func _build_bottom() -> void:
 	down.position = corner(FLIGHTS) + Vector3(0, 1.0, 0)
 	add_child(down)
 	add_to_group("interact_prompts")
+
+
+
+# ---------------------------------------------------------------- 美術（第 56 輪，D-174）
+# 井壁、中間的石柱、頂層的擋牆：整面方石（跟乾運河的河道牆同一套參數，沒有水位線、縫更深）；
+# 轉角平台、井底、天花板：石板；台階：三種深淺輪流（位置雜湊，不動 _rng），踩了一百多年的石階不會一樣新。
+
+const SHAFT_MORTAR: Color = Color(0.07, 0.066, 0.062)
+const STEP_SHADES: Array[float] = [0.0, -0.07, 0.05]
+
+var interior := InteriorLook.new()
+var _step_mats: Array[StandardMaterial3D] = []
+
+
+func shaft_wall_mat() -> ShaderMaterial:
+	return interior.wall("stairs_wall", WALL, WALL, 99.0, {
+		"block_scale": 1.5, "mortar_color": SHAFT_MORTAR, "soot": 0.0,
+	})
+
+
+func landing_mat() -> ShaderMaterial:
+	return interior.flagstone("stairs_landing", STONE, 0.5, {"wear": 0.45, "seam_dark": 0.75})
+
+
+func floor_slab_mat() -> ShaderMaterial:
+	return interior.flagstone("stairs_slab", STONE_DARK, 0.7, {"seam_dark": 0.7})
+
+
+func step_mat(flight: int, step: int) -> StandardMaterial3D:
+	if _step_mats.is_empty():
+		for d: float in STEP_SHADES:
+			_step_mats.append(_mat(STONE.lightened(d) if d > 0.0 else STONE.darkened(-d), 0.92))
+	return _step_mats[(flight * 7 + step * 3 + (step / 5)) % _step_mats.size()]
