@@ -75,6 +75,11 @@ jobs:
         run: |
           SHORT_SHA="${GITHUB_SHA::7}"
           echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          # Windows 實機拍 Steam 商店截圖的腳本與清單一起放進 zip（D-145）；runner 有 pwsh 就先檢查語法
+          cp scripts/store-shots.ps1 scripts/store_shots.txt build/windows/
+          if command -v pwsh > /dev/null; then
+            pwsh -NoProfile -Command '$e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile("build/windows/store-shots.ps1", [ref]$null, [ref]$e); if ($e.Count -gt 0) { $e | ForEach-Object { Write-Error $_.Message }; exit 1 }; Write-Host "store-shots.ps1 語法 OK"'
+          fi
           cd build
           python3 -c "import shutil; shutil.make_archive('YumingCity-windows-x64-$SHORT_SHA', 'zip', 'windows')"
           python3 -c "import shutil; shutil.make_archive('YumingCity-linux-x64-$SHORT_SHA', 'zip', 'linux')"

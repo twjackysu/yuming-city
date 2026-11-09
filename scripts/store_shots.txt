@@ -1,0 +1,11 @@
+# Steam 商店截圖清單（docs/steam/asset-specs.md「截圖清單」；D-145）
+# 每行：檔名 幀數 遊戲旗標...（空白分隔；旗標不能含空白）。# 開頭是註解。
+# Windows 實機：解壓後的資料夾裡執行 store-shots.ps1（自動加 --quality=2、英文與繁中各一套）。
+# Linux／雲端：scripts/store-shots.sh（軟體渲染，只拿來確認構圖，品質不夠上架）。
+01-plaza 40 --level=frostbridge --at=plaza --nohud
+02-bell 120 --level=frostbridge --cutscene=slice_bell_nine --cutscene-steps=3
+03-rescue 40 --level=frostbridge --rescue
+04-insight 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18
+05-arch 24 --level=frostbridge --convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14 --nohud
+06-kindling 24 --level=frostbridge --convoy --throw=kindling --throw-t=0.6 --face=sheila --pos=2.6,6.5 --face-off=16
+07-journal 40 --level=frostbridge --open=journal

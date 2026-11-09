@@ -49,6 +49,10 @@ if grep -n "SCRIPT ERROR" "$LOG_DIR/tests.log"; then
   exit 1
 fi
 
+echo "== store shots"
+# Steam 商店截圖清單的旗標都對得上遊戲程式（打錯字會默默拍成別的畫面，D-145）
+python3 -P scripts/check_store_shots.py
+
 if [[ "$DO_EXPORT" == "1" ]]; then
   echo "== export"
   mkdir -p build/windows build/linux
