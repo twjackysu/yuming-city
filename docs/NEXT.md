@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 47 輪）的程式 commit：b2319e1 段落 3 假心臟、d21f055 假心臟的心跳聲、aed5964 `CoalDrop`（**最後一個；開工先看整個綠燈**，紅了看 log 修）。前兩個的 run 可能被取代。screens 的 `29-ch3-heart` 還沒在 CI 上看過（本機截圖看過：從西岸往下看，東牆腳一條繩子、一點銅光，送葬者在河床上走過去）。開工照常先跑 `scripts/check.sh`（最後 341 個測試）。
+- 上一輪（第 47 輪）的程式 commit：b2319e1 段落 3 假心臟、d21f055 假心臟的心跳聲、aed5964 `CoalDrop`、9a84a8c 送葬者的白盒步伐（**最後一個，run 42630485948：「Import、測試、匯出」已綠，截圖、smoke test、打包收尾時還在跑——開工先看整個綠燈**，紅了看 log 修）。d21f055、aed5964 的 run 被取代；b2319e1 的 run 42628885777 在 import 時 Godot 偶發崩潰（`double free or corruption`，重新匯入 `strings.csv` 時），同樣內容在 9a84a8c 已經過了——**再遇到就重跑那個 run**，常發生再查。screens 的 `29-ch3-heart` 還沒在 CI 上看過（本機截圖看過：從西岸往下看，東牆腳一條繩子、一點銅光，送葬者在河床上走過去）。開工照常先跑 `scripts/check.sh`（最後 341 個測試）。
 - 第 46 輪：9250c8d run 42619710473 全綠、b8ffaf1 run 42620873283 全綠（第 47 輪開工確認）。
 - **測試結束時的「2 ObjectDB instances were leaked at exit」警告**：只在 `TEST_FILTER=slice_playthrough` 與整套測試出現（9ef5632 上就有，第 45 輪之前沒查）；加 `--verbose` 跑同一組**沒有重現**（跟時間有關，懷疑是結束時還沒播完的 Sfx 播放器或 Tween）。不算失敗、不要卡住。
 - 第 45 輪 f63773f（run 42612585007）、第 44 輪 039f83e／7e8b11e、第 43 輪 c1d4016／f546457、第 42 輪 79ed43e～03b132a 都已全綠；screens 的 `18`～`27` 都在本機截圖看過，`24`～`27` 還沒在 CI 上看過。
@@ -134,7 +134,7 @@
   - 送葬者：`_wake_undertaker(drop)`（從 `HangPivot` 拿出來放到關卡底下、藏鏈子、補間掉到 `BED_Y`；`finish_drop()` 測試用）、`awake`、`_update_follow()`（每物理幀問 `HeartTargets.pick`；DECOY → 轉身＋走 `WALK_SPEED`×`walk_scale`、`HEART_REACH`＋0.05 內停下；NOEN → 停下轉向、第一次 `ch3.heard_noen`＋提示）、`follow_kind`、`_check_lured()`（z ≤ `SLUICE_REACH_Z` → `ch3.decoy_done`）。`ch3_lured` 重來時站在 `LURED_POS`。**牠還是 `PROCESS_MODE_DISABLED`、不在 `enemies`**（位置是關卡直接設的，沒有走路動畫）。
   - 重現：`noen_restoring()`＝按住 `nine_breath`（乾運河沒有可重現的物件）；`force_restoring` 測試用。聲音：假心臟每一拍 `heartbeat`（3D，`unit_size` 3）、諾恩重現時每 `NOEN_RACE_SEC` 一聲。
   - 截圖 `--canal-at=heart`（`dev_start_lure(s)` static：照正式流程推到 `lure`）。流程測試 `_chapter3_decoy()`（接在 `_chapter3_observe()` 最後）。
-  - 還可以：送葬者沒有走路動作（滑過去；程序鐵架腿可以加一點上下晃）；「給我一晚」的時間跳躍只有旁白（可以黑一下）；繩子是一條直線（垂下去／收上來沒有補間）；諾恩手上沒有拿著假心臟；從東岸往下看會被岸緣擋住（實機看玩家會不會看不到假心臟——不夠就把 `DECOY_BED_X` 往河道中間移、或岸邊矮牆在這三個點開缺口）。
+  - 還可以：送葬者走路只有白盒步伐（`_gait()`：整隻一頓一頓抬起、左右晃，`GAIT_*`；正式模型要走路動畫）；「給我一晚」的時間跳躍只有旁白（可以黑一下）；繩子是一條直線（垂下去／收上來沒有補間）；諾恩手上沒有拿著假心臟；從東岸往下看會被岸緣擋住（實機看玩家會不會看不到假心臟——不夠就把 `DECOY_BED_X` 往河道中間移、或岸邊矮牆在這三個點開缺口）。
 - **下一步（依序）**：
   1. **段落 4「煤車」**（08）：閘道上方的煤車（`SLUICE_Z` 附近、`SluiceBeam` 上方或東岸的高架）＋繩索；諾恩走到繩索旁按互動鍵割斷 → **判定已經寫好：`src/core/coal_drop.gd` 的 `CoalDrop.judge(牠的 z, 走路方向, 速度, 煤車 z)`**（看煤落下那一刻 `FALL_SEC` 0.5 秒後牠在哪：`PIN_HALF` 0.8 m 內＝壓住），單元 `test_coal_drop.gd`。現在牠走到閘道口（`LURED_POS`）就停了：段落 4 要把假心臟（或另一個心跳源）放到煤車另一邊，讓牠從煤車底下走過去；**按住重現讓牠停下來**是正解之一（牠停著速度 0，在正下方一定壓住）。壓住 → 黑色粉塵粒子＋油燈晃＋設 `ch3.cart_dropped` → 段落 5 待續。太早／太晚 → 牠掙脫：要變成戰鬥就把牠加回 `enemies`／`damageable`、`process_mode` 改回 INHERIT（照切片送葬者，少一招），打到失衡再回煤車（失敗回 `ch3_lured`）。這一輪可以先做「壓住」的理想路線＋失敗時「牠掙脫、退回閘道口、再來一次」，戰鬥分支下一輪。
   2. 第 3 章段落 5～7（08；12/31 版本到第 3 章結束）：倒吊、彌夏的圖、轉角。
