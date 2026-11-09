@@ -879,10 +879,11 @@ func test_dev_hold_insight() -> void:
 	await _free(level)
 
 
-## 廣場石盤的鐘剪影（D-130）：平躺、正面朝上（從上面看得到）、鐘頂朝北（-Z），放得進半徑 1 m 的石盤。
+## 廣場石盤的鐘剪影（D-130）：平躺、正面朝上（從上面看得到）、放得進半徑 1 m 的石盤。
+## 鐘頂朝北（-Z）。D-141：又高又窄（不像帽子）、鐘口外翻、鐘口外（南邊）有鐘舌。
 func test_plaza_bell_inlay_faces_up() -> void:
 	var script: GDScript = load("res://scenes/levels/frostbridge.gd") as GDScript
-	var mesh: ArrayMesh = script.call("bell_inlay_mesh", 1.15, 0.5) as ArrayMesh
+	var mesh: ArrayMesh = script.call("bell_inlay_mesh", 1.4, 0.42) as ArrayMesh
 	assert_not_null(mesh, "有網格")
 	var arrays: Array = mesh.surface_get_arrays(0)
 	var pts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array
@@ -894,6 +895,8 @@ func test_plaza_bell_inlay_faces_up() -> void:
 	var down_facing: int = 0
 	var far: float = 0.0
 	var north: float = 0.0
+	var south: float = 0.0
+	var widest: float = 0.0
 	for i: int in range(0, verts.size(), 3):
 		var n: Vector3 = (verts[i + 1] - verts[i]).cross(verts[i + 2] - verts[i])
 		# Godot 正面順時針（CylinderMesh 的頂蓋也是）：從上往下看順時針 → 右手定則的法線朝下
@@ -903,6 +906,21 @@ func test_plaza_bell_inlay_faces_up() -> void:
 		assert_true(absf(v.y) < 0.001, "平躺")
 		far = maxf(far, Vector2(v.x, v.z).length())
 		north = minf(north, v.z)
+		south = maxf(south, v.z)
+		widest = maxf(widest, absf(v.x))
 	assert_eq(down_facing, 0, "每個三角形正面朝上")
 	assert_true(far < 0.95, "放得進石盤（最遠 %.2f m）" % far)
-	assert_true(north < -0.5, "鐘頂朝北（%.2f）" % north)
+	assert_true(north < -0.6, "鐘頂朝北（%.2f）" % north)
+	assert_true(south - north > widest * 2.0 * 1.4, "又高又窄：長 %.2f m、寬 %.2f m（從南邊看被壓扁也不會矮胖）" % [south - north, widest * 2.0])
+	assert_true(widest > 0.42 * 1.08, "鐘口外翻，比鐘口半徑寬（%.2f）" % widest)
+	# 鐘舌：鐘口（最寬那圈）再往南還有東西，而且在中線上
+	var lip_z: float = -INF
+	for v: Vector3 in verts:
+		if absf(v.x) > widest - 0.005:
+			lip_z = maxf(lip_z, v.z)
+	var beyond: int = 0
+	for v: Vector3 in verts:
+		if v.z > lip_z + 0.05:
+			beyond += 1
+			assert_true(absf(v.x) < 0.2, "鐘口外的是鐘舌（在中線上，x=%.2f）" % v.x)
+	assert_true(beyond > 0, "鐘口外有鐘舌")

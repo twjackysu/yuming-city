@@ -676,38 +676,64 @@ func _build_plaza_ring() -> void:
 
 
 ## 廣場石盤上的鐘：高與鐘口半徑（公尺）
-const PLAZA_BELL_H: float = 1.15
-const PLAZA_BELL_R: float = 0.5
+## D-141：從 1.15／0.5 改成又高又窄——從南邊的遊玩高度看過去，南北方向被壓扁成約四分之一，原本矮胖像一頂帽子
+const PLAZA_BELL_H: float = 1.4
+const PLAZA_BELL_R: float = 0.42
 
 
 ## 平躺在地上的鐘剪影（D-130）：用 `Lathe.bell_profiles` 的外輪廓左右鏡射＋鐘頂一個小鐘冠，
-## 三角化成朝上的平面。鐘頂朝 -Z（北），中心在原點。
+## 三角化成朝上的平面。中心在原點。
+## 鐘頂朝北（-Z）：從南邊進廣場（主要的路線）看過去，鐘是正的（遠＝畫面上方＝鐘頂）。
+## D-141（第八輪盤點第 6 項：遠看像一頂帽子）：南北方向被透視壓扁，矮胖的鐘＝帽簷＋帽頂。
+## 鐘改成又高又窄（PLAZA_BELL_H／R）、鐘口往外翻得更明顯（最寬 PLAZA_BELL_FLARE 倍），
+## 鐘口外面（南邊、靠近鏡頭）加一顆鐘舌（圓球＋一小段舌桿），一眼看得出是鐘。
+## （試過橫躺、鐘頂朝西：從南邊看反而像一支箭／匕首。）
+const PLAZA_BELL_FLARE: float = 1.14
+const PLAZA_BELL_CLAPPER_R: float = 0.13
+
+
 static func bell_inlay_mesh(h: float, r: float) -> ArrayMesh:
 	var outer: PackedVector2Array = Lathe.bell_profiles(h, r)[0]
 	var poly := PackedVector2Array([Vector2(-0.12 * r, 0.0), Vector2(-0.12 * r, 0.1 * h),
 			Vector2(0.12 * r, 0.1 * h), Vector2(0.12 * r, 0.0)])
+	# 鐘口外翻：越靠鐘口越往外（下半段才開始）
+	var flared := PackedVector2Array()
 	for i: int in range(1, outer.size()):
-		poly.append(outer[i])
-	for i: int in range(outer.size() - 1, 0, -1):
-		poly.append(Vector2(-outer[i].x, outer[i].y))
-	var tris: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
+		var t: float = -outer[i].y / h
+		flared.append(Vector2(outer[i].x * (1.0 + (PLAZA_BELL_FLARE - 1.0) * pow(clampf((t - 0.55) / 0.45, 0.0, 1.0), 2.0)), outer[i].y))
+	for v: Vector2 in flared:
+		poly.append(v)
+	for i: int in range(flared.size() - 1, -1, -1):
+		poly.append(Vector2(-flared[i].x, flared[i].y))
+	var shapes: Array[PackedVector2Array] = [poly]
+	# 鐘舌：鐘口外一顆圓球（一半露在鐘口外）＋一小段舌桿伸進鐘裡
+	var cr: float = PLAZA_BELL_CLAPPER_R * r * 2.0
+	var cy: float = -h - cr * 0.55
+	var ball := PackedVector2Array()
+	for i: int in 16:
+		var a: float = TAU * float(i) / 16.0
+		ball.append(Vector2(cos(a) * cr, cy + sin(a) * cr))
+	shapes.append(ball)
+	shapes.append(PackedVector2Array([Vector2(-0.035 * r, -0.7 * h), Vector2(0.035 * r, -0.7 * h),
+			Vector2(0.035 * r, cy), Vector2(-0.035 * r, cy)]))
+	# 整個圖案置中：鐘冠頂（0.1h）到鐘舌底（cy - cr）
+	var off: float = -(0.1 * h + (cy - cr)) * 0.5
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	st.set_normal(Vector3.UP)
-	# Godot 的正面是順時針（跟 CylinderMesh 頂蓋一樣，右手定則的法線朝下）：從上往下看逆時針的就反過來
-	var flip: bool = false
-	if tris.size() >= 3:
-		var a: Vector2 = poly[tris[0]]
-		var cross: float = (poly[tris[1]] - a).cross(poly[tris[2]] - a)
-		flip = cross > 0.0
-	for t: int in range(0, tris.size(), 3):
-		var order: Array[int] = [tris[t], tris[t + 1], tris[t + 2]]
-		if flip:
-			order = [tris[t], tris[t + 2], tris[t + 1]]
-		for k: int in order:
-			var p: Vector2 = poly[k]
-			st.set_normal(Vector3.UP)
-			st.add_vertex(Vector3(p.x, 0.0, -(p.y + 0.45 * h)))
+	for shape: PackedVector2Array in shapes:
+		var tris: PackedInt32Array = Geometry2D.triangulate_polygon(shape)
+		for t: int in range(0, tris.size(), 3):
+			# 剖面 (x, y) → 地上：鐘頂朝北（-Z）
+			var w: Array[Vector3] = []
+			for k: int in 3:
+				var p: Vector2 = shape[tris[t + k]]
+				w.append(Vector3(p.x, 0.0, -(p.y + off)))
+			# Godot 的正面是順時針（跟 CylinderMesh 頂蓋一樣，右手定則的法線朝下）
+			if (w[1] - w[0]).cross(w[2] - w[0]).y > 0.0:
+				w = [w[0], w[2], w[1]]
+			for v: Vector3 in w:
+				st.set_normal(Vector3.UP)
+				st.add_vertex(v)
 	# 要有索引：StaticBatch 的 SurfaceTool 先接了有索引的圓柱，沒索引的三角形接上去不會被畫出來
 	st.index()
 	return st.commit()
