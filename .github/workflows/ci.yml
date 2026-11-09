@@ -64,6 +64,8 @@ jobs:
         run: |
           python3 -m pip install --quiet --user --break-system-packages "pillow==11.3.0" || python3 -m pip install --quiet --user "pillow==11.3.0"
           [[ -s build/street.png ]] && python3 -P scripts/steam_mock.py build/street.png build/steam --title-shot build/title.png
+          # 成就圖示替代版（D-147）：每個成就 256×256 解鎖／未解鎖各一張，打包成 zip 給 Steamworks 批次上傳
+          python3 -P scripts/achievement_icons.py build/steam/achievements
 
       # 匯出版本身（不是編輯器）能開到霜橋鎮、畫出東西、沒有 SCRIPT ERROR（M1.4）
       - name: 匯出版 smoke test
@@ -99,6 +101,8 @@ jobs:
             build/ninebreath.png
             build/street.png
             build/steam/*.png
+            build/steam/achievements/achievement-icons.zip
+            build/steam/achievements/achievements_sheet.png
             build/smoke-export.png
             build/smoke-export.log
           if-no-files-found: warn
@@ -117,6 +121,8 @@ jobs:
           [[ -s build/combat.png ]] && FILES+=(build/combat.png)
           [[ -s build/ninebreath.png ]] && FILES+=(build/ninebreath.png)
           [[ -s build/steam/header_capsule.png ]] && FILES+=(build/steam/header_capsule.png)
+          [[ -s build/steam/achievements/achievement-icons.zip ]] && FILES+=(build/steam/achievements/achievement-icons.zip)
+          [[ -s build/steam/achievements/achievements_sheet.png ]] && FILES+=(build/steam/achievements/achievements_sheet.png)
           # main 上已經有更新的程式 commit 時跳過（下一個 run 會發布），不刪舊版。
           # 這種情況下用 GITHUB_TOKEN 在舊 commit 建 tag，若 workflow 檔已改過會被 403 擋（run 42398212944、42402903825）。
           git fetch --quiet origin main
