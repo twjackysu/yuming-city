@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-148　2026-11-09　攻略筆記先做邏輯層；存檔版本 2
+
+- 決策：第 1 章系統 1「攻略筆記」先做不依賴關卡與 UI 的部分。條目定義 `game/data/guide/notes.json`（6 條：射箭陷阱、全城是怪物、不可互動的門、入口的淨化爐——第 1 章推翻；食歲的僭王、焚城路線——第 2 章推翻），每條 `wrong_when`／`confirmed_when` 用 StoryLogic 條件。狀態存在新欄位 `GameState.guide`（id → `{"unsure", "result"}`）：可信度 確定／我不確定／被推翻／證實（`GuideNotes.SURE`…），被推翻後仍記得當初有沒有標「我不確定」（台詞「果然」vs 席菈看他一眼）。StoryLogic 加條件 `{"guide": id, "is": ..., "was_unsure": bool}` 與效果 `{"guide_write": [...]}`；`GameSession.advance()` 在任務推進前後各檢查一次推翻，發 `guide_changed`。存檔 `CURRENT_VERSION` 1 → 2，遷移補空的 `guide`（切片存檔照樣停在原檢查點）。文字放新的 `i18n/ch1.csv`（`GUIDE_<ID>`／`GUIDE_<ID>_WRONG`、可信度、日記分頁名）。
+- 理由：PLAN 階段 2 的順序是成就做完就開始第 1 章；攻略筆記是第 1～3 章共用的核心系統，又是純邏輯、好測，先做穩再接關卡（推翻用的旗標 `ch1.stair_trap_sprung` 等由之後的關卡設）。存檔欄位一開始就定，之後的章節不用再改格式。「焚城路線」照 08 草稿算第 2 章推翻、是諾恩自己寫的那條；第 3 章鐘舌那條是玩家自己觀察後寫下（之後加 `confirmed_when` 的條目）。
+- 影響：新檔 `src/core/guide_notes.gd`、`tests/unit/test_guide_notes.gd`（資料與翻譯、狀態機、條件與效果、session 推翻＋存讀檔、v1 → v2 遷移）；`verify_package.py` 加 ch1 翻譯與 notes.json；07 草稿系統 1 的資料路徑改成 `data/guide/notes.json`。日記先在記憶卡下面加一段「攻略筆記」（`JournalView._add_guide_section`：可信度小標＋那句攻略，被推翻的整句一條紅褐墨線劃掉、下面是現實；沒寫下任何條目時整段不出現，切片畫面不變；截圖旗標 `--guide-demo`）；等條目變多再拆成真的分頁。段落 3 的標記畫面下一步做。
+
+## D-147　2026-11-09　成就：帳號層級、只算「這一局做到的」、Steam 有就同步
+
+- 決策：切片 8 個成就照 `docs/steam/achievements.md`，條件寫在 `game/data/achievements.json`（StoryLogic 格式）。`AchievementTracker`（`src/core/achievement_tracker.gd`）存在 `user://achievements.json`（`{"version": 1, "unlocked": {id: 時間}}`，跟存檔槽分開；不認得的 id 保留）。**邊緣觸發**：新遊戲／讀檔／重試時 `baseline()` 記下已成立的條件不算，之後條件從不成立變成立才解鎖——讀別人的存檔不會解鎖，已解鎖的永遠不取消。`GameSession.advance()` 與 Game 每 0.5 秒各檢查一次（有些旗標直接寫進 state，例如鐵架拋擲）。灰巡者被打中弱點而跪下記 `stats.ashwalker_weak_kneels`（`GameSession.add_stat`：不推進任務、不存檔）。解鎖小卡 `AchievementToast`（右上角、對話／過場／暫停中排隊、1.5 秒淡出）；`SteamBridge` 在有 "Steam" singleton（GodotSteam）時 `setAchievement`＋`storeStats`、啟動時補同步，有 Steam 時不畫自己的小卡。開發旗標（`--level`、`--screenshot`、`--benchmark`…）與測試（`run_tests.gd` 開頭換掉）只用記憶體的 tracker，不寫玩家的檔案。圖示替代版 `scripts/achievement_icons.py`（256×256 PNG，`<ID>_ACHIEVED`／`_UNACHIEVED`，CI 打包成 zip 附在 latest）。
+- 理由：Steam 成就是帳號層級，跟存檔混在一起會讓「讀舊存檔」誤解鎖或取消；邊緣觸發讓條件仍然只看遊戲狀態（資料驅動、好測），又不會因為讀檔就送成就。「第九聲鐘」的說明改成「把那口舊鐘敲滿九下」（跳過演出也會敲滿，跳過不該被懲罰）。圖示規格照 Steamworks 文件：建議 256×256 PNG（JPG 也可）、正方形，未解鎖圖示可由後台自動產生灰階版。
+- 影響：project 的 Game autoload 多 `achievements`／`achievement_toast`；截圖旗標 `--achievement=<id>`；`test_achievements`（資料與翻譯、邊緣觸發、讀舊存檔、檔案版本與保留、壞檔、記憶體模式、灰巡者計數、小卡排隊與淡出、Steam 沒有時不做事）、`test_slice_playthrough` 兩條路線跑完檢查各自解鎖的成就。
+
 ## D-146　2026-11-09　看穿小卡依敵人寬度讓開身體；「第一眼」盤點到第八輪停止
 
 - 決策：`InsightCard.place(cam, 頭頂, side_m)`：卡片左緣取「頭頂投影＋`OFFSET`」與「頭頂沿鏡頭右方 `side_m` 公尺的投影＋`EDGE_GAP`（14 px）」較右的那個（`InsightCard.card_anchor`）；`EnemyActor.insight_side()` 預設 0.45 m，送葬者覆寫 0.85 m（鐵架橫桿 0.55 m、手臂約 0.75 m）。遠處身體比 `OFFSET` 窄時照原本。另外：八輪「第一眼」盤點到此停止，之後的打磨等 Jacky 試玩回饋，或做章節時順手修；下一步照 PLAN 階段 2 的順序做 Steam 準備（成就系統，不依賴 GodotSteam）與第一部第 1 章。

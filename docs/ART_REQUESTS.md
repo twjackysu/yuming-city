@@ -46,6 +46,11 @@
 - 程式替代品：不需要（只影響方向判斷）。
 - **Steam 商店主視覺（階段 2，12 月初前）**：尺寸與規則見 `docs/steam/asset-specs.md`。最需要三張：Main Capsule 構圖（1232×706：送葬者舉起鐵架、諾恩按住重現的石拱亮起冷光）、Library Hero（3840×1240，**不能有文字**）、標誌字標「餘命城／Yuming City」（透明 PNG）。放 `art-inbox/steam/`，檔名照規格表的素材名（例：`main_capsule.png`）。程式替代品：loop 會用遊戲內截圖＋標題字先做一版。
 
+## 4b. Steam 成就圖示（低優先，替代版已有）
+
+- 8 個成就（`docs/steam/achievements.md`），每個一張 256 × 256 PNG、正方形、**不放字**；未解鎖版可讓 Steamworks 後台自動轉灰階。
+- 替代版：CI 每次建置產生 `achievement-icons.zip`（latest release），暗藍底＋暖金色雙圈＋小圖案（小鐘、三個人、眼睛、對話框、石拱、燃燒劍、車輪、地窖門）。直接用替代版上架也可以；想要更有質感的，照同一個構圖（圓形徽章、一個圖案）做，放 `art-inbox/steam/achievements/<ID>_ACHIEVED.png`。
+
 ## 5. 配音
 
 - 目前不需要。切片以字幕演出為主。

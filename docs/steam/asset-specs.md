@@ -29,6 +29,12 @@ CI 每次 push 到 main 都會用遊戲內截圖＋標題字產生 Header／Smal
 | Library Logo | 寬 1280 或高 720 以內、透明 PNG | 疊在 Hero 上的標誌 | 需要「餘命城／Yuming City」字標設計 |
 | Library Header | 920 × 430 | 收藏庫其他版位 | 可與 Header Capsule 共用 |
 
+## 成就圖示（D-147）
+
+- 每個成就一張**解鎖**圖示；Steamworks 建議 **256 × 256 PNG**（JPG 也可、最小 64 × 64、必須正方形）。**未解鎖**圖示可以在後台自動產生灰階版，也可以自己上傳。
+- 批次上傳時檔名＝成就 API 名稱＋`_ACHIEVED`／`_UNACHIEVED`（例：`ACH_NINTH_BELL_ACHIEVED.png`），會自動對到成就。API 名稱照 `game/data/achievements.json` 的 id。
+- **替代版已自動產生**：每次建置在 [latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 附 `achievement-icons.zip`（8 個成就 × 解鎖／未解鎖）與總覽 `achievements_sheet.png`（`scripts/achievement_icons.py`：暗藍底、暖金色雙圈＋小圖案，圖示上不放字）。正式版想換時見 `docs/ART_REQUESTS.md`。
+
 ## 用戶端圖示（Client icons）
 
 | 素材 | 規格 | 備註 |

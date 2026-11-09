@@ -1,12 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 35 輪完成廣場石板（D-144）、看穿小卡讓開鐵架（D-146）、商店截圖改成 Windows 實機一鍵拍（D-145）。下一輪照 PLAN 階段 2 的順序：先做成就系統（第 4 節，不依賴 GodotSteam），再開始第一部第 1 章的白盒（第 5 節）**。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 36 輪完成成就系統＋圖示替代版（D-147）、第 1 章的攻略筆記邏輯層＋日記裡的「攻略筆記」一段、存檔 v2（D-148）。下一輪接第 5 節：章節切換（切片結尾 → 第 1 章）與第 1 章任務骨架，再做段落 3 的標記畫面**。
 
 ## 0. 開工先確認
 
-- 上一輪（第 35 輪）最後一次程式 push 40fb598 的 run 42547679767 **已經整個綠燈**（收尾時確認，screens／latest 都是 40fb598）；開工照常先跑 `scripts/check.sh`。第 35 輪的程式 commit 都在本機跑過 `scripts/check.sh`（最後 295 個測試）與截圖：30c0a49 廣場石板（D-144）、bccfbc9 商店截圖（D-145）、40fb598 看穿小卡（D-146，最後一個程式 commit）。紅了就看 log 修，修不好 `git revert`。
-- **小修（下一個程式 commit 順手）**：`scripts/store-shots.ps1` 裡 `$flags = $parts[2..($parts.Length - 1)]` 要包成陣列 `@(...)`——清單某行只有一個旗標時 PowerShell 會變成字串，後面的 `+=` 會把旗標黏成一串。現在每行都有兩個以上旗標，不會出事。
-- **screens 有新的建置後**看：`03`、`04` 廣場前景的石板亮暗不一、有幾顆整顆暗（下陷積水）、一圈圈的縫在中距離就淡掉，不像靶心（D-144；太花就調 `wet_cobble.gdshader` 的 `sunken_share` 0.16、`dark_share` 0.1、`grit_amount` 0.45，圈太糊就調 `FrostbridgeLook.ARC_FAR_FADE` 1.9）；`11` 看穿小卡在送葬者鐵架右柱的右邊（D-146）。latest 的 Windows zip 裡要有 `store-shots.ps1` 與 `store_shots.txt`（D-145；CI「打包」步驟會先用 pwsh 檢查 ps1 語法，log 裡有「store-shots.ps1 語法 OK」）。
+- 上一輪（第 36 輪）最後一次程式 push 是 2140c8f（日記的攻略筆記一段），CI 結果見 PROGRESS 第 36 輪的收尾補記；開工照常先跑 `scripts/check.sh`（最後 312 個測試）。第 36 輪的程式 commit：9b8e2ac 成就（run 42552114522 全綠）、a25cc45 攻略筆記邏輯層＋存檔 v2、855b1da 成就圖示替代版（CI 步驟）、2140c8f 日記的攻略筆記。紅了就看 log 修，修不好 `git revert`。
+- **latest 有新的建置後**看：`achievement-icons.zip`（16 張，`<ID>_ACHIEVED.png`／`_UNACHIEVED.png`）與 `achievements_sheet.png` 有沒有附上（CI「Steam 膠囊圖替代版」步驟是 continue-on-error，沒附就看 log 有沒有「[achievement-icons] 8 個成就 × 2 張」）。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
@@ -60,20 +59,21 @@
 - `test_gamepad_route` 涵蓋：梨販 → 敲九下、救援、灰巡者、送葬者戰、暫停選單、按鍵設定頁改鍵（第 14 輪）。手感只能等 Jacky 試玩。
 - 共用 helper：`_walk_to`、`_tap`、`_tap_physics`（戰鬥輸入在物理幀讀 just_pressed）、`_trigger_left`、`_focus_with_dpad`。鎖定是**右搖桿按下**（R3），不是 RB。
 
-## 4. 階段 2 準備（12/1 起，可以提前）——**下一輪從這裡開始**
+## 4. 階段 2 準備（12/1 起，可以提前）
 
 - 商店截圖完成（D-145）：清單 `scripts/store_shots.txt`（改了 `check.sh` 會檢查旗標）、Windows 實機 `store-shots.ps1`（CI 放進 zip）、雲端 `scripts/store-shots.sh <資料夾> [en|zh_TW] [檔名片段]`（1920×1080，一張約 1 分鐘）。Jacky 拍了放 `art-inbox/store-shots/` 再看。
-- **下一步：成就系統（不依賴 GodotSteam）**。PLAN 階段 2 的 Steam 準備；存檔與輸入已經穩定。**設計草稿已寫好：[`docs/steam/achievements.md`](steam/achievements.md)**（8 個成就的 ID、中英名稱與說明、條件旗標、隱藏與否、實作備註），照它做。做法建議：
-  1. `game/data/achievements.json`：每個成就 id、條件（任務旗標／事件，例如敲完九下、救出三個人、兩條路線各通關一次、不讓席菈倒下打贏送葬者、看穿所有招式）、是否隱藏；名稱與說明走 i18n key（`ACH_<ID>_NAME`／`_DESC`，先查 `06-terminology.md`）。切片先 6～10 個，少而精、不劇透。
-  2. `Achievements`（autoload 或 Game 底下的服務）：聽 `Game` 的訊號與任務旗標判斷解鎖，存在 `user://achievements.json`（跟存檔槽分開：成就是帳號層級，讀舊檔不會解鎖或取消），有版本號。
-  3. Steam 後端轉接：`SteamBridge` 在 `ClassDB.class_exists("Steam")`／`Engine.has_singleton("Steam")` 時呼叫 `setAchievement`＋`storeStats`，沒有時什麼都不做（現在都沒有）。之後 Jacky 拿到 App ID、放 GodotSteam 時才接；`steam_appid.txt` 不進 git。
-  4. 測試：每個成就在流程測試裡真的被解鎖（`test_slice_playthrough` 兩條路線跑完後檢查）、重開遊戲還在、讀舊存檔不影響；圖示需求寫進 `ART_REQUESTS.md`（先程序生成替代圖示；每個成就要解鎖／未解鎖兩張，尺寸先用 WebSearch 查 Steamworks 文件再寫進 asset-specs）。
-- 之後：GodotSteam（GDExtension）要不要現在就放進 repo 等 Jacky 決定（Steamworks SDK 授權、需要他的帳號），先在 FOR_JACKY 第 2 項問；雲端存檔走 Steam Auto-Cloud（只要在後台設定 `%APPDATA%\YumingCity\saves`，不用寫程式），寫進 `docs/steam/`。
+- **成就完成（D-147）**：資料 `game/data/achievements.json`、`AchievementTracker`（邊緣觸發：`baseline()` 在 `GameSession._bind`、`evaluate()` 在 `advance()`＋Game 每 0.5 秒）、`AchievementToast`（Game 的子節點，layer 30）、`SteamBridge`。新成就：加一列 JSON＋`strings.csv` 的 `ACH_<…>_NAME`／`_DESC`＋`achievement_icons.py` 的 `MOTIFS` 一個圖案；`test_achievements::test_data_is_valid_and_translated` 的數量與 `HIDDEN` 要跟著改。計數類條件用 `GameSession.add_stat("stats.xxx")`（不推進任務）。截圖 `--achievement=<id>`。測試用的 session 要算成就就 `s.attach_achievements(AchievementTracker.new(AchievementTracker.load_defs(), ""))`。
+- 之後：GodotSteam（GDExtension）要等 Jacky 有 App ID（FOR_JACKY 第 2 項已寫）；放進來後 `SteamBridge` 不用改。雲端存檔走 Steam Auto-Cloud，後台路徑寫在 `docs/steam/achievements.md` 最下面。成就候補（不倒下走完切片、第 1 章「攻略筆記被推翻 N 條」）等第 1 章做完再決定。
 
-## 5. 第一部第 1 章（12/14 起，可以提前；成就做完就開始）
+## 5. 第一部第 1 章（12/14 起，已提前開工）——**下一輪從這裡開始**
 
-- 照 `docs/design/07-chapter1-door.md` 的段落順序，**先白盒＋對話＋任務＋流程測試，美術後補**（D-143：白天霜橋鎮重用切片關卡、攻略筆記是日記分頁、做不完時的保留順序）。新名詞照 `06-terminology.md`（D-142）。新章節的任務每個階段要有 `marker`（D-040）、主線流程測試補一段（`tests/flow/test_slice_playthrough.gd` 的寫法）。
-- 第一步建議：章節切換（切片結尾 → 第 1 章開頭）的流程與存檔欄位（存檔版本＋遷移：舊存檔讀進來停在切片結尾）、第 1 章任務 JSON 骨架、段落 1 的白盒關卡。
+- 照 `docs/design/07-chapter1-door.md` 的段落順序，**先白盒＋對話＋任務＋流程測試，美術後補**（D-143：白天霜橋鎮重用切片關卡、攻略筆記是日記分頁、做不完時的保留順序）。新名詞照 `06-terminology.md`（D-142）。新章節的任務每個階段要有 `marker`（D-040）、主線流程測試補一段（`tests/flow/test_slice_playthrough.gd` 的寫法）。第 1 章的文字一律放 `i18n/ch1.csv`（已登記在 project.godot、verify_package）。
+- **已完成（第 36 輪，D-148）**：攻略筆記邏輯層 `GuideNotes`（`data/guide/notes.json`、`GameState.guide`、條件 `{"guide": id, "is": "sure|unsure|wrong|confirmed|unwritten", "was_unsure": bool}`、效果 `{"guide_write": [...]}`、`GameSession.guide_changed`）、存檔 v2、日記裡的「攻略筆記」一段（`JournalView._add_guide_section`、截圖 `--guide-demo`）。推翻旗標：`ch1.stair_trap_sprung`、`ch1.met_kord`、`ch1.door_opened`、`ch1.saw_empty_furnace`、`ch2.usurper_crossed_out`、`ch2.read_wall_carvings`——關卡做到時照這些名字設。
+- **下一步（依序）**：
+  1. **章節切換**：切片完成（`slice.complete`）後地窖觸發 → 第 1 章。做法建議：`ch1_main` 任務（`data/quests/ch1_main.json`，`slice_main` 的 `on_complete` 加 `start_quest: ["ch1_main"]`；舊存檔讀進來時 `QuestRunner` 不會自動補開，所以在 `GameSession.load_slot` 後檢查「slice 完成但 ch1 沒開始」就補 `quests.start`，加測試）；`GameState.chapter` 改 `ch1`；`Game.CHECKPOINT_LEVELS` 加第 1 章檢查點 → 新關卡 id（例如 `tavern`）。切片結尾目前是什麼畫面（地窖觸發後）要先看 `frostbridge.gd` 的 `_on_cellar`，決定是接一個「第一章　攻略之外的門」章節卡再換場景。
+  2. **段落 1～3 酒館白盒**（`scenes/levels/tavern.tscn`，繼承 `StoryLevel` 或更輕的室內基底）：酒館老闆、傷者、席菈、彌夏的對話骨架（`data/dialogue/ch1_*.json`），段落 2 的灑湯選項旗標 `ch1_sheila_soup_helped`。
+  3. **段落 3 的標記畫面**：桌上的地圖 UI，`guide_write` 寫下 6 條後讓玩家逐條切換「我不確定」（`GuideNotes.set_unsure`），確認後結束；手把＋鍵鼠都能操作（照設定頁的 `_add_toggle` 樣式）。
+  4. 流程測試：從切片結尾接到第 1 章段落 3 結束，每個檢查點 `Game.retry()`。
 
 ## 6. 角色模型（等 Jacky 交件）
 

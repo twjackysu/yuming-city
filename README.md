@@ -57,11 +57,13 @@
 - 重現：提示寫明效果與代價、按住預覽、重現時畫面去飽和、九聲心跳、化灰；付出的記憶讓之後的對話選項消失。玩家看到的用詞都是白話（[對照表](docs/design/06-terminology.md)）
 - 同伴席菈：跟隨、自主斬擊、三個指令（時機窗依難度、冷卻、拒絕附理由——例如在傷者旁不肯閃開、頭上回話）、倒下 8 秒內可拉起
 - 難度三級（故事／標準／困難，即時套用）；程序生成音效（鐘聲、打擊、爪擊、斬擊、閃避）
+- 成就 8 個（帳號層級、讀別人的存檔不會解鎖；解鎖時右上角小卡；有 GodotSteam 時同步到 Steam）
+- 第一部第 1 章開工：攻略筆記（諾恩前世記得的攻略被現實一條條推翻，日記裡被劃掉的那句下面寫著真正看到的事）的系統與存檔已就緒，關卡與對話製作中
 - 效能 overlay（F3）與 benchmark：`YumingCity.exe ++ --benchmark`，結果寫到 `%APPDATA%\YumingCity\benchmark\`
 
 ## Steam 上架還差什麼
 
-Steamworks 帳號、App ID、商店頁與分級問卷需由 Jacky 處理，見 [docs/FOR_JACKY.md](docs/FOR_JACKY.md)。商店文案中英草稿與素材規格在 [docs/steam/](docs/steam/)；商店截圖在 Windows 實機用 zip 裡的 `store-shots.ps1` 一次拍完（7 張、1920×1080、英文與繁中）。還缺：正式主視覺（key art）、實機截圖與 benchmark（系統需求）、GodotSteam 成就與雲端存檔。
+Steamworks 帳號、App ID、商店頁與分級問卷需由 Jacky 處理，見 [docs/FOR_JACKY.md](docs/FOR_JACKY.md)。商店文案中英草稿與素材規格在 [docs/steam/](docs/steam/)；商店截圖在 Windows 實機用 zip 裡的 `store-shots.ps1` 一次拍完（7 張、1920×1080、英文與繁中）。成就 8 個已做好（遊戲內解鎖小卡；圖示替代版附在 latest 的 `achievement-icons.zip`），有 GodotSteam 時自動同步到 Steam。還缺：正式主視覺（key art）、實機截圖與 benchmark（系統需求）、Steam App ID 後接 GodotSteam 與後台的成就／Auto-Cloud 設定。
 
 ## 路線圖
 

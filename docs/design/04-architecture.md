@@ -78,6 +78,8 @@ App、Settings 保持原樣；音訊用 Godot 的匯流排（Master／Music／SF
 | `CombatTuning` | 讀 `data/combat/*.json`＋開發覆寫 `user://tuning.json` | 預設值完整、覆寫生效 |
 | `TellTimer`／`CommandWindow` | 前兆計時與指令時機判定（依難度倍率） | 時機窗邊界、難度倍率 |
 | `CompanionBrain` | 席菈狀態機：跟隨／攻擊／閃避／守住／拉人；指令優先、可拒絕 | 指令被拒的條件、狀態轉移 |
+| `AchievementTracker`／`SteamBridge` | 成就（D-147）：`data/achievements.json` 的條件、帳號層級 `user://achievements.json`、邊緣觸發（讀檔時已成立的不算）；有 GodotSteam 才同步 | 兩條路線各自解鎖、讀舊存檔不解鎖、重開還在 |
+| `GuideNotes` | 攻略筆記（D-148）：`data/guide/notes.json` 的條目、`GameState.guide` 的可信度（確定／我不確定／被推翻／證實）；推翻條件跟任務同一套 | 狀態機、標記保留、存讀檔與 v1 → v2 遷移 |
 
 場景節點（玩家、席菈、敵人、可保存物件）只呼叫這些類別並負責動畫、碰撞、音效。
 
@@ -105,7 +107,8 @@ App、Settings 保持原樣；音訊用 Godot 的匯流排（Master／Music／SF
 - 存檔內容只有 `GameState.to_dict()`；場景狀態（敵人位置等）不存，從檢查點重建。
 - 檢查點＝`(chapter, checkpoint_id)`；每個關卡場景有對應的 `SpawnPoint` 節點。自動存檔在遭遇前與章節切換時寫入。
 - 死亡重試＝重讀最近的自動存檔（記憶代價與旗標一起回到檢查點，D-012 已保證不重複扣）。
-- 改存檔格式：`CURRENT_VERSION` +1、在 `SaveCodec` 加一步遷移、加一個從舊版 JSON 讀起的測試。
+- 改存檔格式：`CURRENT_VERSION` +1、在 `SaveCodec` 加一步遷移、加一個從舊版 JSON 讀起的測試。目前 v2（v1 → v2 補 `guide`，D-148）。
+- 成就**不在存檔裡**（帳號層級，D-147）；`stats.*` 計數旗標在存檔裡，只給成就條件用、不推進任務。
 
 ### 輸入
 
