@@ -135,6 +135,11 @@ const ROPE_RANGE: float = 1.3
 const PIN_SINK: float = 0.55
 const PIN_TILT: float = -0.3
 const COAL: Color = Color(0.09, 0.085, 0.085)
+## 閘道木架南邊橫樑下掛的小油燈（第 48、49 輪截圖：煤堆、倒吊都太暗）：掛鉤在橫樑底、鏈子多長、暖光
+const SLUICE_LAMP_HOOK: Vector3 = Vector3(2.0, GANTRY_Y, SLUICE_Z + 0.1)
+const SLUICE_LAMP_DROP: float = 1.4
+const SLUICE_LAMP_ENERGY: float = 2.2
+const SLUICE_LAMP_RANGE: float = 9.5
 ## 頭頂的石樑：一排排橫跨運河，縫裡透下鐘院的光
 const SLAT_Y: float = 13.0
 const SLAT_PITCH: float = 2.4
@@ -337,6 +342,7 @@ func _ready() -> void:
 	_build_canal()
 	_build_bridge()
 	_build_sluice()
+	_build_sluice_lamp()
 	_build_ceiling()
 	_build_undertaker()
 	_build_drain()
@@ -1736,6 +1742,39 @@ func corner_lamp() -> OmniLight3D:
 	return get_node_or_null("CornerLamp") as OmniLight3D
 
 
+## 閘道的小油燈：掛在木架南邊橫樑下（鏈子＋燈罩＋暖色點光、投影子），照亮煤車、閘道裡的牠和倒吊的席菈；
+## 煤落地時跟著晃（`_sway_lamp`）。整個掛在 SluiceLampPivot（轉軸在掛鉤）底下。
+func _build_sluice_lamp() -> void:
+	var pivot := Node3D.new()
+	pivot.name = "SluiceLampPivot"
+	add_child(pivot)
+	pivot.position = SLUICE_LAMP_HOOK
+	var iron: StandardMaterial3D = _mat(IRON, 0.6)
+	iron.metallic = 0.7
+	_solid("SluiceLampChain", Vector3(0.025, SLUICE_LAMP_DROP, 0.025), Vector3(0.0, -SLUICE_LAMP_DROP * 0.5, 0.0), iron, false, pivot)
+	_solid("SluiceLampCap", Vector3(0.2, 0.05, 0.2), Vector3(0.0, -SLUICE_LAMP_DROP - 0.02, 0.0), iron, false, pivot)
+	var glow := StandardMaterial3D.new()
+	glow.albedo_color = Color(0.3, 0.2, 0.12)
+	glow.emission_enabled = true
+	glow.emission = CORNER_LAMP_COLOR
+	glow.emission_energy_multiplier = 1.8
+	_solid("SluiceLampHousing", Vector3(0.15, 0.22, 0.15), Vector3(0.0, -SLUICE_LAMP_DROP - 0.16, 0.0), glow, false, pivot)
+	var light := OmniLight3D.new()
+	light.name = "SluiceLamp"
+	light.light_color = CORNER_LAMP_COLOR
+	light.light_energy = SLUICE_LAMP_ENERGY
+	light.omni_range = SLUICE_LAMP_RANGE
+	light.omni_attenuation = 1.2
+	light.shadow_enabled = true
+	light.light_volumetric_fog_energy = 0.6
+	light.position = Vector3(0.0, -SLUICE_LAMP_DROP - 0.3, 0.0)
+	pivot.add_child(light)
+
+
+func sluice_lamp() -> OmniLight3D:
+	return get_node_or_null("SluiceLampPivot/SluiceLamp") as OmniLight3D
+
+
 ## 檢查點 ch3_map 之後（重來、讀檔、截圖）：煤堆壓著牠、鐘舌拿走了、彌夏先走了。
 func _settle_after_clapper() -> void:
 	_wake_undertaker(false)
@@ -2137,8 +2176,14 @@ func _coal_dust(at: Vector3) -> void:
 	ps.emitting = true
 
 
-## 油燈晃：燈光一明一暗幾下再回來。
+## 油燈晃：燈光一明一暗幾下再回來；閘道的小油燈跟著木架晃幾下。
 func _sway_lamp() -> void:
+	var pivot: Node3D = get_node_or_null("SluiceLampPivot") as Node3D
+	if pivot != null:
+		var sw := create_tween()
+		for a: float in [0.32, -0.24, 0.15, -0.08]:
+			sw.tween_property(pivot, "rotation:z", a, 0.32).set_trans(Tween.TRANS_SINE)
+		sw.tween_property(pivot, "rotation:z", 0.0, 0.4).set_trans(Tween.TRANS_SINE)
 	var l: OmniLight3D = lamp_light()
 	if l == null:
 		return

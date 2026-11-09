@@ -1042,6 +1042,8 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 	assert_false(_game.call("is_in_dialogue"), "煤車的對話講完")
 	assert_eq(s.state.get_flag("ch3.cart_planned"), true)
 	assert_true(canal.has_node("CoalCart") and canal.has_node("DecoySpot3") and canal.has_node("CartRopeLine"), "閘道上有煤車和繩子、另一邊有放心臟的點")
+	var sluice_lamp: OmniLight3D = canal.call("sluice_lamp") as OmniLight3D
+	assert_true(sluice_lamp != null and sluice_lamp.shadow_enabled, "閘道木架下掛著一盞投影子的小油燈")
 	var player: PlayerController = _player(canal)
 	var spot3: Vector3 = (canal.get_node("DecoySpot3") as Node3D).global_position
 	var rope_pos: Vector3 = canal.get("ROPE_POS") as Vector3
