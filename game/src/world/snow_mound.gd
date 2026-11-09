@@ -10,6 +10,9 @@ extends RefCounted
 ## 雪 shader 用來讓靠牆的角落暗一點、靠街那側才有腳印與髒雪。其他雪堆 UV2.y＝0（都不做）。
 ## on_tiles：鋪在屋瓦上的薄雪（破屋頂，D-127）：UV2.y＝TILES_MARK＋沿著模型 X 的公尺數，
 ## 雪 shader 用來畫出底下一排排屋瓦撐起的橫紋、薄的地方露出屋瓦。
+## on_tiles 的網格比較細（D-139，第八輪盤點第 4 項：原本救援畫面的破屋頂雪像一張平的白布／床墊）：
+## TILES_RINGS 圈 × TILES_SEGMENTS 段、輪廓多一層細的起伏（邊緣不再是一段段直線）、
+## 高度往邊緣慢慢薄下去（不是中間平、邊上一圈陡坡的「厚度」），雪面有低頻的高低（亮暗跟著變）。
 
 const RINGS: int = 4
 ## 20 段（D-110；原本 14 段近看看得出多邊形）
@@ -20,6 +23,11 @@ const SQUARENESS: float = 3.2
 const RAGGED: float = 0.22
 ## 最高點最多偏到哪裡（以半長／半寬為 1；要留在輪廓裡面，網格才不會翻面）
 const PEAK_LIMIT: float = 0.55
+## 屋瓦上的薄雪（D-139）：圈數、段數、輪廓往內凹的最大比例、高度往邊緣變薄的次方（一般雪堆 0.7）
+const TILES_RINGS: int = 6
+const TILES_SEGMENTS: int = 40
+const TILES_RAGGED: float = 0.28
+const TILES_FALLOFF: float = 1.5
 ## on_tiles 的雪堆 UV2.y 從這個值起跳（街邊雪帶的 -1～1 不會碰到；shader 用 > 5 分辨）
 const TILES_MARK: float = 10.0
 ## 街邊雪帶的 UV.x 從這個值起跳（D-134）：其他雪的 UV 在 0～1，shader 用 > 500 分辨
@@ -29,15 +37,25 @@ const BANK_MARK: float = 1000.0
 static func build(length: float, width: float, height: float, seed: float, bias: Vector2 = Vector2.ZERO, street_bank: bool = false, on_tiles: bool = false) -> ArrayMesh:
 	var a: float = length * 0.5
 	var b: float = width * 0.5
+	var n_rings: int = TILES_RINGS if on_tiles else RINGS
+	var n_seg: int = TILES_SEGMENTS if on_tiles else SEGMENTS
+	var ragged: float = TILES_RAGGED if on_tiles else RAGGED
+	var falloff: float = TILES_FALLOFF if on_tiles else 0.7
 	var edge: PackedFloat32Array = PackedFloat32Array()
-	edge.resize(SEGMENTS)
+	edge.resize(n_seg)
 	# 輪廓往內凹：兩三個大的起伏＋一點點每段的雜訊（D-110；原本每段各自亂數，輪廓是鋸齒、近看像潑上去的白漆）
 	var ph1: float = _hash(seed, 80.0) * TAU
 	var ph2: float = _hash(seed, 81.0) * TAU
-	for i: int in SEGMENTS:
-		var th: float = TAU * float(i) / float(SEGMENTS)
+	var ph3: float = _hash(seed, 82.0) * TAU
+	var ph4: float = _hash(seed, 83.0) * TAU
+	for i: int in n_seg:
+		var th: float = TAU * float(i) / float(n_seg)
 		var wave: float = 0.6 * sin(2.0 * th + ph1) + 0.3 * sin(3.0 * th + ph2) + 0.1 * (_hash(seed, float(i)) * 2.0 - 1.0)
-		edge[i] = 1.0 - RAGGED * (0.5 + 0.5 * wave)
+		if on_tiles:
+			# 屋瓦上的雪邊緣多一層細的起伏（D-139）：被風吹掉、滑掉一小塊一小塊，不是一段段直線
+			wave = 0.45 * sin(2.0 * th + ph1) + 0.22 * sin(3.0 * th + ph2) + 0.2 * sin(7.0 * th + ph3) \
+				+ 0.13 * sin(11.0 * th + ph4) + 0.1 * (_hash(seed, float(i)) * 2.0 - 1.0)
+		edge[i] = 1.0 - ragged * clampf(0.5 + 0.5 * wave, 0.0, 1.0)
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	# UV2.x＝圈數（0＝最高點、1＝外圈）：雪 shader 用來讓外圈變薄（D-119）。
@@ -53,10 +71,10 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	uvs.append(Vector2(0.5 + peak.x * 0.5, 0.5 + peak.y * 0.5))
 	rings.append(0.0)
 	leans.append(TILES_MARK + peak.x * a if on_tiles else clampf(peak.dot(lean_dir), -1.0, 1.0))
-	for r: int in range(1, RINGS + 1):
-		var k: float = float(r) / float(RINGS)
-		for i: int in SEGMENTS:
-			var th: float = TAU * float(i) / float(SEGMENTS)
+	for r: int in range(1, n_rings + 1):
+		var k: float = float(r) / float(n_rings)
+		for i: int in n_seg:
+			var th: float = TAU * float(i) / float(n_seg)
 			var c: float = cos(th)
 			var s: float = sin(th)
 			var sq: float = pow(pow(absf(c), SQUARENESS) + pow(absf(s), SQUARENESS), -1.0 / SQUARENESS)
@@ -65,8 +83,11 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 			var x: float = lerpf(peak.x, c * rr, k * k) * a
 			var z: float = lerpf(peak.y, s * rr, k * k) * b
 			# 高度：中間平緩、靠邊緣才很快降到 0；外圈稍微低於 0（貼進斜面）
-			var hgt: float = height * pow(1.0 - k * k, 0.7) * lerpf(0.94, 1.05, _hash(seed, 60.0 + float(r * SEGMENTS + i)))
-			if r == RINGS:
+			var hgt: float = height * pow(1.0 - k * k, falloff) * lerpf(0.94, 1.05, _hash(seed, 60.0 + float(r * n_seg + i)))
+			if on_tiles:
+				# 雪面低頻的高低（D-139）：約 1.2～2 m 一個起伏、±35%，法線跟著傾斜，亮暗不再整片一樣
+				hgt *= 1.0 + 0.35 * sin(x * 3.1 + ph3) * cos(z * 4.3 + ph4)
+			if r == n_rings:
 				hgt = -0.012
 			verts.append(Vector3(x, hgt, z))
 			uvs.append(Vector2(x / length + 0.5, z / width + 0.5))
@@ -76,15 +97,15 @@ static func build(length: float, width: float, height: float, seed: float, bias:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var idx := PackedInt32Array()
 	# 中心扇形：(中心, i, i+1) 從上面看是順時針（X 往右、Z 往下）
-	for i: int in SEGMENTS:
+	for i: int in n_seg:
 		idx.append(0)
 		idx.append(1 + i)
-		idx.append(1 + (i + 1) % SEGMENTS)
-	for r: int in range(1, RINGS):
-		var inner: int = 1 + (r - 1) * SEGMENTS
-		var outer: int = 1 + r * SEGMENTS
-		for i: int in SEGMENTS:
-			var j: int = (i + 1) % SEGMENTS
+		idx.append(1 + (i + 1) % n_seg)
+	for r: int in range(1, n_rings):
+		var inner: int = 1 + (r - 1) * n_seg
+		var outer: int = 1 + r * n_seg
+		for i: int in n_seg:
+			var j: int = (i + 1) % n_seg
 			idx.append(inner + i)
 			idx.append(outer + i)
 			idx.append(outer + j)

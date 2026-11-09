@@ -167,6 +167,40 @@ func test_on_tiles_marks_slope_meters() -> void:
 		assert_true(absf(uv2s[n].y - SnowMound.TILES_MARK - verts[n].x) < 0.001, "UV2.y－TILES_MARK＝模型 X（%.3f vs %.3f）" % [uv2s[n].y, verts[n].x])
 
 
+## 屋瓦上的薄雪不是一張平的白布（D-139）：網格比一般雪堆細（輪廓不再是一段段直線）、
+## 往邊緣慢慢薄下去（倒數第二圈已經很薄，邊上沒有一圈陡坡的「厚度」）、雪面有高低起伏；照樣正面朝上。
+func test_on_tiles_mesh_is_fine_and_feathered() -> void:
+	var tiles: Array = SnowMound.build(2.2, 1.3, 0.065, 4.0, Vector2.ZERO, false, true).surface_get_arrays(0)
+	var plain: Array = SnowMound.build(2.2, 1.3, 0.065, 4.0).surface_get_arrays(0)
+	var verts: PackedVector3Array = tiles[Mesh.ARRAY_VERTEX]
+	var uv2s: PackedVector2Array = tiles[Mesh.ARRAY_TEX_UV2]
+	var idx: PackedInt32Array = tiles[Mesh.ARRAY_INDEX]
+	var plain_verts: PackedVector3Array = plain[Mesh.ARRAY_VERTEX]
+	assert_true(verts.size() >= plain_verts.size() * 2, "屋瓦上的雪網格比一般雪堆細（%d vs %d）" % [verts.size(), plain_verts.size()])
+	var near_edge: float = 0.0
+	var top: float = 0.0
+	var mid: Array[float] = []
+	var last_inner: float = float(SnowMound.TILES_RINGS - 1) / float(SnowMound.TILES_RINGS)
+	for n: int in verts.size():
+		top = maxf(top, verts[n].y)
+		if absf(uv2s[n].x - last_inner) < 0.001:
+			near_edge = maxf(near_edge, verts[n].y)
+		if absf(uv2s[n].x - 0.5) < 0.001:
+			mid.append(verts[n].y)
+	assert_true(near_edge < top * 0.3, "倒數第二圈已經很薄（%.3f < %.3f×0.3），邊上沒有一圈厚度" % [near_edge, top])
+	var lo: float = 1.0
+	var hi: float = 0.0
+	for y: float in mid:
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+	assert_true(hi - lo > 0.012, "同一圈的高度有起伏（%.3f～%.3f），雪面不是平的" % [lo, hi])
+	var front_up: int = 0
+	for t: int in range(0, idx.size(), 3):
+		if Plane(verts[idx[t]], verts[idx[t + 1]], verts[idx[t + 2]]).normal.y > 0.0:
+			front_up += 1
+	assert_eq(front_up, idx.size() / 3, "每個三角形的正面朝上（%d/%d）" % [front_up, idx.size() / 3])
+
+
 ## 街邊雪帶的腳印座標（D-134）：UV＝(BANK_MARK＋沿著牆的公尺數, 離牆腳線多遠)。
 ## 沿著牆的座標跟世界一致（重疊的兩段算出來一樣，腳印接得起來）；離牆越遠 UV.y 越大；UV2 照舊。
 func test_bank_uv_is_wall_meters() -> void:

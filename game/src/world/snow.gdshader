@@ -32,6 +32,14 @@ uniform float step_len = 0.36;
 // 鋪在屋瓦上的薄雪（D-127；SnowMound on_tiles：UV2.y＝10＋沿斜面的公尺數）：
 // 每排屋瓦的下緣把雪撐出一道橫紋（暗線），雪薄的地方一塊塊露出屋瓦
 uniform float tile_row = 0.26;
+// 屋瓦上的薄雪不是一張平的白布（D-139，第八輪盤點第 4 項）：
+// - 每排屋瓦把雪撐出一道一道的起伏（法線沿斜面傾斜：大部分緩、下緣那一小段陡），每排亮度也不一樣
+// - 大片的亮暗變化比地上的雪大
+// - 背對月光的面偏藍、暗一點（moon_to＝往月亮的方向，FrostbridgeLook 的 Moon 旋轉 (-38°, 35°)）
+uniform float tile_drape = 0.55;
+uniform float tile_mottle = 0.3;
+uniform vec3 moon_to = vec3(0.452, 0.616, 0.645);
+uniform float backlit_shade = 0.5;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -151,7 +159,8 @@ void fragment() {
 	float wall_k = smoothstep(0.1, 0.6, bank_lean);
 	col = mix(col, col * shadow_tint * 0.75, wall_k * wall_shade);
 	// 雪堆外圈變薄：邊界跟著雪的起伏（h）不規則，最外一點點幾乎是底下的顏色
-	float thin = smoothstep(edge_start, 1.0, mound_k + (h - 0.47) * 0.35);
+	// 屋瓦上的雪（D-139）外圈更早開始變薄：邊上不是一圈亮白的厚度
+	float thin = smoothstep(edge_start - 0.18 * on_tiles, 1.0, mound_k + (h - 0.47) * 0.35);
 	// 屋瓦上的薄雪：雪薄的地方（外圈、雜訊低處）一塊塊露出屋瓦；每排屋瓦下緣一道暗線（遠處淡掉）
 	// D-131：露出的地方一排一排對齊屋瓦（每排自己的雜訊位移，邊界是屋瓦的橫線），不再是一團團像髒污的斑
 	float row_i = floor(slope_m / tile_row);
@@ -162,6 +171,12 @@ void fragment() {
 	float row_lod = 1.0 - smoothstep(0.15, 0.4, fwidth(slope_m / tile_row));
 	float lip_line = (smoothstep(0.72, 0.9, rr) - smoothstep(0.93, 1.0, rr)) * on_tiles * row_lod;
 	col = mix(col, col * shadow_tint * 0.8, lip_line * 0.6);
+	// D-139：每排屋瓦上的雪亮度不一樣（每排自己的雜訊，沿著排慢慢變），排裡面往下緣慢慢暗；
+	// 大片的亮暗也比地上的雪大（地上的雪被踩、被風吹得比較勻；屋頂上的是一片片滑下來的）
+	float row_tone = mix(0.84, 1.06, noise(vec2(row_i * 1.73, dot(p, vec2(0.6, 0.8)) * 0.8)));
+	float in_row = mix(1.04, 0.92, smoothstep(0.1, 0.85, rr));
+	float mottle = mix(1.0 - tile_mottle, 1.0 + tile_mottle * 0.4, fbm(p * 0.9 + 40.0));
+	col *= mix(1.0, 0.93 * row_tone * mix(1.0, in_row, row_lod) * mottle, on_tiles);
 	col = mix(col, under_color, thin * 0.85);
 	// 露出的屋瓦也看得到每排下緣的暗線（像屋瓦，不像一塊平的暗色）
 	col *= 1.0 - 0.45 * lip_line * bare;
@@ -170,7 +185,17 @@ void fragment() {
 	// 法線：把世界空間的傾斜轉到 view space 疊上去（只在朝上的面）
 	vec2 g = grad * bump_strength * step(0.5, an.y) + ripple_grad * ripple_strength + dent_grad;
 	vec3 tilt = vec3(-g.x, 0.0, -g.y);
+	// D-139：屋瓦上的雪沿斜面一排一排起伏。沿斜面的公尺數對世界 xz 的梯度用螢幕空間導數解（同腳印的做法），
+	// 排裡大部分是緩坡、下緣 0.82～0.95 那一小段是陡坡（反方向）；遠處淡掉
+	vec2 gm = vec2(dpy.y * dFdx(slope_m) - dpx.y * dFdy(slope_m), -dpy.x * dFdx(slope_m) + dpx.x * dFdy(slope_m)) * inv;
+	float drape = mix(0.35, -2.2, smoothstep(0.8, 0.86, rr) - smoothstep(0.93, 0.99, rr));
+	vec2 gt = normalize(gm + vec2(1e-5)) * drape * tile_drape * row_lod * on_tiles * (1.0 - thin);
+	tilt += vec3(-gt.x, 0.0, -gt.y);
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(tilt, 0.0)).xyz);
+	// 背對月光的面偏藍、暗一點（只有屋瓦上的雪；地上的雪帶靠牆的角落另外處理）
+	vec3 n_world = normalize(world_normal + tilt);
+	float away = 1.0 - smoothstep(0.35, 0.8, dot(n_world, normalize(moon_to)));
+	ALBEDO = mix(ALBEDO, ALBEDO * shadow_tint * 0.82, away * backlit_shade * on_tiles * (1.0 - thin));
 	ROUGHNESS = mix(0.62, 0.85, dirt);
 	// 靠牆的角落也少反射天光（不然月光下還是一條亮藍的邊）
 	SPECULAR = mix(0.45, 0.12, wall_k);
