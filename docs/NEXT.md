@@ -1,11 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。**第 37 輪完成章節切換（切片結尾 → 章節卡 → 酒館，D-149）、酒館白盒段落 1～3（中午、晚餐灑湯、畫地圖）、段落 3 的標記畫面（D-150）。下一輪接第 5 節：段落 4（白天的霜橋鎮＋艾妲的油燈）→ 段落 5（長階梯、丟石頭試探陷阱）**。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。**第 38 輪完成段落 4：白天的霜橋鎮（北街 → 艾妲交油燈 → 油燈取代提燈，D-151）。下一輪接第 5 節：段落 5（一百七十二階、丟石頭試探陷阱）**。
 
 ## 0. 開工先確認
 
-- 上一輪（第 37 輪）的程式 commit：2816522 章節切換＋酒館白盒＋第 1 章對話（run 42557511407 全綠）、05d4b45 酒館開發旗標與入夜窗光、58ae5f4 標記畫面、cf5283f 章節卡細線＋`--chapter-card`（最後一個，run 42558987949 測試與匯出已綠、截圖／smoke test／打包收尾時還在跑——**開工先看這個 run 整個綠燈**）。58ae5f4 的 run 42558270879 全綠。**開工先看最新 run 整個綠燈**；開工照常先跑 `scripts/check.sh`（最後 318 個測試）。紅了就看 log 修，修不好 `git revert`。
-- 第 36 輪的 run 42553368535（2140c8f）已全綠（第 37 輪開工確認）；latest 的 `achievement-icons.zip` 第 37 輪沒有回頭確認，有空看一眼。
+- 上一輪（第 38 輪）的程式 commit：2b3337a 段落 4 白天的霜橋鎮＋艾妲的油燈（run 42563263623）、ff36041 白天熄燈＋`--face=ada`（run 42563570316）、f1e42f9 CI 盤點截圖加 `12-ch1-tavern`／`13-ch1-day-north`（最後一個）——結果見 PROGRESS 第 38 輪收尾補記；**開工先看最新 run 整個綠燈，盤點截圖 job 的兩張新圖有沒有拍出來**（screens release）。開工照常先跑 `scripts/check.sh`（最後 319 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 第 37 輪的 run 42558987949（cf5283f）已全綠（第 38 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
 - **盤點截圖（D-082）**：prerelease「screens」有 11 張（`01-settings`～`11-convoy-insight`）。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
@@ -76,13 +76,14 @@
   - 對話 `ch1_noon`／`ch1_dinner`（灑湯 → `ch1.sheila_soup_helped`）／`ch1_map`（開頭 `guide_write` 6 條、最後設 `ch1.guide_marking`）／`ch1_map_end`（依標了幾條換最後一句、設 `ch1.map_drawn`）。
   - 標記畫面 `GuideMarkView`（`scenes/ui/guide_mark_view.gd`）：`open_on(父節點, state, notes)`、`rows[id]`、`toggle`／`set_unsure`、`done_button`、`confirm()`、訊號 `confirmed(unsure_ids)`；打開時暫停。
   - 主線流程測試 `_chapter1()`（`test_slice_playthrough.gd`）：章節卡 → 酒館 → 中午 → 重來 → 晚餐 → 畫地圖＋標記 → 重來。新段落在這裡往後接。
+- **已完成（第 38 輪，D-151）**：段落 4 白天的霜橋鎮。`ch1_main` 多 3 個階段 `day_north`（檢查點 `ch1_day_town`）→ `ada_lamp` → `stairs`（檢查點 `ch1_lamp`，done_when `ch1.stairs_bottom` 還沒有人設）。酒館 `leave_tavern()`；`frostbridge.gd` 的「第 1 章段落 4」一節：`day`、`is_day_chapter(s)`、`dev_start_day(s, stage)`、`_build_day()`（熄燈、石拱停用、`NorthDaySpot`、Ada Puppet `ADA_POS`）、`_update_day()`、`_on_day_cellar()`（現在顯示「待續」）；`FrostbridgeLook.build_environment(parent, day)`／`day_sky()`／`unlight(color)`；`PlayerController.has_oil_lamp()`／`_update_lamp()`（旗標 `ch1.lamp_received`）。截圖 `--level=frostbridge --day[=ada_lamp|stairs] [--at=north] [--face=ada]`。主線流程測試 `_chapter1_day()`／`_assert_day_town()`。
 - **下一步（依序）**：
-  1. **段落 4：白天的霜橋鎮＋艾妲的油燈**（D-143：重用切片關卡）。`to_cellar` 階段走出酒館門 → 換到 `frostbridge`（`Game.CHECKPOINT_LEVELS` 加一個第 1 章的檢查點，例如 `ch1_day_town` → `frostbridge`；酒館的門口觸發改成設 `ch1.left_tavern` 再換關卡）；`FrostbridgeLook` 加 `day` 變體（白天陰天的冷光、沒有月光與路燈、雪地反光），`frostbridge.gd` 依 `GameState.chapter == "ch1"` 切換（北街照舊是陷落後的樣子、死者名單牆、沒有送葬者／車隊／灰巡者）；艾妲在地窖門口交油燈的對話（`ch1_ada_lamp`，`text_if arch_father_last_talk` 那句「你連你爸都忘了，別把我忘了」），油燈取代提燈（`PlayerController` 的提燈換一個圓肚油燈的外形、光更暖更小）。**霜橋鎮很多程式用 `stage_of(MAIN_QUEST)` 判斷切片階段，切片完成後那些判斷都不成立——先 grep `MAIN_QUEST` 確認白天版本不會生出切片的敵人或觸發**。
-  2. **段落 5：一百七十二階**（新關卡 `stairs`，線性）：螺旋往下的石階（霧＋油燈範圍只看得到前後十幾級）、中間平台的髒水桶陷阱、新互動「丟石頭試探」（設 `ch1.stair_trap_sprung` → 攻略筆記第 1 條被推翻；標了我不確定的諾恩說「果然」，沒標的席菈看他一眼——用 `{"guide": "stair_arrows", "is": "wrong", "was_unsure": true}` 的 `text_if`）、往下聽到小孩笑聲。
-  3. 段落 6～9（白晝城入口、柯德、上層街區、壽命石碑、柯德家晚餐、兔子）照 07 的表。
+  1. **段落 5：一百七十二階**（新關卡 `stairs`，線性，照酒館的 `tavern.tscn`／`tavern.gd` 結構：Player、Hud、DialogueBox 那幾個節點照抄）：螺旋往下的石階（霧＋油燈範圍只看得到前後十幾級；環境全暗、只有油燈，`ambient_light_energy` 很低）、中間平台的髒水桶陷阱、新互動「丟石頭試探」（`interact_prompts` 群組＋`interact_hint()`，D-065；設 `ch1.stair_trap_sprung` → 攻略筆記 `stair_arrows` 被推翻；標了我不確定的諾恩說「果然」，沒標的席菈看他一眼——用 `{"guide": "stair_arrows", "is": "wrong", "was_unsure": true}` 的 `text_if`）、往下聽到小孩笑聲（`gen_sfx.py` 加一個）、走到底設 `ch1.stairs_bottom`。銜接：`Game.LEVELS` 加 `stairs`、`CHECKPOINT_LEVELS["ch1_lamp"]` 改成 `stairs`、`frostbridge.gd` 的 `_on_day_cellar()` 改成 `Game.go_to_level("stairs")`（`is_day_chapter` 的 `stairs` 階段就不會再進霜橋鎮，除非讀到舊存檔——那時地窖觸發照樣換關卡）；`ch1_main` 在 `stairs` 之後加 `daylight_gate`（段落 6）。流程測試 `_chapter1_day()` 結尾的「待續」斷言改成換到 stairs 關卡，往下接。07 設計的「換手的小動作」（提燈換到右手再換回來）可以後補。
+  2. 段落 6～9（白晝城入口、柯德、上層街區、壽命石碑、柯德家晚餐、兔子）照 07 的表。
+  3. 白天的霜橋鎮還可以：亮窗白天還是暖黃（屋裡有人點燈，說得通；太多就在 `_build_day` 把部分窗調暗）、死者名單牆（07 原本寫的，白盒先省略；可以在梨販攤旁加一塊貼滿紙的木板＋互動看名字）、北街未救出的受困者白天還躺在原地（`RescueSite` 不能互動；要不要換成蓋著布的樣子再決定）。
   4. 酒館美術（階段 2 後段）：現在是 CSG 白盒＋程序人偶；彌夏抱的鐘是小木箱。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
-- 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。
+- 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。白天的霜橋鎮：`--level=frostbridge --day --at=north`（一進北街就開對話）、`--day=stairs --face=ada --face-off=-25`（一張約 2 分鐘）。
 
 ## 6. 角色模型（等 Jacky 交件）
 

@@ -2,6 +2,12 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-151　2026-11-09　第 1 章段落 4「白天的霜橋鎮」：重用切片關卡的白天版本；艾妲交油燈；油燈取代提燈
+
+- 決策：走出酒館門（`to_cellar` 階段）設 `ch1.left_tavern` → 主線進 `day_north`（檢查點 `ch1_day_town`、自動存檔）→ 換到霜橋鎮。`frostbridge.gd` 在 `is_day_chapter()`（章節 ch1 且主線在 `day_north`／`ada_lamp`／`stairs`）時走白天版本：`FrostbridgeLook.build_environment(parent, true)`（陰天 ProceduralSky、太陽 `SKY_MODE_LIGHT_ONLY` 不畫在天上、`light_angular_distance` 4 讓影子軟、霧薄、曝光 1.0）、所有 OmniLight 關掉（玩家的燈除外）＋`look.unlight(LAMP)` 讓燈玻璃不亮、攤子後面的艾妲剪影不放、南街石拱停用（白天不能再重現）、席菈跟著、艾妲（Puppet）站在地窖門口。切片的任務判斷照舊用 `MAIN_QUEST`（切片完成後都不成立），白天的邏輯另寫在 `_update_day()`／`_on_day_cellar()`，不碰切片的分支。流程：一進來顯示「隔天早上。」→ 走上北街（z ≤ -30.6）自動開對話 `ch1_north_day`（「在攻略裡，這條街只是一段過場動畫。」「那就記住它不是。」）→ `ada_lamp`：走到艾妲 3 m 內開 `ch1_ada_lamp`（付了石拱記憶 → 第一句換成「你連你爸都忘了，別把我忘了。你回來的時候，我要告你。」，`text_if memory_paid`）→ 設 `ch1.lamp_received` → `stairs`（檢查點 `ch1_lamp`）→ 走進地窖顯示「待續」。油燈：`PlayerController._update_lamp()` 在讀到旗標時把提燈換成圓肚銅油燈（壓扁的球＋發光燈罩＋提把，光 `OIL_LAMP_COLOR`、0.8、範圍 3.8），對話結束與進場時檢查。
+- 理由：07 設計 D-143 已定「重用切片關卡」；白天看昨晚的現場最有份量，成本是一個環境變體。原作這段只有三句（「你回來的時候，我要告你」「我知道」「別死在下面，死人不會替人重建房子」），北街那段是改編加的，用來接「攻略是遊戲、這裡不是」的主題線。死亡人數依切片結果不同（29～33），所以北街的台詞不提數字。
+- 影響：開發旗標 `--level=frostbridge --day[=ada_lamp|stairs]`、`--face=ada`；`Game.CHECKPOINT_LEVELS` 加 `ch1_day_town`／`ch1_lamp` → frostbridge（**一百七十二階做好後把 `ch1_lamp` 換成那個關卡**，地窖觸發改成換關卡）；主線流程測試兩條路線從酒館門口走到地窖（在 `ch1_day_town`、`ch1_lamp` 各重來一次，斷言白天版本沒有敵人／車隊、路燈不點、受困者不能再救、油燈保留）；`test_chapter1::test_day_town_stages_and_dialogue`；CI 盤點截圖加 `12-ch1-tavern`、`13-ch1-day-north`。新字串 `Q_CH1_OBJ_DAY_NORTH／ADA_LAMP／STAIRS`、`DLG_CH1_NORTH_*`、`DLG_CH1_ADA_*`、`CH1_NEXT_MORNING`（ch1.csv）。
+
 ## D-150　2026-11-09　第 1 章段落 3「標記畫面」：一張舊紙、逐條點選，按「就這樣」才寫進攻略筆記
 
 - 決策：`GuideMarkView`（`scenes/ui/guide_mark_view.gd`）是 CanvasLayer：暗底上一張舊紙（明體標題「桌上的地圖」＋席菈的那句話），列出已寫下、還沒有結果的攻略條目，每列是 flat Button（全域 Theme 的暖金色焦點）＋子節點 Label（條目文字、右邊「確定／我不確定」），點一下切換、標了我不確定的整列淡一點、換值有選單的「叮」；按「就這樣」才用 `GuideNotes.set_unsure` 寫進狀態並發 `confirmed`。打開時暫停（跟日記一樣），被釋放時解除暫停。流程：`ch1_map` 對話最後一句（席菈）設 `ch1.guide_marking` → 酒館在 `draw_map` 階段看到這個旗標就打開畫面（同一階段不再重講畫地圖的對話）→ 確認後開 `ch1_map_end`，最後一句照標了幾條換：六條全標＝原作「整張地圖都被圈起來」、一條都沒標＝「一個圈也沒畫」、其他＝「圈了幾個地方，席菈什麼也沒說」，並設 `ch1.map_drawn`。
