@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 53 輪）的程式 commit：89487cc 酒館的美術、8a9cc47 酒館的截圖旗標＋CI 盤點截圖 `38-ch1-tavern-table`、9f058ca InteriorLook＋柯德家（**收尾時看 9f058ca 的 run；沒全綠就開工先看整個綠燈**，盤點截圖 job 紅了多半是 `38` 的 `--pos`／`--face` 拍不出來）。screens 的 `12-ch1-tavern`、`16-ch1-dinner` 換了樣子、`38` 是新的，都在 CI 上看一眼。開工照常先跑 `scripts/check.sh`（最後 361 個測試）。
+- 上一輪（第 53 輪）的程式 commit：89487cc 酒館的美術（run 42685749481 全綠）、8a9cc47 酒館的截圖旗標＋CI 盤點截圖 `38-ch1-tavern-table`、9f058ca InteriorLook＋柯德家（run 42687206826 在第一次 import 時 Godot 偶發崩潰，已取消）、c17d3ad `check.sh` 第一次 import 失敗重試一次（**run 42689054966 收尾時還在跑——開工先看整個綠燈**；它包含上面全部的程式。盤點截圖 job 紅了多半是 `38` 的 `--pos`／`--face` 拍不出來）。**CI 的 import 崩潰再出現（重試也崩）就要查**：兩次都在第一次 import 重新匯入翻譯 CSV（`strings.csv`／`slice.csv`）時。screens 的 `12-ch1-tavern`、`16-ch1-dinner` 換了樣子、`38` 是新的，都在 CI 上看一眼。開工照常先跑 `scripts/check.sh`（最後 361 個測試）。
 - CI screens 的 `33`、`35`、`36`、`37` 第 53 輪看過（latest 的 54b7804 那次）：都拍得出來；`33-ch3-map` 上方多一行煤車那段的橫幅（「整車煤傾下去…」）跟對話疊在一起——多半只是截圖旗標直接跳過去造成的（正常玩橫幅早就消失），有空確認一下。
 - 第 52 輪的程式 commit：04bc275 白天的霜橋鎮三項（含 CI 盤點截圖 `37-ch1-dead-list`）、54b7804 酒館的壁爐（04bc275 run 42677044581 全綠含盤點截圖；**54b7804 run 42677885727 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑——開工先看整個綠燈**）。`37` 本機看過；screens 的 `33`～`36` 也還沒在 CI 上看過。開工照常先跑 `scripts/check.sh`（最後 358 個測試）。
 - 上一輪（第 51 輪）的程式 commit：94b8b0f 掙脫戰（含 CI 盤點截圖 `36-ch3-struggle`）、2f3ac7f 閘道的小油燈、bf36f5f 掙脫戰的 HUD 目標（94b8b0f run 42667540276 全綠含盤點截圖；**bf36f5f run 42669199093 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑——開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=struggle` 拍不出來）。screens 的 `33`～`36` 還沒在 CI 上看過（`36` 本機看過）；`30-ch3-pinned`、`31-ch3-hang` 加了油燈之後也看一眼。開工照常先跑 `scripts/check.sh`（最後 353 個測試）。
