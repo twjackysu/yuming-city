@@ -90,6 +90,10 @@ const WALK_SPEED: float = 1.15
 const TURN_RATE: float = 2.6
 const HEART_REACH: float = 0.9
 const BED_LIMIT_X: float = 2.2
+## 白盒步伐：一步多久（秒，一抬一晃）、抬多高、左右晃幾弧度
+const GAIT_SEC: float = 1.1
+const GAIT_LIFT: float = 0.07
+const GAIT_ROLL: float = 0.05
 ## 鏈子鬆開、掉到河床上要多久
 const DROP_SEC: float = 0.6
 ## 諾恩重現時的心跳（每 NOEN_RACE_SEC 秒一聲，比假心臟快）：只在牠醒著、會聽到的時候響——讓玩家聽得出「我的心跳變快了」。
@@ -810,6 +814,8 @@ func _update_follow(player: PlayerController, delta: float) -> void:
 		Game.session.state.set_flag("ch3.heard_noen", true)
 		_banner("CH3_HEARS_NOEN", 4.5)
 	follow_kind = kind
+	if kind != HeartTargets.DECOY:
+		_gait(false)
 	if kind == HeartTargets.NONE:
 		return
 	var target: Vector3 = pick["pos"] as Vector3
@@ -821,6 +827,7 @@ func _update_follow(player: PlayerController, delta: float) -> void:
 		return
 	# x 被河道寬度夾住時只會無限逼近 HEART_REACH，留一點餘裕
 	if dist <= HEART_REACH + 0.05:
+		_gait(false)
 		if not reached[heart_spot]:
 			reached[heart_spot] = true
 			Game.session.state.set_flag("ch3.decoy_reached_%d" % heart_spot, true)
@@ -829,7 +836,21 @@ func _update_follow(player: PlayerController, delta: float) -> void:
 	var np: Vector3 = from + to / dist * minf(WALK_SPEED * walk_scale * delta, dist - HEART_REACH)
 	np.x = clampf(np.x, -BED_LIMIT_X, BED_LIMIT_X)
 	_undertaker.global_position = np
+	_gait(true)
 	_check_lured()
+
+
+## 沒有走路動畫的白盒步伐：走的時候整隻一頓一頓地往上抬、左右晃（沉重、拖著鐵架）；停下來就站穩。
+func _gait(walking: bool) -> void:
+	if _undertaker == null:
+		return
+	if not walking:
+		_undertaker.global_position.y = BED_Y
+		_undertaker.rotation.z = 0.0
+		return
+	var ph: float = _t * TAU / GAIT_SEC
+	_undertaker.global_position.y = BED_Y + GAIT_LIFT * absf(sin(ph))
+	_undertaker.rotation.z = GAIT_ROLL * sin(ph)
 
 
 ## 走到閘道口：段落 3 完成（ch3.decoy_done → 檢查點 ch3_lured）→ 段落 4 煤車待續。
