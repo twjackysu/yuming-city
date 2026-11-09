@@ -92,6 +92,7 @@
 
 ## 6. 角色模型（等 Jacky 交件）
 
+- **第 40 輪收尾時（15:13）Jacky 又推了 c3059c8「art: consolidate Noen into three 2K PBR materials」**（諾恩合併成 3 個材質，回應 FOR_JACKY 第 4 項）——下一輪開工先看它的 README／預覽圖，更新 FOR_JACKY 第 4 項（材質合併那句對諾恩可以拿掉）；照舊沒放到 `art-inbox/characters/` 就不要接進遊戲。
 - 第 40 輪（11/9 14:45）Jacky 推了**諾恩綁帶修整**（左手移到前襟外、頭髮法線、頸部接縫；還是 11 材質）與**送葬者六個關節定位點**（`FrameJoint_L0/L1/L2`、`FrameJoint_R0/R1/R2`，由下往上、frame_root 底下的 Node3D，位置在 `art-inbox/studies/undertaker/joint_locators.json`），README 一樣是未驗收、**不要接進遊戲**；意見寫在 FOR_JACKY 第 4 項。正式交件時：`Undertaker` 的鐵架關節弱點改用這六個節點的位置（現在是程序鐵架上的固定位置）。
 
 - 第 35 輪（11/9 09:29）Jacky 推了**送葬者綁骨架候選**（`art-inbox/studies/undertaker/`：53,259 面、71 骨骼、3 材質、walk、鎖鏈接地、弱點材質 `M_FrameJoint`）與 CMU 握劍研究（`docs/art-trials/cmu-sword/`），README 一樣寫明未驗收、**不要接進遊戲**；意見寫在 FOR_JACKY 第 4 項（橫桿頂面一條亮白、正式版請留關節骨骼或 Marker）。**之後真的用到 CMU 動捕時，`docs/CREDITS.md` 要照 cmu-sword README 的致謝原文加上去**（CMU 允許商業使用、要求致謝、禁止轉售資料本身）。
