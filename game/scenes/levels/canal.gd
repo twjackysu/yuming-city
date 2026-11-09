@@ -108,6 +108,9 @@ var in_drain: bool = false
 var last_reaction: String = ""
 var _drain_armed: bool = true
 var _reaction_tweens: Array[Tween] = []
+## 胸口銅光的心跳速度：平常 HEART_BPM；轉頭之後跟著席菈敲的速度（RhythmTrial.TARGET_BPM）、從那一下開始算
+var heart_bpm: float = HEART_BPM
+var _heart_phase: float = 0.0
 var _torso: Node3D
 var _plate: Node3D
 ## 截圖用（`--canal-at=edge`）：站在岸邊不開對話、彌夏不跟
@@ -253,7 +256,7 @@ func _process(delta: float) -> void:
 	if _pivot != null:
 		_pivot.rotation.z = deg_to_rad(SWAY_DEG) * sin(_t * SWAY_RATE)
 		_pivot.rotation.x = deg_to_rad(SWAY_DEG * 0.45) * sin(_t * SWAY_RATE * 0.71 + 1.3)
-	var beat: float = heartbeat(_t)
+	var beat: float = heartbeat(_t - _heart_phase, heart_bpm)
 	if _clapper_light != null:
 		_clapper_light.light_energy = CLAPPER_ENERGY * (0.35 + 0.65 * beat)
 	if _clapper_mat != null:
@@ -261,8 +264,8 @@ func _process(delta: float) -> void:
 
 
 ## 鐘舌的光：一次心跳兩拍（咚、咚——停），0～1。
-static func heartbeat(t: float) -> float:
-	var period: float = 60.0 / HEART_BPM
+static func heartbeat(t: float, beats_per_minute: float = HEART_BPM) -> float:
+	var period: float = 60.0 / beats_per_minute
 	var p: float = fposmod(t, period) / period
 	var first: float = exp(-pow((p - 0.06) / 0.045, 2.0))
 	var second: float = 0.6 * exp(-pow((p - 0.24) / 0.05, 2.0))
@@ -386,6 +389,7 @@ func _on_rhythm_line(_speaker_key: String, text_key: String) -> void:
 ## 轉頭：先回到正面 → 提示音（設定可關）→ 上半身轉向銅片、停住；胸口的銅光跟著敲的速度亮。
 func _play_reaction(tempo: String, r: String) -> void:
 	skip_reaction()
+	heart_bpm = HEART_BPM
 	last_reaction = r
 	if _torso == null:
 		return
@@ -406,6 +410,7 @@ func _play_reaction(tempo: String, r: String) -> void:
 				tw.tween_callback(_cue)
 			tw.tween_interval(CUE_LEAD)
 			tw.tween_property(_torso, "rotation:y", deg_to_rad(_turn_sign() * TURN_DEG), 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			tw.tween_callback(_sync_heart)
 		RhythmTrial.TILT:
 			tw.tween_property(_torso, "rotation:z", deg_to_rad(TILT_DEG), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 			tw.tween_interval(1.1)
@@ -429,6 +434,14 @@ func skip_reaction() -> void:
 	_torso.rotation = Vector3(0.0, deg_to_rad(_turn_sign() * TURN_DEG) if last_reaction == RhythmTrial.TURN else 0.0, 0.0)
 	if _pivot != null:
 		_pivot.position.y = BEAM_Y
+	if last_reaction == RhythmTrial.TURN:
+		_sync_heart()
+
+
+## 轉頭之後：胸口的銅光跟著敲的速度一起亮。
+func _sync_heart() -> void:
+	heart_bpm = RhythmTrial.TARGET_BPM
+	_heart_phase = _t
 
 
 ## 上半身往哪邊轉才是對著銅片（牠面朝東南，銅片在東岸）。

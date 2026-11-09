@@ -898,6 +898,7 @@ func _chapter3_observe(canal: StoryLevel, alt: bool) -> void:
 		canal.call("skip_reaction")
 		if want == RhythmTrial.TURN:
 			assert_true(absf(float(canal.call("torso_turn_deg"))) > 30.0, "轉頭：上半身轉向銅片，停在那裡")
+			assert_eq(float(canal.get("heart_bpm")), RhythmTrial.TARGET_BPM, "轉頭之後胸口的銅光跟著敲的速度亮")
 			assert_eq(runner.visible_choices.size(), 2, "轉頭之後：就是這個速度／再試一次")
 			assert_eq(str(runner.visible_choices[0]["text"]), "DLG_CH3_RHY_C_THIS", "就是這個速度。")
 			runner.choose(0)
@@ -905,6 +906,7 @@ func _chapter3_observe(canal: StoryLevel, alt: bool) -> void:
 		assert_eq(runner.visible_choices.size(), 1, "沒轉頭：只能再試一次")
 		assert_eq(str(runner.visible_choices[0]["text"]), "DLG_CH3_RHY_C_AGAIN")
 		assert_true(absf(float(canal.call("torso_turn_deg"))) < 1.0, "沒有轉頭（%s）" % tempo)
+		assert_eq(float(canal.get("heart_bpm")), float(canal.get("HEART_BPM")), "沒轉頭：銅光照自己的速度（%s）" % tempo)
 		runner.choose(0)
 		left -= 1
 		assert_eq(runner.visible_choices.size(), left, "試過的節奏從選項消失")
