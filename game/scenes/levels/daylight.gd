@@ -1070,6 +1070,11 @@ func _build_steles() -> void:
 		var stele := _solid("Stele_" + id, Vector3(1.0, 2.3, 0.32), pos + Vector3(0, 1.15, 0), black)
 		stele.set_meta("stele_id", id)
 		_solid("SteleBase", Vector3(1.3, 0.2, 0.6), pos + Vector3(0, 0.1, 0), _stone_mat, false)
+		# 石框（第 56 輪，D-174）：兩側方石立柱＋頂上一塊突出的淺色石蓋，黑石嵌在中間（之前是一塊黑方塊）
+		for side: int in [-1, 1]:
+			_trim.add_box_at(Vector3(0.12, 2.3, 0.42), pos + Vector3(float(side) * 0.56, 1.35, 0), _stone_mat, false)
+		_trim.add_box_at(Vector3(1.36, 0.16, 0.5), pos + Vector3(0, 2.5 + 0.08, 0), trim_mat(), false)
+		_trim.add_box_at(Vector3(1.16, 0.1, 0.4), pos + Vector3(0, 2.66 + 0.05, 0), trim_mat(), false)
 		var label := Label3D.new()
 		label.name = "SteleNames_" + id
 		label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
