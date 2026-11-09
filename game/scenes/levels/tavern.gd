@@ -703,11 +703,95 @@ func _puppet(node_name: String, pos: Vector3, yaw_deg: float, coat: Color, trim:
 func _build_people() -> void:
 	# 席菈：白短斗篷、灰藍滾邊（照 Sheila 的配色）；坐在傷者旁邊
 	_puppet("Sheila", Vector3(-3.6, 0.0, 0.4), 90.0, Color(0.74, 0.74, 0.76), Color(0.36, 0.42, 0.5))
-	# 彌夏：墨綠過長外衣，抱著沒有指針的鐘（先用小木箱代替）
+	# 彌夏：墨綠過長外衣，抱著沒有指針的鐘（第 57 輪：小木箱換成真的座鐘，D-175）
 	_puppet("Misha", Vector3(-1.8, 0.0, -1.2), 160.0, Color(0.16, 0.27, 0.21), Color(0.3, 0.26, 0.2))
-	_box("ClocklessClock", Vector3(0.32, 0.36, 0.22), Vector3(-1.2, 0.98, -2.2), Color(0.42, 0.32, 0.2), false)
+	_build_clockless_clock(CLOCK_POS)
 	# 酒館老闆：吧台後面
 	_puppet("Keeper", Vector3(5.4, 0.0, -2.4), -90.0, Color(0.3, 0.22, 0.16), Color(0.5, 0.44, 0.36))
 	# 傷者：躺在長椅上（仰躺，頭朝 +Z）
 	for i: int in 2:
 		_puppet("Wounded%d" % i, Vector3(-5.8, 0.62, -2.4 + i * 2.4), 0.0, Color(0.24, 0.24, 0.26), Color(0.5, 0.2, 0.18), "back")
+
+
+# ---------------------------------------------------------------- 彌夏的鐘（第 57 輪，D-175）
+# 沒有指針的座鐘：木殼（上面半圓頂）、底座、米白鐘面＋黃銅圈、十二道刻度，中間只剩一根空的軸（指針不見了）。
+# 鐘面朝 +Z（酒館門那一側），放在桌上。
+
+## 鐘的底部中心（桌面上）
+const CLOCK_POS: Vector3 = Vector3(-1.2, 0.8, -2.2)
+const CLOCK_W: float = 0.3
+const CLOCK_BODY_H: float = 0.26
+const CLOCK_D: float = 0.17
+const CLOCK_FACE_R: float = 0.105
+const CLOCK_HOUR_MARKS: int = 12
+
+
+func _build_clockless_clock(at: Vector3) -> void:
+	var clock := Node3D.new()
+	clock.name = "ClocklessClock"
+	clock.position = at
+	add_child(clock)
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.36, 0.22, 0.12)
+	wood.roughness = 0.45
+	var brass := StandardMaterial3D.new()
+	brass.albedo_color = Color(0.62, 0.48, 0.24)
+	brass.metallic = 0.75
+	brass.roughness = 0.35
+	var face_mat := StandardMaterial3D.new()
+	face_mat.albedo_color = Color(0.86, 0.81, 0.69)
+	face_mat.roughness = 0.7
+	var ink := StandardMaterial3D.new()
+	ink.albedo_color = Color(0.12, 0.1, 0.09)
+	_clock_part(clock, "ClockBase", _box_mesh(Vector3(CLOCK_W + 0.06, 0.035, CLOCK_D + 0.05)), Vector3(0, 0.0175, 0), Vector3.ZERO, wood)
+	_clock_part(clock, "ClockBody", _box_mesh(Vector3(CLOCK_W, CLOCK_BODY_H, CLOCK_D)), Vector3(0, 0.035 + CLOCK_BODY_H * 0.5, 0), Vector3.ZERO, wood)
+	# 上面半圓頂：一個橫躺的圓柱（一半埋進鐘身）
+	var dome := CylinderMesh.new()
+	dome.top_radius = CLOCK_W * 0.5
+	dome.bottom_radius = CLOCK_W * 0.5
+	dome.height = CLOCK_D
+	dome.radial_segments = 24
+	_clock_part(clock, "ClockDome", dome, Vector3(0, 0.035 + CLOCK_BODY_H, 0), Vector3(90, 0, 0), wood)
+	var face_y: float = 0.035 + CLOCK_BODY_H * 0.62
+	var front: float = CLOCK_D * 0.5
+	var face := CylinderMesh.new()
+	face.top_radius = CLOCK_FACE_R
+	face.bottom_radius = CLOCK_FACE_R
+	face.height = 0.01
+	face.radial_segments = 32
+	_clock_part(clock, "ClockFace", face, Vector3(0, face_y, front + 0.004), Vector3(90, 0, 0), face_mat)
+	var bezel := TorusMesh.new()
+	bezel.inner_radius = CLOCK_FACE_R - 0.004
+	bezel.outer_radius = CLOCK_FACE_R + 0.016
+	bezel.rings = 32
+	bezel.ring_segments = 8
+	_clock_part(clock, "ClockBezel", bezel, Vector3(0, face_y, front + 0.008), Vector3(90, 0, 0), brass)
+	for i: int in CLOCK_HOUR_MARKS:
+		var a: float = float(i) / float(CLOCK_HOUR_MARKS) * TAU
+		var long_mark: bool = i % 3 == 0
+		var mark := _box_mesh(Vector3(0.006, 0.022 if long_mark else 0.012, 0.004))
+		var r: float = CLOCK_FACE_R - (0.02 if long_mark else 0.015)
+		_clock_part(clock, "ClockMark%d" % i, mark, Vector3(sin(a) * r, face_y + cos(a) * r, front + 0.011), Vector3(0, 0, -rad_to_deg(a)), ink)
+	# 中間一根空的軸：指針不見了
+	var spindle := CylinderMesh.new()
+	spindle.top_radius = 0.006
+	spindle.bottom_radius = 0.006
+	spindle.height = 0.03
+	spindle.radial_segments = 8
+	_clock_part(clock, "ClockSpindle", spindle, Vector3(0, face_y, front + 0.02), Vector3(90, 0, 0), brass)
+
+
+static func _box_mesh(size: Vector3) -> BoxMesh:
+	var bm := BoxMesh.new()
+	bm.size = size
+	return bm
+
+
+func _clock_part(parent: Node3D, node_name: String, mesh: Mesh, pos: Vector3, rot_deg: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = pos
+	mi.rotation_degrees = rot_deg
+	parent.add_child(mi)

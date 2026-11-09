@@ -33,3 +33,23 @@ func test_door_wet_spot_covers_the_door() -> void:
 	var door: Vector3 = tavern.get("DOOR_POS") as Vector3
 	assert_true(Vector2(wet.x - door.x, wet.y - door.z).length() < 0.5, "雪水在門口")
 	assert_true(wet.z >= 1.0 and wet.w > 0.0 and wet.w <= 1.0, "大小與強度合理")
+
+
+## 第 57 輪（D-175）：彌夏的鐘是沒有指針的座鐘（之前是小木箱）：鐘面在鐘身前面、刻度在鐘面裡、只剩一根軸
+func test_clockless_clock_has_face_but_no_hands() -> void:
+	var script: GDScript = load("res://scenes/levels/tavern.gd") as GDScript
+	var c: Dictionary = script.get_script_constant_map()
+	assert_eq(int(c["CLOCK_HOUR_MARKS"]), 12, "十二道刻度")
+	assert_true(float(c["CLOCK_FACE_R"]) * 2.0 < float(c["CLOCK_W"]), "鐘面比鐘身窄")
+	assert_true(float(c["CLOCK_FACE_R"]) < float(c["CLOCK_BODY_H"]) * 0.62 + 0.035, "鐘面不超出底座")
+	var lv: Node3D = script.new() as Node3D
+	lv.call("_build_clockless_clock", Vector3.ZERO)
+	var clock: Node = lv.get_node("ClocklessClock")
+	for n: String in ["ClockBody", "ClockDome", "ClockFace", "ClockBezel", "ClockMark0", "ClockSpindle"]:
+		assert_true(clock.has_node(n), "座鐘有 " + n)
+	var hands: int = 0
+	for ch: Node in clock.get_children():
+		if str(ch.name).contains("Hand"):
+			hands += 1
+	assert_eq(hands, 0, "沒有指針")
+	lv.free()
