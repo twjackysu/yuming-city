@@ -159,6 +159,7 @@
 
 ## 6. 角色模型（等 Jacky 交件）
 
+- **c597dfa（11/9 23:57）諾恩護傷 idle**（`idle_loop`＋`walk_loop` 同一個 GLB，Godot 匯入成 `idle`／`walk`；右前臂夾板護在身前）與**席菈大劍重製＋三材質**（713e843，23:24）第 49 輪看過，意見寫在 FOR_JACKY 第 4 項。Jacky 新增 `docs/ART_DELIVERY_STATUS.md`（逐項交件狀態，正式驗收 0 件）——角色進度以這份為準。照舊沒放到 `art-inbox/characters/` 就不要接進遊戲；正式接諾恩時 `idle` 是護傷姿勢，只在有夾板（`Puppet.set_splint`）的時候用，沒夾板的段落要另一段一般待機。
 - **c3059c8（11/9 14:58）諾恩三材質版本**（`M_Noen_Skin`／`M_Noen_Clothes`／`M_Noen_Hair`，各一組 2K base color＋normal＋ORM；三角面與 60 根骨骼不變）第 41 輪看過，意見寫在 FOR_JACKY 第 4 項（大衣前襬下緣還是像硬板往外翹、雙腳離地）。**正式接進遊戲時**：Godot 4.7.2 匯入 GLB 不吃 `KHR_materials_specular`，頭髮高光會回到 0.5——Jacky 的 `noen_material_import.gd` 把 `M_Noen_Hair` 設成 0.06；遊戲端在 `CharacterModels` 載入後照名字把這個材質的 `metallic_specular` 設 0.06（不用 import script）。照舊沒放到 `art-inbox/characters/` 就不要接進遊戲。
 - 第 40 輪（11/9 14:45）Jacky 推了**諾恩綁帶修整**（左手移到前襟外、頭髮法線、頸部接縫；還是 11 材質）與**送葬者六個關節定位點**（`FrameJoint_L0/L1/L2`、`FrameJoint_R0/R1/R2`，由下往上、frame_root 底下的 Node3D，位置在 `art-inbox/studies/undertaker/joint_locators.json`），README 一樣是未驗收、**不要接進遊戲**；意見寫在 FOR_JACKY 第 4 項。正式交件時：`Undertaker` 的鐵架關節弱點改用這六個節點的位置（現在是程序鐵架上的固定位置）。
 
