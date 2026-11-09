@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 39 輪）的程式 commit：4cbbb9e 段落 5 一百七十二階、6d5a11c 畫面調整＋CI 截圖 `14-ch1-stairs`、2089466 段落 6 柯德（最後一個，run 42569871509；前兩個的 run 被 concurrency 取消，內容都在 2089466 裡）。**開工先看 run 42569871509 整個綠燈、screens 有沒有 `14-ch1-stairs`**。開工照常先跑 `scripts/check.sh`（最後 320 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 39 輪）的程式 commit：4cbbb9e 段落 5 一百七十二階、6d5a11c 畫面調整＋CI 截圖 `14-ch1-stairs`、2089466 段落 6 柯德、d497b9d 樓梯裡油燈先不投影子（最後一個；前面幾個的 run 被 concurrency 取消，內容都在 d497b9d 裡）。**開工先看 d497b9d 的 run 整個綠燈、screens 有沒有 `14-ch1-stairs`**。開工照常先跑 `scripts/check.sh`（最後 320 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 38 輪的 f1e42f9 run 42563697609 已全綠（第 39 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 38 輪已把第 29～33 輪合併成每日摘要）；超過約 300 行時把第 34～37 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
@@ -78,7 +78,7 @@
   - 主線流程測試 `_chapter1()`（`test_slice_playthrough.gd`）：章節卡 → 酒館 → 中午 → 重來 → 晚餐 → 畫地圖＋標記 → 重來。新段落在這裡往後接。
 - **已完成（第 38 輪，D-151）**：段落 4 白天的霜橋鎮。`ch1_main` 多 3 個階段 `day_north`（檢查點 `ch1_day_town`）→ `ada_lamp` → `stairs`（檢查點 `ch1_lamp`，done_when `ch1.stairs_bottom` 還沒有人設）。酒館 `leave_tavern()`；`frostbridge.gd` 的「第 1 章段落 4」一節：`day`、`is_day_chapter(s)`、`dev_start_day(s, stage)`、`_build_day()`（熄燈、石拱停用、`NorthDaySpot`、Ada Puppet `ADA_POS`）、`_update_day()`、`_on_day_cellar()`（現在顯示「待續」）；`FrostbridgeLook.build_environment(parent, day)`／`day_sky()`／`unlight(color)`；`PlayerController.has_oil_lamp()`／`_update_lamp()`（旗標 `ch1.lamp_received`）。截圖 `--level=frostbridge --day[=ada_lamp|stairs] [--at=north] [--face=ada]`。主線流程測試 `_chapter1_day()`／`_assert_day_town()`。
 - **已完成（第 39 輪，D-152／D-153）**：段落 5＋6。新關卡 `scenes/levels/stairs.gd`（照酒館的 tscn 結構）：常數 `H`／`W`／`DROP`／`FLIGHTS`／`TRAP_CORNER`，路線 `corner(k)`、`path_point(s)`、`path_param(p)`、`path_dir(s)`、`_side(s)`、`trap_entrance_s()`、`bottom_s()`；陷阱 `can_throw()`、`interact_hint()`、`throw_stone()`、`spring_trap(on_player)`（旗標 `ch1.stair_warned`／`ch1.stair_trap_sprung`／`ch1.stair_trap_soaked`／`ch1.stair_trap_talked`）；門 `open_gate_door()`、`_show_door_open()`（`GateDoorPivot`、`GateDoorway`、`Kord` 人偶）。對話 `ch1_stair_warn`／`ch1_stair_trap`／`ch1_kord_door`（`ch1.kord_first`＝hands|help|map、最後設 `ch1.met_kord`）。主線多 `daylight_gate`（檢查點 `ch1_stairs_bottom`）→ `daylight_city`（done_when `ch1.entered_daylight`，還沒有人設；現在跟柯德說完話顯示「待續」）。截圖 `--level=stairs [--stairs-at=trap|mid|bottom] [--stairs-sprung] [--stairs-door]`（一張約 30 秒）。流程測試 `_chapter1_stairs()` 接在 `_chapter1_day()` 後面。
-  - 還可以：樓梯截圖右側那條黑色直帶查一下（先試把 Player 以外的東西一個個藏掉截圖，D-133 的做法）；牆面現在是素色方塊，美術後補時可以用半木構 shader 的石塊模式；「換手的小動作」（油燈換到右手再換回來，07 系統 3）；柯德的門往外開會擋住一半門洞，之後可以改成往裡開＋牆上真的挖洞（現在是牆前貼一片發光板）。
+  - 還可以：**樓梯裡油燈的影子暫時關掉**（`_brighten_lamp`，d497b9d）：開著時畫面右側一整條從上到下的黑帶（藏掉席菈、彌夏還在；關掉影子就沒了），懷疑是諾恩自己的身體擋了油燈（D-118 的 `SELF_LAYER`／`LANTERN_SHADOW_CASTERS` 在換成油燈後有沒有漏掉哪個部件？白天的霜橋鎮也看一下），查清楚再打開；牆面現在是素色方塊，美術後補時可以用半木構 shader 的石塊模式；「換手的小動作」（油燈換到右手再換回來，07 系統 3）；柯德的門往外開會擋住一半門洞，之後可以改成往裡開＋牆上真的挖洞（現在是牆前貼一片發光板）。
 - **下一步（依序）**：
   1. **段落 7：沒有影子的城**（新關卡 `daylight`，照 07「關卡與美術」：DirectionalLight 關掉、`ambient_light` 高、穹頂白燈 MultiMesh、窗戶緊閉；**只有諾恩的油燈開影子**，加一個場景斷言測試）。從 stairs 的門口銜接：`daylight_city` 階段走進門 → 設 `ch1.entered_daylight` → `Game.go_to_level("daylight")`（`LEVELS`、`CHECKPOINT_LEVELS` 加一列；`ch1_main` 再加段落 7 的階段）。壽命石碑（`game/data/daylight/residents.json`、互動列出 4～6 個名字與「還能活 N 天」、諾恩互動得到「上面沒有你的名字」）、女人用一天換半壺水（19 → 18）、空的淨化爐旁邊孩子的蔥盆（設 `ch1.saw_empty_furnace` → 攻略「入口的淨化爐」推翻）。柯德帶路（程序人偶，照彌夏的路線跟隨法或固定站點）。
   2. 段落 8～9（柯德家晚餐、兔子、撞柱）照 07 的表；第 1 章結尾接第 2 章章節卡（`ChapterCard.play(..., "CH2_CARD_*")`）。
