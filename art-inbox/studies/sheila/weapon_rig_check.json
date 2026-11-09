@@ -1,0 +1,11 @@
+{
+  "weapon_node": "Sheila_Broken_Sword",
+  "single_joint": "weapon_socket",
+  "materials": 3,
+  "embedded_pngs": 9,
+  "texture_dimensions": [
+    2048,
+    2048
+  ],
+  "passed": true
+}

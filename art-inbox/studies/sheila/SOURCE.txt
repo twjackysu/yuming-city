@@ -33,3 +33,5 @@ exported without skin at 30 fps. This is only a walk study, not the complete ani
 closed grip, weapon clearance and combat animations still require work and review.
 Further pending: cape folds/collision, material seams, hair/face quality, all other animation coverage,
 and actual game integration. Static structural checks do not certify AAA quality.
+
+2026-11-09 derivative: rebuilt faceted/tapered broken blade, central groove, curved guard, cylindrical wrapped grip and pommel in Blender; original project-created geometry and procedural metal/leather. Existing cape and all other character geometry retained. Three 2K PBR atlases rebaked with destination tangent normals. Blade stays a separately named skinned mesh with one weapon_socket influence. Existing source licenses and credits remain applicable. Rejected new cape/scan-material experiments are not used in this delivered GLB.

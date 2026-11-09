@@ -1,0 +1,23 @@
+{
+  "groups": [
+    {
+      "group": "Skin",
+      "vertices": 7910,
+      "triangles": 15576
+    },
+    {
+      "group": "Clothes",
+      "vertices": 11442,
+      "triangles": 17276
+    },
+    {
+      "group": "Hair",
+      "vertices": 3842,
+      "triangles": 5544
+    }
+  ],
+  "material_count": 3,
+  "textures": 9,
+  "texture_size": 2048,
+  "status": "visual_comparison_required"
+}
