@@ -1064,6 +1064,7 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 		canal.call("finish_climb")
 		assert_true(bool(canal.get("struggling")), "掙脫戰開始")
 		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_STRUGGLE_START", "提示：牠爬上岸了，打到牠跪下")
+		assert_eq((canal.get_node("Hud") as Hud).objective_text_key(), "CH3_STRUGGLE_OBJ", "目標換成：跟席菈一起把牠打到跪下")
 		assert_true(absf(freed.global_position.y) < 0.05 and freed.global_position.x > float(canal.get("CANAL_HALF_W")), "站在東岸上")
 		assert_true(Vector2(freed.global_position.x - player.global_position.x, freed.global_position.z - player.global_position.z).length() >= float(canal.get("STRUGGLE_MIN_GAP")) - 0.5, "沒有直接落在諾恩臉上")
 		assert_true(freed.is_in_group("enemies") and freed.is_in_group("damageable"), "變回敵人：席菈會打、諾恩打得到")
@@ -1087,6 +1088,7 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 		assert_true(bool(canal.get("struggle_won")) and not bool(canal.get("struggling")), "打到失衡跪下：掙脫戰結束")
 		assert_false(freed.is_in_group("enemies"), "跪下之後不再是敵人（席菈停手）")
 		assert_eq((canal.get_node("Hud") as Hud).banner_text(), "CH3_STRUGGLE_KNEEL", "提示：席菈把牠撞回運河")
+		assert_eq((canal.get_node("Hud") as Hud).objective_text_key(), s.objective_key(), "打贏：目標換回煤車那一句")
 		for i: int in 240:
 			await tree.process_frame
 			if _level() != canal:

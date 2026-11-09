@@ -74,6 +74,7 @@ CH3_CART_PINNED,(The whole cart tipped. Coal poured down and buried most of it.)
 CH3_CART_EARLY,"(Too early. The coal landed in front of it. It climbed over the heap and shook itself free—)",（太早了。煤落在牠前面——牠爬過煤堆，掙脫了。）
 CH3_CART_LATE,"(Too late. The coal only caught its frame. It tore itself loose—)",（太晚了。煤只砸到牠背後的鐵架——牠掙脫了。）
 CH3_STRUGGLE_START,"(It hauled itself up onto the bank. Knock it off balance—bring it to its knees.)",（牠爬上岸來了。把牠打到失去平衡、跪下來——）
+CH3_STRUGGLE_OBJ,Bring it to its knees with Sheila,跟席菈一起把牠打到跪下
 CH3_STRUGGLE_KNEEL,(It went down on one knee. Sheila drove her shoulder into it and sent it back over the edge.),（牠跪下了。席菈用肩膀一撞，把牠撞回運河裡。）
 CH3_STRUGGLE_RESET,"(A while later. Misha has loaded the cart again, and the false heart has drawn it back to the sluice. Try again.)",（過了一會兒。彌夏把煤重新裝上車，假心臟又把牠引回閘道口。再來一次。）
 Q_CH3_OBJ_MAP,"On the way back, Misha has something to say",回程的路上，彌夏有話要說

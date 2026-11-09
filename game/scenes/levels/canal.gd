@@ -2081,6 +2081,14 @@ func _begin_struggle() -> void:
 	if player is PlayerController:
 		(player as PlayerController).shake(0.35)
 	_banner("CH3_STRUGGLE_START", 4.5)
+	_struggle_objective(true)
+
+
+## 掙脫戰中 HUD 的目標換成「跟席菈一起把牠打到跪下」；打贏換回煤車那一句。
+func _struggle_objective(on: bool) -> void:
+	var hud: Hud = get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.override_objective("CH3_STRUGGLE_OBJ" if on else "")
 
 
 ## 掙脫戰中每物理幀：打到失衡跪下（或打掉一半的生命）就算贏。
@@ -2103,6 +2111,7 @@ func _struggle_kneel() -> void:
 	if player != null and player.lock_target == _undertaker:
 		player.lock_target = null
 	Game.session.set_flag("ch3.struggle_won", true)
+	_struggle_objective(false)
 	_banner("CH3_STRUGGLE_KNEEL", kneel_hold_sec + push_sec + fail_retry_sec)
 	var tw := create_tween()
 	tw.tween_interval(maxf(kneel_hold_sec, 0.001))
