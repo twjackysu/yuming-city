@@ -1484,7 +1484,7 @@ func _assert_bell_hall(hall: StoryLevel, tag: String) -> void:
 	assert_true(wall_mat != null and wall_mat.shader.resource_path == FrostbridgeLook.HALF_TIMBER_SHADER, tag + " 飯廳的牆是石塊＋灰泥")
 	if wall_mat != null:
 		assert_eq(float(wall_mat.get_shader_parameter("exterior")), 0.0, tag + " 室內牆不積雪")
-	for n: String in ["HallLamp/Bulb", "InnerCasingHead", "HallCasingHead", "CeilingBeam0", "FadedFrame0", "FadedFrameNail0", "TableStretcher", "IsaChair", "IsaOwnChair"]:
+	for n: String in ["HallLamp/Bulb", "InnerCasingHead", "HallCasingHead", "CeilingBeam0", "FadedFrame0", "FadedFrameNail0", "TableStretcher", "IsaChair", "IsaOwnChair", "InnerWallSouthW", "InnerWallSouthLintel"]:
 		assert_true(hall.has_node(n), tag + " 有 " + n)
 	var frames: Array = hall.get("FADED_FRAMES") as Array
 	assert_true(hall.has_node("FadedFrame%d" % (frames.size() - 1)), tag + " 每一塊白印都有")

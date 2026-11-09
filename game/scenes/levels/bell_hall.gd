@@ -1177,6 +1177,13 @@ func _build_inner_room() -> void:
 	_solid("InnerWallEastHead", Vector3(WALL_T, INNER_H - WINDOW_TOP, WINDOW_W), Vector3(wx, WINDOW_TOP + (INNER_H - WINDOW_TOP) * 0.5, WINDOW_Z), stone)
 	_build_window()
 	_solid("InnerWallNorth", Vector3(hx * 2.0 + 0.6, INNER_H, WALL_T), Vector3(0, INNER_H * 0.5, far - WALL_T * 0.5), stone)
+	# 飯廳北牆的背面（內室的南牆，回頭看門時看得到）：貼一層方石的薄板，不然是飯廳的灰泥＋壁柱（D-172）
+	var back_z: float = -ROOM_HALF.y - WALL_T - 0.01
+	var side_w: float = hx - DOOR_W * 0.5
+	for sx: float in [-1.0, 1.0]:
+		_solid("InnerWallSouth" + ("W" if sx < 0.0 else "E"), Vector3(side_w, WALL_H, 0.02),
+			Vector3(sx * (DOOR_W * 0.5 + side_w * 0.5), WALL_H * 0.5, back_z), stone, false)
+	_solid("InnerWallSouthLintel", Vector3(DOOR_W, WALL_H - DOOR_H, 0.02), Vector3(0, DOOR_H + (WALL_H - DOOR_H) * 0.5, back_z), stone, false)
 	# 飯廳的北牆只有 3.8 m 高：上面補一段到內室的天花板
 	_solid("InnerWallSouthUpper", Vector3(hx * 2.0, INNER_H - WALL_H, WALL_T), Vector3(0, WALL_H + (INNER_H - WALL_H) * 0.5, -ROOM_HALF.y - WALL_T * 0.5), stone, false)
 	_build_dial()
