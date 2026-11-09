@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 51 輪）的程式 commit：94b8b0f 掙脫戰（含 CI 盤點截圖 `36-ch3-struggle`）、2f3ac7f 閘道的小油燈（**收尾時兩個 run 都還在跑——開工先看 2f3ac7f 的 run 整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=struggle` 拍不出來）。screens 的 `33`～`36` 還沒在 CI 上看過（`36` 本機看過）；`30-ch3-pinned`、`31-ch3-hang` 加了油燈之後也看一眼。開工照常先跑 `scripts/check.sh`（最後 353 個測試）。
+- 上一輪（第 51 輪）的程式 commit：94b8b0f 掙脫戰（含 CI 盤點截圖 `36-ch3-struggle`）、2f3ac7f 閘道的小油燈、bf36f5f 掙脫戰的 HUD 目標（**收尾時 run 都還在跑——開工先看 bf36f5f 的 run 整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=struggle` 拍不出來）。screens 的 `33`～`36` 還沒在 CI 上看過（`36` 本機看過）；`30-ch3-pinned`、`31-ch3-hang` 加了油燈之後也看一眼。開工照常先跑 `scripts/check.sh`（最後 353 個測試）。
 - 第 50 輪的程式 commit：b031f69 段落 7 轉角（含 CI 盤點截圖 `34-ch3-corner`、`35-part1-end`；**run 42658889619 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑；Jacky 的 ce168d5 run 42659052614 也含本輪程式——開工先看這兩個的整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=corner|end` 拍不出來）。screens 的 `33`～`35` 還沒在 CI 上看過（`34`、`35` 本機看過）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。
 - 上一輪（第 49 輪）的程式 commit：7c36446 段落 5 倒吊（run 42647985244 全綠）、e4fce4a 段落 6 彌夏的圖、072a766 CI 盤點截圖 `33-ch3-map`（這兩個的 run 被 Jacky 的 c597dfa 取代；**c597dfa run 42649881926「測試與匯出」已綠，盤點截圖 job 收尾時還在跑——開工先看它是不是綠的**，紅了多半是 `--canal-at=map` 拍不出來）。screens 的 `31-ch3-hang`、`32-ch3-mud`、`33-ch3-map` 還沒在 CI 上看過（本機看過，見第 5 節第 49 輪）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。
 - 上一輪（第 48 輪）的程式 commit：c25654f 段落 4 煤車、fed7ddd 煤的顏色＋截圖構圖＋CI 盤點截圖 `30-ch3-pinned`（c25654f run 42638607537 全綠；**fed7ddd run 42638892653 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包還在跑——開工先看整個綠燈**，紅了看 log 修；盤點截圖 job 紅了多半是 `--canal-at=pinned` 拍不出來）。screens 的 `30-ch3-pinned` 還沒在 CI 上看過（本機看過：很暗，見第 5 節「還可以」）。開工照常先跑 `scripts/check.sh`（最後 344 個測試）。
@@ -164,11 +164,11 @@
   - 彌夏：`struggling` 或 `climbing` 時 `_misha_hide()` 跑到 `misha_hide_spot(諾恩, 牠)`（諾恩背後 `MISHA_HIDE_GAP`、外側岩壁邊）。
   - 閘道的小油燈 `_build_sluice_lamp()`：`SluiceLampPivot`（掛鉤 `SLUICE_LAMP_HOOK`，南邊橫樑底）＋鏈子 `SLUICE_LAMP_DROP` 1.4 m＋燈罩＋`SluiceLamp`（投影子、`SLUICE_LAMP_ENERGY`／`RANGE`）；`_sway_lamp()` 讓它晃；`sluice_lamp()`。
   - 截圖 `--canal-at=struggle`（諾恩站 `STRUGGLE_SHOT_NOEN`、牠剛爬上岸、席菈在旁邊、彌夏躲好）。流程測試 `_chapter3_cart()` 的 alt 路線、單元 `test_undertaker::test_struggle_mode_drops_charge_and_phase_two`、`test_canal_sluice` 的落點與彌夏。
-  - 還可以：**掙脫戰中 HUD 目標還是煤車那一句**（目標平常淡掉、按日記鍵才出現；要改就讓關卡能覆寫 `Hud._set_objective` 的 key，例如 `CH3_STRUGGLE_OBJ`「打到牠失去平衡」）；爬上岸只是位置補間（正式模型要攀爬動作）；席菈「用肩膀撞」只有旁白（可以讓她跑到牠旁邊再撞）；`pinned` 那張從西岸遠看只多了東牆一片暖光（實機看看夠不夠，不夠就把燈再往河道中間移或調亮）；掙脫戰的難度只能等 Jacky 試玩（失衡上限 140、彌夏躲的位置）。
+  - 掙脫戰中 HUD 的目標換成 `CH3_STRUGGLE_OBJ`「跟席菈一起把牠打到跪下」（`Hud.override_objective(key)`，空字串換回；任務換階段、重來會自動換回；暫停選單與日記還是顯示任務本身的目標）。
+  - 還可以：爬上岸只是位置補間（正式模型要攀爬動作）；席菈「用肩膀撞」只有旁白（可以讓她跑到牠旁邊再撞）；`pinned` 那張從西岸遠看只多了東牆一片暖光（實機看看夠不夠，不夠就把燈再往河道中間移或調亮）；掙脫戰的難度只能等 Jacky 試玩（失衡上限 140、彌夏躲的位置）。
 - **下一步（依序）**：
   1. 白天的霜橋鎮還可以：亮窗白天還是暖黃（屋裡有人點燈，說得通；太多就在 `_build_day` 把部分窗調暗）、死者名單牆（07 原本寫的，白盒先省略；可以在梨販攤旁加一塊貼滿紙的木板＋互動看名字）、北街未救出的受困者白天還躺在原地（`RescueSite` 不能互動；要不要換成蓋著布的樣子再決定）。
-  2. 掙脫戰的 HUD 目標（見上面第 51 輪「還可以」第一項；小，順手做）。
-  3. 酒館、樓梯、白晝城、柯德家、乾運河的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。
+  2. 酒館、樓梯、白晝城、柯德家、乾運河的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
 - 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。白天的霜橋鎮：`--level=frostbridge --day --at=north`（一進北街就開對話）、`--day=stairs --face=ada --face-off=-25`（一張約 2 分鐘）。
 
