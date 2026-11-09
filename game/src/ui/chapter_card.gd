@@ -57,6 +57,14 @@ func _init() -> void:
 	_title = _label(64, INK, UiFonts.TITLE_SERIF)
 	_title.name = "Title"
 	_box.add_child(_title)
+	# 章名下一道細細的暖金色線
+	var rule := ColorRect.new()
+	rule.name = "Rule"
+	rule.color = Color(WARM, 0.55)
+	rule.custom_minimum_size = Vector2(140.0, 1.5)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_box.add_child(rule)
 
 
 func _label(font_size: int, color: Color, font_path: String) -> Label:
@@ -82,6 +90,15 @@ func start(number_key: String, title_key: String, time_scale: float = 1.0) -> vo
 	_tween.tween_interval(HOLD_SEC * k)
 	_tween.tween_property(_box, "modulate:a", 0.0, TEXT_IN_SEC * 0.6 * k)
 	_tween.tween_callback(finish)
+
+
+## 截圖用：停在章名完整出現的那一刻（不會結束、不呼叫 on_done）。
+func hold_still() -> void:
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_black.modulate.a = 1.0
+	_box.modulate.a = 1.0
+	finished = true
 
 
 func _process(delta: float) -> void:

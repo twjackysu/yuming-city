@@ -68,6 +68,12 @@ func _ready() -> void:
 	# 截圖用：`-- --level=frostbridge --achievement=ACH_NINE_SECONDS` 一開始就出現那張解鎖小卡（不會真的解鎖）
 	if args.has("achievement"):
 		achievement_toast.enqueue(str(args["achievement"]))
+	# 截圖用：`-- --level=frostbridge --chapter-card` 關卡上蓋第 1 章的章節卡（播完不換關卡）
+	if args.has("chapter-card"):
+		get_tree().create_timer(0.2).timeout.connect(func() -> void:
+			var scene: Node = get_tree().current_scene
+			if scene != null:
+				ChapterCard.play(scene, "CH1_CARD_NUMBER", "CH1_CARD_TITLE", Callable()).hold_still())
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
 		level = "benchmark"
