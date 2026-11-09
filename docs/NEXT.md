@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 36 輪）最後一次程式 push 是 2140c8f（日記的攻略筆記一段），CI 結果見 PROGRESS 第 36 輪的收尾補記；開工照常先跑 `scripts/check.sh`（最後 312 個測試）。第 36 輪的程式 commit：9b8e2ac 成就（run 42552114522 全綠）、a25cc45 攻略筆記邏輯層＋存檔 v2、855b1da 成就圖示替代版（CI 步驟）、2140c8f 日記的攻略筆記。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 36 輪）最後一次程式 push 是 2140c8f（日記的攻略筆記一段），run 42553368535 的測試與匯出已綠、截圖／打包／latest 收尾時還在跑——**開工先看這個 run 整個綠燈**（紅了多半是截圖或打包步驟，看 log）；開工照常先跑 `scripts/check.sh`（最後 312 個測試）。第 36 輪的程式 commit：9b8e2ac 成就（run 42552114522 全綠）、a25cc45 攻略筆記邏輯層＋存檔 v2、855b1da 成就圖示替代版（CI 步驟）、2140c8f 日記的攻略筆記。紅了就看 log 修，修不好 `git revert`。
 - **latest 有新的建置後**看：`achievement-icons.zip`（16 張，`<ID>_ACHIEVED.png`／`_UNACHIEVED.png`）與 `achievements_sheet.png` 有沒有附上（CI「Steam 膠囊圖替代版」步驟是 continue-on-error，沒附就看 log 有沒有「[achievement-icons] 8 個成就 × 2 張」）。
 - `docs/PROGRESS.md` 約 190 行（第 34 輪已把第 24～28 輪合併成每日摘要）；超過約 300 行時把第 29～33 輪合併。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
