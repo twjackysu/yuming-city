@@ -28,6 +28,9 @@ const SPAWN: Vector3 = Vector3(0.0, 0.0, 16.2)
 const FURNACE_POS: Vector3 = Vector3(4.2, 0.0, 14.0)
 const FURNACE_RANGE: float = 3.6
 const ONION_POS: Vector3 = Vector3(3.0, 0.0, 12.9)
+## 截圖 `--daylight-at=gate`：站在廣場中間回頭看後門（右）與門房（左）
+const GATE_VIEW_POS: Vector3 = Vector3(1.6, 0.0, 11.2)
+const GATE_VIEW_YAW: float = 160.0
 ## 石碑 id -> 位置（面朝 +Z：從門那邊走過來正好看得到字）
 const STELES: Dictionary = {
 	"stele_gate": Vector3(2.3, 0.0, 3.2),
@@ -130,9 +133,10 @@ func _ready() -> void:
 	# 第 1 章已經完成（開發旗標從後面的章節直接進來）就不動
 	if not (Game.session.quests.stage_of(QUEST) in STAGES) and not Game.session.quests.is_done(QUEST):
 		dev_start_daylight(Game.session)
-	# 截圖用：`--daylight-at=stele` 看完爐子、站在第一塊石碑前（瑪菈換水之前）
+	# 截圖用：`--daylight-at=stele` 看完爐子、站在第一塊石碑前（瑪菈換水之前）；
+	# `--daylight-at=gate` 看完爐子、回頭看後門與門房；`backdoor` 站在後門口看通道裡；`laundry` 看淨化爐與晾衣繩（第 57 輪）
 	var at: String = str(dev_args.get("daylight-at", ""))
-	if at in ["stele", "home", "dinner", "yard"]:
+	if at in ["stele", "gate", "backdoor", "laundry", "home", "dinner", "yard"]:
 		Game.session.state.set_flag("ch1.daylight_intro", true)
 		Game.session.set_flag("ch1.saw_empty_furnace", true)
 		Game.session.state.set_flag("ch1.furnace_talked", true)
@@ -192,6 +196,15 @@ func _place_player(at: String) -> void:
 	if at == "stele":
 		p = (STELES[TRADE_STELE] as Vector3) + Vector3(-2.6, 0.0, 6.0)
 		yaw = deg_to_rad(18.0)
+	elif at == "gate":
+		p = GATE_VIEW_POS
+		yaw = deg_to_rad(GATE_VIEW_YAW)
+	elif at == "laundry":
+		p = Vector3(1.6, 0.0, 19.2)
+		yaw = deg_to_rad(-42.0)
+	elif at == "backdoor":
+		p = Vector3(0.5, 0.0, GATE_Z - 2.2)
+		yaw = deg_to_rad(172.0)
 	elif at == "home":
 		p = KORD_HOME + Vector3(2.4, 0.0, 4.5)
 		yaw = deg_to_rad(28.0)
@@ -854,14 +867,13 @@ func _build_square() -> void:
 	_solid("GateWallW", Vector3(SQUARE_HALF - 0.6, 7.0, 0.6), Vector3(-(SQUARE_HALF + 0.6) * 0.5, 3.5, GATE_Z + 0.3), _plaster_mat)
 	_solid("GateWallE", Vector3(SQUARE_HALF - 0.6, 7.0, 0.6), Vector3((SQUARE_HALF + 0.6) * 0.5, 3.5, GATE_Z + 0.3), _plaster_mat)
 	_solid("GateLintel", Vector3(1.2, 4.8, 0.6), Vector3(0, 4.6, GATE_Z + 0.3), _plaster_mat)
-	_solid("GateDark", Vector3(1.2, 2.2, 0.1), Vector3(0, 1.1, GATE_Z + 0.55), _mat(Color(0.02, 0.02, 0.02), 1.0))
+	_build_back_door()
 	# 東西兩側的牆
 	_solid("SquareWallW", Vector3(0.6, 7.0, depth), Vector3(-SQUARE_HALF - 0.3, 3.5, mid_z), _plaster_mat)
 	_solid("SquareWallE", Vector3(0.6, 7.0, depth), Vector3(SQUARE_HALF + 0.3, 3.5, mid_z), _plaster_mat)
 	# 門房（西邊，開口朝東）：桌子、兩個孩子、空碗
 	var gx: float = -SQUARE_HALF + 2.0
-	_solid("GatehouseN", Vector3(4.0, 3.0, 0.3), Vector3(gx, 1.5, 14.6), _stone_mat)
-	_solid("GatehouseRoof", Vector3(4.0, 0.3, 5.6), Vector3(gx, 3.1, 17.25), _stone_mat, false)
+	_build_gatehouse()
 	_solid("GateTable", Vector3(1.4, 0.08, 0.8), Vector3(gx + 0.2, 0.76, 17.0), _wood_mat)
 	for leg: Vector2 in [Vector2(-0.6, -0.32), Vector2(0.6, -0.32), Vector2(-0.6, 0.32), Vector2(0.6, 0.32)]:
 		_solid("GateTableLeg", Vector3(0.06, 0.72, 0.06), Vector3(gx + 0.2 + leg.x, 0.36, 17.0 + leg.y), _wood_mat, false)
@@ -921,29 +933,7 @@ func _build_square() -> void:
 	fcs.position = Vector3(0, 1.35, 0)
 	furnace_body.add_child(fcs)
 	furnace.add_child(furnace_body)
-	# 晾衣繩：煙管 → 東牆，小孩的衣服
-	var rope_from := FURNACE_POS + Vector3(0.0, 2.75, 0.0)
-	var rope_to := Vector3(SQUARE_HALF, 2.6, FURNACE_POS.z + 2.4)
-	var rope := MeshInstance3D.new()
-	rope.name = "Clothesline"
-	var rm := BoxMesh.new()
-	rm.size = Vector3(0.015, 0.015, rope_from.distance_to(rope_to))
-	rope.mesh = rm
-	rope.material_override = _mat(Color(0.5, 0.46, 0.38), 1.0)
-	add_child(rope)
-	rope.transform = Transform3D(Basis.looking_at(rope_to - rope_from, Vector3.UP), (rope_from + rope_to) * 0.5)
-	var cloth_colors: Array[Color] = [Color(0.62, 0.5, 0.42), Color(0.48, 0.55, 0.6), Color(0.7, 0.66, 0.58), Color(0.55, 0.42, 0.45)]
-	for c: int in cloth_colors.size():
-		var t: float = (float(c) + 1.0) / float(cloth_colors.size() + 1)
-		var at: Vector3 = rope_from.lerp(rope_to, t)
-		var cloth := MeshInstance3D.new()
-		cloth.name = "Laundry%d" % c
-		var cm := BoxMesh.new()
-		cm.size = Vector3(0.02, 0.42 + 0.08 * float(c % 2), 0.34)
-		cloth.mesh = cm
-		cloth.material_override = _mat(cloth_colors[c], 1.0)
-		add_child(cloth)
-		cloth.transform = Transform3D(Basis.looking_at(rope_to - rope_from, Vector3.UP), at - Vector3(0, cm.size.y * 0.5, 0))
+	_build_laundry()
 	# 爐腳邊的蔥盆：種在半個頭盔裡
 	var pot := Node3D.new()
 	pot.name = "OnionPot"
@@ -1272,3 +1262,279 @@ func _furnace_detail(furnace: Node3D, body: CylinderMesh, pipe_h: float) -> void
 		furnace.add_child(joint)
 		y0 += FURNACE_PIPE_JOINT
 		j += 1
+
+
+# ---------------------------------------------------------------- 後門與門房（第 57 輪，D-175）
+# 後門：一百七十二階底下那扇門從這一側看是一個門洞——木門框＋石門楣＋門檻石，門洞裡是往上的石階，
+# 柯德打開的門板靠在通道的西牆上。通道照不到穹頂的光（dark_passage shader 用 AO 壓掉環境光），
+# 從門口往裡很快變黑；油燈的直接光照常照得到（諾恩走近時看得到台階）。門洞照舊不能走回去（看不見的擋板）。
+# 門房：靠在廣場西牆上的開放式小屋（柯德一家吃飯的地方）——方石北牆開一扇小窗、前面（東）兩根石柱＋一根木樑、
+# 前面一道矮牆（留一個入口靠近後門）、往東斜的木板屋頂＋往外伸的屋簷與石簷口。桌子與孩子照舊從廣場看得到。
+
+const DARK_PASSAGE_SHADER: String = "res://src/world/dark_passage.gdshader"
+const GATE_W: float = 1.2
+const GATE_H: float = 2.2
+## 牆後的平台（門板靠在這裡）＋往上的台階
+const PASSAGE_LANDING: float = 1.1
+const PASSAGE_STEPS: int = 6
+const STEP_RISE: float = 0.17
+const STEP_RUN: float = 0.3
+const PASSAGE_CEILING: float = 2.9
+## 從門洞往裡多遠環境光幾乎沒了
+const PASSAGE_DARK: float = 2.6
+## 最深處還留多少環境光
+const PASSAGE_MIN_AMBIENT: float = 0.03
+const PASSAGE_STONE: Color = Color(0.34, 0.33, 0.31)
+const GATE_DOOR_LEAF: Vector2 = Vector2(1.0, 2.1)
+## 門房：西牆（x = -SQUARE_HALF）到前面（GATEHOUSE_FRONT_X），北牆在 GATEHOUSE_N_Z、南邊靠著後門那道牆
+const GATEHOUSE_FRONT_X: float = -3.5
+const GATEHOUSE_N_Z: float = 14.6
+const GATEHOUSE_WALL_H: float = 3.0
+const GATEHOUSE_EAVE: float = 0.55
+## 屋頂往東斜：靠牆那端高、屋簷那端低
+const GATEHOUSE_ROOF_BACK_Y: float = 3.45
+const GATEHOUSE_ROOF_FRONT_Y: float = 3.0
+## 前面的矮牆（比桌面低：桌子與孩子從廣場看得到）、入口在靠後門那端
+const GATEHOUSE_SILL_H: float = 0.55
+const GATEHOUSE_ENTRY: Vector2 = Vector2(18.2, 19.9)
+## 北牆的小窗（中心 x、底、寬、高）
+const GATEHOUSE_WINDOW: Vector4 = Vector4(-5.6, 1.2, 0.8, 0.7)
+
+var _passage_mats: Dictionary = {}
+
+
+## 通道的石頭：同一個 shader，門洞位置與方向都一樣，顏色分幾種（台階、牆、天花板）
+func passage_mat(color: Color) -> ShaderMaterial:
+	var key: String = color.to_html()
+	if _passage_mats.has(key):
+		return _passage_mats[key] as ShaderMaterial
+	var m := ShaderMaterial.new()
+	m.shader = load(DARK_PASSAGE_SHADER) as Shader
+	m.set_shader_parameter("albedo_color", color)
+	m.set_shader_parameter("dark_origin", Vector3(0.0, 0.0, GATE_Z + 0.6))
+	m.set_shader_parameter("dark_dir", Vector3(0.0, 0.0, 1.0))
+	m.set_shader_parameter("dark_length", PASSAGE_DARK)
+	m.set_shader_parameter("min_ambient", PASSAGE_MIN_AMBIENT)
+	_passage_mats[key] = m
+	return m
+
+
+## 門洞後面的通道從牆背面（z = GATE_Z + 0.6）往 +Z：平台 → 台階往上。
+static func passage_length() -> float:
+	return PASSAGE_LANDING + float(PASSAGE_STEPS) * STEP_RUN
+
+
+func _build_back_door() -> void:
+	var back: float = GATE_Z + 0.6
+	var half: float = GATE_W * 0.5
+	var length: float = passage_length()
+	var door := Node3D.new()
+	door.name = "BackDoor"
+	add_child(door)
+	# 門框（廣場這一側）：兩根深色木柱＋石門楣＋門檻石
+	for k: int in [-1, 1]:
+		_trim.add_box_at(Vector3(0.14, GATE_H + 0.1, 0.14), Vector3(float(k) * (half + 0.07), (GATE_H + 0.1) * 0.5, GATE_Z - 0.07), timber_mat(), false)
+	_trim.add_box_at(Vector3(GATE_W + 0.6, 0.3, 0.2), Vector3(0, GATE_H + 0.1 + 0.15, GATE_Z - 0.1), trim_mat(), false)
+	_trim.add_box_at(Vector3(GATE_W + 0.2, 0.06, 0.9), Vector3(0, 0.03, GATE_Z + 0.25), trim_mat(), false)
+	# 通道：地板、兩側的牆、天花板、最裡面一道牆（台階頂上再往上轉，看不到）
+	var floor_c: Color = PASSAGE_STONE
+	var wall_c: Color = PASSAGE_STONE.darkened(0.12)
+	_passage_box(door, "PassageFloor", Vector3(GATE_W, 0.1, PASSAGE_LANDING), Vector3(0, -0.05, back + PASSAGE_LANDING * 0.5), floor_c)
+	for k: int in [-1, 1]:
+		_passage_box(door, "PassageWall%s" % ("W" if k < 0 else "E"), Vector3(0.2, PASSAGE_CEILING + 1.0, length + 0.2),
+				Vector3(float(k) * (half + 0.1), (PASSAGE_CEILING + 1.0) * 0.5, back + length * 0.5), wall_c)
+	_passage_box(door, "PassageCeiling", Vector3(GATE_W + 0.4, 0.2, length + 0.2), Vector3(0, PASSAGE_CEILING + float(PASSAGE_STEPS) * STEP_RISE * 0.5 + 0.1, back + length * 0.5), wall_c)
+	_passage_box(door, "PassageBack", Vector3(GATE_W + 0.4, PASSAGE_CEILING + 1.4, 0.2), Vector3(0, (PASSAGE_CEILING + 1.4) * 0.5, back + length + 0.1), wall_c)
+	for i: int in PASSAGE_STEPS:
+		var top: float = float(i + 1) * STEP_RISE
+		var z0: float = back + PASSAGE_LANDING + float(i) * STEP_RUN
+		# 台階一階深一階淺（位置決定，不動 _rng）
+		var c: Color = floor_c.lightened(0.06) if i % 2 == 0 else floor_c
+		_passage_box(door, "PassageStep%d" % i, Vector3(GATE_W, top, STEP_RUN), Vector3(0, top * 0.5, z0 + STEP_RUN * 0.5), c)
+	# 柯德打開的門板：往通道裡開，靠在西牆上（門軸在門洞那端）
+	var leaf := MeshInstance3D.new()
+	leaf.name = "BackDoorLeaf"
+	var lm := BoxMesh.new()
+	lm.size = Vector3(0.06, GATE_DOOR_LEAF.y, GATE_DOOR_LEAF.x)
+	leaf.mesh = lm
+	leaf.material_override = door_mat()
+	leaf.position = Vector3(-half + 0.05, GATE_DOOR_LEAF.y * 0.5 + 0.02, back + 0.05 + GATE_DOOR_LEAF.x * 0.5)
+	door.add_child(leaf)
+	# 擋板：門洞走不回去（不畫）
+	var block := StaticBody3D.new()
+	block.name = "BackDoorBlock"
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(GATE_W, GATE_H, 0.1)
+	cs.shape = box
+	block.add_child(cs)
+	block.position = Vector3(0, GATE_H * 0.5, GATE_Z + 0.55)
+	door.add_child(block)
+
+
+func _passage_box(parent: Node3D, node_name: String, size: Vector3, pos: Vector3, color: Color) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	var bm := BoxMesh.new()
+	bm.size = size
+	mi.mesh = bm
+	mi.material_override = passage_mat(color)
+	mi.position = pos
+	parent.add_child(mi)
+
+
+func _build_gatehouse() -> void:
+	var x0: float = -SQUARE_HALF
+	var x1: float = GATEHOUSE_FRONT_X
+	var width: float = x1 - x0
+	var nz: float = GATEHOUSE_N_Z
+	var sz: float = GATE_Z
+	var house := Node3D.new()
+	house.name = "Gatehouse"
+	add_child(house)
+	# 北牆：方石，開一扇小窗（四塊：窗左、窗右、窗下、窗上）
+	var w: Vector4 = GATEHOUSE_WINDOW
+	var wl: float = w.x - w.z * 0.5
+	var wr: float = w.x + w.z * 0.5
+	var wt: float = w.y + w.w
+	_solid("GatehouseN", Vector3(wl - x0, GATEHOUSE_WALL_H, 0.3), Vector3((x0 + wl) * 0.5, GATEHOUSE_WALL_H * 0.5, nz), _stone_mat)
+	_solid("GatehouseN2", Vector3(x1 - wr, GATEHOUSE_WALL_H, 0.3), Vector3((wr + x1) * 0.5, GATEHOUSE_WALL_H * 0.5, nz), _stone_mat)
+	_solid("GatehouseNSill", Vector3(w.z, w.y, 0.3), Vector3(w.x, w.y * 0.5, nz), _stone_mat)
+	_solid("GatehouseNHead", Vector3(w.z, GATEHOUSE_WALL_H - wt, 0.3), Vector3(w.x, (GATEHOUSE_WALL_H + wt) * 0.5, nz), _stone_mat, false)
+	_trim.add_box_at(Vector3(w.z + 0.16, 0.07, 0.44), Vector3(w.x, w.y - 0.035, nz), trim_mat(), false)
+	_trim.add_box_at(Vector3(w.z + 0.3, 0.16, 0.36), Vector3(w.x, wt + 0.08, nz), trim_mat(), false)
+	# 窗板關著（白晝城的窗都關著），往牆裡退一點
+	_solid("GatehouseShutter", Vector3(w.z, w.w, 0.06), Vector3(w.x, w.y + w.w * 0.5, nz + 0.04), _shutter_mat, false)
+	# 前面：北牆端一根、靠後門那端一根石柱，上面一根木樑
+	for z: float in [nz + 0.05, sz - 0.25]:
+		_solid("GatehousePost", Vector3(0.4, GATEHOUSE_ROOF_FRONT_Y, 0.4), Vector3(x1 - 0.2, GATEHOUSE_ROOF_FRONT_Y * 0.5, z), _stone_mat)
+	var beam_len: float = sz - nz
+	_trim.add_box_at(Vector3(0.3, 0.32, beam_len), Vector3(x1 - 0.2, GATEHOUSE_ROOF_FRONT_Y - 0.16, (nz + sz) * 0.5), timber_mat(), false)
+	# 前面的矮牆＋壓頂石（入口在靠後門那端）
+	var sill_z0: float = nz + 0.25
+	var sill_z1: float = GATEHOUSE_ENTRY.x
+	_solid("GatehouseSill", Vector3(0.35, GATEHOUSE_SILL_H, sill_z1 - sill_z0), Vector3(x1 - 0.2, GATEHOUSE_SILL_H * 0.5, (sill_z0 + sill_z1) * 0.5), _stone_mat)
+	_trim.add_box_at(Vector3(0.45, 0.06, sill_z1 - sill_z0), Vector3(x1 - 0.2, GATEHOUSE_SILL_H + 0.03, (sill_z0 + sill_z1) * 0.5), trim_mat(), false)
+	# 屋頂：木板，往東斜、伸出屋簷；簷口一條石
+	var run: float = width + GATEHOUSE_EAVE
+	var drop: float = GATEHOUSE_ROOF_BACK_Y - GATEHOUSE_ROOF_FRONT_Y
+	var slope: float = atan2(drop, width)
+	var roof_len: float = sz - nz + 0.6
+	var roof := MeshInstance3D.new()
+	roof.name = "GatehouseRoof"
+	var rm := BoxMesh.new()
+	rm.size = Vector3(run / cos(slope), 0.12, roof_len)
+	roof.mesh = rm
+	roof.material_override = roof_plank_mat()
+	var mid_x: float = x0 + run * 0.5
+	var mid_y: float = GATEHOUSE_ROOF_BACK_Y - tan(slope) * run * 0.5 + 0.06
+	roof.transform = Transform3D(Basis(Vector3.BACK, -slope), Vector3(mid_x, mid_y, sz - roof_len * 0.5 + 0.3))
+	house.add_child(roof)
+	var eave_y: float = GATEHOUSE_ROOF_BACK_Y - tan(slope) * run
+	_trim.add_box_at(Vector3(0.16, 0.2, roof_len + 0.1), Vector3(x0 + run, eave_y + 0.02, sz - roof_len * 0.5 + 0.3), trim_mat(), false)
+	# 屋簷下的椽子（每 0.9 m 一根，從木樑伸到簷口）
+	var z: float = nz + 0.3
+	while z < sz - 0.3:
+		_trim.add_box_at(Vector3(GATEHOUSE_EAVE + 0.3, 0.1, 0.08), Vector3(x1 + GATEHOUSE_EAVE * 0.5 - 0.15, GATEHOUSE_ROOF_FRONT_Y - 0.05 - tan(slope) * GATEHOUSE_EAVE * 0.5, z), timber_mat(), false)
+		z += 0.9
+
+
+## 門房屋頂：橫排木板（從底下看得到板縫）
+func roof_plank_mat() -> ShaderMaterial:
+	return interior.plank("daylight_roof", WOOD.lightened(0.08), 0.18, 4.0, {"seam_dark": 0.6})
+
+
+# ---------------------------------------------------------------- 晾衣繩（第 57 輪，D-175）
+# 從淨化爐的煙管拉到東牆的一條繩子，中間往下垂；掛著小孩的衣服（上衣、褲子、毛巾、小裙子），每件兩個木夾子。
+# 衣服是薄薄一片、輕微起伏的布（雙面），不是方塊。地底沒有風：衣服靜止垂著。
+
+const ROPE_FROM: Vector3 = FURNACE_POS + Vector3(0.0, 2.75, 0.0)
+const ROPE_TO: Vector3 = Vector3(SQUARE_HALF, 2.6, FURNACE_POS.z + 2.4)
+const ROPE_SAG: float = 0.2
+const ROPE_SEGMENTS: int = 10
+## 衣服的輪廓（u 沿繩子、v 往下，公尺）：上衣、褲子、毛巾、小裙子
+static func garment_outlines() -> Array[PackedVector2Array]:
+	return [
+		# 上衣
+		PackedVector2Array([Vector2(-0.21, 0.0), Vector2(0.21, 0.0), Vector2(0.23, -0.17), Vector2(0.14, -0.13), Vector2(0.14, -0.44), Vector2(-0.14, -0.44), Vector2(-0.14, -0.13), Vector2(-0.23, -0.17)]),
+		# 褲子
+		PackedVector2Array([Vector2(-0.15, 0.0), Vector2(0.15, 0.0), Vector2(0.17, -0.42), Vector2(0.03, -0.42), Vector2(0.0, -0.13), Vector2(-0.03, -0.42), Vector2(-0.17, -0.42)]),
+		# 毛巾
+		PackedVector2Array([Vector2(-0.17, 0.0), Vector2(0.17, 0.0), Vector2(0.17, -0.52), Vector2(-0.17, -0.52)]),
+		# 小裙子
+		PackedVector2Array([Vector2(-0.1, 0.0), Vector2(0.1, 0.0), Vector2(0.21, -0.47), Vector2(-0.21, -0.47)]),
+	]
+
+
+const GARMENT_COLORS: Array[Color] = [Color(0.62, 0.5, 0.42), Color(0.48, 0.55, 0.6), Color(0.7, 0.66, 0.58), Color(0.55, 0.42, 0.45)]
+
+
+## 繩子上 t（0～1）的位置：直線往下垂成拋物線
+static func rope_point(t: float) -> Vector3:
+	return ROPE_FROM.lerp(ROPE_TO, t) - Vector3(0.0, ROPE_SAG * 4.0 * t * (1.0 - t), 0.0)
+
+
+## 一件衣服的 mesh：輪廓三角化、每個頂點往法線方向起伏一點（布不是平的）
+static func garment_mesh(outline: PackedVector2Array, seed_i: int) -> ArrayMesh:
+	var tris: PackedInt32Array = Geometry2D.triangulate_polygon(outline)
+	# 把輪廓細分：三角形每條邊切一半再起伏，看得出布的皺
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i: int in range(0, tris.size(), 3):
+		var a: Vector2 = outline[tris[i]]
+		var b: Vector2 = outline[tris[i + 1]]
+		var c: Vector2 = outline[tris[i + 2]]
+		var ab: Vector2 = (a + b) * 0.5
+		var bc: Vector2 = (b + c) * 0.5
+		var ca: Vector2 = (c + a) * 0.5
+		for tri: Array in [[a, ab, ca], [ab, b, bc], [ca, bc, c], [ab, bc, ca]]:
+			for p: Vector2 in tri:
+				st.set_uv(p)
+				st.add_vertex(_cloth_point(p, seed_i))
+	st.generate_normals()
+	return st.commit()
+
+
+static func _cloth_point(p: Vector2, seed_i: int) -> Vector3:
+	var k: float = float(seed_i) * 1.7
+	# 夾子那條邊（v = 0）是平的，越往下起伏越大
+	var depth: float = clampf(-p.y / 0.45, 0.0, 1.0)
+	var z: float = (0.025 * sin(p.x * 21.0 + k) + 0.015 * sin(p.y * 17.0 - k * 0.6)) * (0.3 + 0.7 * depth)
+	return Vector3(p.x, p.y, z)
+
+
+func _build_laundry() -> void:
+	var rope_mat := _mat(Color(0.5, 0.46, 0.38), 1.0)
+	var line := Node3D.new()
+	line.name = "Clothesline"
+	add_child(line)
+	for i: int in ROPE_SEGMENTS:
+		var a: Vector3 = rope_point(float(i) / float(ROPE_SEGMENTS))
+		var b: Vector3 = rope_point(float(i + 1) / float(ROPE_SEGMENTS))
+		var seg := MeshInstance3D.new()
+		var rm := BoxMesh.new()
+		rm.size = Vector3(0.015, 0.015, a.distance_to(b) + 0.01)
+		seg.mesh = rm
+		seg.material_override = rope_mat
+		line.add_child(seg)
+		seg.transform = Transform3D(Basis.looking_at(b - a, Vector3.UP), (a + b) * 0.5)
+	var along: Vector3 = Vector3(ROPE_TO.x - ROPE_FROM.x, 0.0, ROPE_TO.z - ROPE_FROM.z).normalized()
+	var basis := Basis(along, Vector3.UP, along.cross(Vector3.UP))
+	var outlines: Array[PackedVector2Array] = garment_outlines()
+	for c: int in outlines.size():
+		var t: float = (float(c) + 1.0) / float(outlines.size() + 1)
+		var at: Vector3 = rope_point(t)
+		var cloth := MeshInstance3D.new()
+		cloth.name = "Laundry%d" % c
+		cloth.mesh = garment_mesh(outlines[c], c)
+		var m := _mat(GARMENT_COLORS[c], 1.0)
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		cloth.material_override = m
+		cloth.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
+		cloth.transform = Transform3D(basis, at - Vector3(0.0, 0.01, 0.0))
+		add_child(cloth)
+		# 兩個木夾子（衣服上緣兩端往內一點）
+		var top: PackedVector2Array = outlines[c]
+		var half_w: float = absf(top[1].x - top[0].x) * 0.5 - 0.03
+		for k: int in [-1, 1]:
+			_trim.add_box_at(Vector3(0.022, 0.07, 0.022), at + along * (float(k) * half_w) + Vector3(0.0, -0.015, 0.0), _wood_mat, false)

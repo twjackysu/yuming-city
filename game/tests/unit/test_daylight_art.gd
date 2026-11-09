@@ -67,3 +67,58 @@ func test_furnace_bands_on_body() -> void:
 	for y: float in bands:
 		assert_true(y > 0.16 and y < 2.1, "鐵箍 %.2f 在石座上面、爐身頂（2.1 m）下面" % y)
 	assert_true(float(_const("FURNACE_PIPE_JOINT")) > 1.0, "煙管接頭不要太密")
+
+
+## 第 57 輪（D-175）：後門的通道——台階在天花板下面、門板放得進平台、通道往裡變黑（油燈照常照得到）
+func test_back_door_passage() -> void:
+	var steps: int = int(_const("PASSAGE_STEPS"))
+	var rise: float = float(_const("STEP_RISE"))
+	assert_true(steps >= 4, "看得出是往上的樓梯（至少 4 階）")
+	assert_true(rise >= 0.12 and rise <= 0.2, "一階的高度像樓梯（%.2f m）" % rise)
+	assert_true(float(steps) * rise + 1.9 < float(_const("PASSAGE_CEILING")) + float(steps) * rise * 0.5 + 0.1, "最上一階還站得下一個人")
+	var leaf: Vector2 = _const("GATE_DOOR_LEAF") as Vector2
+	assert_true(leaf.x <= float(_const("PASSAGE_LANDING")), "門板靠牆時在平台範圍內（不插進台階）")
+	assert_true(leaf.y < float(_const("GATE_H")), "門板比門洞矮")
+	assert_true(float(_const("PASSAGE_DARK")) <= (load(DAYLIGHT) as GDScript).call("passage_length") as float, "走到台階頂之前就暗了")
+	var lv: Node = _level()
+	var m: ShaderMaterial = lv.call("passage_mat", Color(0.3, 0.3, 0.3)) as ShaderMaterial
+	assert_eq(m.shader.resource_path, str(_const("DARK_PASSAGE_SHADER")), "通道用 dark_passage shader")
+	assert_true(lv.call("passage_mat", Color(0.3, 0.3, 0.3)) == m, "同一個顏色共用材質")
+	assert_true(float(m.get_shader_parameter("min_ambient")) < 0.1, "最深處幾乎沒有環境光")
+	var origin: Vector3 = m.get_shader_parameter("dark_origin") as Vector3
+	assert_true(origin.z > float(_const("GATE_Z")), "從牆後面才開始變暗（門框還是亮的）")
+	lv.free()
+	var code: String = (load(str(_const("DARK_PASSAGE_SHADER"))) as Shader).code
+	assert_true(code.contains("AO_LIGHT_AFFECT = 0.0"), "只壓環境光，油燈的直接光照得到")
+
+
+## 門房：矮牆比桌面低（從廣場看得到桌子與孩子）、屋頂往東斜、小窗在牆裡
+func test_gatehouse_proportions() -> void:
+	assert_true(float(_const("GATEHOUSE_SILL_H")) < 0.76 - 0.1, "前面的矮牆比桌面低")
+	assert_true(float(_const("GATEHOUSE_ROOF_BACK_Y")) > float(_const("GATEHOUSE_ROOF_FRONT_Y")), "屋頂靠牆那端高、屋簷那端低")
+	assert_true(float(_const("GATEHOUSE_ROOF_FRONT_Y")) >= 2.6, "屋簷下走得過去")
+	var entry: Vector2 = _const("GATEHOUSE_ENTRY") as Vector2
+	assert_true(entry.y - entry.x >= 0.9, "入口寬得讓人走進去")
+	assert_true(entry.y < float(_const("GATE_Z")), "入口在廣場裡")
+	var w: Vector4 = _const("GATEHOUSE_WINDOW") as Vector4
+	assert_true(w.x - w.z * 0.5 > -float(_const("SQUARE_HALF")) and w.x + w.z * 0.5 < float(_const("GATEHOUSE_FRONT_X")) - 0.4, "小窗在北牆裡（不切到前面的石柱）")
+	assert_true(w.y + w.w < float(_const("GATEHOUSE_WALL_H")) - 0.3, "窗上面還有一段牆")
+
+
+## 晾衣繩：往下垂、兩端在煙管與東牆；衣服是起伏的薄片，不是方塊
+func test_laundry_rope_and_garments() -> void:
+	var script: GDScript = load(DAYLIGHT) as GDScript
+	var a: Vector3 = script.call("rope_point", 0.0) as Vector3
+	var b: Vector3 = script.call("rope_point", 1.0) as Vector3
+	var mid: Vector3 = script.call("rope_point", 0.5) as Vector3
+	assert_true(a.is_equal_approx(_const("ROPE_FROM") as Vector3) and b.is_equal_approx(_const("ROPE_TO") as Vector3), "繩子兩端")
+	assert_true(mid.y < minf(a.y, b.y) - 0.1, "中間往下垂")
+	var outlines: Array = script.call("garment_outlines") as Array
+	assert_eq(outlines.size(), 4, "四件衣服")
+	for i: int in outlines.size():
+		var o: PackedVector2Array = outlines[i] as PackedVector2Array
+		assert_false(Geometry2D.triangulate_polygon(o).is_empty(), "第 %d 件的輪廓能三角化" % i)
+		var mesh: ArrayMesh = script.call("garment_mesh", o, i) as ArrayMesh
+		var box: AABB = mesh.get_aabb()
+		assert_true(box.size.z > 0.005 and box.size.z < 0.1, "第 %d 件有起伏、但還是薄的（%.3f m）" % [i, box.size.z])
+		assert_true(mid.y + box.position.y > 1.6, "第 %d 件掛得比人高（不擋路）" % i)

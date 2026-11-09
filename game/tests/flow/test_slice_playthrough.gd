@@ -1567,6 +1567,16 @@ func _assert_daylight_art(city: StoryLevel, tag: String) -> void:
 	assert_true(city.get_node("StreetTrim").get_child_count() >= 3, tag + " StreetTrim 有石、木、拱肋三種材質")
 	for n: String in ["FurnaceBand0", "FurnaceBand2", "FurnacePlinth", "FurnaceDoorFrame0", "FurnacePipeJoint0"]:
 		assert_true(city.get_node("Furnace").has_node(n), tag + " 淨化爐的 " + n)
+	# 第 57 輪（D-175）：後門是門洞＋往上的台階（不是一塊黑板）、門房有屋頂與前面的石柱、晾衣繩的衣服不是方塊
+	assert_false(city.has_node("GateDark"), tag + " 後門不是一塊黑板")
+	for n: String in ["PassageStep0", "PassageWallW", "BackDoorLeaf", "BackDoorBlock"]:
+		assert_true(city.get_node("BackDoor").has_node(n), tag + " 後門的 " + n)
+	assert_true((city.get_node("BackDoor/PassageStep0") as MeshInstance3D).material_override is ShaderMaterial, tag + " 通道的台階會變暗")
+	assert_true(city.has_node("Gatehouse/GatehouseRoof") and city.has_node("GatehousePost") and city.has_node("GatehouseSill"), tag + " 門房的屋頂、石柱、矮牆")
+	for i: int in 4:
+		var cloth: MeshInstance3D = city.get_node("Laundry%d" % i) as MeshInstance3D
+		assert_false(cloth.mesh is BoxMesh, tag + " 晾的衣服 %d 不是方塊" % i)
+	assert_true(city.get_node("Clothesline").get_child_count() >= 4, tag + " 晾衣繩分段往下垂")
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
