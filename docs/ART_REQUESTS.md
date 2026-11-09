@@ -66,3 +66,7 @@
 已加入四個角色的寫實多視角參考與諾恩獨立正面圖，來源見 `art-inbox/concepts/character_references/`。正式模型仍未交付；Tripo CLI 已準備且 dry-run 通過，但帳號尚未授權，未發出生成請求。完整接續流程與驗證限制見 [ART_PRODUCTION.md](ART_PRODUCTION.md)。
 
 本機免費方案已試跑：TripoSR 能用 RTX 2080 SUPER 生成網格，但視覺、拓撲與材質未達標，仍不計作完成；詳見 [試跑報告](art-trials/triposr/README.md)。
+
+## 最新逐項狀態
+
+目前尚未完成的模型、18 個主角動作、敵人動作、概念圖與 Steam 素材，統一列在 [ART_DELIVERY_STATUS.md](ART_DELIVERY_STATUS.md)。包含工作版不等於正式驗收的區分；不以研究檔數量宣稱整份需求完成。

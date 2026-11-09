@@ -97,3 +97,15 @@ Godot 檢視改用 godot_review_atlas：
 Godot 4.7.2 本機實測：GLB 的 KHR_materials_specular.specularFactor=0.12 未反映為髮材預期的低高光，匯入 material.metallic_specular 仍為 0.5。匯入腳本只將 M_Noen_Hair 設為 0.06；實測值 0.0599999986589，其他欄位與兩材質不動。這是資產專屬 profile，不是引擎所有 glTF 的通用修補。預覽影片及夜景截圖使用此腳本，獨立開 GLB 的其他軟體依自身支援處理 KHR 擴充。參考 [Godot 官方 EditorScenePostImport](https://docs.godotengine.org/en/stable/classes/class_editorscenepostimport.html)。
 
 正式遊戲目前仍未接入候選角色；開發端將來接入時也需設定這個 Import Script。三材質僅解決材質數／貼圖組數，尚未達 3A 美術驗收或全部動畫需求。
+
+## 諾恩 idle／walk 雙動作工作版
+
+build_noen_idle.py 需要先前 noen-surface-refinement/mocap_walk_trial.blend（frame 18 的護傷上身）及三材質製作輸出的原生 tailored_noen.blend／tailored_candidate.glb；不是重新匯入 GLB 後另存的原生骨架。YUMING_NOEN_IDLE_WORK 指定新輸出目錄；其餘驗證工具的 YUMING_NOEN_WORK 也指向同一目錄。執行 build_noen_idle.py → review_noen_idle.py → check_noen_idle_fbx.py → merge_noen_idle_walk.py。可以設定 YUMING_SKIP_RENDERS=1 跳過中間棚拍。
+
+合併器預設讀取專案 art-inbox/studies/noen/noen_walk_candidate.glb，也可設定 YUMING_NOEN_BASE_GLB。它按骨名核對 inverse bind、映射動畫節點，只新增必要的動畫 buffer views／accessors，原網格／貼圖 bytes 不變；兩個 clip 各覆蓋 60 骨 TRS。所有時間減去各 clip 最早時間，消除 2/30 秒前置空檔。再次執行會替換既有 idle_loop 的索引，不重複建立同名動作。
+
+Godot 檢視在 godot_review_idle。將合併後 GLB 複製為 noen_walk_preview.glb，先 import，執行 configure_material_import.py，再 import；夜景依既有 prepare_lighting_review.py 準備 shader。review.tscn 拍 idle 97 取樣、walk_review.tscn 拍 walk 35 取樣。check_ground.gd／check_walk_ground.gd 分別驗證接地，check_idle_guard.gd 驗證護傷肩腕距離及腳骨穩定，check_clip_switch.gd 驗證切換後姿勢恢復。
+
+注意：glTF 名稱 idle_loop／walk_loop 經 Godot 4.7.2 識別 loop 後會成 idle／walk。驗證與檢視腳本使用匯入後名稱，並檢查其存在，避免播放失敗卻誤當成驗證成功。預覽影片排除重複的循環末幀。
+
+這是諾恩護傷待機，不是席菈待機，也不能代替 sword_idle、扛人或其他要求動作。完整未完成項目見 ../../ART_DELIVERY_STATUS.md。

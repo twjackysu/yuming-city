@@ -2,7 +2,7 @@
 
 **尚未達到正式美術或 3A 驗收，不替換遊戲內角色。** 這裡保存實際 GLB、FBX 與引擎影片，方便檢查製作進度；不是整份美術需求的完成交件。
 
-- `noen_walk_candidate.glb`：含角色、PBR 貼圖、60 根骨骼與一段 walk 試作，可用 Blender 或 Godot 開啟。
+- `noen_walk_candidate.glb`：含角色、PBR 貼圖、60 根骨骼與idle／walk 兩段試作，可用 Blender 或 Godot 開啟。
 - `walk_candidate.fbx`：相同骨架的 30 fps 動畫，無模型，移除水平根位移。
 - `walk_preview.mp4`：Godot 4.7.2 Forward+ 實際播放擷取，畫面標示 WORK IN PROGRESS。
 - `preview.png`：同一次引擎擷取的畫面。
@@ -30,3 +30,8 @@
 三材質整併：M_Noen_Skin（皮膚／眼睛）、M_Noen_Clothes（衣物／靴子／木夾板／綁帶）、M_Noen_Hair（頭髮／眉毛），各一組 BaseColor＋Normal＋ORM，均為 2048×2048。重建 UV 後重新烘焙切線法線，三角面與 60 根骨骼不變。35 幀前後雙向頂點比對最大距離為 0m（容許值 0.01mm）；這證明保留既有接觸修整的幾何／蒙皮結果，不代表貼圖毫無損失。
 
 **Godot 匯入注意**：這次 4.7.2 實測未沿用 GLB 的 KHR_materials_specular 設定，頭髮高光回到預設 0.5。預覽已套用隨附的 noen_material_import.gd 將 M_Noen_Hair 設回 0.06，其餘材質不動；單獨把 GLB 匯入而不設定此腳本，頭髮會較亮。重現見製作紀錄的 godot_review_atlas。仍只含一段 walk，未投入正式角色路徑。
+
+
+新增 idle_loop／idle_candidate.fbx：3.2 秒、30fps、60 骨、Without Skin，雙腳站穩，軀幹微幅呼吸，保留右前臂護傷與左手放鬆。idle_preview.mp4／idle_preview.png／idle_night_preview.png 為本次引擎擷取；既有 night_preview.png 保留作前版 walk 棚外光照記錄。97 個時間點實際蒙皮接地、護傷肩腕距離及腳骨穩定檢查通過，兩腳骨最大位移 0m；這不是完整衣物碰撞驗收。
+
+GLB 同時含 idle_loop 和 walk_loop；Godot 4.7.2 自動辨識 loop 後匯入名稱為 idle、walk。已測試 idle→walk→idle→walk 可以恢復各自姿勢，未測成品遊戲交叉淡化的腳部鎖定。修正 Blender 匯出時間從第 2 幀開始的 0.0667s 前置偏移，idle 為 3.2s、walk 為約 1.1333s。合併時原始網格／貼圖二進位前綴不變、inverse bind 相同。完整 18 個主角動作與正式交件仍未完成。

@@ -12,8 +12,8 @@
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 24831224,
-      "sha256": "33c7d3cab648c527abd90a194da6a3ffc645bb7084074f00fc2afcda697a2d03"
+      "bytes": 24882520,
+      "sha256": "79964a7ce1caf8e28f5b0e3d20913ccc39b8b933b65560b1a83ff91fcc07ee33"
     },
     {
       "file": "portrait_front.png",
@@ -27,8 +27,8 @@
     },
     {
       "file": "preview.png",
-      "bytes": 736287,
-      "sha256": "e4a3caa36a0b5c849c866912b60df499e1f4c204fc6cbeacc26115c6f3909b5a"
+      "bytes": 298704,
+      "sha256": "3c7f162e48d2c0ba896d9b2d4c32b92b4e528eb0fa49ae217341c872eb65c50b"
     },
     {
       "file": "walk_candidate.fbx",
@@ -37,13 +37,34 @@
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 398631,
-      "sha256": "a5256cef03f813678697cf4638077fc43975284ca4e923f6c8bfff2efb61ef39"
+      "bytes": 242115,
+      "sha256": "05cde938f4fbf9770f4d7a24d691737595249edd420e3575d1142a6f404cf8e8"
+    },
+    {
+      "file": "idle_candidate.fbx",
+      "bytes": 710668,
+      "sha256": "4c68dcc98fed0f360771aaed8a8c391371ff2cd8e8e264cec4d528a47694118c"
+    },
+    {
+      "file": "idle_night_preview.png",
+      "bytes": 431702,
+      "sha256": "5ab8b3c4e78c8e6f6fc6c48d92c964c18704a38798908f1f01d3d1f3d5a68331"
+    },
+    {
+      "file": "idle_preview.mp4",
+      "bytes": 133719,
+      "sha256": "1f7969777471c735cfc768b3e0334f9bc567dfd99ee4448d40bff5a41c6da8d1"
+    },
+    {
+      "file": "idle_preview.png",
+      "bytes": 297969,
+      "sha256": "fbbf8a9b1a1996bee5eba552413ed9decbf570b73422499f6f5cb7e82501c41b"
     }
   ],
   "maximum_texture_dimension": 2048,
   "animation_names": [
-    "walk_loop"
+    "walk_loop",
+    "idle_loop"
   ],
   "motion_variant": "fracture_guard_with_left_hand_coat_clearance",
   "embedded_images": 9,
@@ -54,5 +75,10 @@
     "M_Noen_Skin"
   ],
   "godot_import_script": "noen_material_import.gd",
-  "glb_bytes": 24831224
+  "glb_bytes": 24882520,
+  "godot_animation_names": [
+    "idle",
+    "walk"
+  ],
+  "idle_duration_s": 3.2
 }
