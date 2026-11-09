@@ -1,10 +1,11 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。**第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。下一輪接第 5 節：第 1 章結尾（走進鐘院 → `ch1_main` 完成）→ 第 2 章章節卡 → 第 2 章開頭**（照 `08-chapter2-3.md`）。
+> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（約 50 秒；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。目前狀態：垂直切片 M1.1～M1.3 完成、M1.4 只剩 Jacky 實機項目；「第一眼」盤點做了八輪（第 17～35 輪，逐項見 PLAN 階段 2 的八張表與 PROGRESS），第 35 輪停止。第 37 輪完成章節切換（D-149）、酒館白盒段落 1～3、標記畫面（D-150）。第 38 輪完成段落 4：白天的霜橋鎮（D-151）。第 39 輪完成段落 5 一百七十二階（D-152）＋段落 6 不可互動的門（D-153，在樓梯底演）。第 40 輪完成段落 7 沒有影子的城（D-154，新關卡 `daylight`）。第 41 輪完成段落 8 柯德家的晚餐（D-155）＋段落 9 兔子（D-156）。**第 42 輪完成第 1 章結尾 → 第 2 章章節卡 → 新關卡 `bell_hall`（鐘院）段落 1 飯桌＋看穿伊薩劃字（D-157、D-158）＋段落 2 他自願的。下一輪接第 5 節「下一步」：第 2 章段落 3 鐘院內室**（照 `08-chapter2-3.md`）。
 
 ## 0. 開工先確認
 
-- 上一輪（第 41 輪）的程式 commit：84389e8 段落 8 晚餐（run 42580729105）、3ad9e6e 屋裡的構圖（run 被取消，內容在下一個裡）、d41419f 段落 9 兔子（**run 42581764946：測試、匯出、盤點截圖已綠，smoke test 與打包收尾時還在跑——開工先看整個綠燈**；screens 的 `16-ch1-dinner`、`17-ch1-bell-yard-road` 第 41 輪已看過）。開工照常先跑 `scripts/check.sh`（最後 322 個測試）。紅了就看 log 修，修不好 `git revert`。
+- 上一輪（第 42 輪）的程式 commit：79ed43e 第 1 章結尾＋第 2 章飯桌（run 42587923930 全綠）、25219e8 看穿伊薩（run 42589085968）、533ca34 段落 2（run 42589500676）——後兩個的結果見 PROGRESS 第 42 輪的收尾補記，**開工先看整個綠燈**；screens 的 `18-ch2-table`、`19-ch2-hall`、`20-ch2-isa-insight` 還沒在 CI 上看過（本機截圖看過）。開工照常先跑 `scripts/check.sh`（最後 324 個測試）。
+- 第 41 輪的程式 commit：84389e8 段落 8 晚餐（run 42580729105）、3ad9e6e 屋裡的構圖（run 被取消，內容在下一個裡）、d41419f 段落 9 兔子（**run 42581764946：測試、匯出、盤點截圖已綠，smoke test 與打包收尾時還在跑——開工先看整個綠燈**；screens 的 `16-ch1-dinner`、`17-ch1-bell-yard-road` 第 41 輪已看過）。開工照常先跑 `scripts/check.sh`（最後 322 個測試）。紅了就看 log 修，修不好 `git revert`。
 - 第 40 輪的 run 都被 Jacky 的 c3059c8 run 42576367758 取代、已全綠（第 41 輪開工確認）。latest 的 `achievement-icons.zip` 第 41 輪看過：8 個成就 × 已解鎖／未解鎖，256×256，圖案都清楚。**第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
 - 第 39 輪的 d497b9d run 42570417322、2089466 run 42569871509 已全綠（第 40 輪開工確認）；latest 的 `achievement-icons.zip` 還沒回頭確認，有空看一眼。
 - `docs/PROGRESS.md` 約 190 行（第 38 輪已把第 29～33 輪合併成每日摘要）；超過約 300 行時把第 34～37 輪合併。
@@ -88,9 +89,16 @@
   - 兔子：走過 `RABBIT_Z` 開 `ch1_rabbit`（`ch1.rabbit_seen`）；`StreetPillar`（`PILLAR_POS`／`PILLAR_RADIUS`，有碰撞）靠到 `PILLAR_RADIUS + BUMP_REACH` → `bump_pillar()`（`ch1.bumped_pillar`、`blunt_weak`＋`child_laugh`、對話 `ch1_pillar`）；鐘院門口 `BELL_YARD_POS`／`BELL_YARD_RANGE` 顯示「待續」。
   - 截圖 `--level=daylight --daylight-at=dinner`（桌邊、晚餐第一句）／`--daylight-at=yard`（吃完站在柯德家門口）。流程測試 `_chapter1_dinner()`（兩條路線：丟石頭那條＝回答＋放、另一條＝不回答＋不放）。
   - 還可以：程序人偶沒有坐姿與蹲姿（晚餐大家站著、席菈「蹲下」只有旁白）；柯德的太太沒有台詞；門房的兩個孩子跟柯德家的兩個孩子是不同的人偶（門房那家人是誰，第 2 章可以補一句）；油燈在屋裡牆上投的大影子很有氣氛，等 Jacky 看會不會太嚇人。
+- **已完成（第 42 輪，D-157／D-158）**：第 1 章結尾 → 第 2 章段落 1～2。
+  - 章節銜接照 D-149：`ch1_main` 的 `on_complete`（`ch1.complete`、章節 `ch2`、開 `ch2_main`）、`MAIN_QUESTS`／`CHAPTER_CHAIN` 第 2 章、檢查點 `ch2_start`／`ch2_volunteer` → `bell_hall`。`daylight.reach_bell_yard()`（鐘院門口 → 章節卡 `CH2_CARD_*` → 換關卡）。第 2 章文字在 `i18n/ch2.csv`。
+  - 新關卡 `scenes/levels/bell_hall.gd`（照 daylight 的 tscn 結構，節點名 `BellHall`）：常數 `ROOM_HALF`（10×10 m）、`TABLE_POS`／`TABLE_SIZE`／`TABLE_TOP`、`CHAIR_POS`／`SEAT_RANGE`、`SEATS`（noen／sheila／misha／isa，伊薩在桌子北邊面向鏡頭）、`ISA_START`、`INNER_DOOR_POS`（北牆正中，段落 3 從這裡進內室）、窗簾 `Curtain`（西牆，段落 5）；`take_seat()`（拉椅子＋`brace_creak`＋`ch2_table`）、`is_seated()`、`_seat_everyone()`；`dev_start_chapter2(s)`（static）。伊薩的支架 `_add_leg_brace()`／`has_leg_brace()`。
+  - 看穿伊薩：`StrikeCard`（`src/ui/strike_card.gd`：`setup(lines, truth, done)`、`advance(delta)`、`struck_count()`、`is_done()`、訊號 `finished`、`split_struck()`；刪除線是 Label 底下的 ColorRect，不要用 RichTextLabel 的 `[s]`）；關卡的 `update_isa_insight(delta, active)`、`strike_card()`、`interact_hint()`（「按住 V　看穿伊薩」）。劃完設 `ch2.usurper_crossed_out`。
+  - 段落 2：`ch2_volunteer`（看穿劃完放開，或沉默 `SILENCE_SEC` 12 秒；`silence` 可以在測試裡直接設）；選項記 `ch2.noen_apologized`；講完 `ch2.volunteer_talked` → 階段 `inner_room`（done_when `ch2.inner_room_entered` 還沒有人設；現在顯示「待續」）。
+  - 截圖 `--level=bell_hall [--hall-at=table|seated] [--hall-insight=秒]`（一張約 30 秒）。流程測試 `_chapter2()`＋`_assert_bell_hall()`（兩條路線：看穿＋道歉／沉默＋不說話）。
+  - 還可以：桌上的湯冒煙變少（08「湯慢慢涼了」的時間流逝演出：粥鍋上加 `ParticleLook` 的白煙，段落 2 開始後慢慢變淡）；程序人偶沒有坐姿（大家站在桌邊）；伊薩拉椅子只有椅子往後滑，沒有手的動作。
 - **下一步（依序）**：
-  1. **第 1 章結尾 → 第 2 章章節卡**：走到鐘院門口（`BELL_YARD_POS`）設 `ch1.reached_bell_yard` → `ch1_main` 完成。照 D-149 的做法：`ch1_main.json` 加 `"on_complete": {"set": {"ch1.complete": true}, "chapter": "ch2", "start_quest": ["ch2_main"]}`；新增 `data/quests/ch2_main.json`（第一個階段照 `08-chapter2-3.md` 第 2 章段落 1，要有 `checkpoint`＋`marker`）；`GameSession.MAIN_QUESTS` 加 `ch2_main`、`CHAPTER_CHAIN` 加 `{"after": "ch1_main", "start": "ch2_main", "chapter": "ch2"}`；`Game.CHECKPOINT_LEVELS` 加第 2 章的檢查點；daylight 裡 `ChapterCard.play(self, "CH2_CARD_NUMBER", "CH2_CARD_TITLE", 結束時呼叫)`。**注意**：daylight 的 `_ready` 在 `ch1_main` 的階段不在 `STAGES` 時會呼叫 `dev_start_daylight`——`ch1_main` 完成後階段是空字串，要先擋（`quests.is_done(QUEST)` 就不動）。第 2 章的文字放新的 `i18n/ch2.csv`（照 ch1.csv 登記在 project.godot 與 `verify_package.py`）。流程測試在 `_chapter1_dinner()` 結尾往後接。成就候補「第 1 章攻略筆記被推翻 N 條」可以順便決定。
-  2. 第 2 章段落（照 `08-chapter2-3.md`）：城主的飯桌（伊薩、三盤煮豆、缺口不一樣的碗；看穿時「食歲的僭王」一個字一個字被劃掉）。飯桌在白晝城裡，可以沿用 daylight 關卡（屋內照柯德家的做法）或另開關卡——選一個記 DECISIONS。
+  1. **第 2 章段落 3 鐘院內室**（照 08）：走到 `InnerDoor`（marker）→ 設 `ch2.inner_room_entered` → 內室（建議蓋在同一個關卡的北邊，門打開走進去，或照柯德家的做法黑一下換到 x=40 的室內）。黎歐坐在銅椅（主椅）上、背後十幾條細管接進牆上的巨大鐘盤；**全章唯一的暖光**（銅椅與鐘盤反光、細管裡慢慢流動的微光＝被抽走的壽命，可以用 emission＋UV 捲動的 shader）。過場（可跳過，`CutsceneRunner`）：「妳剪頭髮了。」→「我信裡說別來，魚是不是把那段吃掉了？」→ 彌夏一巴掌、捧住他的臉。新名詞「主椅」已在 06。檢查點建議 `ch2_inner`。之後段落 4 牆上的紋路（4 塊浮雕，`ch2.read_wall_carvings` 推翻 `burn_route`）、段落 5 窗簾與眼睛（吞日獸）。
+  2. 第 2 章段落 4、5（牆上的紋路、窗簾後的眼睛），然後第 3 章（08）。
   3. 白天的霜橋鎮還可以：亮窗白天還是暖黃（屋裡有人點燈，說得通；太多就在 `_build_day` 把部分窗調暗）、死者名單牆（07 原本寫的，白盒先省略；可以在梨販攤旁加一塊貼滿紙的木板＋互動看名字）、北街未救出的受困者白天還躺在原地（`RescueSite` 不能互動；要不要換成蓋著布的樣子再決定）。
   4. 酒館、樓梯、白晝城、柯德家的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
