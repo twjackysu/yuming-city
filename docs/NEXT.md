@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 54 輪）的程式 commit：4c9c2eb 飯廳的美術、7264bb3 內室的石頭（`plank_wood` 加 `grain_amount`）、ae8d767 紋路的石板與石框（CI 狀態見 PROGRESS 第 54 輪的收尾補記；**ae8d767 的 run 包含全部，開工先看它的整個綠燈**，盤點截圖 `18`～`25` 都在鐘院、這輪都換了樣子，在 CI 上看一眼）。開工照常先跑 `scripts/check.sh`（最後 365 個測試）。`docs/PROGRESS.md` 第 54 輪已把第 44～48 輪合併成每日摘要（約 200 行）；超過約 300 行再合併第 49～53 輪。
+- 上一輪（第 54 輪）的程式 commit：4c9c2eb 飯廳的美術、7264bb3 內室的石頭（`plank_wood` 加 `grain_amount`）、ae8d767 紋路的石板與石框、78ffda4 內室南牆的方石薄板（前三個的 run 都被取消；CI 狀態見 PROGRESS 第 54 輪的收尾補記；**78ffda4 run 42697532754 包含全部：收尾時「測試與匯出」整個 job 已綠，盤點截圖還在跑——開工先看盤點截圖的綠燈**，盤點截圖 `18`～`25` 都在鐘院、這輪都換了樣子，在 CI 上看一眼）。開工照常先跑 `scripts/check.sh`（最後 365 個測試）。`docs/PROGRESS.md` 第 54 輪已把第 44～48 輪合併成每日摘要（約 200 行）；超過約 300 行再合併第 49～53 輪。
 - 第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。第 53 輪起 c17d3ad 之前的程式 run 都已全綠（c17d3ad run 42689054966 全綠含盤點截圖）。CI 的 import 崩潰再出現（`check.sh` 重試也崩）就要查：兩次都在第一次 import 重新匯入翻譯 CSV（`strings.csv`／`slice.csv`）時。`33-ch3-map` 上方多一行煤車那段的橫幅跟對話疊在一起，多半只是截圖旗標直接跳過去造成的，有空確認。
 - **測試結束時的「2 ObjectDB instances were leaked at exit」警告**：只在 `TEST_FILTER=slice_playthrough` 與整套測試出現（9ef5632 上就有，第 45 輪之前沒查）；加 `--verbose` 跑同一組**沒有重現**（跟時間有關，懷疑是結束時還沒播完的 Sfx 播放器或 Tween）。不算失敗、不要卡住。
 - **第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
@@ -173,7 +173,8 @@
   - 飯廳：`wall_mat()`（`DADO_H` 1.1、`POST_SPACING` 3、`HALL_MORTAR` 淺灰縫、沒有斜撐不燻黑）、`floor_mat()`（沿南北）、`door_mat()`、`timber_mat()`；天花板木板＋`BEAM_ZS` 四根橫樑（落在東西牆的壁柱上）、`_door_casing()` 門框、`_build_ceiling_lamp()`（`HallLamp`：鏈子、鐵環、三根吊桿、燈球）、`_build_faded_frames()`（`FADED_FRAMES`：[牆, 沿牆中心, 高度, 寬, 高]，掛畫留下的白印＋釘子）；桌子（桌面＋裙板＋橫撐）、`_build_chair(…, arms)`、粥鍋的 `PotRim`／`PotLug`。
   - 內室：`inner_wall_mat()`（整面方石 `stone_h` 99、`block_scale` 1.4）、`inner_floor_mat()`＋天花板（`InteriorLook.flagstone()`＝`plank_wood` 的 `grain_amount` 0）；紋路石板＋`Frame` 石框。
   - 測試 `test_bell_hall_art.gd`、流程 `_assert_bell_hall`。
-  - 還可以：內室的南牆（飯廳北牆的背面）從內室看還是飯廳的灰泥＋壁柱（回頭看門時才看得到；可以在內室那一面貼一層方石的薄板）；主椅（銅椅）與鐘盤的份量（現在被彌夏擋住，`--hall-at=leo` 看不太到；要看的話照酒館加 `--pos`／`--face` 截圖旗標）；窗與窗簾的木框；飯廳從門口看灰泥偏白（白晝城的冷白光，實機看）；牆上沒有留下的東西（燭台、壁掛的鐵件——都要原創）。
+  - 內室的南牆（飯廳北牆的背面）貼了一層方石薄板 `InnerWallSouthW／E／Lintel`（78ffda4；`--hall-at=inner --hall-shot=3` 彌夏站在門口那個鏡頭看得到）。
+  - 還可以：主椅（銅椅）與鐘盤的份量（現在被彌夏擋住，`--hall-at=leo` 看不太到；要看的話照酒館加 `--pos`／`--face` 截圖旗標）；窗與窗簾的木框；飯廳從門口看灰泥偏白（白晝城的冷白光，實機看）；牆上沒有留下的東西（燭台、壁掛的鐵件——都要原創）。
 - **下一步（依序）**：
   1. **乾運河的美術**（第 3 章整章都在 `scenes/levels/canal.gd`：觀察、假心臟、煤車、倒吊、彌夏的圖、轉角、掙脫戰）。先拍現況（CI 的 `26`～`36` 號盤點截圖、檔頭註解的開發旗標 `--canal-at=…`），玩家停最久的那一角先做（多半是閘道＋煤車那一段）：河道兩岸與河床的石頭用 `InteriorLook.wall(stone_h 99)`／`flagstone()`（乾掉的河床可以把 `flagstone` 的顏色調暗、`wear` 0）、木架與煤車用 `plank()`／`timber()`；**一盞投影子的斜光從頭頂石樑的縫切下來**（D-163）要保留。每做一塊前後對照截圖。
   2. 白晝城街道（`daylight.gd` 的街、淨化爐、石碑）、樓梯（一百七十二階）的美術：每個場景一輪，先做玩家停最久的那一角。彌夏抱的鐘還是小木箱。
