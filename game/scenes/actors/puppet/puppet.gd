@@ -21,6 +21,8 @@ const THIGH_LEN: float = 0.44
 const SHIN_LEN: float = 0.44
 const UPPER_ARM_LEN: float = 0.3
 const FOREARM_LEN: float = 0.28
+## 坐姿的骨盆高度（座面約 0.44 m）
+const SIT_HIP_HEIGHT: float = 0.5
 
 @export var coat_color: Color = Color(0.16, 0.15, 0.17)
 @export var trim_color: Color = Color(0.3, 0.24, 0.18)
@@ -28,6 +30,8 @@ const FOREARM_LEN: float = 0.28
 
 ## 躺姿：""＝站著、"back"＝仰躺（車上的傷者）。只在程序人偶上；中心在骨盆，頭朝 +Z。
 @export var lying: String = ""
+## 坐姿（第 2 章黎歐坐在主椅上）：骨盆降到 SIT_HIP_HEIGHT、大腿往前平放、小腿垂直、手放在膝上。只在程序人偶上。
+@export var sitting: bool = false
 ## 正式模型 id（CharacterModels.path_for）；空字串＝程序人偶
 @export var character_id: String = ""
 ## 直接指定模型場景（測試、工具）；優先於 character_id
@@ -265,6 +269,9 @@ func _pose(speed_t: float) -> void:
 	if lying != "":
 		_pose_lying()
 		return
+	if sitting:
+		_pose_sitting(breathe)
+		return
 	match action:
 		"dodge":
 			_pose_dodge(action_time / float(ACTION_TIME["dodge"]))
@@ -291,6 +298,28 @@ func _pose_lying() -> void:
 	_rot("elbow_R", Vector3(0.4, 0, 0))
 	if _coat != null:
 		_coat.rotation.x = 0.0
+
+
+## 坐著：大腿往前、小腿垂直、手放在膝上，外套下擺蓋在大腿上；胸口慢慢起伏。
+func _pose_sitting(breathe: float) -> void:
+	var hips: Node3D = joint("hips")
+	if hips != null:
+		hips.position.y = SIT_HIP_HEIGHT + 0.004 * breathe
+	for side: String in ["L", "R"]:
+		_rot("thigh_" + side, Vector3(1.5, 0, 0.06 if side == "L" else -0.06))
+		_rot("knee_" + side, Vector3(-1.5, 0, 0))
+	_rot("shoulder_L", Vector3(0.55, 0, -0.1))
+	_rot("shoulder_R", Vector3(0.55, 0, 0.1))
+	_rot("elbow_L", Vector3(0.75, 0, 0))
+	_rot("elbow_R", Vector3(0.75, 0, 0))
+	_rot("spine", Vector3(0.04, 0, 0))
+	_rot("chest", Vector3(0.02 * breathe, 0, 0))
+	_rot("neck", Vector3(-0.05, 0, 0))
+	if _coat != null:
+		_coat.rotation.x = 0.0
+		var pivot: Node3D = _coat.get_parent() as Node3D
+		pivot.rotation.x = 1.25
+		_coat.scale = Vector3(1.0, 0.55, 1.0)
 
 
 ## 前滾：整個人繞腰部高度轉一圈，膝與手臂收起。

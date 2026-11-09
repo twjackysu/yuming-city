@@ -85,6 +85,20 @@ func test_lying_on_back() -> void:
 	p.free()
 
 
+## 坐姿（第 2 章黎歐坐在主椅上）：骨盆在座面高度、膝蓋往前（人偶面向 -Z）、小腿垂直往下到地面附近。
+func test_sitting() -> void:
+	var p: Puppet = _make()
+	p.sitting = true
+	p.advance(0.1)
+	var hips: Vector3 = p.joint("hips").global_position
+	var knee: Vector3 = p.joint("knee_L").global_position
+	assert_true(absf(hips.y - Puppet.SIT_HIP_HEIGHT) < 0.02, "骨盆在座面高度（%.2f）" % hips.y)
+	assert_true(knee.z < -0.35 and absf(knee.y - hips.y) < 0.1, "大腿往前平放（膝 %s）" % knee)
+	var foot: Vector3 = p.joint("knee_L").to_global(Vector3(0, -Puppet.SHIN_LEN, 0))
+	assert_true(foot.y < 0.12 and absf(foot.z - knee.z) < 0.1, "小腿垂直往下到地面附近（%s）" % foot)
+	p.free()
+
+
 func test_wounded_and_trapped_use_puppets() -> void:
 	var c := Caravan.new()
 	c.route = PackedVector3Array([Vector3.ZERO, Vector3(0, 0, 5)])

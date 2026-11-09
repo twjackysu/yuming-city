@@ -4,13 +4,17 @@ extends StoryLevel
 ## 第 2 章幾乎都在這座建築裡（城主的飯廳 → 鐘院內室的主椅與鐘盤 → 牆上的紋路 → 窗簾後面的眼睛），之後的段落往北接。
 ## 段落 1 飯桌：三盤煮豆、一鍋稀粥、四個缺口不一樣的碗。走到桌邊 → 伊薩替諾恩拉椅子（右腿的金屬支架吱一聲）→
 ## 他先問席菈的手、再問彌夏的弟弟 →「他為什麼進了鐘院？」伊薩沒有立刻回答 → 對伊薩按住看穿：攻略的稱號一個字一個字被劃掉（D-158）→
-## 段落 2「他自願的。」「那你讓他現在出來。」「我做不到。」（諾恩可以先開口道歉，記 ch2.noen_apologized）→ 湯慢慢涼了 → 鐘院內室待續。
+## 段落 2「他自願的。」「那你讓他現在出來。」「我做不到。」（諾恩可以先開口道歉，記 ch2.noen_apologized）→ 湯慢慢涼了 →
+## 段落 3 鐘院內室（D-159）：走到北牆的門前，伊薩推開門 → 黑一下 → 內室：黎歐坐在銅椅（主椅）上，背後十幾條細管接進牆上的巨大鐘盤；
+## 全章唯一的暖光（細管裡的光團慢慢往鐘盤流＝被抽走的壽命）→ 過場 ch2_leo（可跳過）「妳剪頭髮了。」→ 彌夏一巴掌、捧住他的臉 →
+## 檢查點 ch2_inner → 牆上的紋路（段落 4）待續。
 ## 還在白晝城裡：照第 1 章的規則，屋裡一盞不投影子的白燈，只有諾恩的油燈投影子；接地陰影也拿掉。
 ##
-## 房間：東西 10 m（x -5～5）、南北 10 m（z -5～5），從南牆的門進來；北牆正中是通往鐘院內室的門（之後的段落）。
+## 房間：東西 10 m（x -5～5）、南北 10 m（z -5～5），從南牆的門進來；北牆正中是通往鐘院內室的門。
+## 內室：北牆後面 x -4.5～4.5、z -5.3～-14.3、高 6.5 m；鐘盤在最北的牆上、主椅面向門。
 
 const QUEST: String = "ch2_main"
-const STAGES: PackedStringArray = ["isa_table", "isa_volunteer", "inner_room"]
+const STAGES: PackedStringArray = ["isa_table", "isa_volunteer", "inner_room", "meet_leo", "wall_carvings"]
 const ROOM_HALF: Vector2 = Vector2(5.0, 5.0)
 const WALL_H: float = 3.8
 const WALL_T: float = 0.3
@@ -44,6 +48,45 @@ const SILENCE_SEC: float = 12.0
 const COOL_SEC: float = 24.0
 const STEAM_COLD: float = 0.12
 const INNER_DOOR_POS: Vector3 = Vector3(0.0, 0.0, -4.9)
+## 鐘院內室（段落 3，D-159）
+const INNER_HALF_X: float = 4.5
+const INNER_Z_NEAR: float = -5.3
+const INNER_Z_FAR: float = -14.3
+const INNER_H: float = 6.5
+const DOOR_W: float = 1.6
+const DOOR_H: float = 2.8
+## 走到門前這麼近（門的南邊）→ 伊薩推開門、進內室
+const ENTER_RANGE: float = 1.6
+const LEO_CUTSCENE: String = "ch2_leo"
+## 主椅（銅椅）：面向門（+Z），椅背朝鐘盤
+const MAIN_SEAT_POS: Vector3 = Vector3(0.0, 0.0, -10.8)
+const SEAT_TOP: float = 0.44
+const DIAL_CENTER: Vector3 = Vector3(0.0, 3.4, -14.15)
+const DIAL_RADIUS: float = 2.5
+## 細管：從椅背接進鐘盤的條數（原作「十幾條」）
+const TUBE_COUNT: int = 12
+## 進內室之後每個人站的地方；彌夏一開始站在門口（「一步都沒有走」），過場裡走到黎歐旁邊
+const INNER_SPOTS: Dictionary = {
+	"noen": Vector3(1.6, 0.0, -6.9),
+	"sheila": Vector3(-1.7, 0.0, -7.1),
+	"isa": Vector3(-2.3, 0.0, -9.9),
+	"misha_door": Vector3(0.0, 0.0, -5.8),
+	"misha": Vector3(0.85, 0.0, -10.7),
+}
+## 牆上的紋路（段落 4 用；先擺 4 塊浮雕的白盒）：西牆，從門口往裡
+const CARVING_ZS: Array[float] = [-7.2, -8.8, -10.4, -12.0]
+## 內室的氣氛（0＝飯廳的白光，1＝內室的暖光）：諾恩走進內室就慢慢換過去，走回飯廳就換回來
+const MOOD_RATE: float = 1.6
+const HALL_BG: Color = Color(0.7, 0.72, 0.75)
+const HALL_AMBIENT: Color = Color(0.9, 0.93, 1.0)
+const HALL_AMBIENT_ENERGY: float = 0.85
+const INNER_BG: Color = Color(0.1, 0.075, 0.06)
+const INNER_AMBIENT: Color = Color(1.0, 0.76, 0.52)
+const INNER_AMBIENT_ENERGY: float = 0.16
+const COPPER: Color = Color(0.72, 0.44, 0.27)
+const BRONZE: Color = Color(0.6, 0.42, 0.22)
+const BRONZE_DARK: Color = Color(0.3, 0.2, 0.12)
+const WARM: Color = Color(1.0, 0.6, 0.3)
 ## 看穿伊薩（段落 1，D-158）：離他多近、按住看穿才會跳出攻略的小卡
 const ISA_INSIGHT_RANGE: float = 9.0
 const LAMP_RANGE: float = 7.0
@@ -63,6 +106,14 @@ var _chair: Node3D
 var _seated: bool = false
 var _continued_shown: bool = false
 var _strike: StrikeCard
+var _leo: Puppet
+var _door: Node3D
+var _door_block: CollisionShape3D
+var _env: Environment
+var _ceiling_lamp: OmniLight3D
+## 內室的氣氛（0～1，見 MOOD_RATE）
+var mood: float = 0.0
+var _carvings_shown: bool = false
 ## 坐下之後、沒按看穿的沉默秒數
 var silence: float = 0.0
 ## 粥鍋上的熱氣（1＝剛端上來，STEAM_COLD＝涼了）
@@ -80,12 +131,15 @@ func _ready() -> void:
 	_build_environment()
 	_build_room()
 	_build_table()
+	_build_inner_room()
+	_build_cutscene_cameras()
 	_init_story()
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
 		_put(player, SPAWN, 0.0)
 	_set_up_lamp()
 	_build_people()
+	_build_leo()
 	_build_isa_insight()
 	_hide_contact_shadows.call_deferred()
 	Game.dialogue_ended.connect(_on_dialogue_ended)
@@ -96,11 +150,19 @@ func _ready() -> void:
 	var at: String = str(dev_args.get("hall-at", ""))
 	if at == "seated":
 		Game.session.set_flag("ch2.table_seated", true)
+	# `--hall-at=inner` 走進內室、過場開始（再加 `--hall-shot=N` 停在第 N 個鏡頭）；`--hall-at=leo` 過場看完、站在內室
+	if at in ["inner", "leo"]:
+		dev_reach_inner_room(Game.session, at == "leo")
 	# 已經坐下過（重來、讀檔）：直接在桌邊
 	if bool(Game.session.state.get_flag("ch2.table_seated", false)):
 		_seat_everyone()
 	if at == "table" and Game.session.quests.stage_of(QUEST) == "isa_table":
 		take_seat.call_deferred()
+	# 已經進過內室（重來、讀檔、開發旗標）：大家在內室；過場還沒看完就重新播
+	if bool(Game.session.state.get_flag("ch2.inner_room_entered", false)):
+		_place_inner(bool(Game.session.state.get_flag("ch2.leo_met", false)))
+		if Game.session.quests.stage_of(QUEST) == "meet_leo":
+			_play_leo_cutscene.call_deferred(int(str(dev_args.get("hall-shot", "0"))))
 	if dev_args.has("hall-insight") and _strike != null and not _strike.is_done():
 		_dev_insight = true
 		_strike.held = float(str(dev_args["hall-insight"]))
@@ -123,6 +185,17 @@ static func dev_start_chapter2(s: GameSession) -> void:
 		s.state.set_flag("ch1.rabbit_seen", true)
 		s.set_flag("ch1.reached_bell_yard", true)
 	s.attach_achievements(ach)
+
+
+## 開發旗標用：照正式流程推到進內室（leo_met＝過場也看完）。
+static func dev_reach_inner_room(s: GameSession, leo_met: bool) -> void:
+	s.set_flag("ch2.table_seated", true)
+	s.set_flag("ch2.usurper_crossed_out", true)
+	s.state.set_flag("ch2.noen_apologized", true)
+	s.set_flag("ch2.volunteer_talked", true)
+	s.set_flag("ch2.inner_room_entered", true)
+	if leo_met:
+		s.set_flag("ch2.leo_met", true)
 
 
 func _put(node: Node3D, p: Vector3, yaw: float) -> void:
@@ -168,8 +241,12 @@ func _physics_process(delta: float) -> void:
 		if bool(Game.session.state.get_flag("ch2.usurper_crossed_out", false)) or silence >= SILENCE_SEC:
 			Game.start_dialogue(VOLUNTEER_TALK)
 			return
-	# 段落 3（鐘院內室）還沒做：伊薩說「跟我來」之後顯示「待續」
-	if stage == "inner_room" and not _continued_shown:
+	# 段落 3：走到內室的門前 → 伊薩推開門
+	if stage == "inner_room" and _flat(player.global_position, INNER_DOOR_POS + Vector3(0, 0, 0.6)) <= ENTER_RANGE:
+		enter_inner_room()
+		return
+	# 段落 4（牆上的紋路）還沒做：過場看完之後顯示「待續」
+	if stage == "wall_carvings" and not _continued_shown:
 		_continued_shown = true
 		_banner("CH1_TO_BE_CONTINUED", 6.0)
 
@@ -189,6 +266,7 @@ func _build_isa_insight() -> void:
 
 func _process(delta: float) -> void:
 	_update_steam(delta)
+	_update_mood(delta)
 	var player: PlayerController = get_node_or_null("Player") as PlayerController
 	if _dev_insight:
 		update_isa_insight(0.0, true)
@@ -320,6 +398,7 @@ func _build_environment() -> void:
 	we.name = "WorldEnvironment"
 	we.environment = env
 	add_child(we)
+	_env = env
 
 
 func _solid(node_name: String, size: Vector3, pos: Vector3, mat: Material, collide: bool = true) -> MeshInstance3D:
@@ -367,16 +446,49 @@ func _build_room() -> void:
 	var wood: StandardMaterial3D = _mat(WOOD, 0.85)
 	_solid("Floor", Vector3(hx * 2.0 + 1.0, 0.4, hz * 2.0 + 1.0), Vector3(0, -0.2, 0), _mat(FLOOR, 0.9))
 	_solid("Ceiling", Vector3(hx * 2.0 + 1.0, 0.3, hz * 2.0 + 1.0), Vector3(0, WALL_H + 0.15, 0), plaster, false)
-	_solid("WallNorth", Vector3(hx * 2.0, WALL_H, WALL_T), Vector3(0, WALL_H * 0.5, -hz - WALL_T * 0.5), plaster)
+	# 北牆中間留內室的門洞（段落 3）：左右兩段＋門楣；門洞平常由 InnerDoorBlock 擋住，伊薩推開門才拿掉
+	var side_w: float = hx - DOOR_W * 0.5
+	for sx: float in [-1.0, 1.0]:
+		_solid("WallNorth" + ("W" if sx < 0.0 else "E"), Vector3(side_w, WALL_H, WALL_T),
+				Vector3(sx * (DOOR_W * 0.5 + side_w * 0.5), WALL_H * 0.5, -hz - WALL_T * 0.5), plaster)
+	_solid("WallNorthLintel", Vector3(DOOR_W, WALL_H - DOOR_H, WALL_T), Vector3(0, DOOR_H + (WALL_H - DOOR_H) * 0.5, -hz - WALL_T * 0.5), plaster)
 	_solid("WallSouth", Vector3(hx * 2.0, WALL_H, WALL_T), Vector3(0, WALL_H * 0.5, hz + WALL_T * 0.5), plaster)
 	_solid("WallWest", Vector3(WALL_T, WALL_H, hz * 2.0), Vector3(-hx - WALL_T * 0.5, WALL_H * 0.5, 0), plaster)
 	_solid("WallEast", Vector3(WALL_T, WALL_H, hz * 2.0), Vector3(hx + WALL_T * 0.5, WALL_H * 0.5, 0), plaster)
 	# 進來的門（南牆，關上了）與鐘院內室的門（北牆正中，比一般的門高、鐵條釘著）
 	_solid("HallDoor", Vector3(1.2, 2.2, 0.08), Vector3(0, 1.1, hz - 0.05), wood, false)
-	_solid("InnerDoor", Vector3(1.6, 2.8, 0.1), INNER_DOOR_POS + Vector3(0, 1.4, 0), wood, false)
+	# 內室的門：鉸鏈在西邊（InnerDoor 是轉軸），往內室那邊（-Z）推開
+	_door = Node3D.new()
+	_door.name = "InnerDoor"
+	_door.position = INNER_DOOR_POS + Vector3(-DOOR_W * 0.5, 0, 0)
+	add_child(_door)
+	var slab := MeshInstance3D.new()
+	slab.name = "Slab"
+	var sm := BoxMesh.new()
+	sm.size = Vector3(DOOR_W, DOOR_H, 0.1)
+	slab.mesh = sm
+	slab.material_override = wood
+	slab.position = Vector3(DOOR_W * 0.5, DOOR_H * 0.5, 0)
+	_door.add_child(slab)
 	var iron: StandardMaterial3D = _mat(IRON, 0.6)
 	for y: float in [0.5, 1.4, 2.3]:
-		_solid("InnerDoorBand%d" % int(y * 10.0), Vector3(1.66, 0.08, 0.04), INNER_DOOR_POS + Vector3(0, y, 0.07), iron, false)
+		var band := MeshInstance3D.new()
+		band.name = "Band%d" % int(y * 10.0)
+		var bm := BoxMesh.new()
+		bm.size = Vector3(DOOR_W + 0.06, 0.08, 0.04)
+		band.mesh = bm
+		band.material_override = iron
+		band.position = Vector3(DOOR_W * 0.5, y, 0.07)
+		_door.add_child(band)
+	var block := StaticBody3D.new()
+	block.name = "InnerDoorBlock"
+	_door_block = CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(DOOR_W, DOOR_H, WALL_T)
+	_door_block.shape = bs
+	block.add_child(_door_block)
+	block.position = Vector3(0, DOOR_H * 0.5, -hz - WALL_T * 0.5)
+	add_child(block)
 	# 牆腳一圈深色的石條（白盒裡讀得出地板與牆的交界）
 	var skirting: StandardMaterial3D = _mat(Color(0.44, 0.42, 0.4), 0.9)
 	_solid("SkirtNorth", Vector3(hx * 2.0, 0.18, 0.06), Vector3(0, 0.09, -hz + 0.03), skirting, false)
@@ -392,6 +504,7 @@ func _build_room() -> void:
 	lamp.shadow_enabled = false
 	lamp.position = Vector3(0, WALL_H - 0.4, -0.6)
 	add_child(lamp)
+	_ceiling_lamp = lamp
 
 
 ## 長桌：三盤煮豆、一鍋稀粥、四個缺口不一樣的碗；桌邊的木椅（伊薩替諾恩拉的那張是 IsaChair）。
@@ -558,3 +671,401 @@ func _add_leg_brace(p: Puppet) -> void:
 
 func has_leg_brace() -> bool:
 	return _isa != null and _isa.joint("knee_R") != null and _isa.joint("knee_R").has_node("LegBrace")
+
+
+# ---------------------------------------------------------------- 段落 3：鐘院內室（D-159）
+
+## 走到內室的門前（測試也用）：伊薩推開門 → 黑一下 → 大家在內室裡（彌夏停在門口）→ 過場「妳剪頭髮了。」
+func enter_inner_room() -> void:
+	if bool(Game.session.state.get_flag("ch2.inner_room_entered", false)):
+		return
+	Sfx.play_at(self, "brace_creak", INNER_DOOR_POS + Vector3(0, 1.0, 0), -9.0)
+	Game.session.set_flag("ch2.inner_room_entered", true)
+	_place_inner(false)
+	_cut_from_black(0.9)
+	_play_leo_cutscene(0)
+
+
+## 過場 ch2_leo；shot＞0 是截圖用（直接跳到第 shot 個鏡頭）。
+func _play_leo_cutscene(shot: int) -> void:
+	if Game.is_in_cutscene() or bool(Game.session.state.get_flag("ch2.leo_met", false)):
+		return
+	if not Game.play_cutscene(LEO_CUTSCENE):
+		return
+	for i: int in shot:
+		Game.cutscene.update(100.0)
+
+
+## 大家在內室裡的位置；after＝過場看完（彌夏在黎歐旁邊），否則彌夏還站在門口。門開著、氣氛直接換成內室的暖光。
+func _place_inner(after: bool) -> void:
+	_open_door(false)
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	if player != null:
+		var at: Vector3 = INNER_SPOTS["noen"] as Vector3
+		var to: Vector3 = MAIN_SEAT_POS - at
+		_put(player, at, atan2(-to.x, -to.z))
+	var ally: Node3D = get_node_or_null("Sheila") as Node3D
+	if ally != null:
+		ally.global_position = (INNER_SPOTS["sheila"] as Vector3) + Vector3(0, 0.05, 0)
+	if _isa != null:
+		_isa.global_position = INNER_SPOTS["isa"] as Vector3
+		_face(_isa, MAIN_SEAT_POS)
+	if _misha != null:
+		_misha.global_position = INNER_SPOTS["misha" if after else "misha_door"] as Vector3
+		_face(_misha, MAIN_SEAT_POS)
+		_misha.set_move_speed(0.0)
+	mood = 1.0
+	_apply_mood()
+
+
+func _face(p: Node3D, target: Vector3) -> void:
+	var to: Vector3 = target - p.global_position
+	p.rotation.y = atan2(-to.x, -to.z)
+
+
+func _open_door(animate: bool) -> void:
+	if _door_block != null:
+		_door_block.disabled = true
+	if _door == null:
+		return
+	if animate:
+		_door.create_tween().tween_property(_door, "rotation:y", 1.75, 0.6).set_trans(Tween.TRANS_SINE)
+	else:
+		_door.rotation.y = 1.75
+
+
+func is_door_open() -> bool:
+	return _door_block != null and _door_block.disabled
+
+
+## 諾恩在內室裡（門的北邊）。
+func is_in_inner_room() -> bool:
+	var player: Node3D = get_node_or_null("Player") as Node3D
+	return player != null and player.global_position.z < INNER_Z_NEAR
+
+
+## 內室的氣氛：諾恩走進內室 → 背景、環境光慢慢換成暗暖色，飯廳天花板的白燈關小（不投影子的光會穿牆）。
+func _update_mood(delta: float) -> void:
+	var target: float = 1.0 if is_in_inner_room() else 0.0
+	if is_equal_approx(mood, target):
+		return
+	mood = move_toward(mood, target, delta * MOOD_RATE)
+	_apply_mood()
+
+
+func _apply_mood() -> void:
+	if _env != null:
+		_env.background_color = HALL_BG.lerp(INNER_BG, mood)
+		_env.ambient_light_color = HALL_AMBIENT.lerp(INNER_AMBIENT, mood)
+		_env.ambient_light_energy = lerpf(HALL_AMBIENT_ENERGY, INNER_AMBIENT_ENERGY, mood)
+	if _ceiling_lamp != null:
+		_ceiling_lamp.light_energy = 0.6 * (1.0 - mood)
+
+
+func _on_cutscene_event(event: String, shot: Dictionary) -> void:
+	match event:
+		"misha_walk":
+			if _misha != null:
+				var to: Vector3 = INNER_SPOTS["misha"] as Vector3
+				_face(_misha, to)
+				_misha.set_move_speed(1.0)
+				var tw: Tween = _misha.create_tween()
+				tw.tween_property(_misha, "global_position", to, 2.2)
+				tw.tween_callback(_misha_arrived)
+		"slap":
+			Sfx.play_at(self, "slap", MAIN_SEAT_POS + Vector3(0, 1.1, 0.3), -6.0, 0.02)
+		_:
+			super._on_cutscene_event(event, shot)
+
+
+func _misha_arrived() -> void:
+	if _misha != null:
+		_misha.set_move_speed(0.0)
+		_face(_misha, MAIN_SEAT_POS)
+
+
+## 過場結束（跳過也一樣）：彌夏站在黎歐旁邊。
+func _on_cutscene_ended(cutscene_id: String, skipped: bool) -> void:
+	super._on_cutscene_ended(cutscene_id, skipped)
+	if cutscene_id == LEO_CUTSCENE:
+		_place_inner(true)
+
+
+func _cut_from_black(seconds: float) -> void:
+	var old: Node = get_node_or_null("CutFade")
+	if old != null:
+		old.free()
+	var layer := CanvasLayer.new()
+	layer.name = "CutFade"
+	layer.layer = 5
+	var rect := ColorRect.new()
+	rect.color = Color.BLACK
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	add_child(layer)
+	var tw: Tween = layer.create_tween()
+	tw.tween_interval(seconds * 0.3)
+	tw.tween_property(rect, "modulate:a", 0.0, seconds * 0.7)
+	tw.tween_callback(layer.queue_free)
+
+
+## 過場鏡頭（CutsceneView 依名字找）。
+func _build_cutscene_cameras() -> void:
+	var seat: Vector3 = MAIN_SEAT_POS
+	# 遠景從門口往裡看（彌夏站在鏡頭後面的門口、諾恩與席菈在兩側畫面外）
+	_camera_marker("InnerCamWide", Vector3(0.6, 1.85, -6.3), Vector3(0.0, 2.2, -13.0))
+	_camera_marker("InnerCamLeo", seat + Vector3(0.55, 1.3, 2.0), seat + Vector3(0.0, 1.05, 0.0))
+	_camera_marker("InnerCamMisha", seat + Vector3(-0.5, 1.45, 0.9), (INNER_SPOTS["misha_door"] as Vector3) + Vector3(0, 1.35, 0))
+	_camera_marker("InnerCamTwo", seat + Vector3(2.3, 1.45, 1.6), seat + Vector3(0.2, 1.05, 0.4))
+
+
+## 內室：石地板、高牆、牆上的巨大鐘盤、主椅（銅椅）、十二條細管、西牆 4 塊浮雕（段落 4）、三盞不投影子的暖光。
+func _build_inner_room() -> void:
+	var hx: float = INNER_HALF_X
+	var near: float = INNER_Z_NEAR
+	var far: float = INNER_Z_FAR
+	var depth: float = near - far
+	var mid: float = (near + far) * 0.5
+	var stone: StandardMaterial3D = _mat(Color(0.34, 0.31, 0.29), 0.88)
+	# 地板從飯廳地板的北緣（z -5.5）接起，不重疊
+	var floor_from: float = -ROOM_HALF.y - 0.5
+	_solid("InnerFloor", Vector3(hx * 2.0 + 0.6, 0.4, floor_from - far + 0.5), Vector3(0, -0.2, (floor_from + far - 0.5) * 0.5), _mat(Color(0.36, 0.32, 0.28), 0.85))
+	_solid("InnerCeiling", Vector3(hx * 2.0 + 0.6, 0.3, depth + 0.6), Vector3(0, INNER_H + 0.15, mid), stone, false)
+	_solid("InnerWallWest", Vector3(WALL_T, INNER_H, depth), Vector3(-hx - WALL_T * 0.5, INNER_H * 0.5, mid), stone)
+	_solid("InnerWallEast", Vector3(WALL_T, INNER_H, depth), Vector3(hx + WALL_T * 0.5, INNER_H * 0.5, mid), stone)
+	_solid("InnerWallNorth", Vector3(hx * 2.0 + 0.6, INNER_H, WALL_T), Vector3(0, INNER_H * 0.5, far - WALL_T * 0.5), stone)
+	# 飯廳的北牆只有 3.8 m 高：上面補一段到內室的天花板
+	_solid("InnerWallSouthUpper", Vector3(hx * 2.0, INNER_H - WALL_H, WALL_T), Vector3(0, WALL_H + (INNER_H - WALL_H) * 0.5, -ROOM_HALF.y - WALL_T * 0.5), stone, false)
+	_build_dial()
+	_build_main_seat()
+	_build_tubes()
+	_build_carvings()
+	for spec: Array in [
+		["DialGlow", Vector3(0, 3.0, -12.9), 2.4, 7.5],
+		["SeatGlow", Vector3(0, 1.3, -11.8), 1.0, 3.6],
+		["InnerFill", Vector3(0, 3.0, -8.2), 0.4, 4.2],
+		["EastFill", Vector3(3.0, 2.5, -9.2), 0.35, 4.0],
+	]:
+		var l := OmniLight3D.new()
+		l.name = str(spec[0])
+		l.light_color = WARM
+		l.position = spec[1] as Vector3
+		l.light_energy = float(spec[2])
+		l.omni_range = float(spec[3])
+		l.shadow_enabled = false
+		add_child(l)
+
+
+func _metal(color: Color, metallic: float, rough: float) -> StandardMaterial3D:
+	var m: StandardMaterial3D = _mat(color, rough)
+	m.metallic = metallic
+	return m
+
+
+## 牆上的巨大鐘盤（面向 +Z）：銅框、深色盤面、內圈、中心軸、九道刻痕（九聲，微微發光）。
+func _build_dial() -> void:
+	var dial := Node3D.new()
+	dial.name = "BellDial"
+	dial.position = DIAL_CENTER
+	add_child(dial)
+	var bronze: StandardMaterial3D = _metal(BRONZE, 0.85, 0.3)
+	var face := MeshInstance3D.new()
+	face.name = "Face"
+	var fm := CylinderMesh.new()
+	fm.top_radius = DIAL_RADIUS - 0.15
+	fm.bottom_radius = DIAL_RADIUS - 0.15
+	fm.height = 0.1
+	fm.radial_segments = 48
+	face.mesh = fm
+	face.material_override = _metal(BRONZE_DARK, 0.7, 0.45)
+	face.rotation.x = PI * 0.5
+	dial.add_child(face)
+	for ring: Array in [["Rim", DIAL_RADIUS - 0.2, DIAL_RADIUS, 0.04], ["InnerRing", 1.42, 1.52, 0.06]]:
+		var mi := MeshInstance3D.new()
+		mi.name = str(ring[0])
+		var tm := TorusMesh.new()
+		tm.inner_radius = float(ring[1])
+		tm.outer_radius = float(ring[2])
+		tm.rings = 48
+		tm.ring_segments = 8
+		mi.mesh = tm
+		mi.material_override = bronze
+		mi.rotation.x = PI * 0.5
+		mi.position = Vector3(0, 0, float(ring[3]))
+		dial.add_child(mi)
+	var hub := MeshInstance3D.new()
+	hub.name = "Hub"
+	var hm := CylinderMesh.new()
+	hm.top_radius = 0.3
+	hm.bottom_radius = 0.34
+	hm.height = 0.24
+	hm.radial_segments = 24
+	hub.mesh = hm
+	hub.material_override = bronze
+	hub.rotation.x = PI * 0.5
+	hub.position = Vector3(0, 0, 0.1)
+	dial.add_child(hub)
+	var tick_mat: StandardMaterial3D = _metal(BRONZE, 0.6, 0.35)
+	tick_mat.emission_enabled = true
+	tick_mat.emission = WARM
+	tick_mat.emission_energy_multiplier = 1.4
+	for i: int in 9:
+		var a: float = TAU * float(i) / 9.0
+		var tick := MeshInstance3D.new()
+		tick.name = "Tick%d" % i
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.07, 0.34, 0.05)
+		tick.mesh = bm
+		tick.material_override = tick_mat
+		tick.position = Vector3(sin(a) * 1.95, cos(a) * 1.95, 0.07)
+		tick.rotation.z = -a
+		dial.add_child(tick)
+
+
+## 主椅（銅椅）：比木椅大、高椅背、扶手；面向門（+Z），椅背朝鐘盤。黎歐坐在上面。
+func _build_main_seat() -> void:
+	var seat := Node3D.new()
+	seat.name = "MainSeat"
+	seat.position = MAIN_SEAT_POS
+	add_child(seat)
+	var copper: StandardMaterial3D = _metal(COPPER, 0.85, 0.28)
+	var parts: Array[Array] = [
+		["Seat", Vector3(0.66, 0.07, 0.58), Vector3(0, SEAT_TOP - 0.035, 0)],
+		["Back", Vector3(0.7, 1.55, 0.08), Vector3(0, SEAT_TOP + 0.7, -0.3)],
+		["Crest", Vector3(0.86, 0.1, 0.12), Vector3(0, SEAT_TOP + 1.5, -0.3)],
+	]
+	for sx: float in [-1.0, 1.0]:
+		parts.append(["Arm", Vector3(0.07, 0.06, 0.56), Vector3(sx * 0.36, SEAT_TOP + 0.26, -0.02)])
+		parts.append(["ArmPost", Vector3(0.06, 0.26, 0.06), Vector3(sx * 0.36, SEAT_TOP + 0.13, 0.22)])
+		for sz: float in [-1.0, 1.0]:
+			parts.append(["Leg", Vector3(0.07, SEAT_TOP - 0.07, 0.07), Vector3(sx * 0.29, (SEAT_TOP - 0.07) * 0.5, sz * 0.25)])
+	var i: int = 0
+	for part: Array in parts:
+		var mi := MeshInstance3D.new()
+		mi.name = "%s%d" % [str(part[0]), i]
+		i += 1
+		var bm := BoxMesh.new()
+		bm.size = part[1] as Vector3
+		mi.mesh = bm
+		mi.material_override = copper
+		mi.position = part[2] as Vector3
+		seat.add_child(mi)
+
+
+## 細管的兩端：椅背後面（往上排兩列）→ 鐘盤上（繞中心散開）。
+func tube_ends(i: int) -> Array[Vector3]:
+	var col: float = float(i % 6) / 5.0 - 0.5
+	var row: int = floori(float(i) / 6.0)
+	var from: Vector3 = MAIN_SEAT_POS + Vector3(col * 0.5, SEAT_TOP + 0.45 + 0.5 * float(row), -0.36)
+	var a: float = TAU * (float(i) + 0.5) / float(TUBE_COUNT)
+	var r: float = 0.55 + 0.35 * float(i % 3)
+	var to: Vector3 = DIAL_CENTER + Vector3(sin(a) * r, cos(a) * r, 0.06)
+	var out: Array[Vector3] = [from, to]
+	return out
+
+
+## 十二條細管：從椅背垂下、在地上方一點點繞、再往上接進鐘盤。一個 mesh（UV.y＝從椅背量起的公尺數、UV2.x＝每條的相位），
+## shader 讓光團慢慢往鐘盤流（life_tube.gdshader）。
+func _build_tubes() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var base: int = 0
+	for i: int in TUBE_COUNT:
+		var ends: Array[Vector3] = tube_ends(i)
+		var p0: Vector3 = ends[0]
+		var p3: Vector3 = ends[1]
+		var p1: Vector3 = p0 + Vector3(0, -0.55, -0.7)
+		var p2: Vector3 = p3 + Vector3(0, -1.6 - 0.1 * float(i % 4), 1.3)
+		base = _add_tube(st, base, [p0, p1, p2, p3], 0.022 + 0.006 * float(i % 3), float(i) * 0.37)
+	var mi := MeshInstance3D.new()
+	mi.name = "LifeTubes"
+	mi.mesh = st.commit()
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://src/world/life_tube.gdshader") as Shader
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+
+static func _bezier(c: Array, t: float) -> Vector3:
+	var u: float = 1.0 - t
+	return (c[0] as Vector3) * u * u * u + (c[1] as Vector3) * 3.0 * u * u * t + (c[2] as Vector3) * 3.0 * u * t * t + (c[3] as Vector3) * t * t * t
+
+
+## 一條沿著三次貝茲曲線的細管（6 邊形截面）；回傳下一條的頂點起點。
+func _add_tube(st: SurfaceTool, base: int, c: Array, radius: float, phase: float) -> int:
+	const SEGS: int = 28
+	const SIDES: int = 6
+	var along: float = 0.0
+	var prev: Vector3 = _bezier(c, 0.0)
+	for k: int in SEGS + 1:
+		var t: float = float(k) / float(SEGS)
+		var p: Vector3 = _bezier(c, t)
+		along += p.distance_to(prev)
+		prev = p
+		var tangent: Vector3 = (_bezier(c, minf(t + 0.01, 1.0)) - _bezier(c, maxf(t - 0.01, 0.0))).normalized()
+		var side: Vector3 = tangent.cross(Vector3.UP)
+		if side.length() < 0.01:
+			side = tangent.cross(Vector3.RIGHT)
+		side = side.normalized()
+		var up: Vector3 = side.cross(tangent).normalized()
+		for j: int in SIDES:
+			var a: float = TAU * float(j) / float(SIDES)
+			var n: Vector3 = side * cos(a) + up * sin(a)
+			st.set_normal(n)
+			st.set_uv(Vector2(float(j) / float(SIDES), along))
+			st.set_uv2(Vector2(phase, 0.0))
+			st.add_vertex(p + n * radius)
+	for k: int in SEGS:
+		for j: int in SIDES:
+			var a0: int = base + k * SIDES + j
+			var a1: int = base + k * SIDES + (j + 1) % SIDES
+			var b0: int = a0 + SIDES
+			var b1: int = a1 + SIDES
+			st.add_index(a0)
+			st.add_index(b0)
+			st.add_index(a1)
+			st.add_index(a1)
+			st.add_index(b0)
+			st.add_index(b1)
+	return base + (SEGS + 1) * SIDES
+
+
+## 牆上的紋路（段落 4 才能互動；先擺 4 塊浮雕的白盒）：西牆上一排淺色石板，每塊上面幾道刻痕。
+func _build_carvings() -> void:
+	var root := Node3D.new()
+	root.name = "WallCarvings"
+	root.position = Vector3(-INNER_HALF_X + 0.08, 0.0, (CARVING_ZS[0] + CARVING_ZS[CARVING_ZS.size() - 1]) * 0.5)
+	add_child(root)
+	var slab_mat: StandardMaterial3D = _mat(Color(0.56, 0.5, 0.43), 0.9)
+	var groove: StandardMaterial3D = _mat(Color(0.26, 0.22, 0.19), 0.95)
+	for i: int in CARVING_ZS.size():
+		var panel := MeshInstance3D.new()
+		panel.name = "Carving%d" % i
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.1, 1.5, 1.15)
+		panel.mesh = bm
+		panel.material_override = slab_mat
+		panel.position = Vector3(0.0, 1.7, CARVING_ZS[i] - root.position.z)
+		root.add_child(panel)
+		for g: int in 3:
+			var line := MeshInstance3D.new()
+			var lm := BoxMesh.new()
+			lm.size = Vector3(0.02, 0.05, 0.8 - 0.18 * float((g + i) % 3))
+			line.mesh = lm
+			line.material_override = groove
+			line.position = Vector3(0.055, 0.35 - 0.35 * float(g), 0.0)
+			panel.add_child(line)
+
+
+## 黎歐：坐在主椅上（程序人偶的坐姿），面向門。
+func _build_leo() -> void:
+	_leo = _puppet("Leo", Color(0.27, 0.29, 0.32), Color(0.56, 0.5, 0.42))
+	_leo.sitting = true
+	_leo.global_position = MAIN_SEAT_POS + Vector3(0, 0, -0.08)
+	_leo.rotation.y = PI
+
+
+func leo() -> Puppet:
+	return _leo

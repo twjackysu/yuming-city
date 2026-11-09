@@ -28,3 +28,14 @@ DLG_CH2_VOL_R_SORRY2,…Eat first. The soup is getting cold.,……先吃吧。�
 DLG_CH2_VOL_R_SILENT,(I looked at the beans and said nothing.),（我看著那盤豆子，什麼都沒說。）
 DLG_CH2_VOL_004,(The soup on the table slowly went cold.),（桌上的湯慢慢涼了。）
 DLG_CH2_VOL_005,Come with me. You should see him.,跟我來。妳該見他一面。
+SPK_LEO,Leo,黎歐
+Q_CH2_OBJ_LEO,Misha's brother is in the inner room,彌夏的弟弟在內室裡
+Q_CH2_OBJ_CARVINGS,Look at the carvings on the wall,看牆上的紋路
+CUT_CH2_LEO_001,"Misha's brother was called Leo. Seventeen, with her eyes. He sat in a copper chair, and a dozen thin tubes ran from his back into a great bell dial on the wall.",彌夏的弟弟叫黎歐。十七歲，眉眼和她很像，坐在一張銅椅裡，背後十幾條細管接進牆上的巨大鐘盤。
+CUT_CH2_LEO_SMILE,"He saw his sister, and smiled first.",他看見姊姊，先笑了。
+CUT_CH2_LEO_002,You cut your hair.,妳剪頭髮了。
+CUT_CH2_LEO_003,Misha stayed in the doorway. She didn't take a single step.,彌夏站在門口，一步都沒有走。
+CUT_CH2_LEO_004,I said in my letter not to come. Did the fish eat that part?,我信裡說別來。魚是不是把那段吃掉了？
+CUT_CH2_LEO_005,"She walked over to him,",她走過去，
+CUT_CH2_LEO_006,and slapped him.,給了他一巴掌。
+CUT_CH2_LEO_007,"Not hard. The same hand came up at once to hold his face, as if she were afraid he would break.",不重。打完立刻用同一隻手捧住他的臉，像怕把他碰碎。

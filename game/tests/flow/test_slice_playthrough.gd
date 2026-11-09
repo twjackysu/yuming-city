@@ -636,7 +636,84 @@ func _chapter2(city: StoryLevel) -> void:
 	for i: int in 3:
 		await tree.physics_frame
 	assert_false(_game.call("is_in_dialogue"), "[ch2_volunteer] 不會又開對話")
-	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 3（鐘院內室）待續")
+	assert_false(bool(hall.call("is_door_open")), "[ch2_volunteer] 內室的門還關著")
+	await _chapter2_inner(hall, see_through)
+
+
+## 第 2 章段落 3（D-159）：走到內室的門前 → 伊薩推開門 → 內室（主椅、鐘盤、細管、暖光）→ 過場「妳剪頭髮了。」→ 彌夏走到黎歐旁邊 →
+## 檢查點 ch2_inner → 牆上的紋路待續。兩條路線：看完整段過場／跳過（狀態一樣）。
+func _chapter2_inner(hall: StoryLevel, watch: bool) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	assert_eq(float(hall.get("mood")), 0.0, "還在飯廳：白光")
+	await _step_into(_player(hall), (hall.get("INNER_DOOR_POS") as Vector3) + Vector3(0.0, 0.0, 1.2), 3)
+	assert_eq(s.state.get_flag("ch2.inner_room_entered"), true, "走到內室的門前 → 進內室")
+	assert_true(bool(hall.call("is_door_open")), "伊薩推開門")
+	assert_true(bool(hall.call("is_in_inner_room")), "諾恩在內室裡")
+	assert_eq(s.quests.stage_of("ch2_main"), "meet_leo")
+	assert_true(_game.call("is_in_cutscene"), "→ 過場：黎歐")
+	var cs: CutsceneRunner = _game.get("cutscene") as CutsceneRunner
+	assert_eq(cs.id, "ch2_leo")
+	assert_eq(float(hall.get("mood")), 1.0, "內室：暖光")
+	await _assert_inner_room(hall, "[內室]")
+	var misha: Node3D = hall.get_node("Misha") as Node3D
+	var spots: Dictionary = hall.get("INNER_SPOTS") as Dictionary
+	assert_true(misha.global_position.distance_to(spots["misha_door"] as Vector3) < 0.1, "彌夏站在門口，一步都沒有走")
+	if watch:
+		var lines: PackedStringArray = []
+		var events: PackedStringArray = []
+		cs.event_fired.connect(func(e: String, _shot: Dictionary) -> void: events.append(e))
+		for i: int in 12:
+			if not cs.is_running():
+				break
+			lines.append(str(cs.current().get("line", "")))
+			cs.update(100.0)
+		assert_true("CUT_CH2_LEO_002" in lines, "妳剪頭髮了。")
+		assert_true("CUT_CH2_LEO_004" in lines, "魚是不是把那段吃掉了？")
+		assert_eq(events, PackedStringArray(["misha_walk", "slap"]), "過場事件：彌夏走過去、一巴掌")
+	else:
+		cs.skip()
+	await tree.process_frame
+	assert_false(_game.call("is_in_cutscene"), "過場結束")
+	assert_eq(s.state.get_flag("ch2.leo_met"), true)
+	assert_true(misha.global_position.distance_to(spots["misha"] as Vector3) < 0.1, "過場之後彌夏在黎歐旁邊（跳過也一樣）")
+	assert_eq(s.quests.stage_of("ch2_main"), "wall_carvings", "→ 牆上的紋路")
+	assert_eq(s.state.checkpoint, "ch2_inner")
+	hall = await _retry()
+	assert_eq(str(hall.name), "BellHall", "[ch2_inner] 重來還在鐘院")
+	assert_eq(_objective(hall), "Q_CH2_OBJ_CARVINGS", "[ch2_inner] HUD 目標")
+	assert_true(bool(hall.call("is_in_inner_room")), "[ch2_inner] 在內室裡")
+	assert_true(bool(hall.call("is_door_open")), "[ch2_inner] 門開著")
+	assert_false(_game.call("is_in_cutscene"), "[ch2_inner] 不會又播過場")
+	await _assert_bell_hall(hall, "[ch2_inner]")
+	await _assert_inner_room(hall, "[ch2_inner]")
+	for i: int in 3:
+		await tree.physics_frame
+	assert_eq((hall.get_node("Hud") as Hud).banner_text(), "CH1_TO_BE_CONTINUED", "段落 4（牆上的紋路）待續")
+	# 走回飯廳：氣氛換回白光
+	await _step_into(_player(hall), Vector3(0.0, 0.0, 1.5), 2)
+	for i: int in 400:
+		await tree.process_frame
+		if float(hall.get("mood")) <= 0.0:
+			break
+	assert_eq(float(hall.get("mood")), 0.0, "走回飯廳 → 白光")
+
+
+## 鐘院內室：主椅上坐著黎歐、牆上的鐘盤（九道刻痕）、十二條細管（光團往鐘盤流的 shader）、西牆 4 塊浮雕；暖光都不投影子。
+func _assert_inner_room(hall: StoryLevel, tag: String) -> void:
+	for n: String in ["Leo", "MainSeat", "BellDial", "BellDial/Hub", "LifeTubes", "WallCarvings", "InnerCamWide", "InnerCamLeo", "InnerCamMisha", "InnerCamTwo"]:
+		assert_true(hall.has_node(n), tag + " 有 " + n)
+	for i: int in 9:
+		assert_true(hall.has_node("BellDial/Tick%d" % i), tag + " 鐘盤上九道刻痕")
+	for i: int in 4:
+		assert_true(hall.has_node("WallCarvings/Carving%d" % i), tag + " 牆上 4 塊浮雕")
+	var leo: Puppet = hall.get_node("Leo") as Puppet
+	assert_true(leo.sitting, tag + " 黎歐坐在主椅上")
+	var tubes: MeshInstance3D = hall.get_node("LifeTubes") as MeshInstance3D
+	assert_eq(((tubes.material_override as ShaderMaterial).shader as Shader).resource_path, "res://src/world/life_tube.gdshader", tag + " 細管用流動微光的 shader")
+	assert_true(tubes.mesh.get_aabb().size.z > 2.5, tag + " 細管從椅背一路接到鐘盤")
+	for l: String in ["DialGlow", "SeatGlow", "InnerFill", "EastFill"]:
+		var light: OmniLight3D = hall.get_node(l) as OmniLight3D
+		assert_true(light.light_color.r > light.light_color.b, tag + " " + l + " 是暖光")
 
 
 ## 鐘院：還在白晝城裡——只有油燈投影子、沒有太陽、接地陰影拿掉；桌上三盤煮豆、一鍋稀粥、四個碗；伊薩右腿有支架。
