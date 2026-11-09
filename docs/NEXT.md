@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 52 輪）的程式 commit：04bc275 白天的霜橋鎮三項（含 CI 盤點截圖 `37-ch1-dead-list`；CI 狀態見 PROGRESS 第 52 輪的收尾補記，**開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--at=list --face=list` 拍不出來）。`37` 本機看過；screens 的 `33`～`36` 也還沒在 CI 上看過。開工照常先跑 `scripts/check.sh`（最後 357 個測試）。
+- 上一輪（第 52 輪）的程式 commit：04bc275 白天的霜橋鎮三項（含 CI 盤點截圖 `37-ch1-dead-list`）、54b7804 酒館的壁爐（CI 狀態見 PROGRESS 第 52 輪的收尾補記，**開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--at=list --face=list` 拍不出來）。`37` 本機看過；screens 的 `33`～`36` 也還沒在 CI 上看過。開工照常先跑 `scripts/check.sh`（最後 358 個測試）。
 - 上一輪（第 51 輪）的程式 commit：94b8b0f 掙脫戰（含 CI 盤點截圖 `36-ch3-struggle`）、2f3ac7f 閘道的小油燈、bf36f5f 掙脫戰的 HUD 目標（94b8b0f run 42667540276 全綠含盤點截圖；**bf36f5f run 42669199093 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑——開工先看整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=struggle` 拍不出來）。screens 的 `33`～`36` 還沒在 CI 上看過（`36` 本機看過）；`30-ch3-pinned`、`31-ch3-hang` 加了油燈之後也看一眼。開工照常先跑 `scripts/check.sh`（最後 353 個測試）。
 - 第 50 輪的程式 commit：b031f69 段落 7 轉角（含 CI 盤點截圖 `34-ch3-corner`、`35-part1-end`；**run 42658889619 收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑；Jacky 的 ce168d5 run 42659052614 也含本輪程式——開工先看這兩個的整個綠燈**，盤點截圖 job 紅了多半是 `--canal-at=corner|end` 拍不出來）。screens 的 `33`～`35` 還沒在 CI 上看過（`34`、`35` 本機看過）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。
 - 上一輪（第 49 輪）的程式 commit：7c36446 段落 5 倒吊（run 42647985244 全綠）、e4fce4a 段落 6 彌夏的圖、072a766 CI 盤點截圖 `33-ch3-map`（這兩個的 run 被 Jacky 的 c597dfa 取代；**c597dfa run 42649881926「測試與匯出」已綠，盤點截圖 job 收尾時還在跑——開工先看它是不是綠的**，紅了多半是 `--canal-at=map` 拍不出來）。screens 的 `31-ch3-hang`、`32-ch3-mud`、`33-ch3-map` 還沒在 CI 上看過（本機看過，見第 5 節第 49 輪）。開工照常先跑 `scripts/check.sh`（最後 350 個測試）。第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。
@@ -174,7 +174,7 @@
   - 截圖 `--level=frostbridge --day=ada_lamp --at=list --face=list`（名單前）／`--at=north --face=shroud`（北街的毛毯）。測試 `test_dead_list.gd`、流程 `_chapter1_day` 看名單、`_assert_day_town`。
   - 還可以：名單上的字是墨痕（近看不是字；要的話用 Label3D 印幾個名字，但要先想好名字從哪來）；毛毯被推開的瓦礫擋住一部分；艾妲寫名單的動作只有台詞。
 - **下一步（依序）**：
-  1. **酒館的美術**（第 1 章第一個新場景，`scenes/levels/tavern.gd`）：現在是素色方塊＋程序人偶。照 `03-art-audio-direction.md` 與霜橋鎮的做法：牆用半木構 shader（`FrostbridgeLook` 的灰泥＋木樑）、地板用木板（`door.gdshader` 的木箱模式）、吧台與桌椅改成有厚度的木作、一個壁爐（暖光＋火粒子 `ParticleLook`）當主光、窗外是夜色／白天。先拍 `--level=tavern`、`--ch1-stage=dinner` 前後對照。
+  1. **酒館的美術，接著做**（第 1 章第一個新場景，`scenes/levels/tavern.gd`）。**壁爐做好了**（第 52 輪 54b7804：`_build_hearth(base)`、`HEARTH_OPENING`、`hearth_flames`／`hearth_sparks`、`hearth_flicker(t)` 在 `_process` 讓 `HearthLight` 閃）。還是素色方塊的：牆（用半木構 shader，`FrostbridgeLook` 的灰泥＋木樑；`_box` 是 CSGBox3D，換材質就好）、地板（`door.gdshader` 的木箱模式＝木板）、吧台與桌椅（有厚度的木作、桌上的碗與蠟燭）、東牆的窗（現在是一片發光板：加窗框與窗櫺＝`window_glass.gdshader` 那套）、天花板的橫樑之間（木板）。每做一塊拍 `--level=tavern --ch1-stage=dinner` 前後對照（本機一張約 1 分鐘）；中午（不加 `--ch1-stage`）也看一眼。
   2. 樓梯、白晝城、柯德家、乾運河的美術（階段 2 後段）：現在是 CSG／方塊白盒＋程序人偶；彌夏抱的鐘是小木箱。每個場景一輪，先做玩家停最久的那一角。
 - 章節卡截圖：`--level=frostbridge --chapter-card --nohud`（`ChapterCard.hold_still()` 停在章名完整出現）。
 - 第 1 章的白盒截圖：`scripts/screenshot.sh out.png 30 --level=tavern [--ch1-stage=dinner] [--guide-mark] [--locale=en]`（一張約 30 秒）。酒館還沒有 `--pos`／`--face` 旗標，要拍別的角度先加。白天的霜橋鎮：`--level=frostbridge --day --at=north`（一進北街就開對話）、`--day=stairs --face=ada --face-off=-25`（一張約 2 分鐘）。
