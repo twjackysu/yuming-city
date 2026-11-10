@@ -2,6 +2,30 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-186　2026-11-10　酒館東窗是結霜玻璃，隔著霜看得到模糊的對街
+
+- 決策：窗玻璃（`Window`，CSGBox）改用 `src/world/frost_window.gdshader`（unshaded、不投影子；面內座標用物件座標，`pane_size`＝(沿 Z 的寬, 沿 Y 的高)，從屋裡往 +X 看 +Z 在右邊）：畫一條模糊的對街——雪地、對面房子的暗牆＋屋簷下的陰影、積雪的人字屋頂與煙囪、陰天；入夜（`noon` 0）換成暗藍、對街一扇窗點著暖光；四邊結霜（fbm 不規則邊＋細冰晶，下緣比較厚）、整片輕微霧化（`haze`）。`tavern.gd` 只切 `noon`。不在窗外放真的幾何。
+- 理由：第 53 輪起 NEXT 的小項目「酒館窗外沒有景（中午是一片白光）」。窗外放真的房子要避開 D-177 光束的路徑（聚光燈在窗外 7 m、高 4.35 m，對面屋頂很容易擋到），還要另外打光；霜窗本來就看不清楚，畫在玻璃上便宜、日夜都對，也合冬天的感覺。
+- 影響：酒館的光束與窗櫺影子不變。之後別的室內窗（柯德家的窗板、鐘院的窗簾）要外景時可以共用這個 shader（調 `wall_*`／`sky_*`）。主線流程測試在酒館中午與入夜檢查窗的 shader 與 `noon`。
+
+## D-185　2026-11-10　關卡配樂只放在「打完之後安靜下來」的地方：先做切片收束
+
+- 決策：新的程序配樂 `aftermath_theme`（32 秒循環：D2＋F2 小三度長音、高八度 D3／F3 小聲墊著、16 秒一次很淺的漲落、兩聲很遠很悶的鐘＋長回音，不成旋律）。霜橋鎮在主線進入 `aftermath`（車隊過去、回梨販攤）時 `Ambience.music(..., -16 dB, 淡入 8 秒, "AftermathMusic")`；從 aftermath 檢查點重來也播；白天版本不播。打的時候、探索的時候一律只有環境音。
+- 理由：03 的方向是「環境音為主」；整段切片唯一需要音樂托住情緒的是打完之後——北街陷落、車隊過去、要去見艾妲與死者名單。音樂太多會把「重現」時的心跳和鐘聲沖淡。
+- 影響：之後要加配樂的地方先照這條判斷（候選：第一部前半的結尾卡／感謝試玩頁、第 1 章柯德家晚餐之後）；不要每個關卡都放。正式配樂要不要找人作曲是 Jacky 的決定（FOR_JACKY 第 1 項）。流程測試 `_assert_music(關卡, tag, 音名, 節點名)`。
+
+## D-184　2026-11-10　席菈的腳步聲；腳步邏輯抽成 `Footsteps`；鐘院飯廳與柯德家是木板地
+
+- 決策：`src/core/footsteps.gd`（`Footsteps.new(步幅, 跑步步幅, dB, 跑步 dB)`、`tick(owner, 走了幾公尺, 跑步, 著地)`、`count`／`last_surface`、static `surface_at(owner)`：先問父節點、再問目前場景的 `footstep_surface(位置)`）。諾恩照舊（`footstep_tick`／`step_count`／`last_step_surface` 轉給 Footsteps）；席菈在 `move_and_slide()` 之後用實際速度算步數（撞牆原地踏不算），步幅 0.72／1.0 m、-18／-14 dB（比諾恩小聲）。鐘院 `footstep_surface`：內室（`is_inner_room`：北牆門後）石板、其他木板；白晝城：柯德家（`in_kord_house`）木板、街上石板。
+- 理由：D-182 只做了諾恩；席菈一路跟著卻完全無聲，兩個人並肩走時聽起來像只有一個人。鐘院飯廳、柯德家看得到木板地，踩下去卻是石頭聲。
+- 影響：敵人（灰巡者、送葬者）還沒有腳步聲——要做時照 Footsteps（送葬者該是很重的拖步，另做音）。其他角色人偶（彌夏、柯德）沒有物理移動，不加。
+
+## D-183　2026-11-10　重現期間的混音：SFX 低通＋Music 壓低，心跳走自己的匯流排
+
+- 決策：新的 `RestoreMix`（`src/core/restore_mix.gd`，`Game.restore_mix`，`PROCESS_MODE_ALWAYS`）每幀輪詢 `RestoreMix.GROUP`（`restore_sources`）群組裡有 `restore_mix_active()` 的節點：`NineBreathSite`（倒數中）與乾運河（送葬者醒著時按住重現）。有一個在重現就在 `ATTACK_SEC` 0.25 秒內把 SFX 匯流排的 `AudioEffectLowPassFilter` 從 `OPEN_HZ` 20 kHz 收到 `CLOSED_HZ` 900 Hz（對數內插；平常效果整個關掉）、Music 匯流排的 `AudioEffectAmplify` 壓到 `MUSIC_DUCK_DB` -8 dB，放開後 `RELEASE_SEC` 0.9 秒回來；暫停中一律放開。新的 `Heart` 匯流排（直接接 Master、音量跟著「音效」滑桿＝`Settings.MIRROR_VOLUME`）：重現的心跳用 `Sfx.play_flat(..., Sfx.HEART_BUS)`。效果在 `Settings.ensure_buses()` 建（`RestoreMix.ensure_effects()`，只建一次）。`heartbeat` 補進 `Sfx.NAMES`。
+- 理由：03 寫了「九息期間 SFX 低通＋Music 壓低，讓心跳最清楚」，第 60 輪補了環境音之後更需要：重現的 9 秒裡風雪、打擊、腳步跟平常一樣大聲，心跳被蓋掉。用輪詢而不是訊號，換關卡、回標題時來源自己消失，不會卡在悶住的狀態。
+- 影響：新的「重現」玩法（之後章節的可重現物）只要是 `NineBreathSite` 就自動有；別的「重現中」狀態要加進 `restore_sources` 群組並實作 `restore_mix_active()`。乾運河假心臟自己的心跳是世界裡的聲音（走 SFX，會被悶住）。UI 的「叮」走 UI→SFX，重現中也會悶（重現中不會開選單，暫停時已經放開）。
+
 ## D-182　2026-11-10　諾恩的腳步聲：照走過的距離踏步，聲音照關卡的地面
 
 - 決策：`PlayerController.footstep_tick(走了幾公尺, 跑步, 著地)`：每 `STRIDE` 0.8 m（跑步 `SPRINT_STRIDE` 1.1 m）踏一步，閃避與騰空不算，-13 dB（跑步 -9 dB）再隨機 ±1.5 dB、音高 ±10%。地面由關卡的 `footstep_surface(位置)` 決定（`StoryLevel` 預設 `stone`；霜橋鎮 `snow`，白天也是；酒館 `wood`），只認 `STEP_SURFACES`，其他一律石頭。三段程序音 `step_snow`／`step_stone`／`step_wood`（`gen_sfx.py`）。
