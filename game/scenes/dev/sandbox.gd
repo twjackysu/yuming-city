@@ -30,6 +30,9 @@ func _ready() -> void:
 	add_child(dummy)
 	# 開發用：`-- --level=sandbox --enemies` 在街上放一隻灰巡者（正式遭遇戰在 M1.3 的霜橋鎮）
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	# 截圖用：`--status-demo` 讓諾恩中毒（第一次＝自動覺醒反轉），看左下的狀態圖示「中毒 → 回血」（D-202）
+	if dev_args.has("status-demo"):
+		_status_demo.call_deferred()
 	if dev_args.has("enemies"):
 		var walker := Ashwalker.new()
 		walker.name = "Ashwalker"
@@ -275,3 +278,11 @@ func _debug_felled_walker(walker: Ashwalker) -> void:
 	walker.health.apply_damage(walker.health.hp, {"stagger": 0.0})
 	for v: Node in ($Player as Node).find_children("*", "GeometryInstance3D", true, false):
 		(v as GeometryInstance3D).visible = false
+
+
+func _status_demo() -> void:
+	var p: PlayerController = get_tree().get_first_node_in_group("player") as PlayerController
+	if p == null:
+		return
+	p.health.hp = 60.0
+	p.status_effects.apply("poison", 6.0, 30.0, "barrel_mist")

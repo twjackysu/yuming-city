@@ -63,6 +63,7 @@ ACT_COMMAND_GUARD,Command: Hold,指令：守住
 ACT_INTERACT,Interact,互動
 ACT_NINE_BREATH,Restore,重現
 ACT_JOURNAL,Journal,日記
+ACT_USE_ITEM,Use item,使用道具
 ACT_PAUSE,Pause,暫停
 GLYPH_UNKNOWN,Unbound,未設定
 GLYPH_MOUSE_LEFT,LMB,滑鼠左鍵

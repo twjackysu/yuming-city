@@ -83,6 +83,15 @@ const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
 var _puppet: Puppet
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
+## 新版（劇情重寫，D-202）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
+var reversal: ReversalSlots = ReversalSlots.new()
+var status_effects: StatusEffects
+## 可攜藥劑滿血時要先問（PotionBelt 回傳 confirm_full）：UI 接這個訊號跳「還是要喝嗎？」
+signal potion_needs_confirm(item_id: String)
+## 讀檔／死亡重試：生命照檢查點存的，但至少這個比例（09 第 3 節）
+const RESTORE_MIN_HP_RATIO: float = 0.5
+## 新版可攜藥劑（快捷鍵 use_item）
+const PORTABLE_ITEM: String = "mist_serpent_poison"
 var _swing_resolved: bool = true
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
@@ -197,6 +206,11 @@ func _ready() -> void:
 	health.invulnerable_check = is_invulnerable
 	health.died.connect(_on_died)
 	add_child(health)
+	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
+	if Game.session.is_reboot():
+		_restore_reboot_vitals(Game.session.state)
+		# 用方法連線：玩家被釋放時自動斷開
+		Game.session.saving.connect(_write_reboot_vitals)
 	yaw = rotation.y
 	snap_camera()
 	_camera.current = true
@@ -248,6 +262,9 @@ func _physics_process(delta: float) -> void:
 	if pad.length() > PAD_DEADZONE:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 	_update_camera_distance(delta)
+	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進（D-202）
+	if not Game.is_player_locked():
+		status_effects.tick(delta, health)
 	if grabbed_by != null:
 		_grab_tick(delta)
 		velocity = Vector3(0.0, 0.0 if is_on_floor() else velocity.y - GRAVITY * delta, 0.0)
@@ -265,6 +282,8 @@ func _physics_process(delta: float) -> void:
 	var sprinting: bool = Input.is_action_pressed("sprint") and input.length() > 0.1
 
 	_dodge_cooldown = maxf(_dodge_cooldown - delta, 0.0)
+	if not talking and Game.session.is_reboot() and Input.is_action_just_pressed("use_item") and not health.is_dead():
+		use_potion()
 	if talking:
 		pass
 	elif Input.is_action_just_pressed("dodge") and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
@@ -388,6 +407,38 @@ func _grab_tick(delta: float) -> void:
 	grab_left -= delta
 	if grab_left <= 0.0:
 		release_grab(false)
+
+
+## 新版：喝可攜藥劑。回傳 PotionBelt.use 的結果；滿血時發 potion_needs_confirm（confirmed=true 再喝一次）。
+func use_potion(confirmed: bool = false) -> String:
+	var result: String = PotionBelt.new(Game.session.state).use(PORTABLE_ITEM, status_effects, health, confirmed)
+	match result:
+		"used":
+			Sfx.play_at(self, "ui_tick", global_position + Vector3.UP, -6.0)
+			Game.session.set_flag("rb.potion_tried", true)
+		"confirm_full":
+			potion_needs_confirm.emit(PORTABLE_ITEM)
+	return result
+
+
+## 讀檔、死亡重試時從存檔拿回生命、狀態、反轉欄位（不補滿、不清掉負面狀態；生命至少一半）
+func _restore_reboot_vitals(st: GameState) -> void:
+	reversal = ReversalSlots.from_dict(st.reversal)
+	status_effects.reversal = reversal
+	status_effects.load_array(st.statuses)
+	health.hp = restored_hp(st.vitals.get("hp", null), health.max_hp)
+
+
+static func restored_hp(saved: Variant, max_hp: float) -> float:
+	if not (saved is float or saved is int):
+		return max_hp
+	return clampf(float(saved), max_hp * RESTORE_MIN_HP_RATIO, max_hp)
+
+
+func _write_reboot_vitals(st: GameState) -> void:
+	st.vitals["hp"] = health.hp
+	st.statuses = status_effects.to_array()
+	st.reversal = reversal.to_dict()
 
 
 func _on_died() -> void:

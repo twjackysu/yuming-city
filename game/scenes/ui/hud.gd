@@ -26,6 +26,8 @@ var guide: ObjectiveGuide
 var restore: RestorePrompt
 ## 互動提示（救援、拉起席菈；疊在重現提示上方，D-065）
 var interact: InteractPrompt
+## 新版的狀態圖示（左下、諾恩生命條上方，D-202）；舊版沒有狀態，永遠是空的
+var status: StatusHud
 var _banner_tween: Tween
 
 
@@ -124,12 +126,18 @@ func _build() -> void:
 	interact = InteractPrompt.new()
 	add_child(interact)
 	interact.avoid = restore
+	status = StatusHud.new()
+	add_child(status)
 
 
 func _process(delta: float) -> void:
 	# 目標文字亮著時指引也全亮；關卡＝Hud 的父節點
 	guide.emphasized = is_objective_shown()
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	var pc: PlayerController = player as PlayerController
+	status.refresh(pc.status_effects if pc != null else null)
+	# 戰鬥 HUD 的諾恩名字在 size.y-174；狀態一列 34，往上長
+	status.position = Vector2(56.0, get_viewport().get_visible_rect().size.y - 182.0 - status.custom_minimum_size.y)
 	guide.refresh(get_parent(), player, get_viewport().get_camera_3d(), combat.in_combat, delta)
 
 
