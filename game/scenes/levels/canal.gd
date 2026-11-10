@@ -309,8 +309,10 @@ const COLLAR_LINE: String = "DLG_CH3_CORNER_005"
 const COLLAR_GAP: float = 0.72
 const LET_GO_LINE: String = "DLG_CH3_CORNER_012"
 const LET_GO_GAP: float = 1.05
-## 換班的鐘聲（對話裡那一句出現時，遠遠的一聲）
+## 換班的鐘聲（對話裡那一句出現時，遠遠的一聲）：隔著石頭聽到的那口鐘（D-192，`bell_far`）
 const SHIFT_BELL_LINE: String = "DLG_CH3_CORNER_011"
+const SHIFT_BELL_SFX: String = "bell_far"
+const SHIFT_BELL_DB: float = -11.0
 ## 講完 → 幾秒後結尾卡（「第一部　死去的攻略」「前半　完」）→「感謝試玩」一頁（D-176）→ 回標題
 const END_CARD_DELAY: float = 2.4
 const END_CARD_SCALE: float = 1.5
@@ -328,6 +330,8 @@ const PART_END_MUSIC_FADE: float = 4.0
 ## 配樂進來時乾運河的低風壓到多小（平常 -10）
 const PART_END_AMBIENCE_DB: float = -24.0
 var part_end_music: AudioStreamPlayer
+## 換班的鐘聲播過哪一段音（測試用；播放器播完會自己釋放）
+var shift_bell_sound: String = ""
 var _corner_node: Node3D
 var _corner_cam: Camera3D
 var _corner_tween: Tween
@@ -1919,7 +1923,8 @@ func _on_corner_line(_speaker_key: String, text_key: String) -> void:
 	elif text_key == LET_GO_LINE:
 		_sheila_step_to(LET_GO_GAP)
 	elif text_key == SHIFT_BELL_LINE:
-		Sfx.play_flat(self, "bell", -17.0)
+		if Sfx.play_flat(self, SHIFT_BELL_SFX, SHIFT_BELL_DB) != null:
+			shift_bell_sound = SHIFT_BELL_SFX
 
 
 func _sheila_step_to(gap: float) -> void:

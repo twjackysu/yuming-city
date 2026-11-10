@@ -1415,6 +1415,7 @@ func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
 	assert_eq(saw_refused, s.state.get_flag("ch3.map_accepted") == false, "不收圖的話，「我沒回答」那句不一樣")
 	assert_eq(saw_soup, s.state.get_flag("ch1.sheila_soup_helped") == true, "第 1 章替她拿過湯匙：「上次是一支湯匙，這次是主椅。」")
 	assert_true(closest < gap_before - 0.3, "抓住領口：她走近一步（%.2f → %.2f m）" % [gap_before, closest])
+	assert_eq(str(canal.get("shift_bell_sound")), "bell_far", "換班的鐘聲是隔著石頭的那口鐘（D-192）")
 	await tree.process_frame
 	assert_false(_game.call("is_in_dialogue"), "講完")
 	assert_false((canal.get_node("CornerCam") as Camera3D).current, "換回玩家的鏡頭")

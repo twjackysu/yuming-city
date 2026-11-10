@@ -682,6 +682,29 @@ def part_end_theme(seconds=28.0, seed=97):
     return [v / peak * 0.7 for v in looped]
 
 
+def bell_far(seconds=8.0):
+    """隔著石頭聽到的鐘（D-192）：地底城轉角的換班鐘聲。跟鐘樓同一口鐘（G3），高頻幾乎被濾掉、
+    敲擊的金屬噪音聽不到，三個越來越晚、越來越悶的回音比聲音本身長——聽得出是那口鐘，但很遠、在上面。"""
+    n = int(seconds * RATE)
+    b = onepole_lp(onepole_lp(onepole_lp(bell(196.0, 5.5), 600), 800), 1100)
+    bpeak = max(abs(v) for v in b) or 1.0
+    out = [0.0] * n
+    for delay, tap in [(0.0, 1.0), (0.47, 0.42), (1.13, 0.22), (1.98, 0.11)]:
+        start = int(delay * RATE)
+        for j, v in enumerate(b):
+            if start + j >= n:
+                break
+            out[start + j] += tap * v / bpeak
+    # 很慢的起音（聲音穿過石頭，沒有敲擊的「叮」）
+    attack = int(0.06 * RATE)
+    for i in range(attack):
+        out[i] *= i / attack
+    fade = int(1.5 * RATE)
+    for i in range(fade):
+        out[n - fade + i] *= 1.0 - i / fade
+    return out
+
+
 def _soft_pluck(f, seconds=4.0):
     """很輕的撥弦（加法合成，音準準確）：泛音越高衰減越快，5 毫秒的起音，聽起來像遠處的小豎琴。"""
     n = int(seconds * RATE)
@@ -890,6 +913,7 @@ def main():
         write("aftermath_theme", aftermath_theme()),
         write("part_end_theme", part_end_theme()),
         write("after_dinner_theme", after_dinner_theme()),
+        write("bell_far", bell_far()),
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),
