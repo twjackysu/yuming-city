@@ -21,6 +21,6 @@
   },
   "inverse_bind_maximum_difference": 0.0,
   "existing_binary_prefix_unchanged": true,
-  "existing_binary_sha256": "550aedfa84213c068bef501c96de104a6c864921eba41e859d9b7e341568d170",
+  "existing_binary_sha256": "8cc32625ae4477df2082723b7ea3d2ed2a9d0cc7a7611bc16c08267a236c019e",
   "status": "requires_engine_switching_test"
 }

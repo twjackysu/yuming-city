@@ -12,8 +12,8 @@
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 25014948,
-      "sha256": "42e245cc8b8c7bee418cbb66c67585e623e177070a9b497b94982c330ad4adec"
+      "bytes": 25050640,
+      "sha256": "0cc0ed2d34f0b802ba628d4d86dd3d8f4e1456aa24eca303b12f1243951da891"
     },
     {
       "file": "portrait_front.png",
@@ -62,23 +62,23 @@
     },
     {
       "file": "run_candidate.fbx",
-      "bytes": 467596,
-      "sha256": "21207c8ad4b67fe5659fb5c36f56ea4e83e3f352adfba8bc4e3366b663fa3823"
+      "bytes": 467612,
+      "sha256": "e5b1120c5e078b9872203b1449fb6460267f2ec95c1edb3c19e4fcae9d98086c"
     },
     {
       "file": "run_preview.mp4",
-      "bytes": 216702,
-      "sha256": "cc0734fe0ed91825e6bd21b8635130b81ff3327be5d3c1f7a3ffdde110efddcb"
+      "bytes": 212003,
+      "sha256": "03bd5f51cac7f942ec1d6cbbd0ab73f113557d37830c2b83404d3b7e9fee9fde"
     },
     {
       "file": "run_preview.png",
-      "bytes": 294954,
-      "sha256": "27d36b7c01eea2d08324cabc716fc56cd7b42607a75c40356262fb5efd75606a"
+      "bytes": 266933,
+      "sha256": "f6f8bfd010a43dc0b77974cb6362d968c6fbba171d69f2bfb95fe43a65b6d5d0"
     },
     {
       "file": "run_night_preview.png",
-      "bytes": 416116,
-      "sha256": "59ccefca8044f924fd90e67c3c4639ef581f2f7d1574945c83c68d945a583d92"
+      "bytes": 412058,
+      "sha256": "f09a8fcb301b4bf898704da043b554f524ab68884e3362434ae27135204f44b1"
     },
     {
       "file": "coat_side_preview.png",
@@ -101,7 +101,7 @@
     "M_Noen_Skin"
   ],
   "godot_import_script": "noen_material_import.gd",
-  "glb_bytes": 25014948,
+  "glb_bytes": 25050640,
   "godot_animation_names": [
     "idle",
     "run",
@@ -114,5 +114,6 @@
   "walk_garment_variant": "lower_panel_gravity_drape_only",
   "walk_preview_renderer": "Godot 4.7.2 Forward+",
   "walk_floor_grid_m": 0.25,
-  "idle_left_hand_variant": "hanging_arm_adducted_relaxed_fingers"
+  "idle_left_hand_variant": "hanging_arm_adducted_relaxed_fingers",
+  "run_left_hand_variant": "compact_swing_neutral_wrist_half_closed_fingers"
 }

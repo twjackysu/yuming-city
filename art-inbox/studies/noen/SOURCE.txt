@@ -56,3 +56,5 @@ Run derivative: ACCAD / The Ohio State University Male1_C03_Run.bvh, same CC BY 
 2026-11-10: Walk lower-panel rotation revised for a gravity-led hem; only four lower coat rotation tracks changed. Geometry/textures and idle/run clips retained. Existing cloth contacts remain unapproved.
 
 2026-11-10 idle left-arm derivative: authored two-bone hanging-arm solve and relaxed finger adduction/curl; right fracture guard and original assets retained. The prior ACCAD-derived pose and all existing credits continue to apply. Not formal animation approval.
+
+2026-11-10 compact-run derivative: authored left-arm trajectory, neutralized wrist, finger adduction/curl over the credited ACCAD run. Only left arm/hand rotation tracks changed; original right fracture guard, lower-body motion, flight calibration and assets retained. Existing licenses remain applicable.

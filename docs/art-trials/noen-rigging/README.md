@@ -132,3 +132,10 @@ drape_noen_walk_coat.py 讀取 YUMING_NOEN_WALK_BLEND（上一版原生 walk 中
 build_noen_relaxed_idle.py 沿用既有原生 guard pose 與三材質靜態來源；YUMING_NOEN_WORK 設獨立工作目錄。左臂以約 98.5% 肩腕可達距離下垂，保留右前臂護傷；左手四指基部向中指方向收攏 70%，三節微彎約 20／35／15°。首尾明確使用同一組姿勢，FBX 循環矩陣差為 0。以 review_noen_idle.py（YUMING_SKIP_RENDERS=1）、check_noen_idle_fbx.py 重匯入，再用 merge_noen_relaxed_idle.py 合併既有三動作模型；YUMING_NOEN_BASE_GLB 可指定合併底本，預設 studies/noen。
 
 check_noen_relaxed_hand.py 對 97 個姿勢量測手掌／手指與排除左袖後衣物的間距，以及肘部側向偏移。實測最小約 8.65cm／最大約 8.21cm，不含袖口接觸與完整衣物碰撞。godot_review_relaxed_idle 以 Forward+ 播放；準備光照、匯入腳本方式同前述預覽，新增三動作切換檢查。97 點接地、右臂保護與腳骨穩定檢查通過。原網格／貼圖與 walk／run 不改，idle 圖片、影片與證據已更新至 studies/noen。
+
+
+## 2026-11-10：跑步左臂貼近與半握手
+
+retarget_noen_compact_run.py 延用原跑步的 source_cycle.json、原生分物件模型與三材質靜態 GLB，YUMING_NOEN_WORK 設獨立目錄。左腕以較緊湊的前後擺動替代抬肩姿勢，手掌方向順著前臂、四指收攏並微彎。其餘跑步重定向、骨折護傷及飛行高度不改。retarget 後必須執行 export_noen_run.py，給 FBX 一個未匯出的 identity bind pose；再執行 review_noen_run.py、check_noen_run_fbx.py 與 merge_noen_compact_run.py。原 retarget 中間檔不直接當正式 FBX。
+
+check_noen_compact_run_hand.py 檢查 20 點手部間距／肘部側偏／肩腕高度與手腕角度；check_noen_compact_run_channels.py 比較變更僅位於左臂／左手旋轉。其底本可用 YUMING_NOEN_BASE_GLB 指定，預設 studies/noen；同一新版底本重跑時可預期變更為空。godot_review_compact_run 用 Forward+ 擷取，執行接觸／護傷及三動作切換檢查。最新圖、影片、FBX 與證據在 studies/noen，正式動畫及品質仍未驗收。

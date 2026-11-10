@@ -1,0 +1,81 @@
+{
+  "changed_tracks": {
+    "mixamorig:LeftArm/rotation": {
+      "before_keys": 20,
+      "after_keys": 20,
+      "maximum_component_delta": 0.6828575730323792
+    },
+    "mixamorig:LeftForeArm/rotation": {
+      "before_keys": 20,
+      "after_keys": 20,
+      "maximum_component_delta": 0.9791821241378784
+    },
+    "mixamorig:LeftHand/rotation": {
+      "before_keys": 20,
+      "after_keys": 20,
+      "maximum_component_delta": 0.4364859461784363
+    },
+    "mixamorig:LeftHandIndex1/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.14378325641155243
+    },
+    "mixamorig:LeftHandIndex2/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.1581224948167801
+    },
+    "mixamorig:LeftHandIndex3/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.07055627554655075
+    },
+    "mixamorig:LeftHandMiddle1/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.09085078537464142
+    },
+    "mixamorig:LeftHandMiddle2/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.16487571597099304
+    },
+    "mixamorig:LeftHandMiddle3/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.08150476217269897
+    },
+    "mixamorig:LeftHandPinky1/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.1403413563966751
+    },
+    "mixamorig:LeftHandPinky2/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.16410967707633972
+    },
+    "mixamorig:LeftHandPinky3/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.08494848012924194
+    },
+    "mixamorig:LeftHandRing1/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.11579018086194992
+    },
+    "mixamorig:LeftHandRing2/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.16573354601860046
+    },
+    "mixamorig:LeftHandRing3/rotation": {
+      "before_keys": 2,
+      "after_keys": 2,
+      "maximum_component_delta": 0.08459404110908508
+    }
+  },
+  "all_changes_are_left_arm_or_hand": true,
+  "tolerance": 1e-05
+}
