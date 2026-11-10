@@ -33,6 +33,12 @@ func _ready() -> void:
 	# 截圖用：`--status-demo` 讓諾恩中毒（第一次＝自動覺醒反轉），看左下的狀態圖示「中毒 → 回血」（D-202）
 	if dev_args.has("status-demo"):
 		_status_demo.call_deferred()
+	# 截圖用：`--mist` 在諾恩前面放一團破藥桶的毒霧（灰盒，D-202）
+	if dev_args.has("mist"):
+		var mist: PoisonMist = PoisonMist.create(2.6, "barrel_mist")
+		mist.name = "PoisonMist"
+		mist.position = Vector3(0.6, 0.0, -4.5)
+		add_child(mist)
 	if dev_args.has("enemies"):
 		var walker := Ashwalker.new()
 		walker.name = "Ashwalker"

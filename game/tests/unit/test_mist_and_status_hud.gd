@@ -92,3 +92,15 @@ func test_use_item_action_is_bound_and_rebindable() -> void:
 			var k: String = "%d:%s" % [slot, spec]
 			assert_false(used.has(k), "%s 跟 %s 撞鍵" % [action, used.get(k, "")])
 			used[k] = action
+
+
+func test_poison_mist_node_builds_layers_and_fades_out() -> void:
+	var mist: PoisonMist = PoisonMist.create(2.0, "guardian_spray", 1.0)
+	tree.root.add_child(mist)
+	assert_eq(mist.get_child_count(), PoisonMist.LAYERS, "貼地的幾層霧盤")
+	assert_true(mist.is_in_group("poison_mist"))
+	assert_true(mist.contains(mist.global_position + Vector3(1.0, 0.2, 0.0)))
+	mist._physics_process(0.7)
+	assert_true(is_instance_valid(mist) and not mist.is_queued_for_deletion(), "還沒散完")
+	mist._physics_process(0.4)
+	assert_true(mist.is_queued_for_deletion(), "守衛噴的霧時間到自己移除")
