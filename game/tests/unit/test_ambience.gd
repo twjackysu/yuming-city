@@ -173,6 +173,23 @@ func test_enemy_footsteps() -> void:
 	assert_true(u.footsteps.count >= 1, "送葬者有腳步聲（%d 步）" % u.footsteps.count)
 	assert_true(u.footsteps.count < a.footsteps.count, "送葬者步子大、步數少")
 	assert_eq(u.footsteps.last_sound, Undertaker.STEP_SOUND, "送葬者固定用拖步")
+	# 聲音掛在關卡（父節點）上：牠之後被停掉（掙脫戰撞回運河）或倒下被釋放，正在播的那一步照樣播完
+	var steps_now: int = u.footsteps.count
+	for i: int in 60:
+		if u.footsteps.count > steps_now:
+			break
+		await tree.physics_frame
+	var heavy_on_level: int = 0
+	for c: Node in root.get_children():
+		if c is AudioStreamPlayer3D and (c as AudioStreamPlayer3D).stream == Sfx.stream(Undertaker.STEP_SOUND):
+			heavy_on_level += 1
+	assert_true(heavy_on_level >= 1, "拖步掛在關卡上（%d 個）" % heavy_on_level)
+	for actor: Node in [a, u]:
+		for c: Node in actor.get_children():
+			if c is AudioStreamPlayer3D:
+				var st: AudioStream = (c as AudioStreamPlayer3D).stream
+				assert_true(st != Sfx.stream("step_stone") and st != Sfx.stream(Undertaker.STEP_SOUND),
+						"%s 身上沒有掛腳步聲（%s）" % [actor.get_class(), st.resource_path if st != null else "null"])
 	# 走到面前停下來出招：不再踏步
 	a.position = hb.position + Vector3(0, 0.05, 1.0)
 	await tree.physics_frame

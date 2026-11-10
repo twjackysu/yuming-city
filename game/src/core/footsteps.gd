@@ -32,7 +32,8 @@ func _init(p_stride: float, p_sprint_stride: float, p_step_db: float, p_sprint_d
 
 
 ## 這一幀走了 moved 公尺。回傳這一幀有沒有踏一步（有就已經播了聲音）。
-## sound_parent：聲音掛在哪個節點底下（預設 owner；owner 的 process_mode 停掉時要改掛關卡，不然 3D 音不會播）。
+## sound_parent：聲音掛在哪個節點底下（預設 owner 的父節點＝關卡：人停掉 process_mode、倒下被釋放時，
+## 正在播的那一步照樣播完，不會卡在半路；D-187）。
 func tick(owner: Node3D, moved: float, sprinting: bool, grounded: bool, sound_parent: Node = null) -> bool:
 	if not grounded or moved <= 0.0:
 		return false
@@ -50,7 +51,9 @@ func stomp(owner: Node3D, sprinting: bool = false, sound_parent: Node = null) ->
 	count += 1
 	last_surface = surface_at(owner)
 	last_sound = sound if sound != "" else "step_" + last_surface
-	var parent: Node = sound_parent if sound_parent != null else owner
+	var parent: Node = sound_parent
+	if parent == null and owner != null:
+		parent = owner.get_parent() if owner.get_parent() != null else owner
 	if owner != null and owner.is_inside_tree():
 		var p: AudioStreamPlayer3D = Sfx.play_at(parent, last_sound, owner.global_position + Vector3.UP * 0.05,
 				(sprint_db if sprinting else step_db) + randf_range(-1.5, 1.5), pitch_jitter, unit_size)
