@@ -2,6 +2,12 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-204　2026-11-10　新版前十分鐘在霜橋鎮的控制器 `RebootOpening`：推車停在石階上、毒霧蓋滿主街、確認後霧散
+
+- 決策：`frostbridge.gd` 在 `Game.session.is_reboot()` 時不建切片的觸發點（梨販、石拱回憶、車隊、鐘樓、地窖都會在新版誤觸舊對話）、石拱 `set_dormant(true)`、`_physics_process` 不跑切片段落，改掛 `RebootOpening`（`scenes/levels/rb_frostbridge.gd`）。開場：北街北端一道鐵門（灰盒鐵條，擋人）、門後雷德（對話 `rb_opening` 後往北跑掉）、推車沿用 `Caravan`（只留一名傷者＝波克）、新遊戲生命 55。推車只有諾恩在 6 m 內才往前（1.7 m/s），推到北街轉角（或諾恩自己走到石階中段）→ 三個藥桶倒下、主街上一片半徑 4.4 m 的毒霧（大於街的半寬：繞不過去）→ `rb_before_mist` 檢查點。推車停在石階中段（高處，波克不進毒霧）。第一次中毒 → `ReversalSlots.awakened` → HUD 新的 `show_center_lines`（畫面中間兩行字，第二行綠色、晚 0.9 秒）＋`rb.reversal_awakened`；離開毒霧且毒效結束 → `rb_mist_test`；再踏進去 → `rb.mist_reentered`＋`rb_mist_confirmed`；說完霧在 5 秒內縮小散掉，推車才往南街口走，到了 → `rb.reached_south` → 席菈從南街西側的側門出來，走近 → `rb_sheila_meet` → 波克進店（車上的人偶藏起來）→ `guardian_fight`（`rb_guardian` 檢查點）。`Game.retry()` 在新版沒有存檔時重開新版（不是舊版新遊戲）；`Game.CHECKPOINT_LEVELS` 列出 `rb_*`。截圖旗標 `--level=frostbridge --rb-at=start|mist`。
+- 理由：小說裡諾恩「把車推到較高的石階邊，想從霧旁繞過去」、傷者不進毒區（handoff）；霧蓋滿整條街確保每個玩家都會第一次中毒，不會走到南街還沒覺醒卡住。確認後霧散，推車才過得去，也對上小說「霧散了一點」。這一步還沒有追在後面的怪物（藥桶目前是推車到轉角時自己破、跳一行字）。
+- 影響：下一步是追擊的送葬者（砸藥桶、在身後逼近）、南街的單階段守衛＋噴毒。新版的流程都在 `RebootOpening`，舊版霜橋鎮的行為不變（`test_classic_frostbridge_has_no_reboot_controller`）。
+
 ## D-203　2026-11-10　新版毒霧先做灰盒霧盤（PoisonMist），不用體積霧
 
 - 決策：`PoisonMist`＝`MistZone`（規則：直立圓柱、在裡面每 0.25 秒用來源刷新狀態）＋三層貼地的綠色霧盤（`src/world/poison_mist.gdshader`：不受光、fbm 流動、往外淡、景深接近地面時淡掉；只有貼地那層畫一圈淡亮邊界）。守衛噴的霧有壽命，最後 0.6 秒淡掉後自己移除。沙盒截圖旗標 `--mist`。
