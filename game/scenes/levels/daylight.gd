@@ -121,6 +121,17 @@ var _wood_mat: StandardMaterial3D
 var _trim := StaticBatch.new()
 
 
+## 腳步聲（D-184）：街上是石板（預設），柯德家是木板地。
+func footstep_surface(p: Vector3) -> String:
+	return "wood" if in_kord_house(p) else "stone"
+
+
+## 這個位置在柯德家屋內。
+static func in_kord_house(p: Vector3) -> bool:
+	var d: Vector3 = p - HOUSE_ORIGIN
+	return absf(d.x) <= HOUSE_HALF.x + 0.1 and absf(d.z) <= HOUSE_HALF.y + 0.1
+
+
 func _ready() -> void:
 	_rng.seed = 1704
 	residents = Residents.load_default()

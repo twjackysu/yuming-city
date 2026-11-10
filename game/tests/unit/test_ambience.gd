@@ -106,3 +106,46 @@ func test_footsteps_follow_distance_and_surface() -> void:
 		assert_not_null(Sfx.stream("step_" + surface), "有 step_%s" % surface)
 	root.queue_free()
 	await tree.process_frame
+
+
+## 席菈的腳步聲（D-184）：同一套 Footsteps，步子短一點、小聲一點；真的走動才踏步（撞牆原地踏不算）。
+func test_sheila_footsteps_when_she_moves() -> void:
+	assert_true(Sheila.STEP_DB < PlayerController.STEP_DB, "席菈比諾恩小聲")
+	assert_true(Sheila.STRIDE < PlayerController.STRIDE, "步子短一點")
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var floor_body := CSGBox3D.new()
+	floor_body.size = Vector3(60, 1, 60)
+	floor_body.position = Vector3(0, -0.5, 0)
+	floor_body.use_collision = true
+	root.add_child(floor_body)
+	var leader := Node3D.new()
+	root.add_child(leader)
+	leader.position = Vector3(0, 0, -12)
+	var sheila := Sheila.new()
+	sheila.position = Vector3(0, 0.05, 0)
+	root.add_child(sheila)
+	sheila.leader = leader
+	for i: int in 60:
+		await tree.physics_frame
+	var walked: float = sheila.global_position.distance_to(Vector3(0, 0.05, 0))
+	assert_true(walked > 2.0, "她跟上去了（%.1f m）" % walked)
+	assert_true(sheila.footsteps.count >= 2, "一路有腳步聲（%d 步、%.1f m）" % [sheila.footsteps.count, walked])
+	assert_eq(sheila.footsteps.last_surface, "stone", "關卡沒說 → 石頭")
+	root.queue_free()
+	await tree.process_frame
+
+
+## 鐘院飯廳、柯德家是木板地（D-184）；鐘院內室、白晝城的街是石板。
+func test_wood_floors_in_bell_hall_and_kord_house() -> void:
+	var hall_script: GDScript = load("res://scenes/levels/bell_hall.gd") as GDScript
+	var city_script: GDScript = load("res://scenes/levels/daylight.gd") as GDScript
+	var hall: Node = hall_script.new() as Node
+	var city: Node = city_script.new() as Node
+	assert_eq(str(hall.call("footstep_surface", Vector3(0.6, 0, 3.0))), "wood", "飯廳（出生點）")
+	assert_eq(str(hall.call("footstep_surface", Vector3(0, 0, -9.0))), "stone", "內室")
+	var house: Vector3 = city_script.get("HOUSE_ORIGIN") as Vector3
+	assert_eq(str(city.call("footstep_surface", house + Vector3(1.0, 0, 0.5))), "wood", "柯德家")
+	assert_eq(str(city.call("footstep_surface", Vector3(0, 0, -10.0))), "stone", "街上")
+	hall.free()
+	city.free()

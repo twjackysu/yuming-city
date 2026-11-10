@@ -192,6 +192,16 @@ var _dev_instant: bool = false
 var _window_tweens: Array[Tween] = []
 
 
+## 腳步聲（D-184）：飯廳是木板地，內室（北牆門後）是石板。
+func footstep_surface(p: Vector3) -> String:
+	return "stone" if is_inner_room(p) else "wood"
+
+
+## 這個位置在內室裡（北牆的門後面）。
+static func is_inner_room(p: Vector3) -> bool:
+	return p.z < INNER_DOOR_POS.z - 0.2
+
+
 func _ready() -> void:
 	_rng.seed = 2005
 	# 開發用：`-- --level=bell_hall` 直接進來 → 照正式流程把第 1 章走完、開始第 2 章

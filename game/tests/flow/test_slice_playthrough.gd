@@ -213,6 +213,9 @@ func _playthrough(use_nine_breath: bool) -> void:
 	if use_nine_breath:
 		site_arch.update_hold(1.1, true)
 		assert_true(site_arch.is_solid(), "保存南街石拱")
+		assert_true(Game.restore_mix.sources_active(), "[slice_convoy] 石拱倒數中，其他聲音悶下去（D-183）")
+	else:
+		assert_false(Game.restore_mix.sources_active(), "[slice_convoy] 沒有重現，混音照常")
 	enc.frame_throw.tick(FrameThrowEvent.WINDUP_SEC + 0.1, site_arch.is_solid(), s.state)
 	assert_eq(s.state.get_flag("slice.frame_throw_outcome"), "arch" if use_nine_breath else "kindling")
 	caravan.runner.traveled = caravan.runner.length() - 0.05
@@ -570,6 +573,8 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	# 室內材質（第 53 輪，D-171）：木板地、室內牆（不積雪）
 	var house_floor: ShaderMaterial = (city.get_node("HouseFloor") as MeshInstance3D).material_override as ShaderMaterial
 	assert_true(house_floor != null and house_floor.shader.resource_path == InteriorLook.PLANK_SHADER, "柯德家是木板地")
+	assert_eq(_player(city).footstep_surface(), "wood", "[柯德家] 腳步踩在木板上（D-184）")
+	assert_eq(Footsteps.surface_at(city.get_node("Sheila") as Node3D), "wood", "[柯德家] 席菈也是")
 	var house_wall: ShaderMaterial = (city.get_node("HouseWallN") as MeshInstance3D).material_override as ShaderMaterial
 	assert_true(house_wall != null and float(house_wall.get_shader_parameter("exterior")) == 0.0, "柯德家的牆是室內牆")
 	assert_true(_flat_dist((city.get_node("Kord") as Node3D).global_position, house) < 3.0, "柯德也在桌邊")
@@ -1068,7 +1073,9 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 		assert_true(Vector2(u.global_position.x - before.x, u.global_position.z - before.z).length() < 0.01, "轉向諾恩時停下來，不往假心臟走")
 		assert_eq(s.state.get_flag("ch3.heard_noen"), true)
 		assert_eq(hud.banner_text(), "CH3_HEARS_NOEN", "提示：重現時心跳變快，牠聽得到")
+		assert_true(Game.restore_mix.sources_active(), "[ch3_decoy] 按住重現：其他聲音悶下去、只剩心跳（D-183）")
 		canal.set("force_restoring", false)
+		assert_false(Game.restore_mix.sources_active(), "[ch3_decoy] 放開就恢復")
 	for spot: int in 3:
 		if spot > 0:
 			assert_true(bool(canal.call("spot_actionable", spot)), "第 %d 點可以放" % spot)

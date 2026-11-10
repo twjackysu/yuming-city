@@ -38,6 +38,12 @@ var _blade_mat: StandardMaterial3D
 var _fire_light: OmniLight3D
 var _fire_sparks: CPUParticles3D
 var _fire_left: float = 0.0
+## 腳步聲（D-184）：跟諾恩同一套（Footsteps），步子短一點、小聲一點——跟在旁邊聽得到她，但不搶諾恩的。
+const STRIDE: float = 0.72
+const RUN_STRIDE: float = 1.0
+const STEP_DB: float = -18.0
+const RUN_STEP_DB: float = -14.0
+var footsteps: Footsteps = Footsteps.new(STRIDE, RUN_STRIDE, STEP_DB, RUN_STEP_DB)
 
 
 func _ready() -> void:
@@ -194,6 +200,10 @@ func _move(delta: float, leader_dist: float, target_dist: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 18.0 * delta
 	_puppet.set_move_speed(horizontal.length())
 	move_and_slide()
+	var real: Vector3 = get_real_velocity()
+	var moved: float = Vector2(real.x, real.z).length() * delta
+	footsteps.tick(self, moved, horizontal.length() > (WALK_SPEED + RUN_SPEED) * 0.5,
+			is_on_floor() and _dodge_left <= 0.0)
 
 
 func _face(n: Node3D, delta: float = -1.0) -> void:
