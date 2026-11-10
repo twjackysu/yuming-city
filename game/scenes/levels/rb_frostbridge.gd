@@ -429,11 +429,30 @@ func _release_chunk() -> void:
 
 func _on_barrels_hit() -> void:
 	throw_phase = 3
+	_impact_burst(THROW_TARGET)
 	_drop_chunk_at_barrels()
 	if player != null:
 		player.shake(0.45)
 	_break_barrels(true)
 	Game.session.set_flag("rb.barrels_broken", true)
+
+
+## 燈頭砸碎在藥桶上的那一下：一閃暖光（0.35 秒淡掉）、木屑、從桶裡噴出來的綠色藥霧
+func _impact_burst(at: Vector3) -> void:
+	var flash := OmniLight3D.new()
+	flash.name = "RbImpactFlash"
+	flash.light_color = Color(1.0, 0.7, 0.4)
+	flash.light_energy = 6.0
+	flash.omni_range = 7.0
+	flash.shadow_enabled = false
+	flash.position = at + Vector3.UP * 0.5
+	level.add_child(flash)
+	var t := flash.create_tween()
+	t.tween_property(flash, "light_energy", 0.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_callback(flash.queue_free)
+	if pursuer != null and is_instance_valid(pursuer):
+		pursuer._ground_puff(at, Vector3(1.2, 0.1, 0.5), 36, Color(0.5, 0.4, 0.28, 0.85))
+		pursuer._ground_puff(at + Vector3.UP * 0.2, Vector3(1.5, 0.15, 0.8), 30, Color(0.42, 0.85, 0.4, 0.55))
 
 
 ## 那截燈柱躺在藥桶旁，燈熄了
