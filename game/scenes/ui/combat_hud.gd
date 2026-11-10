@@ -18,11 +18,17 @@ const COL_HP: Color = Color(0.84, 0.78, 0.66)
 const COL_HP_SHEILA: Color = Color(0.82, 0.88, 0.95)
 const COL_STAMINA: Color = Color(0.5, 0.72, 0.9)
 const COL_DOWN: Color = Color(0.85, 0.45, 0.4)
+## 生命條的變化段（D-213）：回血＝綠色往上的段（前緣一條更亮的線），剛被扣掉的＝紅色往下的段
+const COL_HEAL: Color = Color(0.45, 0.9, 0.5)
+const COL_HEAL_TIP: Color = Color(0.82, 1.0, 0.8)
+const COL_LOSS: Color = Color(0.86, 0.3, 0.26, 0.9)
 const COL_CMD: Color = Color(0.9, 0.92, 0.95)
 ## 席菈正在守（玩家下的「守住」或劇情暫時守住）：「守住」那一格染成霜藍，玩家才知道再按一次是解除
 const COL_GUARD_ON: Color = Color(0.55, 0.85, 1.0)
 
 var noen_ratio: float = 1.0
+## 諾恩生命條的變化段（回血的綠、受傷的紅）；測試讀 noen_trail.heal_span()／loss_span()
+var noen_trail: BarTrail = BarTrail.new()
 var sheila_ratio: float = 1.0
 var stamina_ratio: float = 1.0
 var sheila_present: bool = false
@@ -99,6 +105,8 @@ func _process(delta: float) -> void:
 	var player: PlayerController = _first("player") as PlayerController
 	var sheila: Sheila = _first("companion") as Sheila
 	refresh(player, sheila)
+	if player != null:
+		noen_trail.step(noen_ratio, delta)
 	_alpha = move_toward(_alpha, 1.0 if bars_shown else 0.0, delta * (3.0 if bars_shown else 1.2))
 	modulate.a = _alpha
 	_layout()
@@ -170,7 +178,11 @@ func _layout() -> void:
 
 func _draw() -> void:
 	var o: Vector2 = _origin()
-	_bar(o, noen_ratio, COL_HP)
+	_bar(o, noen_trail.base_ratio(), COL_HP)
+	_bar_span(o, noen_trail.base_ratio(), noen_trail.heal_span(), COL_HEAL)
+	_bar_span(o, noen_trail.ratio, noen_trail.loss_span(), COL_LOSS)
+	if noen_trail.is_healing() and noen_trail.ratio > 0.0:
+		draw_rect(Rect2(o + Vector2(maxf(BAR_W * noen_trail.ratio - 2.0, 0.0), -1.0), Vector2(2.0, BAR_H + 2.0)), COL_HEAL_TIP)
 	if sheila_present:
 		_bar(o + Vector2(0, 46), sheila_ratio, COL_DOWN if sheila_down else COL_HP_SHEILA)
 		_bar(o + Vector2(0, 58), stamina_ratio, COL_STAMINA, 4.0)
@@ -184,3 +196,10 @@ func _draw() -> void:
 func _bar(pos: Vector2, ratio: float, color: Color, h: float = BAR_H) -> void:
 	draw_rect(Rect2(pos, Vector2(BAR_W, h)), COL_BG)
 	draw_rect(Rect2(pos, Vector2(BAR_W * clampf(ratio, 0.0, 1.0), h)), color)
+
+
+## 條上的一段：從 from（比例）開始、寬 span（比例）
+func _bar_span(pos: Vector2, from: float, span: float, color: Color, h: float = BAR_H) -> void:
+	if span <= 0.0:
+		return
+	draw_rect(Rect2(pos + Vector2(BAR_W * clampf(from, 0.0, 1.0), 0.0), Vector2(BAR_W * clampf(span, 0.0, 1.0 - from), h)), color)

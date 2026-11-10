@@ -86,6 +86,8 @@ var health: Health
 ## 新版（劇情重寫，D-202）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
 var reversal: ReversalSlots = ReversalSlots.new()
 var status_effects: StatusEffects
+## 回血的畫面回饋（D-213）：回血期間身邊往上飄的綠色光點、喝藥那一下的一小團
+var heal_fx: HealMotes
 ## 可攜藥劑滿血時要先問（PotionBelt 回傳 confirm_full）：UI 接這個訊號跳「還是要喝嗎？」
 signal potion_needs_confirm(item_id: String)
 ## 讀檔／死亡重試：生命照檢查點存的，但至少這個比例（09 第 3 節）
@@ -207,6 +209,7 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	add_child(health)
 	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
+	heal_fx = HealMotes.attach(self, health)
 	if Game.session.is_reboot():
 		_restore_reboot_vitals(Game.session.state)
 		# 用方法連線：玩家被釋放時自動斷開
@@ -415,6 +418,8 @@ func use_potion(confirmed: bool = false) -> String:
 	match result:
 		"used":
 			Sfx.play_at(self, "glass_clink", global_position + Vector3.UP * 1.3, -7.0)
+			if heal_fx != null:
+				heal_fx.burst()
 			Game.session.set_flag("rb.potion_tried", true)
 		"confirm_full":
 			potion_needs_confirm.emit(PORTABLE_ITEM)
