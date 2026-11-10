@@ -51,6 +51,10 @@ const HANG_X: float = 0.7
 const BEAM_Y: float = 2.6
 ## 掛著的送葬者：鏈子多長、怎麼晃
 const CHAIN_LEN: float = 1.0
+## 吊住牠的兩條鐵鏈一節的外長、外寬、鐵條半徑（D-199：ChainMesh；之前是 7 cm 粗的素色圓柱）
+const HANG_LINK: Vector3 = Vector3(0.16, 0.1, 0.018)
+## 閘道小油燈的細鏈
+const LAMP_LINK: Vector3 = Vector3(0.06, 0.036, 0.0055)
 const SWAY_DEG: float = 2.2
 const SWAY_RATE: float = 0.55
 ## 胸口的鐘舌：銅光一下一下地亮，像心跳（每分鐘 HEART_BPM 下，一次兩拍）
@@ -1881,7 +1885,12 @@ func _build_sluice_lamp() -> void:
 	pivot.position = SLUICE_LAMP_HOOK
 	var iron: StandardMaterial3D = _mat(IRON, 0.6)
 	iron.metallic = 0.7
-	_solid("SluiceLampChain", Vector3(0.025, SLUICE_LAMP_DROP, 0.025), Vector3(0.0, -SLUICE_LAMP_DROP * 0.5, 0.0), iron, false, pivot)
+	# 細鐵鏈（D-199）
+	var lamp_chain := MeshInstance3D.new()
+	lamp_chain.name = "SluiceLampChain"
+	lamp_chain.mesh = ChainMesh.build(SLUICE_LAMP_DROP, LAMP_LINK.x, LAMP_LINK.y, LAMP_LINK.z)
+	lamp_chain.material_override = iron
+	pivot.add_child(lamp_chain)
 	_solid("SluiceLampCap", Vector3(0.2, 0.05, 0.2), Vector3(0.0, -SLUICE_LAMP_DROP - 0.02, 0.0), iron, false, pivot)
 	var glow := StandardMaterial3D.new()
 	glow.albedo_color = Color(0.3, 0.2, 0.12)
@@ -2825,15 +2834,12 @@ func _build_undertaker() -> void:
 	var iron: StandardMaterial3D = _mat(IRON, 0.6)
 	iron.metallic = 0.7
 	for side: float in [-1.0, 1.0]:
+		# 一節節的粗鐵鏈（D-199），從吊樑往下垂到鐵架頂
 		var chain := MeshInstance3D.new()
 		chain.name = "Chain%d" % int(side)
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.035
-		cm.bottom_radius = 0.035
-		cm.height = CHAIN_LEN + 0.15
-		chain.mesh = cm
+		chain.mesh = ChainMesh.build(CHAIN_LEN + 0.15, HANG_LINK.x, HANG_LINK.y, HANG_LINK.z)
 		chain.material_override = iron
-		chain.position = Vector3(side * 0.42, -(CHAIN_LEN + 0.15) * 0.5, 0.15)
+		chain.position = Vector3(side * 0.42, 0.0, 0.15)
 		_pivot.add_child(chain)
 	# 鐘舌：一根短短的銅棒斜插在胸口，自己會發光；旁邊一盞小小的銅色點光（不投影子）
 	_clapper_mat = StandardMaterial3D.new()

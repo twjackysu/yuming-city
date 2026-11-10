@@ -1556,6 +1556,10 @@ func _assert_canal_art(canal: StoryLevel, tag: String) -> void:
 		elif d.mesh is ArrayMesh and d.material_override is StandardMaterial3D and d.position.y > -4.6:
 			stones += 1
 	assert_eq(stones, 17, tag + " 17 塊碎石都是 CoalPile 形狀、石頭色、在河床上（D-198）")
+	# 吊住牠的鏈子與閘道小油燈的鏈子是一節節的鐵鏈（D-199）
+	for n: String in ["HangPivot/Chain1", "HangPivot/Chain-1", "SluiceLampPivot/SluiceLampChain"]:
+		var ch: MeshInstance3D = canal.get_node(n) as MeshInstance3D
+		assert_true(ch.mesh is ArrayMesh and ch.mesh.get_aabb().end.y < 0.01, tag + " " + n + " 是 ChainMesh、從掛鉤往下垂")
 
 
 ## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。
