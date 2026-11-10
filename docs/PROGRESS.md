@@ -16,7 +16,7 @@
 
 - 本機 Vulkan 截圖：`--canal-at=bed`（河床上是有切面的碎石）、`--canal-at=edge` 前後對照（兩根棍子 → 看得出一節節的鏈環）、`--level=tavern --ch1-stage=draw_map --pos=1.4,-0.6 --face=LampGlass --nohud`（鏈子從天花板接到燈罩）、沙盒 `--boss`（從背後看得到兩條鏈子垂到地上往後拖）、`--canal-at=edge`（吊著的那隻兩手垂著鏈子、沒有懸空的段）。`--canal-at=mud` 的視角看不到河床碎石（左上那塊磚紋方塊是閘道的矮石牆，不是碎石）。
 - 新單元 `test_chain_mesh`（3 個）、`test_canal_art::test_debris_stone_is_soaked_wall_stone`、`test_undertaker::test_chains_hang_to_ground_and_trail_behind`（＋第二階段扯斷右邊那條）；主線流程測試 `_assert_canal_art` 多看 17 塊碎石＋9 根木頭、三條鏈子。`scripts/check.sh` 每次 push 前全綠（最後 424 個測試）。
-- CI：見下面（b017905 的 run 收尾時的狀態）。
+- CI：69f36b6 run 42778234745（D-198／D-199 全部）「Import、測試、匯出」已綠，截圖等步驟收尾時還在跑；b017905 run 42779407861（D-200）收尾時還在排隊（本機 `check.sh` 424 個測試全綠）。86efa9b（Jacky 的美術）run 42776689740 全綠。
 
 **問題**
 
