@@ -14,6 +14,9 @@ extends StoryLevel
 ## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）、`--hide=noen`（藏起諾恩）、`--pos=x,z`（最後把諾恩移到這裡）、`--face=...` `--face-off=度`。
 
 const PLAZA_HALF: float = 11.0
+## 冬夜的風雪（D-180）：整片鋪著、不分位置；白天（第 1 章）風小一點。
+const WIND_DB_NIGHT: float = -13.0
+const WIND_DB_DAY: float = -17.0
 const MAIN_HALF: float = 4.0
 const SOUTH_HALF: float = 3.5
 const PLAZA_N: float = -10.0
@@ -54,6 +57,8 @@ const DEV_SPAWNS: Dictionary = {
 
 var look := FrostbridgeLook.new()
 var _batch := StaticBatch.new()
+## 風雪環境音（D-180）
+var wind_sound: AudioStreamPlayer
 ## 統計（測試、benchmark 用）
 var light_count: int = 0
 var lantern_count: int = 0
@@ -105,6 +110,7 @@ func _ready() -> void:
 	_init_story()
 	if day:
 		_build_day()
+	wind_sound = Ambience.play(self, "frost_wind", WIND_DB_DAY if day else WIND_DB_NIGHT)
 
 	# 截圖用：`--convoy` 先把任務推進到送葬者戰（在連接 stage_changed 之前，不會觸發席菈登場段落）
 	if dev_args.has("convoy") and StoryLevel.dev_advance_to_convoy(Game.session) and not _north_collapsed:

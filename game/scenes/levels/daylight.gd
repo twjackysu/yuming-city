@@ -239,20 +239,7 @@ func lamp_light() -> OmniLight3D:
 
 ## 環境音（07）：鐘走得很慢的「喀、答」＋遠處的水聲，循環播放。
 func _start_ambience() -> void:
-	var src: AudioStreamWAV = Sfx.stream("daylight_ambience") as AudioStreamWAV
-	if src == null:
-		return
-	var s: AudioStreamWAV = src.duplicate() as AudioStreamWAV
-	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	s.loop_begin = 0
-	s.loop_end = int(s.get_length() * float(s.mix_rate))
-	var p := AudioStreamPlayer.new()
-	p.name = "Ambience"
-	p.stream = s
-	p.bus = &"SFX"
-	p.volume_db = -12.0
-	add_child(p)
-	p.play()
+	Ambience.play(self, "daylight_ambience", -12.0)
 
 
 ## 人物腳下的接地陰影（D-108）在這裡也拿掉：整座城沒有影子。

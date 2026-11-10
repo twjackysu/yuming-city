@@ -103,6 +103,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 	if level == null:
 		return
 	await _assert_restore(level, "[slice_start]", ["south_arch"])
+	_assert_ambience(level, "[slice_start]", "frost_wind")
 	assert_eq(_stage(s), "explore_town", "新遊戲：找梨販")
 	assert_true(_player(level).global_position.distance_to(Vector3(0, 0.05, 7)) < 0.6, "廣場南邊出生")
 
@@ -291,6 +292,14 @@ func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
 	for n: String in ["WindowFrameTop", "WindowSill", "WindowMullion", "Bowl0", "Candle", "BackShelf0", "DinnerBenchN", "LampGlass"]:
 		assert_true(tavern.has_node(n), "%s 有 %s" % [tag, n])
 	assert_eq(bool(tavern.call("candle_lit")), night, "%s 蠟燭%s" % [tag, "點著" if night else "沒點"])
+	# 聲音（D-180）：牆外悶悶的風＋壁爐的柴火從爐膛發出來；入夜火旺、比中午大聲
+	_assert_ambience(tavern, tag, "frost_wind_indoor")
+	var crackle: AudioStreamPlayer3D = _assert_ambience(tavern, tag, "hearth_crackle", "HearthCrackle") as AudioStreamPlayer3D
+	if crackle != null:
+		var hearth: Node3D = tavern.get_node("Hearth") as Node3D
+		assert_true(_flat_dist(crackle.global_position, hearth.global_position) < 1.0, "%s 柴火聲從壁爐來" % tag)
+		var want: float = float(tavern.get("HEARTH_DB_NIGHT" if night else "HEARTH_DB_NOON"))
+		assert_eq(crackle.volume_db, want, "%s 柴火聲的音量（入夜比較大）" % tag)
 	# 窗外的光束（D-177）：東牆有真的窗洞、玻璃不擋光、聚光燈投影子；中午亮、入夜只剩淡藍
 	assert_false(tavern.has_node("WallE"), "%s 東牆拆成四塊（中間是窗洞）" % tag)
 	var glass: CSGBox3D = tavern.get_node("Window") as CSGBox3D
@@ -1623,9 +1632,24 @@ func _assert_daylight_art(city: StoryLevel, tag: String) -> void:
 	assert_true(city.get_node("Clothesline").get_child_count() >= 4, tag + " 晾衣繩分段往下垂")
 
 
+## 環境音（D-180）：關卡裡的那個播放器在播那一段、走 SFX 匯流排、會循環。
+func _assert_ambience(level: Node, tag: String, sfx_name: String, node_name: String = "Ambience") -> Node:
+	var p: Node = level.get_node_or_null(node_name)
+	assert_eq(Ambience.sfx_of(p), sfx_name, "%s 環境音 %s" % [tag, sfx_name])
+	if p != null:
+		assert_eq(StringName(p.get("bus")), &"SFX", "%s %s 走音效匯流排" % [tag, node_name])
+		assert_true(bool(p.get("playing")), "%s %s 在播" % [tag, node_name])
+		var stream: AudioStreamWAV = p.get("stream") as AudioStreamWAV
+		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "%s %s 會循環" % [tag, node_name])
+	return p
+
+
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
 func _assert_day_town(town: StoryLevel, tag: String) -> void:
 	assert_true(bool(town.get("day")), tag + " 白天版本")
+	var wind: AudioStreamPlayer = _assert_ambience(town, tag, "frost_wind") as AudioStreamPlayer
+	if wind != null:
+		assert_true(wind.volume_db < float(town.get("WIND_DB_NIGHT")), tag + " 白天的風比那一夜小")
 	assert_true(town.has_node("Sun") and not town.has_node("Moon"), tag + " 陰天的太陽、沒有月光")
 	for n: String in ["Undertaker", "Ashwalker", "Caravan", "ConvoyEncounter"]:
 		assert_false(town.has_node(n), tag + " 沒有 " + n)

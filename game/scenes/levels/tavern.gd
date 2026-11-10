@@ -49,6 +49,12 @@ const SUN_NIGHT: Color = Color(0.42, 0.52, 0.78)
 const SUN_NIGHT_ENERGY: float = 4.5
 ## 晚餐桌上的蠟燭（入夜才點）
 const CANDLE_POS: Vector3 = Vector3(-0.5, 0.8, -2.25)
+## 聲音（D-180）：壁爐的柴火從爐膛發出來（走近變大聲），牆外悶悶的風雪整片鋪著；入夜火燒得旺、風也大一點。
+const HEARTH_SOUND_POS: Vector3 = Vector3(-4.6, 0.4, -4.3)
+const HEARTH_DB_NOON: float = -10.0
+const HEARTH_DB_NIGHT: float = -5.0
+const WIND_INDOOR_DB_NOON: float = -26.0
+const WIND_INDOOR_DB_NIGHT: float = -21.0
 
 var _door_inside: bool = false
 var _leaving: bool = false
@@ -61,6 +67,8 @@ var _candle_light: OmniLight3D
 var _candle_flame: MeshInstance3D
 var _dev_face: String = ""
 var _dev_face_off: float = 0.0
+var hearth_sound: AudioStreamPlayer3D
+var wind_sound: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -69,6 +77,8 @@ func _ready() -> void:
 	_build_room()
 	_build_furniture()
 	_build_people()
+	hearth_sound = Ambience.play_at(self, "hearth_crackle", HEARTH_SOUND_POS, HEARTH_DB_NOON, 3.0, "HearthCrackle")
+	wind_sound = Ambience.play(self, "frost_wind_indoor", WIND_INDOOR_DB_NOON, "Ambience")
 	_init_story()
 	# 開發用：`-- --level=tavern` 直接進來時還在切片 → 把切片走完、開始第 1 章；
 	# `--ch1-stage=dinner|draw_map|to_cellar` 再往後推（截圖用）
@@ -226,6 +236,10 @@ func _apply_time_of_day() -> void:
 		_sun_beam.light_energy = SUN_NIGHT_ENERGY if night else SUN_NOON_ENERGY
 	if _hearth_light != null:
 		_hearth_light.light_energy = 3.2 if night else 1.6
+	if hearth_sound != null:
+		hearth_sound.volume_db = HEARTH_DB_NIGHT if night else HEARTH_DB_NOON
+	if wind_sound != null:
+		wind_sound.volume_db = WIND_INDOOR_DB_NIGHT if night else WIND_INDOOR_DB_NOON
 	# 窗玻璃：中午是外面的雪光（自己發亮），入夜只剩一點暗藍
 	if _window_mat != null:
 		_window_mat.albedo_color = Color(0.06, 0.08, 0.13) if night else Color(0.75, 0.82, 0.95)

@@ -624,20 +624,7 @@ func _set_up_lamp() -> void:
 
 ## 地底的環境音（空洞的低風、有回音的滴水、吊樑的嘎吱；10 秒循環，照 daylight 的做法）。
 func _start_ambience() -> void:
-	var src: AudioStreamWAV = Sfx.stream("canal_ambience") as AudioStreamWAV
-	if src == null:
-		return
-	var s: AudioStreamWAV = src.duplicate() as AudioStreamWAV
-	s.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	s.loop_begin = 0
-	s.loop_end = int(s.get_length() * float(s.mix_rate))
-	var p := AudioStreamPlayer.new()
-	p.name = "Ambience"
-	p.stream = s
-	p.bus = &"SFX"
-	p.volume_db = -10.0
-	add_child(p)
-	p.play()
+	Ambience.play(self, "canal_ambience", -10.0)
 
 
 func lamp_light() -> OmniLight3D:

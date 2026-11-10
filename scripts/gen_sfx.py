@@ -17,6 +17,9 @@
 - chain_creak：掛著的送葬者要轉頭之前，鏈子先響（第 3 章段落 2 的觀察提示音）。三下很輕的鐵環碰撞「喀啦」＋一聲低低的摩擦，0.7 秒。
 - canal_ambience：乾運河的環境音（第 3 章，可循環 10 秒）。地底空空的低風聲（很低的低通噪音、慢慢起伏）＋遠處幾滴水（帶石牆的回音）＋吊樑很輕的一聲木頭嘎吱；頭尾交叉淡化，循環時沒有接縫。
 - slap：彌夏打黎歐的那一巴掌（第 2 章段落 3）。不重：很短的一聲帶通噪音「啪」（1～4 kHz、60 毫秒內衰減）＋一點點低頻的肉聲，0.2 秒。
+- frost_wind：霜橋鎮冬夜的風雪（可循環 12 秒，D-180）。低低的風（低通噪音）＋一道慢慢滑動的帶通「呼——」（中心 260～720 Hz）＋細細的雪粒沙沙聲（高通噪音），三層都跟著陣風的包絡起伏；頭尾交叉淡化。
+- frost_wind_indoor：同一段風從屋裡聽（酒館、柯德家）：再低通兩次、去掉雪粒，只剩牆外悶悶的呼呼聲。
+- hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -455,6 +458,94 @@ def canal_ambience(seconds=10.0, seed=53):
     return [v / peak * 0.6 for v in looped]
 
 
+def svf_band(xs, freq_at, damping):
+    """狀態變數濾波器的帶通輸出；freq_at(i) 回傳第 i 個樣本的中心頻率（可以隨時間滑動）。"""
+    low = band = 0.0
+    out = []
+    for i, x in enumerate(xs):
+        fc = 2.0 * math.sin(math.pi * min(freq_at(i), RATE / 6.0) / RATE)
+        high = x - low - damping * band
+        band += fc * high
+        low += fc * band
+        out.append(band)
+    return out
+
+
+def _loop_crossfade(out, n, fade):
+    looped = out[:n]
+    for i in range(fade):
+        w = i / fade
+        looped[i] = out[i] * w + out[n + i] * (1.0 - w)
+    return looped
+
+
+def _gust(t):
+    """陣風包絡（0.25～1.0）：幾個不成整數比的慢正弦疊起來，偶爾一陣比較強。"""
+    g = 0.5 + 0.22 * math.sin(2 * math.pi * 0.071 * t) + 0.16 * math.sin(2 * math.pi * 0.173 * t + 1.7) \
+        + 0.1 * math.sin(2 * math.pi * 0.29 * t + 0.4)
+    return max(0.25, min(1.0, g))
+
+
+def frost_wind(seconds=12.0, seed=59, indoor=False):
+    """霜橋鎮的風雪：低風底＋滑動的帶通呼嘯＋雪粒沙沙，跟著陣風起伏。indoor＝隔著牆聽。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(1.2 * RATE)
+    total = n + fade
+    white = noise(total, rng)
+    bed = onepole_lp(onepole_lp(hp(white, 50), 420), 520)
+    howl = svf_band(onepole_lp(white, 2000),
+                    lambda i: 490 + 230 * math.sin(2 * math.pi * 0.053 * i / RATE + 0.6)
+                    + 60 * math.sin(2 * math.pi * 0.21 * i / RATE), 0.16)
+    hiss = hp(hp(noise(total, rng), 3200), 3200)
+    out = []
+    for i in range(total):
+        g = _gust(i / RATE)
+        v = bed[i] * (0.5 + 0.7 * g) * 1.6 + howl[i] * (g ** 2) * 0.55
+        if not indoor:
+            v += hiss[i] * (g ** 3) * 0.05
+        out.append(v)
+    if indoor:
+        out = onepole_lp(onepole_lp(out, 300), 380)
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.7 for v in looped]
+
+
+def hearth_crackle(seconds=7.0, seed=61):
+    """壁爐的柴火：低低的火焰呼嚕＋隨機的細小劈啪＋幾聲比較大的爆裂。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(0.5 * RATE)
+    total = n + fade
+    roar_src = onepole_lp(onepole_lp(hp(noise(total, rng), 40), 180), 240)
+    flicker = onepole_lp([rng.uniform(0.3, 1.0) for _ in range(total)], 6)
+    out = [roar_src[i] * (0.6 + 1.4 * flicker[i]) * 2.4 for i in range(total)]
+    # 細小劈啪：每秒約 9 下，強度大多很小、偶爾大一點
+    t = rng.uniform(0.0, 0.1)
+    while t < seconds + 0.4:
+        start = int(t * RATE)
+        amp = min(1.0, rng.expovariate(4.0)) * 0.5 + 0.04
+        f = rng.uniform(1500, 5000)
+        m = int(rng.uniform(0.004, 0.014) * RATE)
+        burst = svf_band(noise(m, rng), lambda _i: f, 0.5)
+        for j in range(m):
+            if start + j >= total:
+                break
+            out[start + j] += amp * burst[j] * math.exp(-j / RATE * rng.uniform(300, 700))
+        t += rng.expovariate(9.0)
+    # 幾聲比較大的爆裂：高頻「啪」＋低頻「啵」
+    for at in (1.1, 3.7, 5.6):
+        start = int(at * RATE)
+        for j in range(int(0.08 * RATE)):
+            tt = j / RATE
+            pop = rng.uniform(-1, 1) * math.exp(-tt * 260) * 0.9 + math.sin(2 * math.pi * (180 - 600 * tt) * tt) * math.exp(-tt * 45) * 0.5
+            out[start + j] += pop
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.7 for v in looped]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -478,6 +569,9 @@ def main():
         write("cloth_knock", cloth_knock()),
         write("chain_creak", chain_creak()),
         write("canal_ambience", canal_ambience()),
+        write("frost_wind", frost_wind()),
+        write("frost_wind_indoor", frost_wind(indoor=True)),
+        write("hearth_crackle", hearth_crackle()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")
