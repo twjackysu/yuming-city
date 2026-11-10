@@ -104,3 +104,26 @@ func test_poison_mist_node_builds_layers_and_fades_out() -> void:
 	assert_true(is_instance_valid(mist) and not mist.is_queued_for_deletion(), "還沒散完")
 	mist._physics_process(0.4)
 	assert_true(mist.is_queued_for_deletion(), "守衛噴的霧時間到自己移除")
+
+
+## 生命條（CombatHud）平常只在戰鬥中出現；身上有狀態時也要出現——不然中毒回血看不到生命往上爬（D-205）
+func test_health_bar_shows_while_status_active_out_of_combat() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
+	root.add_child(player)
+	var hud := CombatHud.new()
+	root.add_child(hud)
+	await tree.process_frame
+	hud.refresh(player, null)
+	assert_false(hud.in_combat, "附近沒有敵人")
+	assert_false(hud.bars_shown, "沒有狀態、不在戰鬥：生命條收起來")
+	player.status_effects.apply("poison", 3.0, 5.0, "test")
+	hud.refresh(player, null)
+	assert_false(hud.in_combat, "有狀態不算戰鬥（目標指引照常）")
+	assert_true(hud.bars_shown, "身上有狀態：生命條出現")
+	player.status_effects.clear("poison")
+	hud.refresh(player, null)
+	assert_false(hud.bars_shown, "狀態結束：收起來")
+	root.queue_free()
+	await tree.process_frame

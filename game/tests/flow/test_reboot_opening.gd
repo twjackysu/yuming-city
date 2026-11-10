@@ -108,7 +108,8 @@ func test_mist_awakening_test_and_cart_to_south() -> void:
 	cart.runner.traveled = rb._corner_traveled - 0.3
 	cart._sync()
 	player.global_position = cart.global_position + Vector3(1.0, 0.05, 0.5)
-	await _frames(20)
+	# 送葬者舉起那截燈柱（0.9 秒）＋飛過來（0.7 秒），D-205
+	await _frames(130)
 	assert_eq(s.state.get_flag("rb.barrels_broken"), true, "推車到轉角：藥桶被砸破")
 	assert_eq(s.quests.stage_of("rb_main"), "poison_discovery")
 	assert_eq(s.state.checkpoint, "rb_before_mist", "第一次進霧前的檢查點")
@@ -183,6 +184,75 @@ func test_mist_awakening_test_and_cart_to_south() -> void:
 	await tree.process_frame
 
 
+## 追擊的送葬者（D-205）：對話一結束從屋頂跳下來 → 不出招、打不動 → 用自己的腳跟在推車後面 →
+## 推車到轉角，舉起那截燈柱扔過來、砸破藥桶（沒砸到人）→ 堵在北街、不下石階。
+func test_pursuer_drops_follows_and_throws_lamp_at_barrels() -> void:
+	var s := _session()
+	var level: StoryLevel = await _load()
+	await tree.process_frame
+	assert_false(level.has_node("RbPursuer"), "開場對話中牠還沒出現")
+	await _run_dialogue(level)
+	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var cart: Caravan = level.get_node("RbCart") as Caravan
+	var u: Undertaker = level.get_node_or_null("RbPursuer") as Undertaker
+	assert_not_null(u, "對話一結束，送葬者出現")
+	if u == null:
+		level.queue_free()
+		await tree.process_frame
+		return
+	assert_true(u.global_position.y > RebootOpening.RISE + 2.0, "從屋頂跳下來（不是憑空出現在地上）")
+	assert_true(level.has_node("RbLampStump"), "門邊的燈柱被踩斷")
+	await _frames(70)
+	assert_true(u.is_on_floor() and u.global_position.y < RebootOpening.RISE + 0.6, "落地")
+	assert_true(u.is_scripted(), "追擊期間不跑狀態機")
+	assert_true(rb.lamp_chunk != null and rb.lamp_chunk.get_parent().name == "Torso", "手上拖著折下來的那截燈柱")
+	# 打不動，牠也不出招（開場生命只有 55）
+	var hp: float = u.health.hp
+	assert_false(u.health.apply_damage(50.0), "追擊期間打不動")
+	assert_eq(u.health.hp, hp)
+	player.global_position = u.global_position + Vector3(-1.7, 0.05, 0.4)
+	await _frames(60)
+	assert_eq(player.health.hp, RebootOpening.OPENING_HP, "站在牠旁邊也不會被打")
+	assert_eq(u.brain.state, EnemyBrain.State.IDLE, "狀態機沒有在跑")
+	# 推車往南走了一段 → 牠用自己的腳跟上（不是瞬移、不是站著滑）
+	cart.runner.traveled = 6.6
+	cart._sync()
+	player.global_position = Vector3(2.6, RebootOpening.RISE + 0.05, -29.6)
+	var z0: float = u.global_position.z
+	await _frames(50)
+	var z1: float = u.global_position.z
+	assert_true(z1 > z0 + 0.3 and z1 < z0 + 1.6, "牠往南走（每秒約 1.45 m，不是瞬移）：%.2f → %.2f" % [z0, z1])
+	assert_true(u.get_real_velocity().length() > 0.5, "是用自己的速度在走")
+	await _frames(110)
+	assert_true(absf(u.global_position.z - (cart.global_position.z - RebootOpening.PURSUER_GAP)) < 0.6, "停在推車後面 5.5 m")
+	# 推車到轉角 → 牠站住、舉起那截燈柱 → 扔過來砸破藥桶
+	cart.runner.traveled = rb._corner_traveled - 0.2
+	cart._sync()
+	player.global_position = cart.global_position + Vector3(1.0, 0.05, 0.5)
+	await _frames(12)
+	assert_eq(rb.throw_phase, 1, "推車到轉角：牠舉起那截燈柱")
+	assert_true(u.throw_windup > 0.0, "舉起來的前兆")
+	assert_eq(s.state.get_flag("rb.barrels_broken", false), false, "還沒砸到")
+	await _frames(60)
+	assert_eq(rb.throw_phase, 2, "那截燈柱在空中")
+	assert_true(rb.lamp_chunk.get_parent() == level, "離手了")
+	await _frames(60)
+	assert_eq(rb.throw_phase, 3)
+	assert_eq(s.state.get_flag("rb.barrels_broken"), true, "砸破藥桶")
+	assert_not_null(rb.mist, "毒霧")
+	assert_true(rb.lamp_chunk.global_position.distance_to(RebootOpening.THROW_TARGET) < 1.0, "那截燈柱躺在藥桶旁")
+	assert_eq(player.health.hp, RebootOpening.OPENING_HP, "沒砸到人")
+	# 牠往前堵住北街，不下石階、不進毒霧
+	await _frames(150)
+	assert_true(u.global_position.z > z1 + 1.0, "丟完往前堵路")
+	assert_true(u.global_position.z <= RebootOpening.PURSUER_STOP_Z + 0.4, "不走下石階")
+	assert_false(rb.mist.contains(u.global_position), "不進毒霧")
+	assert_true(u.is_scripted(), "還是不出招")
+	level.queue_free()
+	await tree.process_frame
+
+
 func test_retry_returns_before_mist_without_full_heal() -> void:
 	var s := _session()
 	var level: StoryLevel = await _load()
@@ -194,7 +264,7 @@ func test_retry_returns_before_mist_without_full_heal() -> void:
 	cart.runner.traveled = rb._corner_traveled - 0.3
 	cart._sync()
 	player.global_position = cart.global_position + Vector3(1.0, 0.05, 0.5)
-	await _frames(20)
+	await _frames(130)
 	assert_eq(s.state.checkpoint, "rb_before_mist")
 	player.global_position = RebootOpening.MIST_CENTER + Vector3(0.0, 0.05, 0.0)
 	await _frames(20)
@@ -217,6 +287,12 @@ func test_retry_returns_before_mist_without_full_heal() -> void:
 	assert_true(bool(level2.get_node("RbBarrel0").get_meta("broken", false)), "藥桶照樣是破的")
 	assert_true(p2.global_position.z > -29.5 and p2.global_position.z < -25.0, "諾恩在石階上（霧的北邊）")
 	assert_false(rb2.mist.contains(p2.global_position), "重來的位置不在毒霧裡")
+	# 送葬者已經丟完：堵在北街（回頭路），那截燈柱躺在藥桶旁，不會再丟一次
+	var u2: Undertaker = level2.get_node_or_null("RbPursuer") as Undertaker
+	assert_not_null(u2, "重來：送葬者堵在北街")
+	assert_eq(rb2.throw_phase, 3, "不會再丟一次")
+	assert_true(u2.global_position.z < RebootOpening.PLAYER_CORNER_Z - 3.0, "牠在諾恩北邊（不在石階下、不在霧裡）")
+	assert_true(rb2.lamp_chunk != null and rb2.lamp_chunk.get_parent() == level2, "那截燈柱躺在藥桶旁")
 	level2.queue_free()
 	await tree.process_frame
 

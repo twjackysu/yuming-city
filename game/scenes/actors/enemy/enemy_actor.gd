@@ -72,9 +72,12 @@ func _physics_process(delta: float) -> void:
 			var face: float = atan2(-d.x, -d.z)
 			_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
 	if _held(delta):
-		# 劇情動作中（送葬者舉起鐵架）：不追、不出招
-		velocity = Vector3(0.0, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, 0.0)
+		# 劇情動作中（送葬者舉起鐵架）：不追、不出招。劇情走位（D-205）由 _held_velocity 給水平速度，照樣用自己的腳走
+		var held_v: Vector3 = _held_velocity(delta)
+		velocity = Vector3(held_v.x, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, held_v.z)
 		move_and_slide()
+		if Vector2(held_v.x, held_v.z).length() > 0.01:
+			_tick_footsteps(delta, Vector2(held_v.x, held_v.z).length())
 		_update_look()
 		_update_insight()
 		return
@@ -171,9 +174,14 @@ func _after_move() -> void:
 	pass
 
 
-## 回傳 true＝這一幀被劇情動作佔住（不跑狀態機、不移動）。
+## 回傳 true＝這一幀被劇情動作佔住（不跑狀態機、不出招）。
 func _held(_delta: float) -> bool:
 	return false
+
+
+## 被劇情動作佔住時這一幀的水平速度（預設站著不動；劇情走位覆寫，D-205）。
+func _held_velocity(_delta: float) -> Vector3:
+	return Vector3.ZERO
 
 
 ## 這隻敵人的腳步聲（null＝不出聲）。

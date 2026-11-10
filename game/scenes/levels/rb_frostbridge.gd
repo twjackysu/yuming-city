@@ -39,6 +39,32 @@ const MIST_CLEAR_SEC: float = 5.0
 ## 測試可以調短
 var mist_clear_sec: float = MIST_CLEAR_SEC
 
+## 追擊的送葬者（D-205）：開場對話一結束，牠從鐵門邊的屋頂跳下來（踩斷門邊的燈柱、手上拖著折下來的那一截），
+## 照自己的腳跟在推車後面（比推車慢一點，諾恩停下來牠就逼近）。推車到北街轉角，牠把那截燈柱扔過來——
+## 沒打中人，砸破了石階下的藥桶。之後牠堵在北街（回頭路沒了），不進毒霧。追擊期間不出招、打不動（開場生命只有 55）。
+const PURSUER_SPAWN: Vector3 = Vector3(2.5, RISE, -43.8)
+const PURSUER_DROP: float = 5.5
+const PURSUER_SPEED: float = 1.45
+## 跟在推車／諾恩（取比較北邊的那個）後面這麼遠
+const PURSUER_GAP: float = 5.5
+## 丟完之後堵在這裡（北街中段，面向南）；不走下石階
+const PURSUER_BLOCK: Vector3 = Vector3(0.3, RISE, -33.2)
+const PURSUER_STOP_Z: float = -33.2
+const THROW_WINDUP_SEC: float = 0.9
+const THROW_FLIGHT_SEC: float = 0.7
+const THROW_ARC: float = 2.4
+## 那截燈柱落在藥桶中間
+const THROW_TARGET: Vector3 = Vector3(-1.6, 0.35, -23.8)
+## 門邊被踩斷的燈柱剩下的那一截
+const LAMP_STUMP: Vector3 = Vector3(3.35, RISE, -44.6)
+## 那截燈柱拖在牠左手外側的姿勢（相對上身）：桿子往左下斜，燈頭剛好碰到地
+## （左手：牠面向諾恩時燈在畫面右邊，不會被過肩鏡頭裡的諾恩擋住）
+const LAMP_CARRY_POS: Vector3 = Vector3(-0.7, 0.03, 0.02)
+const LAMP_CARRY_ROT: Vector3 = Vector3(14.0, 0.0, 124.0)
+## 測試可以調短
+var throw_windup_sec: float = THROW_WINDUP_SEC
+var throw_flight_sec: float = THROW_FLIGHT_SEC
+
 ## 席菈從南街西側的側門出來（推車停在南街口），走近就開始接應的對話
 const SHEILA_DOOR: Vector3 = Vector3(-2.3, 0.0, 13.2)
 const SHEILA_TALK_RANGE: float = 3.4
@@ -67,6 +93,14 @@ var left_mist_after_awaken: bool = false
 var _mist_clearing: bool = false
 var _hold_traveled: float = 0.0
 var _corner_traveled: float = 0.0
+var pursuer: Undertaker
+## 牠手上那截折下來的燈柱（丟出去之後躺在藥桶旁）
+var lamp_chunk: Node3D
+## 0＝還沒丟、1＝舉起來、2＝在空中、3＝砸到了
+var throw_phase: int = 0
+var _throw_t: float = 0.0
+var _throw_from: Vector3 = Vector3.ZERO
+var _pursuer_landed: bool = true
 
 
 func _ready() -> void:
@@ -97,16 +131,28 @@ func _ready() -> void:
 			_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
 	if not st.get_flag("rb.opening_done", false):
 		_begin_opening.call_deferred()
+	elif now == "escape":
+		_spawn_pursuer(false)
+	elif now == "poison_discovery":
+		_spawn_pursuer_blocking()
 	# 截圖用：`--rb-at=mist` 一進場就站在毒霧裡（第一次覺醒的兩行字）
-	if player != null and str(App.parse_user_args(OS.get_cmdline_user_args()).get("rb-at", "")) == "mist":
+	var shot_at: String = str(App.parse_user_args(OS.get_cmdline_user_args()).get("rb-at", ""))
+	if player != null and shot_at == "mist":
 		player.global_position = MIST_CENTER + Vector3(0.9, 0.05, -2.6)
+		player.snap_camera()
+	# `--rb-at=pursuer`：對話剛結束，回頭看見門邊的送葬者（手上拖著那截燈柱）
+	if player != null and shot_at == "pursuer":
+		player.global_position = Vector3(-1.2, RISE + 0.05, -40.4)
+		player.rotation.y = deg_to_rad(-30.0)
+		player.yaw = player.rotation.y
 		player.snap_camera()
 
 
 ## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前
 static func dev_advance(s: GameSession, at: String) -> void:
-	if at in ["mist"]:
+	if at in ["mist", "pursuer"]:
 		s.set_flag("rb.opening_done", true)
+	if at in ["mist"]:
 		s.set_flag("rb.barrels_broken", true)
 
 
@@ -126,6 +172,7 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 	match dialogue_id:
 		"rb_opening":
 			_red_runs_off()
+			_spawn_pursuer(true)
 		"rb_mist_confirmed":
 			_clear_mist()
 		"rb_sheila_meet":
@@ -150,13 +197,14 @@ func _physics_process(delta: float) -> void:
 	if player == null or Game.session == null or not Game.session.is_reboot():
 		return
 	_update_cart(delta)
+	_update_pursuer()
+	_update_throw(delta)
 	var st: GameState = Game.session.state
 	match stage():
 		"escape":
-			# 推車推到北街轉角（或諾恩自己先走下石階）→ 藥桶破了
+			# 推車推到北街轉角（或諾恩自己先走下石階）→ 送葬者把那截燈柱扔過來，砸破藥桶
 			if (cart != null and cart.runner.traveled >= _corner_traveled - 0.01) or player.global_position.z >= PLAYER_CORNER_Z:
-				_break_barrels(true)
-				Game.session.set_flag("rb.barrels_broken", true)
+				_begin_barrel_throw()
 		"poison_discovery":
 			_update_mist_test(st)
 		"meet_sheila":
@@ -211,6 +259,10 @@ func _on_awakened(_status_id: String) -> void:
 func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
 	if quest_id == QUEST and to_stage == "meet_sheila":
 		_spawn_sheila(SHEILA_DOOR)
+		# 牠繞去南街了（南街守衛戰就是牠，下一步）：北街那隻這時已經在霧後面看不到
+		if pursuer != null and is_instance_valid(pursuer):
+			pursuer.queue_free()
+		pursuer = null
 
 
 func _spawn_sheila(pos: Vector3) -> void:
@@ -236,6 +288,227 @@ func _pok_into_shop() -> void:
 func _on_cart_arrived() -> void:
 	if Game.session.is_reboot() and stage() == "poison_discovery":
 		Game.session.set_flag("rb.reached_south", true)
+
+
+# ---------------------------------------------------------------- 追擊的送葬者（D-205）
+
+## drop＝對話剛結束，從屋頂跳下來；false＝讀檔／重試，已經站在門邊
+func _spawn_pursuer(drop: bool) -> void:
+	if pursuer != null or level.has_node("RbPursuer"):
+		return
+	_build_lamp_stump()
+	pursuer = Undertaker.new()
+	pursuer.name = "RbPursuer"
+	pursuer.position = PURSUER_SPAWN + Vector3.UP * (PURSUER_DROP if drop else 0.0)
+	level.add_child(pursuer)
+	pursuer.begin_struggle()
+	pursuer.set_facing(deg_to_rad(180.0))
+	pursuer.scripted_walk(PURSUER_SPAWN, 0.0)
+	pursuer.scripted_look_at(player.global_position if player != null else PURSUER_BLOCK)
+	_attach_lamp_chunk()
+	_pursuer_landed = not drop
+	if drop:
+		Sfx.play_at(level, "whoosh", PURSUER_SPAWN + Vector3.UP * 3.0, 0.0, 0.0, 10.0)
+
+
+## 讀檔／重試回到「第一次進霧前」：牠已經丟完，堵在北街
+func _spawn_pursuer_blocking() -> void:
+	if pursuer != null or level.has_node("RbPursuer") or Game.session.state.get_flag("rb.reached_south", false):
+		return
+	_build_lamp_stump()
+	pursuer = Undertaker.new()
+	pursuer.name = "RbPursuer"
+	pursuer.position = PURSUER_BLOCK
+	level.add_child(pursuer)
+	pursuer.begin_struggle()
+	pursuer.set_facing(deg_to_rad(180.0))
+	pursuer.scripted_walk(PURSUER_BLOCK, 0.0)
+	throw_phase = 3
+	_drop_chunk_at_barrels()
+
+
+func _update_pursuer() -> void:
+	if pursuer == null or not is_instance_valid(pursuer):
+		return
+	if not _pursuer_landed:
+		if pursuer.is_on_floor():
+			_pursuer_landed = true
+			_on_pursuer_landed()
+		return
+	if throw_phase == 1 or throw_phase == 2:
+		return
+	if throw_phase == 3:
+		# 堵在北街，盯著諾恩
+		pursuer.scripted_walk(PURSUER_BLOCK, PURSUER_SPEED)
+		pursuer.scripted_look_at(player.global_position)
+		return
+	# 跟在推車／諾恩後面：兩個裡面比較北邊的那個再往北 PURSUER_GAP
+	var lead_z: float = player.global_position.z
+	if cart != null:
+		lead_z = minf(lead_z, cart.global_position.z)
+	var z: float = clampf(lead_z - PURSUER_GAP, PURSUER_SPAWN.z, PURSUER_STOP_Z)
+	var x: float = lerpf(PURSUER_SPAWN.x, PURSUER_BLOCK.x, inverse_lerp(PURSUER_SPAWN.z, PURSUER_SPAWN.z + 4.0, z))
+	x = clampf(x, minf(PURSUER_SPAWN.x, PURSUER_BLOCK.x), maxf(PURSUER_SPAWN.x, PURSUER_BLOCK.x))
+	pursuer.scripted_walk(Vector3(x, pursuer.global_position.y, z), 0.0 if Game.is_player_locked() else PURSUER_SPEED)
+	pursuer.scripted_look_at(player.global_position)
+
+
+## 落地：雪往外噴、燈柱斷掉的那一聲、鏡頭震一下
+func _on_pursuer_landed() -> void:
+	var at: Vector3 = pursuer.global_position
+	Sfx.play_at(level, "blunt", at + Vector3.UP * 0.3, 3.0, 0.03, 12.0)
+	Sfx.play_at(level, "iron_clang", LAMP_STUMP + Vector3.UP, 0.0, 0.03, 10.0)
+	pursuer._ground_puff(at, Vector3(0.9, 0.05, 0.9), 40, Color(0.78, 0.8, 0.86, 0.7))
+	if player != null:
+		player.shake(0.7)
+
+
+func _begin_barrel_throw() -> void:
+	if throw_phase != 0:
+		return
+	if pursuer == null or not is_instance_valid(pursuer) or lamp_chunk == null or not is_instance_valid(lamp_chunk):
+		_on_barrels_hit()
+		return
+	throw_phase = 1
+	_throw_t = throw_windup_sec
+	pursuer.scripted_walk(pursuer.global_position, 0.0)
+	pursuer.scripted_look_at(THROW_TARGET)
+	pursuer.begin_throw_windup(throw_windup_sec)
+	# 那截燈柱舉過頭
+	var t := lamp_chunk.create_tween().set_parallel(true)
+	t.tween_property(lamp_chunk, "position", Vector3(-0.55, 1.55, 0.1), throw_windup_sec * 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(lamp_chunk, "rotation_degrees", Vector3(-40.0, 0.0, -8.0), throw_windup_sec * 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func _update_throw(delta: float) -> void:
+	if throw_phase == 1:
+		_throw_t -= delta
+		if _throw_t <= 0.0:
+			_release_chunk()
+	elif throw_phase == 2:
+		_throw_t += delta
+		var k: float = clampf(_throw_t / maxf(throw_flight_sec, 0.01), 0.0, 1.0)
+		if lamp_chunk != null and is_instance_valid(lamp_chunk):
+			lamp_chunk.global_position = _throw_from.lerp(THROW_TARGET, k) + Vector3.UP * (THROW_ARC * 4.0 * k * (1.0 - k))
+			lamp_chunk.rotate_x(delta * 11.0)
+		if k >= 1.0:
+			_on_barrels_hit()
+
+
+func _release_chunk() -> void:
+	throw_phase = 2
+	_throw_t = 0.0
+	if lamp_chunk == null or not is_instance_valid(lamp_chunk):
+		_on_barrels_hit()
+		return
+	lamp_chunk.reparent(level, true)
+	_throw_from = lamp_chunk.global_position
+	Sfx.play_at(level, "whoosh", _throw_from, 3.0, 0.03, 12.0)
+
+
+func _on_barrels_hit() -> void:
+	throw_phase = 3
+	_drop_chunk_at_barrels()
+	if player != null:
+		player.shake(0.45)
+	_break_barrels(true)
+	Game.session.set_flag("rb.barrels_broken", true)
+
+
+## 那截燈柱躺在藥桶旁，燈熄了
+func _drop_chunk_at_barrels() -> void:
+	if lamp_chunk == null or not is_instance_valid(lamp_chunk):
+		lamp_chunk = _build_lamp_chunk()
+		level.add_child(lamp_chunk)
+	elif lamp_chunk.get_parent() != level:
+		lamp_chunk.reparent(level, true)
+	lamp_chunk.position = Vector3(THROW_TARGET.x, level.ground_y(THROW_TARGET) + 0.07, THROW_TARGET.z)
+	lamp_chunk.rotation_degrees = Vector3(90.0, 38.0, 0.0)
+	var light: OmniLight3D = lamp_chunk.get_node_or_null("Glow") as OmniLight3D
+	if light != null:
+		light.light_energy = 0.0
+	var glass: MeshInstance3D = lamp_chunk.get_node_or_null("Glass") as MeshInstance3D
+	if glass != null:
+		(glass.material_override as StandardMaterial3D).emission_energy_multiplier = 0.0
+
+
+## 拖在牠左手外側：斷口在手上，燈頭拖在身旁的雪地上（還亮著，從正面、背面都看得到，暖光打在牠的袍子側面）
+func _attach_lamp_chunk() -> void:
+	var torso: Node3D = pursuer.get_node_or_null("Body/Torso") as Node3D
+	if torso == null:
+		return
+	lamp_chunk = _build_lamp_chunk()
+	torso.add_child(lamp_chunk)
+	lamp_chunk.position = LAMP_CARRY_POS
+	lamp_chunk.rotation_degrees = LAMP_CARRY_ROT
+
+
+## 一截折斷的燈柱：鐵桿（斷口在原點，往 +Y 長）＋燈頭（鐵蓋、鐵底、還亮著的玻璃）
+func _build_lamp_chunk() -> Node3D:
+	var n := Node3D.new()
+	n.name = "RbLampChunk"
+	var iron: Material = Undertaker.frame_iron_material()
+	var pole := MeshInstance3D.new()
+	var pm := CylinderMesh.new()
+	pm.top_radius = 0.04
+	pm.bottom_radius = 0.05
+	pm.height = 1.45
+	pm.radial_segments = 10
+	pole.mesh = pm
+	pole.material_override = iron
+	pole.position.y = 0.725
+	n.add_child(pole)
+	for spec: Array in [[Vector3(0.3, 0.05, 0.3), 1.47], [Vector3(0.34, 0.06, 0.34), 1.8], [Vector3(0.16, 0.1, 0.16), 1.87]]:
+		_box_part(n, spec[0] as Vector3, Vector3(0.0, float(spec[1]), 0.0), iron)
+	for cx: float in [-0.12, 0.12]:
+		for cz: float in [-0.12, 0.12]:
+			_box_part(n, Vector3(0.025, 0.3, 0.025), Vector3(cx, 1.63, cz), iron)
+	var glass := MeshInstance3D.new()
+	glass.name = "Glass"
+	var gm := BoxMesh.new()
+	gm.size = Vector3(0.21, 0.28, 0.21)
+	glass.mesh = gm
+	var gmat := StandardMaterial3D.new()
+	gmat.albedo_color = Color(0.35, 0.25, 0.14)
+	gmat.roughness = 0.3
+	gmat.emission_enabled = true
+	gmat.emission = Color(1.0, 0.6, 0.24)
+	gmat.emission_energy_multiplier = 4.5
+	glass.material_override = gmat
+	glass.position.y = 1.63
+	n.add_child(glass)
+	var light := OmniLight3D.new()
+	light.name = "Glow"
+	light.light_color = Color(1.0, 0.66, 0.34)
+	light.light_energy = 2.6
+	light.omni_range = 5.0
+	light.shadow_enabled = false
+	light.position.y = 1.63
+	n.add_child(light)
+	return n
+
+
+## 門邊被踩斷的燈柱：剩一截歪掉的鐵桿
+func _build_lamp_stump() -> void:
+	if level.has_node("RbLampStump"):
+		return
+	var stump := Node3D.new()
+	stump.name = "RbLampStump"
+	stump.position = Vector3(LAMP_STUMP.x, level.ground_y(LAMP_STUMP), LAMP_STUMP.z)
+	stump.rotation_degrees = Vector3(0.0, 0.0, 14.0)
+	var iron: Material = Undertaker.frame_iron_material()
+	_box_part(stump, Vector3(0.22, 0.12, 0.22), Vector3(0.0, 0.06, 0.0), iron)
+	var pole := MeshInstance3D.new()
+	var pm := CylinderMesh.new()
+	pm.top_radius = 0.05
+	pm.bottom_radius = 0.06
+	pm.height = 1.1
+	pm.radial_segments = 10
+	pole.mesh = pm
+	pole.material_override = iron
+	pole.position.y = 0.6
+	stump.add_child(pole)
+	level.add_child(stump)
 
 
 # ---------------------------------------------------------------- 場景

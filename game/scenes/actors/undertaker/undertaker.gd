@@ -260,9 +260,67 @@ func _frame_node() -> Node3D:
 
 func _held(delta: float) -> bool:
 	if throw_windup <= 0.0:
-		return false
+		return _scripted
 	throw_windup = maxf(throw_windup - delta, 0.0)
 	return true
+
+
+# ---- 劇情走位（D-205，新版開場的追擊）----
+## 照自己的腳走到目標（會轉向、有腳步聲、拖著鐵鏈），不是用 tween 搬位置。走位期間不跑狀態機、不出招、打不動。
+const SCRIPT_ARRIVE: float = 0.35
+const SCRIPT_TURN: float = 3.5
+
+var script_target: Vector3 = Vector3.ZERO
+var script_speed: float = 0.0
+var _scripted: bool = false
+var _script_look: Vector3 = Vector3.ZERO
+var _script_has_look: bool = false
+
+
+func scripted_walk(to: Vector3, speed: float) -> void:
+	_scripted = true
+	script_target = to
+	script_speed = speed
+	if health != null and not health.invulnerable_check.is_valid():
+		health.invulnerable_check = is_scripted
+
+
+## 站住時轉向這個位置（盯著人看）
+func scripted_look_at(pos: Vector3) -> void:
+	_script_look = pos
+	_script_has_look = true
+
+
+## 交回給狀態機（開打）
+func end_scripted() -> void:
+	_scripted = false
+	script_speed = 0.0
+	_script_has_look = false
+
+
+func is_scripted() -> bool:
+	return _scripted
+
+
+func scripted_arrived() -> bool:
+	var d: Vector3 = script_target - global_position
+	d.y = 0.0
+	return d.length() <= SCRIPT_ARRIVE
+
+
+func _held_velocity(delta: float) -> Vector3:
+	if not _scripted or throw_windup > 0.0:
+		return Vector3.ZERO
+	var d: Vector3 = script_target - global_position
+	d.y = 0.0
+	var moving: bool = script_speed > 0.0 and d.length() > SCRIPT_ARRIVE
+	var look: Vector3 = d
+	if not moving and _script_has_look:
+		look = _script_look - global_position
+		look.y = 0.0
+	if look.length() > 0.05:
+		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(-look.x, -look.z) - rotation.y, clampf(SCRIPT_TURN * delta, 0.0, 1.0))
+	return d.normalized() * script_speed if moving else Vector3.ZERO
 
 
 func trigger_frame_throw() -> void:
