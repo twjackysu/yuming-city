@@ -483,7 +483,7 @@ func _build_day() -> void:
 	# 路燈與門燈的玻璃也不亮（白天亮著像忘了關）
 	look.unlight(FrostbridgeLook.LAMP)
 	if arch_site != null:
-		arch_site.set_physics_process(false)
+		arch_site.set_dormant(true)
 	# 目標指引（stairs 階段）：地窖口；一百七十二階裡同名的點在樓梯底
 	var down := Marker3D.new()
 	down.name = "StairsDown"

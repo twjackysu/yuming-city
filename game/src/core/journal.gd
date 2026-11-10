@@ -67,6 +67,9 @@ func entry(id: String) -> Dictionary:
 
 
 func is_unlocked(e: Dictionary, state: GameState) -> bool:
+	# 付出過的記憶一律看得到（D-178）：不會付了一段日記裡找不到的記憶（例如跳過了解鎖它的那段對話）
+	if state.has_paid_memory(str(e.get("id", ""))):
+		return true
 	if not e.has("unlocked_when"):
 		return true
 	var cond: Variant = e["unlocked_when"]

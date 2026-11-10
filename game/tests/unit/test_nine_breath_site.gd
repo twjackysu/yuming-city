@@ -105,6 +105,39 @@ func test_activate_breaths_and_spend() -> void:
 	await tree.process_frame
 
 
+## D-178：停用的石拱（第 1 章白天回到南街）——站在旁邊也沒有提示、地上的圈不亮、按住或直接呼叫都不會發動、不付記憶。
+func test_dormant_site_cannot_restore() -> void:
+	var st := GameState.new()
+	var w: Array = _world(st)
+	var root: Node3D = w[0]
+	var site: NineBreathSite = w[2]
+	await tree.physics_frame
+	await tree.physics_frame
+	assert_true(site.is_usable(), "平常走近就能重現")
+	assert_true(site.ring_visible(), "地上的圈亮著")
+	assert_true(site.prompt_shown(), "站在 3 m 內：有提示")
+	Input.action_press("nine_breath")
+	for i: int in 4:
+		await tree.physics_frame
+	assert_true(site.is_previewing(), "按住中：預覽")
+	site.set_dormant(true)
+	assert_false(site.is_usable(), "停用之後不能重現")
+	assert_false(site.prompt_shown(), "提示收掉")
+	assert_false(site.ring_visible(), "地上的圈不亮")
+	assert_false(site.is_previewing(), "預覽取消")
+	assert_eq((tree.root.get_node("Game").get("journal") as Journal).highlighted, "", "日記不再標亮")
+	for i: int in 70:
+		await tree.physics_frame
+	assert_false(site.prompt_shown(), "一直按著也沒有提示")
+	assert_false(site.update_hold(NineBreathSite.HOLD_SEC + 0.5, true), "按滿也不會發動")
+	assert_false(site.activate(), "直接呼叫也不會發動")
+	assert_eq(site.nb.phase, NineBreath.Phase.BROKEN)
+	assert_false(st.has_paid_memory("arch_father_last_talk"), "不付記憶")
+	Input.action_release("nine_breath")
+	root.queue_free()
+	await tree.process_frame
+
+
 func test_push_out_and_reload() -> void:
 	var st := GameState.new()
 	var w: Array = _world(st)

@@ -45,6 +45,8 @@ var nb: NineBreath
 var hold: float = 0.0
 ## 截圖用：停在預覽（按住到一半）不發動
 var debug_preview: bool = false
+## 停用（set_dormant）：之後的章節不能再重現這裡
+var dormant: bool = false
 
 var _player: PlayerController
 var _ruin: Node3D
@@ -107,6 +109,29 @@ func hold_ratio() -> float:
 	return clampf(hold / HOLD_SEC, 0.0, 1.0)
 
 
+## 停用（D-178）：之後的章節回到同一個地方，這裡已經不能重現——不顯示提示、地上的圈不亮、按住也不會發動。
+## 已經重現過（SPENT）的照舊只剩廢墟。
+func set_dormant(on: bool) -> void:
+	dormant = on
+	set_physics_process(not on)
+	if on:
+		hold = 0.0
+		_set_prompt(false)
+		_set_journal_highlight(false)
+	if _ring != null:
+		_apply_phase(false)
+
+
+## 現在走近、按住就能重現（沒停用、還沒用過）。
+func is_usable() -> bool:
+	return not dormant and nb.can_activate()
+
+
+## 地上那圈淡淡的鐘紋亮著（＝這裡可以重現的記號）。
+func ring_visible() -> bool:
+	return _ring != null and _ring.visible
+
+
 ## 重現中（石拱立著、倒數中）。
 func is_counting() -> bool:
 	return nb.phase == NineBreath.Phase.RESTORED
@@ -150,7 +175,7 @@ func player_near() -> bool:
 
 ## 按住／放開。按滿 HOLD_SEC 發動；放開歸零（不付代價）。回傳是否在這一幀發動。
 func update_hold(delta: float, pressed: bool) -> bool:
-	if nb.phase != NineBreath.Phase.BROKEN:
+	if nb.phase != NineBreath.Phase.BROKEN or dormant:
 		hold = 0.0
 		return false
 	hold = hold + delta if pressed else 0.0
@@ -180,7 +205,7 @@ func _set_journal_highlight(on: bool) -> void:
 
 
 func activate() -> bool:
-	if not nb.activate(_state()):
+	if dormant or not nb.activate(_state()):
 		return false
 	hold = 0.0
 	_set_journal_highlight(false)
@@ -222,7 +247,7 @@ func _apply_phase(animate: bool) -> void:
 		NineBreath.Phase.BROKEN:
 			_arch.visible = false
 			_arch.use_collision = false
-			_ring.visible = true
+			_ring.visible = not dormant
 		NineBreath.Phase.RESTORED:
 			_arch.visible = true
 			_arch.material_override = _arch_mat

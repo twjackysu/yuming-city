@@ -63,6 +63,17 @@ func test_unlock_and_validate() -> void:
 	assert_true(errors.size() >= 2, "重複 id 與缺標題都會報：%s" % [errors])
 
 
+## D-178：付出過的記憶一律看得到——就算解鎖條件沒成立（例如跳過了解鎖它的對話）也不會付了一段找不到的記憶。
+func test_paid_memory_is_always_visible() -> void:
+	var j := Journal.load_default()
+	var st := GameState.new()
+	assert_false(j.visible_ids(st).has(ARCH), "還沒看到石拱、也還沒付：看不到")
+	assert_true(st.pay_memory(ARCH))
+	assert_eq(st.get_flag("slice.saw_south_arch", false), false, "解鎖旗標沒設")
+	assert_true(j.visible_ids(st).has(ARCH), "付出了 → 日記裡看得到")
+	assert_true(j.view(ARCH, st)["cut"], "而且是剪掉的樣子")
+
+
 func test_arch_preview_highlights_memory() -> void:
 	var journal: Journal = tree.root.get_node("Game").get("journal") as Journal
 	var site := NineBreathSite.new()

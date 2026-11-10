@@ -99,6 +99,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 	assert_not_null(level, "換場景進霜橋鎮")
 	if level == null:
 		return
+	await _assert_restore(level, "[slice_start]", ["south_arch"])
 	assert_eq(_stage(s), "explore_town", "新遊戲：找梨販")
 	assert_true(_player(level).global_position.distance_to(Vector3(0, 0.05, 7)) < 0.6, "廣場南邊出生")
 
@@ -324,6 +325,7 @@ func _chapter1(level: StoryLevel, help_with_soup: bool) -> void:
 	assert_eq(_objective(tavern), "Q_CH1_OBJ_NOON", "[ch1_tavern] HUD 目標")
 	assert_false(bool(tavern.call("is_night")), "中午")
 	_assert_tavern_art(tavern, false)
+	await _assert_restore(tavern, "[ch1_tavern]", [])
 	await _talk_at(tavern, "Sheila", 0)
 	assert_eq(s.state.get_flag("ch1.noon_talked"), true, "中午跟席菈、彌夏說完話")
 	assert_eq(s.quests.stage_of("ch1_main"), "dinner")
@@ -385,6 +387,7 @@ func _chapter1_day(tavern: StoryLevel, paid_arch: bool) -> void:
 	var town: StoryLevel = await _wait_scene()
 	assert_eq(str(town.name), "Frostbridge", "出門 → 霜橋鎮")
 	_assert_day_town(town, "[ch1_day_town]")
+	await _assert_restore(town, "[ch1_day_town]", [])
 	assert_eq(_objective(town), "Q_CH1_OBJ_DAY_NORTH", "[ch1_day_town] HUD 目標")
 	town = await _retry()
 	assert_eq(s.quests.stage_of("ch1_main"), "day_north", "[ch1_day_town] 重來階段恢復")
@@ -434,6 +437,7 @@ func _chapter1_stairs(stairs: StoryLevel, threw_stone: bool) -> void:
 	assert_true(_player(stairs).has_oil_lamp(), "[ch1_lamp] 拿著油燈")
 	assert_true(stairs.has_node("Sheila") and stairs.has_node("Misha"), "[ch1_lamp] 席菈、彌夏跟著")
 	assert_true(float(stairs.call("path_param", _player(stairs).global_position)) < 3.0, "[ch1_lamp] 出生在樓梯頂")
+	await _assert_restore(stairs, "[ch1_lamp]", [])
 	var entrance: float = float(stairs.call("trap_entrance_s"))
 	await _step_into(_player(stairs), stairs.call("path_point", entrance - 2.0) as Vector3, 3)
 	assert_true(_game.call("is_in_dialogue"), "走近陷阱 → 諾恩攔住大家")
@@ -503,6 +507,7 @@ func _chapter1_daylight(city: StoryLevel) -> void:
 	assert_eq(s.quests.stage_of("ch1_main"), "daylight_furnace")
 	assert_eq(s.state.checkpoint, "ch1_daylight")
 	await _assert_daylight(city, "[ch1_daylight]")
+	await _assert_restore(city, "[ch1_daylight]", [])
 	city = await _retry()
 	assert_eq(str(city.name), "Daylight", "[ch1_daylight] 重來還在白晝城")
 	assert_eq(_objective(city), "Q_CH1_OBJ_FURNACE", "[ch1_daylight] HUD 目標")
@@ -626,6 +631,7 @@ func _chapter2(city: StoryLevel) -> void:
 	var hall: StoryLevel = await _wait_scene()
 	assert_eq(str(hall.name), "BellHall", "章節卡之後換到鐘院")
 	await _assert_bell_hall(hall, "[ch2_start]")
+	await _assert_restore(hall, "[ch2_start]", [])
 	hall = await _retry()
 	assert_eq(str(hall.name), "BellHall", "[ch2_start] 重來還在鐘院")
 	assert_eq(_objective(hall), "Q_CH2_OBJ_TABLE", "[ch2_start] HUD 目標")
@@ -871,6 +877,8 @@ func _chapter3(hall: StoryLevel, alt: bool) -> void:
 	var canal: StoryLevel = await _wait_scene()
 	assert_eq(str(canal.name), "Canal", "章節卡之後換到乾運河")
 	_assert_canal(canal, "[ch3_start]")
+	await _assert_restore(canal, "[ch3_start]", [])
+	assert_eq(s.state.get_flag("ch3.heard_noen", false), false, "[ch3_start] 送葬者還掛著：按住重現鍵牠也聽不到")
 	canal = await _retry()
 	assert_eq(str(canal.name), "Canal", "[ch3_start] 重來還在乾運河（第 2 章完成有自動存檔，不會回到窗簾之前）")
 	assert_false(_game.call("is_in_cutscene"), "[ch3_start] 不會又播眼睛的過場")
@@ -1636,6 +1644,56 @@ func _assert_day_town(town: StoryLevel, tag: String) -> void:
 	# 白天大部分的窗熄了
 	assert_true(int(town.get("day_unlit_windows")) > int(town.get("lit_window_count")), tag + " 白天大部分的窗熄了")
 	assert_true(int(town.get("lit_window_count")) > 0, tag + " 還有幾扇窗亮著")
+
+
+## D-178：「重現」與記憶代價的一致性（每個關卡進場都跑一次）。
+## - 現在能重現的地方＝expected（物件 id）；其他的 NineBreathSite 都停用或用過了、地上的圈不亮、不會出提示。
+## - 每個地方的記憶都在日記裡、提示的「可以重現」與「代價」有翻譯。
+## - 付出過的記憶都在日記裡看得到；感謝試玩的「忘掉幾段記憶」算的就是這些。
+## - expected 是空的：按住重現鍵一陣子什麼都不會發生（不付記憶、不改重現狀態、HUD 沒有提示、日記不標亮）。
+func _assert_restore(level: StoryLevel, tag: String, expected: Array[String]) -> void:
+	var s: GameSession = _game.get("session") as GameSession
+	var journal: Journal = _game.get("journal") as Journal
+	var usable: Array[String] = []
+	for n: Node in tree.get_nodes_in_group("nine_breath_site"):
+		var site: NineBreathSite = n as NineBreathSite
+		if site == null or not level.is_ancestor_of(site):
+			continue
+		assert_true(journal.has_entry(site.memory_id), tag + " %s 的代價 %s 在日記裡" % [site.object_id, site.memory_id])
+		for key: String in [site.label_key, site.cost_key]:
+			assert_ne(tr(key), key, tag + " %s 的提示有翻譯（%s）" % [site.object_id, key])
+		if site.is_usable():
+			usable.append(site.object_id)
+		else:
+			assert_false(site.prompt_shown(), tag + " 不能重現的 %s 沒有提示" % site.object_id)
+			assert_false(site.ring_visible(), tag + " 不能重現的 %s 地上的圈不亮" % site.object_id)
+	usable.sort()
+	assert_eq(usable, expected, tag + " 現在能重現的地方")
+	var visible: PackedStringArray = journal.visible_ids(s.state)
+	for id: String in s.state.memories_paid:
+		assert_true(journal.has_entry(id), tag + " 付出的記憶 %s 是日記裡的條目" % id)
+		assert_true(visible.has(id), tag + " 付出的記憶 %s 在日記裡看得到" % id)
+	if not expected.is_empty():
+		return
+	var paid: PackedStringArray = s.state.memories_paid.duplicate()
+	var restore_flags: Dictionary = {}
+	for k: String in s.state.flags:
+		if k.begins_with("ninebreath."):
+			restore_flags[k] = s.state.flags[k]
+	var hud: Hud = level.get_node("Hud") as Hud
+	Input.action_press(NineBreathSite.ACTION)
+	for i: int in 12:
+		await tree.physics_frame
+	assert_false(hud.restore.visible, tag + " 按住重現鍵：沒有可以重現的東西，HUD 不出提示")
+	assert_eq(journal.highlighted, "", tag + " 按住重現鍵：日記不標亮")
+	Input.action_release(NineBreathSite.ACTION)
+	await tree.physics_frame
+	assert_eq(s.state.memories_paid, paid, tag + " 按住重現鍵：不付記憶")
+	var after: Dictionary = {}
+	for k: String in s.state.flags:
+		if k.begins_with("ninebreath."):
+			after[k] = s.state.flags[k]
+	assert_eq(after, restore_flags, tag + " 按住重現鍵：重現的狀態不變")
 
 
 func _cleanup() -> void:
