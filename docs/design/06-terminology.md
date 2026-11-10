@@ -57,6 +57,7 @@
 | 逆轉體質 | — | 逆轉體質 | Reversal Constitution | 諾恩的能力名，只在第一次覺醒的提示出現 |
 | 毒霧 | `PoisonMist` | 毒霧 | Poison Mist | 破藥桶、守衛噴出來的綠霧 |
 | 毒藥／霧蛇毒劑 | `mist_serpent_poison` | 霧蛇毒劑（瓶上寫「不可飲用」） | Mist Serpent Venom | 虛構藥劑，只標效果（中毒 20 秒），不寫配方 |
+| 藥箱／藥瓶 | `PotionCrate`（`RB_CRATE_HINT`） | 提示寫「拿走藥瓶」；對話裡說「兩瓶封好的」 | the bottles | 守衛背上摔下來的瓶架箱；玩家看到的字只有「藥瓶」 |
 | 噴毒 | `spray`（`RB_MOVE_SPRAY`） | 噴毒 | Poison spray | 守衛的新招：胸口的管子往前噴，地上留一團 3 秒的毒霧 |
 | 守衛 | `rb_guardian` | 目標寫「守衛」；名字照舊「送葬者」 | the guardian／Undertaker | 胸口裝噴霧罐的單階段送葬者 |
 | 地下市場 | — | 地下市場 | the underground market | 白晝城的市場；新版不用「地底城」 |
