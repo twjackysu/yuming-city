@@ -52,6 +52,9 @@ const WOOD: Color = Color(0.3, 0.21, 0.13)
 const DAYLIGHT: Color = Color(0.8, 0.86, 1.0)
 const DOOR_GLOW: Color = Color(1.0, 0.94, 0.84)
 
+## 環境音音量（D-180）
+const AMBIENCE_DB: float = -11.0
+
 var _stone_mat: StandardMaterial3D
 var _dark_mat: StandardMaterial3D
 var _bucket: Node3D
@@ -77,6 +80,8 @@ func _ready() -> void:
 	_build_flights()
 	_build_trap()
 	_build_bottom()
+	# 環境音（D-180）：深石井裡的低風＋上面某處的滴水
+	Ambience.play(self, "stair_ambience", AMBIENCE_DB)
 	_init_story()
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	# 開發用：`-- --level=stairs` 直接進來 → 照正式流程走到拿到油燈（段落 4 結束）

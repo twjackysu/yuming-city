@@ -150,6 +150,9 @@ const FADED_FRAMES: Array[Array] = [
 	["E", 0.0, 2.2, 0.8, 1.0],
 ]
 
+## 環境音音量（D-180；白晝城的街上是 -12 dB）
+const AMBIENCE_DB: float = -19.0
+
 var interior := InteriorLook.new()
 var _isa: Puppet
 var _misha: Puppet
@@ -199,6 +202,8 @@ func _ready() -> void:
 	_build_table()
 	_build_inner_room()
 	_build_cutscene_cameras()
+	# 環境音（D-180）：鐘院也在白晝城裡——同一段慢慢的鐘擺與遠處的水聲，隔著牆小聲一點
+	Ambience.play(self, "daylight_ambience", AMBIENCE_DB)
 	_init_story()
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:

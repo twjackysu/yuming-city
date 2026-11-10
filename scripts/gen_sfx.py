@@ -22,6 +22,7 @@
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
+- stair_ambience：一百七十二階的環境音（可循環 9 秒，D-180）。很深的石井裡空空的低風（比乾運河更低更悶）＋上面某處的滴水，每一滴後面跟著四個越來越悶的長回音（井很高）；頭尾交叉淡化。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -650,6 +651,32 @@ def step_wood(seed=79):
     return [out[i] * env[i] for i in range(n)]
 
 
+def stair_ambience(seconds=9.0, seed=83):
+    """一百七十二階：深石井裡空空的低風＋上面某處的滴水（長回音）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(0.8 * RATE)
+    total = n + fade
+    wind = onepole_lp(onepole_lp(hp(noise(total, rng), 30), 180), 220)
+    out = []
+    for i in range(total):
+        t = i / RATE
+        swell = 0.6 + 0.25 * math.sin(2 * math.pi * t / 9.0) + 0.12 * math.sin(2 * math.pi * 0.41 * t + 0.8)
+        out.append(wind[i] * swell * 2.4)
+    for at in (0.9, 3.4, 5.1, 7.6):
+        f = rng.uniform(1200, 1700)
+        for echo, (delay, amp) in enumerate([(0.0, 0.16), (0.27, 0.08), (0.58, 0.05), (0.93, 0.03), (1.34, 0.015)]):
+            start = int((at + delay) * RATE)
+            for j in range(int(0.08 * RATE)):
+                if start + j >= total:
+                    break
+                tt = j / RATE
+                out[start + j] += amp * math.sin(2 * math.pi * (f - echo * 120 + 1400 * tt) * tt) * math.exp(-tt * (55 - echo * 6))
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.6 for v in looped]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -680,6 +707,7 @@ def main():
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),
+        write("stair_ambience", stair_ambience()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")
