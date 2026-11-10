@@ -564,8 +564,9 @@ func _spawn_sheila(pos: Vector3) -> void:
 # ---------------------------------------------------------------- 看見南街石拱（段落 1）
 
 ## 第一次走進南街看到石拱：諾恩想起父親躲在柱子後 → 日記解鎖那段記憶（之後的重現代價就是它）。
+## 第 1 章白天回到南街不再播（D-178）：那段記憶可能已經為了重現付掉了，石拱也停用了。
 func _on_arch_memory() -> void:
-	if Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
+	if day or Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
 		return
 	Game.start_dialogue("slice_arch_memory")
 

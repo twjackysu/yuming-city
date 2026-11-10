@@ -1646,6 +1646,12 @@ func _assert_day_town(town: StoryLevel, tag: String) -> void:
 	assert_true(town.has_node("DeadList"), tag + " 有死者名單")
 	var board: DeadListBoard = town.get_node("DeadList") as DeadListBoard
 	assert_eq(board.paper_count, DeadListBoard.dead_count(s.state), tag + " 名單的張數")
+	# D-178：白天走進南街不會再播切片的「石拱回憶」（就算旗標沒設——那段記憶可能已經為了重現付掉了）
+	var saw: Variant = s.state.get_flag("slice.saw_south_arch", false)
+	s.state.set_flag("slice.saw_south_arch", false)
+	town.call("_on_arch_memory")
+	assert_false(_game.call("is_in_dialogue"), tag + " 白天走進南街不會再播石拱回憶")
+	s.state.set_flag("slice.saw_south_arch", saw)
 	# 白天大部分的窗熄了
 	assert_true(int(town.get("day_unlit_windows")) > int(town.get("lit_window_count")), tag + " 白天大部分的窗熄了")
 	assert_true(int(town.get("lit_window_count")) > 0, tag + " 還有幾扇窗亮著")
