@@ -162,11 +162,23 @@ func _ready() -> void:
 		player.rotation.y = 0.0
 		player.yaw = 0.0
 		player.snap_camera()
+	# `--rb-at=impact`（配 `--frames=6` 左右）：站在石階下面向南，燈柱馬上砸在藥桶上——看那一下的閃光、木屑、綠霧
+	if player != null and shot_at == "impact" and pursuer != null and cart != null:
+		throw_windup_sec = 0.05
+		throw_flight_sec = 0.1
+		pursuer.global_position = Vector3(0.3, RISE, -35.2)
+		cart.runner.traveled = _corner_traveled
+		cart._sync()
+		var spot := Vector3(0.9, 0.0, -27.4)
+		player.global_position = Vector3(spot.x, level.ground_y(spot) + 0.05, spot.z)
+		player.rotation.y = deg_to_rad(180.0)
+		player.yaw = player.rotation.y
+		player.snap_camera()
 
 
 ## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前
 static func dev_advance(s: GameSession, at: String) -> void:
-	if at in ["mist", "pursuer", "throw", "flight"]:
+	if at in ["mist", "pursuer", "throw", "flight", "impact"]:
 		s.set_flag("rb.opening_done", true)
 	if at in ["mist"]:
 		s.set_flag("rb.barrels_broken", true)
@@ -437,7 +449,8 @@ func _on_barrels_hit() -> void:
 	Game.session.set_flag("rb.barrels_broken", true)
 
 
-## 燈頭砸碎在藥桶上的那一下：一閃暖光（0.35 秒淡掉）、木屑、從桶裡噴出來的綠色藥霧
+## 燈頭砸碎在藥桶上的那一下：一閃暖光（0.35 秒淡掉）。
+## 木屑與噴出來的綠霧試過用 _ground_puff 的粒子，`--rb-at=impact` 連拍三個時間點都拍不到，先拿掉（NEXT 有記）。
 func _impact_burst(at: Vector3) -> void:
 	var flash := OmniLight3D.new()
 	flash.name = "RbImpactFlash"
@@ -450,9 +463,6 @@ func _impact_burst(at: Vector3) -> void:
 	var t := flash.create_tween()
 	t.tween_property(flash, "light_energy", 0.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_callback(flash.queue_free)
-	if pursuer != null and is_instance_valid(pursuer):
-		pursuer._ground_puff(at, Vector3(1.2, 0.1, 0.5), 36, Color(0.5, 0.4, 0.28, 0.85))
-		pursuer._ground_puff(at + Vector3.UP * 0.2, Vector3(1.5, 0.15, 0.8), 30, Color(0.42, 0.85, 0.4, 0.55))
 
 
 ## 那截燈柱躺在藥桶旁，燈熄了
@@ -671,11 +681,13 @@ func _break_barrels(animate: bool) -> void:
 		b.set_meta("broken", true)
 		var tilt := Vector3(deg_to_rad(84.0), 0.6 * float(i) - 0.5, 0.0)
 		if animate and b.is_inside_tree():
-			var t := b.create_tween()
+			# 倒下去的同時才墊高到躺平的高度（原本一開始就墊高：還直立的桶子會先浮在半空 0.35 秒）
+			var t := b.create_tween().set_parallel(true)
 			t.tween_property(b, "rotation", tilt, 0.35).set_delay(0.08 * float(i)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.tween_property(b, "position:y", 0.3, 0.35).set_delay(0.08 * float(i)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		else:
 			b.rotation = tilt
-		b.position.y = 0.3
+			b.position.y = 0.3
 		i += 1
 	if animate:
 		Sfx.play_at(level, "blunt", BARREL_SPOTS[0] + Vector3.UP, 4.0)
