@@ -101,6 +101,8 @@ var throw_phase: int = 0
 var _throw_t: float = 0.0
 var _throw_from: Vector3 = Vector3.ZERO
 var _pursuer_landed: bool = true
+## 截圖用（`--rb-at=throw|flight`）：把丟燈柱停在某一刻——"windup"＝舉到最高、"flight"＝飛到三分之一
+var debug_hold_throw: String = ""
 
 
 func _ready() -> void:
@@ -146,11 +148,22 @@ func _ready() -> void:
 		player.rotation.y = deg_to_rad(-30.0)
 		player.yaw = player.rotation.y
 		player.snap_camera()
+	# `--rb-at=throw|flight`：推車到了轉角，諾恩在石階上回頭——牠把那截燈柱舉過頭／燈柱飛在半空
+	if player != null and shot_at in ["throw", "flight"] and pursuer != null and cart != null:
+		debug_hold_throw = "windup" if shot_at == "throw" else "flight"
+		pursuer.global_position = Vector3(0.3, RISE, -35.2)
+		cart.runner.traveled = _corner_traveled
+		cart._sync()
+		var at := Vector3(-1.8, 0.0, -28.4)
+		player.global_position = Vector3(at.x, level.ground_y(at) + 0.05, at.z)
+		player.rotation.y = 0.0
+		player.yaw = 0.0
+		player.snap_camera()
 
 
 ## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前
 static func dev_advance(s: GameSession, at: String) -> void:
-	if at in ["mist", "pursuer"]:
+	if at in ["mist", "pursuer", "throw", "flight"]:
 		s.set_flag("rb.opening_done", true)
 	if at in ["mist"]:
 		s.set_flag("rb.barrels_broken", true)
@@ -383,10 +396,15 @@ func _begin_barrel_throw() -> void:
 func _update_throw(delta: float) -> void:
 	if throw_phase == 1:
 		_throw_t -= delta
+		if debug_hold_throw == "windup" and pursuer != null and is_instance_valid(pursuer):
+			_throw_t = maxf(_throw_t, 0.05)
+			pursuer.throw_windup = maxf(pursuer.throw_windup, 0.05)
 		if _throw_t <= 0.0:
 			_release_chunk()
 	elif throw_phase == 2:
 		_throw_t += delta
+		if debug_hold_throw == "flight":
+			_throw_t = minf(_throw_t, throw_flight_sec * 0.33)
 		var k: float = clampf(_throw_t / maxf(throw_flight_sec, 0.01), 0.0, 1.0)
 		if lamp_chunk != null and is_instance_valid(lamp_chunk):
 			lamp_chunk.global_position = _throw_from.lerp(THROW_TARGET, k) + Vector3.UP * (THROW_ARC * 4.0 * k * (1.0 - k))
