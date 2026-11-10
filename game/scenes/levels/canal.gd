@@ -180,6 +180,7 @@ var _clapper_mat: StandardMaterial3D
 ## 美術（第 55 輪，D-173）：河道牆、岸頂石板、矮牆、木架都用 InteriorLook；河床 dry_mud.gdshader。
 var interior := InteriorLook.new()
 var _bed_mat: ShaderMaterial
+var _debris_mat: StandardMaterial3D
 var _t: float = 0.0
 var _continued_shown: bool = false
 ## 段落 2：趴在水溝裡（觀察中）、上一次敲的反應（測試讀）、反應的補間
@@ -405,6 +406,10 @@ func _ready() -> void:
 	if at == "bank":
 		talk_bank.call_deferred()
 	elif at == "edge":
+		_dev_hold_edge = true
+	# 截圖用：`--canal-at=bed` 站在南段的河床上往北看（碎石、爛木頭、水窪，D-198；正式流程到不了這裡）
+	elif at == "bed" and player != null:
+		_put(player, Vector3(1.4, BED_Y, 6.0), 0.15)
 		_dev_hold_edge = true
 	# 截圖用：`--canal-at=drain` 走進水溝、對話第一句；`--canal-at=turn` 趴在水溝裡、送葬者已經轉頭（不開對話）
 	if at in ["drain", "turn"]:
@@ -2420,6 +2425,19 @@ func _coal_lump(node_name: String, size: float, pos: Vector3, seed: float, mat: 
 	return mi
 
 
+## 河床上的一塊碎石（D-198）：CoalPile.lump_mesh 的形狀（半徑 DEBRIS_LUMP_R）、照原本方塊的大小縮放、
+## 平面著色；材質是泡過水的牆石色（不用方石 shader：小石塊上會畫出灰縫，像一截磚牆）。不擋人。
+func _debris_stone(node_name: String, size: Vector3, pos: Vector3, seed: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	mi.mesh = CoalPile.lump_mesh(DEBRIS_LUMP_R, seed)
+	mi.scale = size
+	mi.material_override = debris_stone_mat()
+	mi.position = pos
+	add_child(mi)
+	return mi
+
+
 func _solid(node_name: String, size: Vector3, pos: Vector3, mat: Material, collide: bool = true, parent: Node3D = null) -> MeshInstance3D:
 	var host: Node3D = parent if parent != null else self
 	var mi := MeshInstance3D.new()
@@ -2464,6 +2482,12 @@ const TIDE_Y: float = BED_Y + 2.3
 const BANK_TOP_T: float = 0.06
 const MUD_DRY: Color = Color(0.17, 0.142, 0.118)
 const DECK_WOOD: Color = Color(0.23, 0.175, 0.12)
+## 河床碎石（D-198）：牆石 × 舊水位線下的偏綠灰（0.56, 0.6, 0.54）再亮一點（斷面）
+const DEBRIS_STONE: Color = Color(0.21, 0.212, 0.188)
+## 碎石的多面體半徑（CoalPile.lump_mesh）：乘上原本方塊的大小，跟救援點的碎石同一個比例（D-197）
+const DEBRIS_LUMP_R: float = 0.85
+## 碎石形狀的種子（不用 _rng，免得改掉後面的配置）
+const DEBRIS_SEED: float = 41.0
 
 
 ## 河道牆：大方石（一排約 0.6 m）、深灰縫、舊水位線。閘道的矮石牆、橋墩也用這個。
@@ -2502,6 +2526,16 @@ func bed_mat() -> ShaderMaterial:
 		_bed_mat.set_shader_parameter("wet_half", 1.05)
 		_bed_mat.resource_name = key
 	return _bed_mat
+
+
+## 河床上的碎石（D-198）：河道牆的石頭泡過水（照 half_timber 舊水位線以下的偏綠灰），斷面比牆面亮一點；很粗糙。
+func debris_stone_mat() -> StandardMaterial3D:
+	if _debris_mat == null:
+		_debris_mat = StandardMaterial3D.new()
+		_debris_mat.albedo_color = DEBRIS_STONE
+		_debris_mat.roughness = 0.93
+		_debris_mat.resource_name = "canal_debris_stone"
+	return _debris_mat
 
 
 ## 木架、吊樑：整根舊木頭。
@@ -2603,8 +2637,13 @@ func _build_canal() -> void:
 	for i: int in 26:
 		var size := Vector3(_rng.randf_range(0.2, 0.7), _rng.randf_range(0.1, 0.35), _rng.randf_range(0.2, 0.8))
 		var p := Vector3(_rng.randf_range(-CANAL_HALF_W + 0.4, CANAL_HALF_W - 0.4), BED_Y + size.y * 0.5, _rng.randf_range(Z_NORTH + 2.0, Z_SOUTH - 2.0))
-		# 掉下來的石塊（河道牆同一種石頭）與泡爛的木頭
-		var debris: MeshInstance3D = _solid("Debris%d" % i, size, p, canal_wall_mat() if i % 3 else timber_mat(), false)
+		# 掉下來的石塊：有稜角的碎石（CoalPile 的不規則多面體放大，D-198）；之前是貼著方石紋的方塊，看起來像一小截磚牆。
+		# 泡爛的木頭照舊是方塊。亂數照舊每塊呼叫同樣次數（不改後面的配置）。
+		var debris: MeshInstance3D
+		if i % 3:
+			debris = _debris_stone("Debris%d" % i, size, p, DEBRIS_SEED + 3.7 * float(i))
+		else:
+			debris = _solid("Debris%d" % i, size, p, timber_mat(), false)
 		debris.rotation.y = _rng.randf_range(-PI, PI)
 	for z: float in [Z_SOUTH + 0.5, Z_NORTH - 0.5]:
 		_solid("EndWall%d" % int(z), Vector3((CANAL_HALF_W + BANK_W + 1.0) * 2.0, OUTER_WALL_H - BED_Y, 1.0), Vector3(0.0, (OUTER_WALL_H + BED_Y) * 0.5, z), rock)

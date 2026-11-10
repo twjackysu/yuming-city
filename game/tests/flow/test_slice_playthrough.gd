@@ -1547,6 +1547,15 @@ func _assert_canal_art(canal: StoryLevel, tag: String) -> void:
 	for n: String in ["SluiceBeam", "HangBeam", "CoalCart/CartBody", "CartDeck", "SluicePier1"]:
 		var mi: MeshInstance3D = canal.get_node(n) as MeshInstance3D
 		assert_true(mi.material_override is ShaderMaterial, tag + " " + n + " 換上了美術材質")
+	# 河床的碎石是有稜角的多面體、木頭照舊方塊（D-198）
+	var stones: int = 0
+	for i: int in 26:
+		var d: MeshInstance3D = canal.get_node("Debris%d" % i) as MeshInstance3D
+		if i % 3 == 0:
+			assert_true(d.mesh is BoxMesh, tag + " Debris%d 是泡爛的木頭（方塊）" % i)
+		elif d.mesh is ArrayMesh and d.material_override is StandardMaterial3D and d.position.y > -4.6:
+			stones += 1
+	assert_eq(stones, 17, tag + " 17 塊碎石都是 CoalPile 形狀、石頭色、在河床上（D-198）")
 
 
 ## 內室東牆的窗：窗框、窗簾兩半、窗外的屏障與眼睛（程序 shader）、屏障照進來的冷光（不投影子）。open＝看過眼睛之後的樣子。

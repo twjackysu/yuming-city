@@ -58,3 +58,14 @@ func test_mud_blob_mesh_faces_up() -> void:
 		assert_true(nrm.y > 0.0, "第 %d 個三角形朝上（Godot 順時針是正面）" % (i / 3))
 		if nrm.y <= 0.0:
 			break
+
+
+func test_debris_stone_is_soaked_wall_stone() -> void:
+	# 河床碎石（D-198）：比牆石暗（泡過水）、偏綠灰（g 不低於 r），但比舊水位線下的牆面亮一點（斷面）
+	var wall: Color = _const("WALL_STONE") as Color
+	var d: Color = _const("DEBRIS_STONE") as Color
+	assert_true(d.get_luminance() < wall.get_luminance(), "碎石比乾的牆石暗")
+	assert_true(d.g >= d.r and d.b < d.r, "碎石偏綠灰")
+	var stained: Color = Color(wall.r * 0.56, wall.g * 0.6, wall.b * 0.54)
+	assert_true(d.get_luminance() > stained.get_luminance(), "碎石的斷面比水位線下的牆面亮一點")
+	assert_true(float(_const("DEBRIS_LUMP_R")) > 0.5 and float(_const("DEBRIS_LUMP_R")) < 1.0, "多面體半徑照救援點的比例（乘上原本方塊的大小）")
