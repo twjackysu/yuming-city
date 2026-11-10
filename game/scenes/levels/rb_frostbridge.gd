@@ -44,6 +44,9 @@ var mist_clear_sec: float = MIST_CLEAR_SEC
 ## 沒打中人，砸破了石階下的藥桶。之後牠堵在北街（回頭路沒了），不進毒霧。追擊期間不出招、打不動（開場生命只有 55）。
 const PURSUER_SPAWN: Vector3 = Vector3(2.5, RISE, -43.8)
 const PURSUER_DROP: float = 5.5
+## 從東側屋簷邊跳出來：起跳點比落地點靠牆這麼多，下墜時往街心飄（一道弧線，不是直直掉下來）
+const PURSUER_LEAP: float = 0.8
+const PURSUER_LEAP_SPEED: float = 1.3
 const PURSUER_SPEED: float = 1.45
 ## 跟在推車／諾恩（取比較北邊的那個）後面這麼遠
 const PURSUER_GAP: float = 5.5
@@ -312,11 +315,11 @@ func _spawn_pursuer(drop: bool) -> void:
 	_build_lamp_stump()
 	pursuer = Undertaker.new()
 	pursuer.name = "RbPursuer"
-	pursuer.position = PURSUER_SPAWN + Vector3.UP * (PURSUER_DROP if drop else 0.0)
+	pursuer.position = PURSUER_SPAWN + (Vector3(PURSUER_LEAP, PURSUER_DROP, 0.0) if drop else Vector3.ZERO)
 	level.add_child(pursuer)
 	pursuer.begin_struggle()
 	pursuer.set_facing(deg_to_rad(180.0))
-	pursuer.scripted_walk(PURSUER_SPAWN, 0.0)
+	pursuer.scripted_walk(PURSUER_SPAWN, PURSUER_LEAP_SPEED if drop else 0.0)
 	pursuer.scripted_look_at(player.global_position if player != null else PURSUER_BLOCK)
 	_attach_lamp_chunk()
 	_pursuer_landed = not drop
