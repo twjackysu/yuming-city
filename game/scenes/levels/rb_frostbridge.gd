@@ -787,6 +787,7 @@ func _build_lift() -> void:
 	_box_part(n, Vector3(0.6, 0.05, 0.06), Vector3(0.34, deck_y + 0.3, 0.06), wood)
 	_box_part(n, Vector3(0.4, 0.34, 0.4), Vector3(0.44, deck_y + 0.22, 0.32), plank)
 	_box_part(n, Vector3(0.36, 0.3, 0.36), Vector3(0.36, deck_y + 0.76, -0.22), plank)
+	_build_shaft_mouth(n, wood, plank, iron)
 	# 西柱上的提燈（面向梨攤那一側）
 	var glass := StandardMaterial3D.new()
 	glass.albedo_color = Color(0.35, 0.25, 0.14)
@@ -812,6 +813,95 @@ func _build_lift() -> void:
 	n.add_child(light)
 	level.add_child(n)
 	_marker("CellarTrigger", LIFT_POS + Vector3(0.0, 1.0, 0.0))
+
+
+## 貨梯底下打開的井口（D-214）：一圈石框（柱子就立在框上）、裡面是黑的、底下有暖光往上照到貨板底與繩子；
+## 兩片掀開的木門（北邊那片立著、南邊那片整片翻開躺在雪上）；橫樑、石框、木箱上有積雪。
+## 地面挖不了洞：黑的那一塊是不受光的面，靠石框的高度與框內側的暖光讓它讀成「往下的洞」。
+const SHAFT_HALF: Vector2 = Vector2(0.95, 0.75)
+const SHAFT_CURB_H: float = 0.26
+const SHAFT_CURB_T: float = 0.22
+const SHAFT_GLOW_ENERGY: float = 2.8
+
+
+func _build_shaft_mouth(n: Node3D, wood: Material, plank: Material, iron: Material) -> void:
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = Color(0.3, 0.31, 0.34)
+	stone.roughness = 0.96
+	var snow := StandardMaterial3D.new()
+	snow.albedo_color = FrostbridgeLook.SNOW
+	snow.roughness = 0.9
+	var dark := StandardMaterial3D.new()
+	dark.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dark.albedo_color = Color(0.006, 0.005, 0.005)
+	var hx: float = SHAFT_HALF.x
+	var hz: float = SHAFT_HALF.y
+	var t: float = SHAFT_CURB_T
+	var h: float = SHAFT_CURB_H
+	# 洞：不受光的黑面（比地面高一點點，避免跟石板閃爍）
+	var hole := MeshInstance3D.new()
+	hole.name = "ShaftDark"
+	var hm := BoxMesh.new()
+	hm.size = Vector3(hx * 2.0, 0.02, hz * 2.0)
+	hole.mesh = hm
+	hole.material_override = dark
+	hole.position = Vector3(0.0, 0.02, 0.0)
+	hole.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	n.add_child(hole)
+	# 石框：南北兩條長的、東西兩條短的（柱子立在短的上面）；每條切成兩三塊、高低差一點，不是一整條方塊
+	for sz: float in [-1.0, 1.0]:
+		for i: int in 3:
+			var w: float = (hx * 2.0 + t * 2.0) / 3.0
+			var dh: float = [0.0, 0.03, -0.02][i] * sz
+			_box_part(n, Vector3(w - 0.02, h + dh, t), Vector3(-hx - t + w * (float(i) + 0.5), (h + dh) * 0.5, sz * (hz + t * 0.5)), stone)
+	for sx: float in [-1.0, 1.0]:
+		for i: int in 2:
+			var d: float = hz
+			var dh2: float = [0.02, -0.02][i] * sx
+			_box_part(n, Vector3(t, h + dh2, d - 0.02), Vector3(sx * (hx + t * 0.5), (h + dh2) * 0.5, -hz + d * (float(i) + 0.5)), stone)
+	# 框上的積雪（南邊那條靠人走的地方踩掉了一段）
+	_box_part(n, Vector3(hx * 2.0 + t * 2.0, 0.05, t + 0.04), Vector3(0.0, h + 0.035, -(hz + t * 0.5)), snow)
+	_box_part(n, Vector3(0.8, 0.045, t + 0.03), Vector3(-0.75, h + 0.03, hz + t * 0.5), snow)
+	_box_part(n, Vector3(0.45, 0.04, t + 0.02), Vector3(0.85, h + 0.045, hz + t * 0.5), snow)
+	# 兩片掀開的木門：北邊那片立著（往後靠一點），南邊那片整片翻開躺在雪上
+	var north := Node3D.new()
+	north.name = "HatchNorth"
+	north.position = Vector3(0.0, h, -(hz + t + 0.03))
+	north.rotation_degrees.x = 76.0
+	_hatch_leaf(north, hx * 2.0, hz, wood, plank, iron)
+	n.add_child(north)
+	var south := Node3D.new()
+	south.name = "HatchSouth"
+	south.position = Vector3(0.06, 0.07, hz + t + 0.08)
+	south.rotation_degrees = Vector3(176.0, 3.0, 0.0)
+	_hatch_leaf(south, hx * 2.0, hz, wood, plank, iron)
+	n.add_child(south)
+	_box_part(n, Vector3(0.7, 0.04, 0.4), Vector3(-0.5, 0.115, hz + t + 0.45), snow)
+	# 橫樑、柱頂、木箱上的積雪（跟旁邊的屋頂一致）
+	_box_part(n, Vector3(2.66, 0.07, 0.28), Vector3(0.0, 3.145, 0.0), snow)
+	_box_part(n, Vector3(0.62, 0.035, 0.56), Vector3(0.34, 0.3 + 0.607, -0.2), snow)
+	# 底下的暖光：往上照到石框內側、貨板底、繩子。不投影、不打高光。
+	var glow := OmniLight3D.new()
+	glow.name = "ShaftGlow"
+	glow.light_color = Color(1.0, 0.62, 0.3)
+	glow.light_energy = SHAFT_GLOW_ENERGY
+	glow.light_specular = 0.0
+	glow.omni_range = 2.7
+	glow.omni_attenuation = 1.4
+	glow.shadow_enabled = false
+	glow.light_volumetric_fog_energy = 1.6
+	glow.position = Vector3(0.0, 0.14, 0.0)
+	n.add_child(glow)
+
+
+## 一片木門（原點在鉸鏈那一邊，往 -z 伸出去 depth 公尺）：底板＋三條木條＋兩條鐵帶＋拉環
+func _hatch_leaf(leaf: Node3D, width: float, depth: float, wood: Material, plank: Material, iron: Material) -> void:
+	_box_part(leaf, Vector3(width, 0.05, depth), Vector3(0.0, 0.0, -depth * 0.5), plank)
+	for i: int in 3:
+		_box_part(leaf, Vector3(width * 0.3, 0.012, depth - 0.04), Vector3(-width * 0.33 + width * 0.33 * i, 0.03, -depth * 0.5), wood)
+	for sx: float in [-1.0, 1.0]:
+		_box_part(leaf, Vector3(0.07, 0.016, depth + 0.02), Vector3(sx * width * 0.36, 0.036, -depth * 0.5), iron)
+	_box_part(leaf, Vector3(0.16, 0.03, 0.05), Vector3(0.0, 0.045, -depth + 0.1), iron)
 
 
 ## 兩點之間的一根圓桿（繩子、斜撐）

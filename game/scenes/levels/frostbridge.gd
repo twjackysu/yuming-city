@@ -105,7 +105,9 @@ func _ready() -> void:
 	_build_bell_tower(Vector3(0.0, RISE, TOWER_Z))
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
-	_build_cellar_hatch()
+	# 新版的地窖口是打開的井口（RebootOpening._build_shaft_mouth，D-214）：不蓋這塊木板
+	if not Game.session.is_reboot():
+		_build_cellar_hatch()
 	_build_reflection_probes(_batch.build(self, "Town"))
 	arch_site = NineBreathSite.new()
 	arch_site.name = "SouthArch"

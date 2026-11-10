@@ -193,3 +193,39 @@ func test_retry_at_market_never_pays_twice() -> void:
 	assert_eq(_coins(s), RebootOpening.WAGES, "再聽一次也只有一份（不是兩份）")
 	level2.queue_free()
 	await tree.process_frame
+
+
+## 貨梯底下是打開的井口（D-214）：石框、黑的洞、底下的暖光、兩片掀開的木門；新版不蓋舊版那塊關著的木板
+func test_lift_stands_over_an_open_shaft() -> void:
+	_session_at("market")
+	var level: StoryLevel = await _load()
+	var lift: Node3D = level.get_node_or_null("RbLift") as Node3D
+	assert_not_null(lift)
+	var dark: MeshInstance3D = lift.get_node_or_null("ShaftDark") as MeshInstance3D
+	assert_not_null(dark, "洞口那一塊黑")
+	var mat: StandardMaterial3D = dark.material_override as StandardMaterial3D
+	assert_eq(mat.shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "不受光（燈照不亮洞裡）")
+	assert_true(mat.albedo_color.v < 0.02, "黑的")
+	var size: Vector3 = (dark.mesh as BoxMesh).size
+	assert_true(size.x > 1.5 + 0.3 and size.z > 1.1 + 0.3, "洞比貨板大一圈（貨板四周看得到洞）")
+	var glow: OmniLight3D = lift.get_node_or_null("ShaftGlow") as OmniLight3D
+	assert_not_null(glow, "底下的暖光")
+	assert_true(glow.light_energy > 1.0 and glow.light_color.r > glow.light_color.b * 2.0, "暖色、看得到")
+	assert_true(glow.position.y < RebootOpening.SHAFT_CURB_H, "從洞裡往上照")
+	assert_eq(glow.light_specular, 0.0, "不打高光")
+	assert_false(glow.shadow_enabled)
+	var north: Node3D = lift.get_node_or_null("HatchNorth") as Node3D
+	var south: Node3D = lift.get_node_or_null("HatchSouth") as Node3D
+	assert_true(north != null and south != null, "兩片掀開的木門")
+	if north != null and south != null:
+		# 北邊那片立著（門板的遠端在上面）、南邊那片翻開躺在地上
+		var north_tip: Vector3 = north.to_global(Vector3(0.0, 0.0, -RebootOpening.SHAFT_HALF.y))
+		var south_tip: Vector3 = south.to_global(Vector3(0.0, 0.0, -RebootOpening.SHAFT_HALF.y))
+		assert_true(north_tip.y > lift.global_position.y + 0.8, "北邊那片立著（%.2f）" % (north_tip.y - lift.global_position.y))
+		assert_true(south_tip.y < lift.global_position.y + 0.3, "南邊那片躺著")
+		assert_true(south_tip.z > lift.global_position.z + RebootOpening.SHAFT_HALF.y + 0.5, "往南翻開")
+		assert_true(north_tip.z < lift.global_position.z - RebootOpening.SHAFT_HALF.y, "不擋在洞口上")
+	# 站得上去：洞口的東西都沒有碰撞（結尾照樣走得到）
+	assert_eq(lift.find_children("*", "CollisionObject3D", true, false).size(), 0)
+	level.queue_free()
+	await tree.process_frame
