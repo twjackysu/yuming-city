@@ -154,6 +154,9 @@ THANKS_RUN_RESCUED,People saved on North Street,北街救出來的人
 THANKS_RUN_DEAD,Dead in Frostbridge that night,那一夜霜橋鎮的死者
 THANKS_RUN_MEMORIES,Memories given up to Restore,為了重現忘掉的記憶
 THANKS_RUN_GUIDE,Guide notes proven wrong,被推翻的攻略筆記
+THANKS_RUN_TIME,Time played,遊戲時間
+THANKS_TIME_MIN,{0} min,{0} 分鐘
+THANKS_TIME_HM,{0} h {1} min,{0} 小時 {1} 分鐘
 THANKS_TEASER_HEADER,"Coming in the second half of Part One",第一部後半
 THANKS_TEASER,"“On the fifth day, I tore up my own map.”",「第五天，我撕了自己的地圖。」
 THANKS_FEEDBACK,"Anything you liked, hated, or that broke: please open an issue on GitHub. Every note gets read.",喜歡的、討厭的、壞掉的，都歡迎到 GitHub 開一個 Issue 告訴我們。每一則都會看。

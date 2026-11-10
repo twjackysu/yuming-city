@@ -14,6 +14,8 @@ signal player_died
 
 ## 倒下到自動重試的時間（真實時間）
 const RETRY_DELAY_SEC: float = 2.2
+## 遊戲時間一幀最多加幾秒（D-179）
+const PLAYTIME_MAX_STEP: float = 0.25
 
 ## 關卡 id -> 場景。切片的檢查點都在霜橋鎮；沙盒留給開發測試（`++ --level=sandbox`）。
 const LEVELS: Dictionary = {
@@ -235,14 +237,23 @@ func is_player_dead() -> bool:
 	return _player_dead
 
 
+## 遊戲時間這一幀加多少（D-179）：用真實時間（打擊停頓的慢動作不少算）；一幀最多 PLAYTIME_MAX_STEP（換場景卡住的那一幀不算進去）。
+## 暫停時 Game 跟著暫停、_process 不跑，標題畫面不在關卡裡，都不算。
+static func playtime_step(delta: float, time_scale: float) -> float:
+	return clampf(delta / maxf(time_scale, 0.01), 0.0, PLAYTIME_MAX_STEP)
+
+
 ## 從最近的自動存檔重來；沒有存檔時重新開始。reload_level=false 給測試用（只重設狀態）。
+## 遊戲時間不跟著退回檢查點（倒下重來的那幾分鐘也是玩的時間）。
 func retry(reload_level: bool = true) -> void:
 	_player_dead = false
 	Engine.time_scale = 1.0
 	dialogue = null
 	cutscene = null
+	var played: float = session.state.playtime_sec
 	if session.retry_from_checkpoint() != SaveCodec.Status.OK:
 		session.new_game()
+	session.state.playtime_sec = maxf(session.state.playtime_sec, played)
 	if reload_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))
 
@@ -271,6 +282,8 @@ func is_player_locked() -> bool:
 func _process(delta: float) -> void:
 	if cutscene != null and cutscene.is_running():
 		cutscene.update(delta)
+	if session != null and get_tree().current_scene is StoryLevel:
+		session.state.playtime_sec += playtime_step(delta, Engine.time_scale)
 	_achievement_poll -= delta
 	if _achievement_poll <= 0.0:
 		_achievement_poll = ACHIEVEMENT_POLL_SEC

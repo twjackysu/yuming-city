@@ -38,7 +38,10 @@ func _wait_scene() -> StoryLevel:
 
 
 func _retry() -> StoryLevel:
+	var s: GameSession = _game.get("session") as GameSession
+	var played: float = s.state.playtime_sec
 	_game.call("retry")
+	assert_true(s.state.playtime_sec >= played, "重來不會把遊戲時間退回檢查點（D-179）")
 	return await _wait_scene()
 
 
@@ -1410,6 +1413,8 @@ func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
 		assert_eq(page.value_text("THANKS_RUN_DEAD"), str(DeadListBoard.dead_count(s.state)), "你的這一趟：死者跟名單一樣")
 		assert_eq(page.value_text("THANKS_RUN_MEMORIES"), str(s.state.memories_paid.size()), "你的這一趟：忘掉幾段記憶")
 		assert_true(int(page.value_text("THANKS_RUN_GUIDE")) >= 1, "你的這一趟：至少一條攻略筆記被推翻")
+		assert_true(s.state.playtime_sec > 1.0, "在關卡裡的時間有在累計（%.1f 秒）" % s.state.playtime_sec)
+		assert_eq(page.value_text("THANKS_RUN_TIME"), ThanksPage.time_text(s.state.playtime_sec), "你的這一趟：遊戲時間")
 		page.elapsed = ThanksPage.INPUT_DELAY
 		await tree.process_frame
 		assert_false(page.back_button.disabled, "過一下子按鈕就能按")

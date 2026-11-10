@@ -49,6 +49,28 @@ func test_texts_are_translated_keys() -> void:
 	assert_true(tr("THANKS_TEASER").contains("地圖"), "後半預告是原作第七章的第一句")
 
 
+## D-179：遊戲時間——四捨五入到分鐘，一小時以上換成「小時＋分鐘」；中英文各一套。
+func test_time_played_text() -> void:
+	TranslationServer.set_locale("zh_TW")
+	assert_eq(ThanksPage.time_text(0.0), "0 分鐘")
+	assert_eq(ThanksPage.time_text(29.0), "0 分鐘", "不到半分鐘")
+	assert_eq(ThanksPage.time_text(31.0), "1 分鐘", "四捨五入")
+	assert_eq(ThanksPage.time_text(42.0 * 60.0 + 10.0), "42 分鐘")
+	assert_eq(ThanksPage.time_text(59.0 * 60.0 + 40.0), "1 小時 0 分鐘", "59 分 40 秒進位成一小時")
+	assert_eq(ThanksPage.time_text(65.0 * 60.0), "1 小時 5 分鐘")
+	assert_eq(ThanksPage.time_text(-5.0), "0 分鐘", "負的當 0")
+	TranslationServer.set_locale("en")
+	assert_eq(ThanksPage.time_text(42.0 * 60.0), "42 min")
+	assert_eq(ThanksPage.time_text(125.0 * 60.0), "2 h 5 min")
+	TranslationServer.set_locale("zh_TW")
+	var st := GameState.new()
+	st.playtime_sec = 27.0 * 60.0
+	assert_eq(ThanksPage.run_summary(st)["THANKS_RUN_TIME"], "27 分鐘", "你的這一趟：遊戲時間")
+	var calls: Array[int] = [0]
+	var page: ThanksPage = _show(st, calls)
+	assert_eq(page.value_text("THANKS_RUN_TIME"), "27 分鐘", "畫面上的遊戲時間")
+
+
 func test_run_summary_matches_state() -> void:
 	var st := GameState.new()
 	assert_eq(ThanksPage.run_summary(st)["THANKS_RUN_RESCUED"], "0 / 4", "什麼都沒做：0／4")

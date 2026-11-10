@@ -3,7 +3,7 @@ extends CanvasLayer
 ## 「感謝試玩」一頁（D-176）：第一部前半的結尾卡之後、回標題之前。
 ## 黑底（跟章節卡同一個黑，接在結尾卡後面看不出換頁）上置中一欄：
 ##   小字「這一版到這裡」→ 明體「感謝試玩」→ 暖金細線 → 這一版的範圍
-##   →「你的這一趟」四列（北街救出幾個人、那一夜的死者、為了重現付出幾段記憶、被推翻的攻略筆記）
+##   →「你的這一趟」五列（北街救出幾個人、那一夜的死者、為了重現付出幾段記憶、被推翻的攻略筆記、遊戲時間）
 ##   → 後半預告（原作第七章的第一句）→ 怎麼回饋（GitHub Issue）→ 兩個按鈕（回饋頁面／回到標題）。
 ## 鍵盤、手把、滑鼠都能關：焦點預設在「回到標題」（確認鍵＝A），取消鍵（Esc／B）也回標題。
 ## 剛出現的 INPUT_DELAY 秒內按鈕不能按（避免連按跳過結尾卡時順手把這頁也跳掉）。
@@ -22,7 +22,7 @@ const FEEDBACK_URL: String = "https://github.com/twjackysu/yuming-city/issues"
 ## 北街原本有幾個受困者（跟 DeadListBoard.NORTH_TRAPPED 一樣）
 const NORTH_TRAPPED: int = 4
 ## 「你的這一趟」的列：翻譯 key（左欄）→ 數字（右欄）
-const RUN_ROWS: PackedStringArray = ["THANKS_RUN_RESCUED", "THANKS_RUN_DEAD", "THANKS_RUN_MEMORIES", "THANKS_RUN_GUIDE"]
+const RUN_ROWS: PackedStringArray = ["THANKS_RUN_RESCUED", "THANKS_RUN_DEAD", "THANKS_RUN_MEMORIES", "THANKS_RUN_GUIDE", "THANKS_RUN_TIME"]
 
 var on_done: Callable = Callable()
 var finished: bool = false
@@ -57,7 +57,16 @@ static func run_summary(state: GameState) -> Dictionary:
 		"THANKS_RUN_DEAD": str(DeadListBoard.dead_count(state)),
 		"THANKS_RUN_MEMORIES": str(state.memories_paid.size()),
 		"THANKS_RUN_GUIDE": str(wrong),
+		"THANKS_RUN_TIME": time_text(state.playtime_sec),
 	}
+
+
+## 遊戲時間（D-179）：四捨五入到分鐘；不到一小時「42 分鐘」，一小時以上「1 小時 5 分鐘」（英文 42 min／1 h 5 min）。
+static func time_text(sec: float) -> String:
+	var minutes: int = int(floor(maxf(sec, 0.0) / 60.0 + 0.5))
+	if minutes < 60:
+		return TranslationServer.translate("THANKS_TIME_MIN").format([minutes])
+	return TranslationServer.translate("THANKS_TIME_HM").format([floori(minutes / 60.0), minutes % 60])
 
 
 func _init() -> void:
