@@ -1,0 +1,257 @@
+{
+  "samples": 35,
+  "source_vertices": 1280,
+  "corrective_shapes": 24,
+  "pca_maximum_vertex_error_m": 0.0014904026183379545,
+  "pca_rms_vertex_error_m": 7.676787992269466e-05,
+  "maximum_simulation_loop_drift_m": 0.0,
+  "maximum_projection_displacement_m": 0.03270489671144299,
+  "projection_samples": [
+    {
+      "frame": 0,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011300609447062016,
+      "total_projection_displacement_max_m": 0.016956951825771307
+    },
+    {
+      "frame": 1,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01149238646030426,
+      "total_projection_displacement_max_m": 0.011722233854699922
+    },
+    {
+      "frame": 2,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011337503790855408,
+      "total_projection_displacement_max_m": 0.011564254489216802
+    },
+    {
+      "frame": 3,
+      "remaining_constraints_last_iteration": 2,
+      "minimum_signed_distance_last_iteration_m": 0.005999967092066072,
+      "maximum_step_m": 0.011404795572161674,
+      "total_projection_displacement_max_m": 0.014326635823506743
+    },
+    {
+      "frame": 4,
+      "remaining_constraints_last_iteration": 1,
+      "minimum_signed_distance_last_iteration_m": 0.005999765307933558,
+      "maximum_step_m": 0.011506288312375546,
+      "total_projection_displacement_max_m": 0.012734156676349598
+    },
+    {
+      "frame": 5,
+      "remaining_constraints_last_iteration": 1,
+      "minimum_signed_distance_last_iteration_m": 0.005999765882734209,
+      "maximum_step_m": 0.011645200662314892,
+      "total_projection_displacement_max_m": 0.011878104856989723
+    },
+    {
+      "frame": 6,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011648394167423248,
+      "total_projection_displacement_max_m": 0.011881361634920354
+    },
+    {
+      "frame": 7,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011787256225943565,
+      "total_projection_displacement_max_m": 0.012023001962315153
+    },
+    {
+      "frame": 8,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01188901998102665,
+      "total_projection_displacement_max_m": 0.0121268002009767
+    },
+    {
+      "frame": 9,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.012017805129289627,
+      "total_projection_displacement_max_m": 0.013299494497485992
+    },
+    {
+      "frame": 10,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01202765479683876,
+      "total_projection_displacement_max_m": 0.012268208022208384
+    },
+    {
+      "frame": 11,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011904200538992882,
+      "total_projection_displacement_max_m": 0.012142283984316512
+    },
+    {
+      "frame": 12,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011756397783756256,
+      "total_projection_displacement_max_m": 0.02133484083104313
+    },
+    {
+      "frame": 13,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011669904924929142,
+      "total_projection_displacement_max_m": 0.015389414480847043
+    },
+    {
+      "frame": 14,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011546896770596504,
+      "total_projection_displacement_max_m": 0.02166339177065531
+    },
+    {
+      "frame": 15,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011673979461193085,
+      "total_projection_displacement_max_m": 0.011907458488572232
+    },
+    {
+      "frame": 16,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011735208332538605,
+      "total_projection_displacement_max_m": 0.011969911683853992
+    },
+    {
+      "frame": 17,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011660348623991013,
+      "total_projection_displacement_max_m": 0.011893555219819081
+    },
+    {
+      "frame": 18,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011648769490420818,
+      "total_projection_displacement_max_m": 0.020080762635925384
+    },
+    {
+      "frame": 19,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01165346521884203,
+      "total_projection_displacement_max_m": 0.01188653426025915
+    },
+    {
+      "frame": 20,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01155702956020832,
+      "total_projection_displacement_max_m": 0.020127382369476008
+    },
+    {
+      "frame": 21,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.012244045734405518,
+      "total_projection_displacement_max_m": 0.020072074647744787
+    },
+    {
+      "frame": 22,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.012306955642998219,
+      "total_projection_displacement_max_m": 0.02006023513702765
+    },
+    {
+      "frame": 23,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01231900043785572,
+      "total_projection_displacement_max_m": 0.017097867337539492
+    },
+    {
+      "frame": 24,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.012523180805146694,
+      "total_projection_displacement_max_m": 0.022037585581716878
+    },
+    {
+      "frame": 25,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.014051173813641071,
+      "total_projection_displacement_max_m": 0.03270489671144299
+    },
+    {
+      "frame": 26,
+      "remaining_constraints_last_iteration": 2,
+      "minimum_signed_distance_last_iteration_m": 0.005999996639729943,
+      "maximum_step_m": 0.01530720666050911,
+      "total_projection_displacement_max_m": 0.01561335131648673
+    },
+    {
+      "frame": 27,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.015236915089190006,
+      "total_projection_displacement_max_m": 0.016957101105399826
+    },
+    {
+      "frame": 28,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.015473892912268639,
+      "total_projection_displacement_max_m": 0.0326160578554165
+    },
+    {
+      "frame": 29,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.015339018777012825,
+      "total_projection_displacement_max_m": 0.01564579923081693
+    },
+    {
+      "frame": 30,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.014763492159545422,
+      "total_projection_displacement_max_m": 0.023150722171715765
+    },
+    {
+      "frame": 31,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01314240787178278,
+      "total_projection_displacement_max_m": 0.01729670463524008
+    },
+    {
+      "frame": 32,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.01154320314526558,
+      "total_projection_displacement_max_m": 0.011774067246172292
+    },
+    {
+      "frame": 33,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011291730217635632,
+      "total_projection_displacement_max_m": 0.01151756450434947
+    },
+    {
+      "frame": 34,
+      "remaining_constraints_last_iteration": 0,
+      "minimum_signed_distance_last_iteration_m": 1,
+      "maximum_step_m": 0.011299344711005688,
+      "total_projection_displacement_max_m": 0.01695901896220252
+    }
+  ],
+  "status": "pending_engine_and_visual_checks"
+}

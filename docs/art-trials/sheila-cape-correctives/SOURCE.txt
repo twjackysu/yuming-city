@@ -1,0 +1,45 @@
+Sheila character study — NOT ACCEPTED FINAL ART
+Body, female skin, eyes, eyebrows, ponytail and trouser base: MakeHuman / MPFB core assets, CC0.
+MPFB source https://github.com/makehumancommunity/mpfb2
+Revision 6ff1eb358f6c1959ced77e79e6dd2406d9a71f49.
+Code is GPL; core assets are separately CC0.
+https://static.makehumancommunity.org/about/license.html
+https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
+
+Tunic base geometry: punkduck winter coat, CC BY 3.0.
+https://static.makehumancommunity.org/assets/assetpacks/dress03.html
+https://creativecommons.org/licenses/by/3.0/
+Modified fit, shortened hem, replaced materials. No endorsement implied.
+
+Boots reused and refitted from this project's original Noen boot study:
+AI-generated original standalone leather boot reference; locally reconstructed using TripoSG (MIT),
+simplified, normal-baked, fitted and skinned in Blender.
+https://github.com/VAST-AI-Research/TripoSG
+Code fc5c40990181e2a756c4e0b1c2f4d6b5202faf8c
+Weights VAST-AI/TripoSG@2c1c516d22d58db486a058d98d31bb6177344e06.
+
+Cape, sword, badge, copper earring and weapon socket: project-created geometry.
+Front/back material plates: OpenAI image generation, based on this project's locked 3D renders
+and original Sheila reference. Projected and baked onto the mesh. Not real-person photographs.
+
+Walk source: ACCAD Open Motion Project / The Ohio State University, CC BY 3.0.
+https://accad.ohio-state.edu/research/motion-lab/mocap-system-and-data
+Male1_B3_Walk.bvh from Male1_bvh.zip.
+Archive SHA256 1cd26aeac2ee7f20e3c0fe5082e633201bb136a714ae8f684a4f34c4421f4627.
+Modified: retargeted, horizontal root travel removed, loop and vertical ground contact corrected,
+exported without skin at 30 fps. This is only a walk study, not the complete animation set.
+
+53 bones include the independent weapon_socket. Sword rests on back; runtime hand attachment,
+closed grip, weapon clearance and combat animations still require work and review.
+Further pending: cape folds/collision, material seams, hair/face quality, all other animation coverage,
+and actual game integration. Static structural checks do not certify AAA quality.
+
+2026-11-09 derivative: rebuilt faceted/tapered broken blade, central groove, curved guard, cylindrical wrapped grip and pommel in Blender; original project-created geometry and procedural metal/leather. Existing cape and all other character geometry retained. Three 2K PBR atlases rebaked with destination tangent normals. Blade stays a separately named skinned mesh with one weapon_socket influence. Existing source licenses and credits remain applicable. Rejected cape/scan experiments were not used in that 2026-11-09 revision; the cape correction below supersedes that statement.
+
+2026-11-10: Sword revision: blade width .44m tapering to .286m, .032m maximum ridge thickness and .026m guard depth. Authored procedural steel scuffs/roughness/oxidation rebaked to existing three 2K atlases. Original cape and animation retained; not formal art approval.
+
+2026-11-10 cape correction: project-authored wide cape pattern, prior static Blender cloth drape, four-influence weights derived from the credited coat, and pose-specific surface clearance fitted over the ACCAD-derived walk. Compact position correctives and fitted normal deltas; original body animation values retained. Rejected dynamic simulations are not used. No runtime cloth solver. This is still an unapproved study; other motions are not covered by the cape correction.
+Wool surface: Poly Haven Poly Wool Herringbone, CC0, photography colormass / processing Rico Cilliers.
+https://polyhaven.com/a/poly_wool_herringbone
+https://polyhaven.com/license
+Modified: off-white dye, authored muddy-hem coordinate, 27cm object-scale scan detail, atlas rebake. Existing MakeHuman/MPFB, punkduck coat CC BY 3.0, ACCAD CC BY 3.0, generated-reference and sword credits remain applicable.

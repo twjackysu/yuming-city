@@ -1,19 +1,19 @@
 {
   "status": "work_in_progress_not_final_art",
-  "triangles": 38396,
+  "triangles": 39028,
   "bones": 53,
   "materials": 3,
   "textures": 9,
   "files": [
     {
       "file": "preview.png",
-      "bytes": 315801,
-      "sha256": "f124012a9e7b87370ef98c141f726194c554f16962f90ff97f0d4b387d5faccd"
+      "bytes": 322818,
+      "sha256": "85783c7fa247c752ce1bb740b30859396d70c95a2b6dde00e0a324f11a769310"
     },
     {
       "file": "sheila_walk_candidate.glb",
-      "bytes": 16823528,
-      "sha256": "5aff686b76abd94f64d3a2ae9062b5a1b7cea41387167291e0567f1b49f1efd0"
+      "bytes": 18031692,
+      "sha256": "db51459a34c974170d3bd3ce4e67c127fa10627ce44ea644dcaeace3367d405a"
     },
     {
       "file": "walk_candidate.fbx",
@@ -22,38 +22,47 @@
     },
     {
       "file": "walk_preview.mp4",
-      "bytes": 266558,
-      "sha256": "9f4b65c640427e41b62964ba7d17f7ee32f8449477b67ced3b85fd0940beb0f2"
+      "bytes": 263324,
+      "sha256": "23fe83dbc44ce7b480145f0b6932945de8afbba2552494a9f3f5176f8b7633db"
     },
     {
       "file": "blade_preview.png",
-      "bytes": 352619,
-      "sha256": "cb7f003850d58258a347a719e11ee051749b5fc62652005492dba0e13a4bbfd4"
+      "bytes": 371580,
+      "sha256": "eb89e4582b9cbd9de7fc6e59237fa4b4ed15a012e7470e20126fa6382d5f19a4"
     },
     {
       "file": "night_preview.png",
-      "bytes": 434129,
-      "sha256": "d51d0f54b209380e6030c7e2c755ab5684fc03733842085e9d8d90e9b3e12258"
+      "bytes": 440952,
+      "sha256": "c92a0a346c85a51881cf067c1d28c2a9906d36a01f7bc28aeb324ab7e493128d"
     },
     {
       "file": "portrait_front.png",
-      "bytes": 1560974,
-      "sha256": "ff25a35e9a9f587204523be5fbfc8d2bccab9ea0281bf1f54c5153b48c4f89a2"
+      "bytes": 1511276,
+      "sha256": "80e2ce5e047b1a93259b1fca6d9051ff8b583902579e33a11731ad4366c22870"
     },
     {
       "file": "blade_night_preview.png",
-      "bytes": 448457,
-      "sha256": "0310c07ba3dd0d38ffc5627d9e6c538f634cd5912ab091829d6db18fc1cdfea1"
+      "bytes": 444262,
+      "sha256": "2802c231981940d22ff0d9563951171f7ed2d4016d8daf9772395869fd5b04ef"
+    },
+    {
+      "file": "cape_close_preview.png",
+      "bytes": 466445,
+      "sha256": "6cef222f2294393c21d0892e26d9e95795b38f3d73c007ac10989c5b4cb39d84"
     }
   ],
   "maximum_texture_dimension": 2048,
   "animation_names": [
     "walk_loop"
   ],
-  "meshes": 4,
-  "variant": "tapered_44cm_steel_sword_three_atlases_original_cape",
-  "cape_status": "unchanged_existing_clipping_not_fixed",
+  "meshes": 5,
+  "variant": "wide_wool_cape_with_walk_correctives_and_tapered_steel_sword",
+  "cape_status": "walk_export_69_samples_no_coat_intersections_other_poses_unverified",
   "godot_import_script": "sheila_material_import.gd",
   "sword_width_m": 0.44,
-  "sword_break_width_m": 0.286
+  "sword_break_width_m": 0.286,
+  "cape_corrective_shapes": 24,
+  "walk_duration_s": 1.1333333333333333,
+  "walk_start_time_s": 0,
+  "embedded_images": 9
 }

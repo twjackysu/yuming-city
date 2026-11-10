@@ -1,0 +1,9 @@
+{
+  "samples": 35,
+  "shapes": 24,
+  "before_mean_normal_error_degrees": 2.055575078826562,
+  "before_p99_normal_error_degrees": 12.53596176674733,
+  "after_mean_normal_error_degrees": 1.989508038448005,
+  "after_p99_normal_error_degrees": 11.649425833639908,
+  "positions_and_animation_unchanged": true
+}

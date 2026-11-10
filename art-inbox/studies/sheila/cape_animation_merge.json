@@ -1,0 +1,12 @@
+{
+  "body_clip": "walk_loop",
+  "body_channels_preserved": 159,
+  "existing_body_track_values_unchanged": true,
+  "existing_static_binary_prefix_unchanged": true,
+  "inverse_bind_maximum_difference": 9.326264262199402e-06,
+  "body_start_offset_removed_s": 0.06666667014360428,
+  "duration_s": 1.1333333333333333,
+  "cape_samples": 35,
+  "cape_corrective_shapes": 24,
+  "status": "requires_engine_and_exported_mesh_validation"
+}
