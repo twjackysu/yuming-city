@@ -588,6 +588,7 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	assert_true(_flat_dist((city.get_node("Kord") as Node3D).global_position, house) < 3.0, "柯德也在桌邊")
 	assert_true(_flat_dist((city.get_node("Sheila") as Node3D).global_position, house) < 3.0, "席菈也在桌邊")
 	assert_false((city.get_node("RationsSheila") as Node3D).visible, "席菈還沒放乾糧")
+	assert_false(city.has_node("AfterDinnerMusic"), "[柯德家] 進城、吃飯的時候沒有配樂（只有鐘擺聲，D-190）")
 	await _assert_daylight(city, "[柯德家]")
 	# 丟石頭那條路線（柯德的第一印象 hands）：回答＋跟著放乾糧；另一條：不回答＋不放
 	var share: bool = s.state.get_flag("ch1.kord_first") == "hands"
@@ -600,6 +601,7 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	assert_true(_flat_dist(_player(city).global_position, city.get("KORD_HOME") as Vector3) < 3.0, "站在柯德家門口")
 	assert_eq(s.quests.stage_of("ch1_main"), "bell_yard", "→ 跟著柯德去鐘院")
 	assert_eq(s.state.checkpoint, "ch1_after_dinner")
+	_assert_music(city, "[吃完飯]", "after_dinner_theme", "AfterDinnerMusic")
 	for i: int in 2:
 		await tree.physics_frame
 	assert_true((city.get_node("RationsSheila") as Node3D).visible, "桌上有席菈的乾糧")
@@ -614,6 +616,8 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 		await tree.physics_frame
 	assert_false(_game.call("is_in_dialogue"), "[ch1_after_dinner] 不會又開晚餐")
 	assert_eq(s.state.get_flag("ch1.shared_rations"), share, "[ch1_after_dinner] 乾糧的選項保留")
+	_assert_music(city, "[ch1_after_dinner]", "after_dinner_theme", "AfterDinnerMusic")
+	assert_false(bool(city.get("after_dinner_music_out")), "[ch1_after_dinner] 配樂還沒淡出")
 	# --- 段落 9（D-156）：往鐘院的路上——兔子、「看路，攻略先生。」、撞上柱子
 	for n: String in ["RabbitGirl", "RabbitMother", "StreetPillar", "StreetPillarBody"]:
 		assert_true(city.has_node(n), "街上有 " + n)
@@ -639,6 +643,7 @@ func _chapter1_dinner(city: StoryLevel) -> void:
 	await _step_into(_player(city), city.get("BELL_YARD_POS") as Vector3, 3)
 	assert_false(_game.call("is_in_dialogue"), "撞過一次就不會再開")
 	assert_true(s.quests.is_done("ch1_main"), "走到鐘院門口 → 第 1 章完成")
+	assert_true(bool(city.get("after_dinner_music_out")), "走到鐘院門口 → 配樂在章節卡底下淡出（D-190）")
 	assert_eq(s.state.get_flag("ch1.complete"), true)
 	await _chapter2(city)
 

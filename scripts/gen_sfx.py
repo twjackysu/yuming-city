@@ -682,6 +682,66 @@ def part_end_theme(seconds=28.0, seed=97):
     return [v / peak * 0.7 for v in looped]
 
 
+def _soft_pluck(f, seconds=4.0):
+    """很輕的撥弦（加法合成，音準準確）：泛音越高衰減越快，5 毫秒的起音，聽起來像遠處的小豎琴。"""
+    n = int(seconds * RATE)
+    partials = [(1, 1.0, 1.1), (2, 0.5, 1.8), (3, 0.26, 2.7), (4, 0.13, 3.6), (5, 0.07, 4.6), (6, 0.035, 6.0)]
+    out = [0.0] * n
+    for k, amp, decay in partials:
+        w = 2 * math.pi * k * f / RATE
+        for i in range(n):
+            out[i] += amp * math.sin(w * i) * math.exp(-(i / RATE) * decay)
+    attack = int(0.005 * RATE)
+    for i in range(attack):
+        out[i] *= i / attack
+    return onepole_lp(out, 3200)
+
+
+def after_dinner_theme(seconds=24.0, seed=101):
+    """第 1 章柯德家晚餐之後、走在白晝城往鐘院的路上（D-190）：B♭2＋F3 的長音（加一點 D3，大三度比較暖），
+    上面很輕的撥弦——標題往下走的三聲（D4、C4、A3）在這裡變成 D4、C4、B♭3：同樣往下走，落在暖的那個音。
+    第一句停在 C4（還沒說完），第二句往下到 F3 再回到 B♭3。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(2.5 * RATE)
+    total = n + fade
+    table = _wavetable([(1, 1.0), (2, 0.3), (3, 0.1), (4, 0.03)])
+    size = len(table)
+    drone = [0.0] * total
+    for f, amp in [(116.54, 0.5), (116.71, 0.42), (174.61, 0.3), (174.4, 0.25), (146.83, 0.1)]:
+        ph = rng.random() * size
+        step = f * size / RATE
+        for i in range(total):
+            drone[i] += amp * table[int(ph) % size]
+            ph += step
+    for i in range(total):
+        t = i / RATE
+        drone[i] *= 0.72 + 0.28 * math.sin(2 * math.pi * t / 12.0 - 0.9)  # 12 秒一次，24 秒剛好兩次
+    drone = onepole_lp(onepole_lp(drone, 800), 1000)
+    dpeak = max(abs(v) for v in drone) or 1.0
+    out = [v / dpeak * 0.36 for v in drone]
+    plucks = {}
+    motif = [(2.0, 293.66, 0.8), (3.0, 261.63, 0.72), (4.0, 233.08, 0.78), (5.6, 261.63, 0.66),
+             (13.0, 293.66, 0.74), (14.0, 261.63, 0.68), (15.0, 233.08, 0.74), (16.6, 174.61, 0.7), (18.2, 233.08, 0.85)]
+    for at, f, gain in motif:
+        if f not in plucks:
+            p = _soft_pluck(f)
+            ppeak = max(abs(v) for v in p) or 1.0
+            plucks[f] = [v / ppeak for v in p]
+        p = plucks[f]
+        # 原聲＋兩個很淡的回音（石板街、兩側的白牆）
+        for delay, tap in [(0.0, 0.3), (0.31, 0.08), (0.74, 0.035)]:
+            start = int((at + delay) * RATE)
+            g = gain * tap
+            for j, v in enumerate(p):
+                if start + j >= total:
+                    break
+                out[start + j] += g * v
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.66 for v in looped]
+
+
 def _step_env(n, attack, decay):
     return [min(1.0, (i / RATE) / attack) * math.exp(-(i / RATE) * decay) for i in range(n)]
 
@@ -829,6 +889,7 @@ def main():
         write("title_theme", title_theme()),
         write("aftermath_theme", aftermath_theme()),
         write("part_end_theme", part_end_theme()),
+        write("after_dinner_theme", after_dinner_theme()),
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),

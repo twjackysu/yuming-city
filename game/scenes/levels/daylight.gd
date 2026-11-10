@@ -92,6 +92,14 @@ const SEATS: Dictionary = {
 }
 const DINNER: String = "ch1_kord_dinner"
 const CUT_FADE_SEC: float = 0.7
+## 吃完飯走在往鐘院的路上的配樂（D-190）：說完話、安靜下來的地方（照 03「配樂放在哪裡」）。
+## 淡入很慢、很小聲（比切片收束還小聲）；鐘擺聲同時壓一點，還聽得到。走到鐘院門口（章節卡）淡出。
+const AFTER_DINNER_MUSIC: String = "after_dinner_theme"
+const AFTER_DINNER_MUSIC_DB: float = -18.0
+const AFTER_DINNER_MUSIC_FADE: float = 6.0
+const AFTER_DINNER_MUSIC_OUT_SEC: float = 3.5
+const AFTER_DINNER_AMBIENCE_DB: float = -15.0
+const AMBIENCE_DB: float = -12.0
 
 const PLASTER: Color = Color(0.83, 0.82, 0.78)
 const STONE: Color = Color(0.56, 0.54, 0.5)
@@ -108,6 +116,9 @@ var _misha: Puppet
 var _mara: Puppet
 var _water: MeshInstance3D
 var _home_inside: bool = false
+## 吃完飯之後的配樂（D-190）；走到鐘院門口開始淡出時 after_dinner_music_out 變 true
+var after_dinner_music: AudioStreamPlayer
+var after_dinner_music_out: bool = false
 var _yard_inside: bool = false
 ## 諾恩現在在柯德家屋裡（晚餐）
 var in_house: bool = false
@@ -173,6 +184,9 @@ func _ready() -> void:
 	_build_people()
 	_hide_contact_shadows.call_deferred()
 	_start_ambience()
+	# 從檢查點 ch1_after_dinner 重來：一進來就在往鐘院的路上
+	if Game.session.quests.stage_of(QUEST) == "bell_yard":
+		_start_after_dinner_music()
 	Game.dialogue_started.connect(_on_dialogue_started)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
 	add_to_group("interact_prompts")
@@ -250,7 +264,30 @@ func lamp_light() -> OmniLight3D:
 
 ## 環境音（07）：鐘走得很慢的「喀、答」＋遠處的水聲，循環播放。
 func _start_ambience() -> void:
-	Ambience.play(self, "daylight_ambience", -12.0)
+	Ambience.play(self, "daylight_ambience", AMBIENCE_DB)
+
+
+## 吃完飯、走出柯德家（D-190）：配樂慢慢漲起來，鐘擺聲壓一點。只開一次。
+func _start_after_dinner_music() -> void:
+	if after_dinner_music != null:
+		return
+	after_dinner_music = Ambience.music(self, AFTER_DINNER_MUSIC, AFTER_DINNER_MUSIC_DB, AFTER_DINNER_MUSIC_FADE, "AfterDinnerMusic")
+	var clock: AudioStreamPlayer = get_node_or_null("Ambience") as AudioStreamPlayer
+	if clock != null:
+		clock.create_tween().tween_property(clock, "volume_db", AFTER_DINNER_AMBIENCE_DB, AFTER_DINNER_MUSIC_FADE)
+
+
+## 走到鐘院門口：配樂在章節卡底下淡出（鐘院一開始只有環境音），鐘擺聲回到原本的音量。
+func _end_after_dinner_music() -> void:
+	if after_dinner_music == null or after_dinner_music_out:
+		return
+	after_dinner_music_out = true
+	var t: Tween = after_dinner_music.create_tween()
+	t.tween_property(after_dinner_music, "volume_db", Ambience.MUTED_DB, AFTER_DINNER_MUSIC_OUT_SEC)
+	t.tween_callback(after_dinner_music.stop)
+	var clock: AudioStreamPlayer = get_node_or_null("Ambience") as AudioStreamPlayer
+	if clock != null:
+		clock.create_tween().tween_property(clock, "volume_db", AMBIENCE_DB, AFTER_DINNER_MUSIC_OUT_SEC)
 
 
 ## 人物腳下的接地陰影（D-108）在這裡也拿掉：整座城沒有影子。
@@ -314,6 +351,7 @@ func reach_bell_yard() -> void:
 	if has_node("ChapterCard"):
 		return
 	Game.session.set_flag("ch1.reached_bell_yard", true)
+	_end_after_dinner_music()
 	var next_level: String = Game.level_for_checkpoint(Game.session.state.checkpoint)
 	if next_level != "daylight" and Game.LEVELS.has(next_level):
 		ChapterCard.play(self, "CH2_CARD_NUMBER", "CH2_CARD_TITLE", Game.go_to_level.bind(next_level))
@@ -436,6 +474,7 @@ func leave_home() -> void:
 	if _kord != null:
 		_kord.global_position = KORD_HOME + Vector3(0.6, 0.0, -0.4)
 	_cut_from_black(CUT_FADE_SEC)
+	_start_after_dinner_music()
 
 
 func _seat_everyone() -> void:
