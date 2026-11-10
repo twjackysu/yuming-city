@@ -69,7 +69,18 @@ func _run() -> void:
 	print("[tests] 通過 %d 個測試，問題 %d 個" % [passed, problems.size()])
 	for p: String in problems:
 		printerr("  - " + p)
+	await _silence()
 	quit(0 if problems.is_empty() else 1)
+
+
+## 結束前把還在播的音效停掉、等兩幀：不然流程測試最後一聲（AudioStreamPlaybackWAV）會在結束時被算成
+## 「2 ObjectDB instances were leaked at exit」（第 49 輪起的警告，不影響結果）。
+func _silence() -> void:
+	for cls: String in ["AudioStreamPlayer", "AudioStreamPlayer2D", "AudioStreamPlayer3D"]:
+		for n: Node in root.find_children("*", cls, true, false):
+			n.call("stop")
+	await create_timer(0.25).timeout
+	await process_frame
 
 
 func _collect(dir_path: String, ext: String, out: PackedStringArray) -> void:
