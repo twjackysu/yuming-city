@@ -224,13 +224,16 @@ func _build() -> void:
 	_rubble = Node3D.new()
 	_rubble.name = "Rubble"
 	add_child(_rubble)
+	# 崩下來的石塊：不規則的多面體（CoalPile 的煤塊形狀放大，D-197），不是整齊的方塊；大小與擺法照舊（同一串亂數）
+	var shape_seed: float = float(absi(hash(site_id)) % 997)
 	for i: int in 7:
 		var b := MeshInstance3D.new()
-		var m := BoxMesh.new()
-		m.size = Vector3(rng.randf_range(0.35, 0.8), rng.randf_range(0.2, 0.45), rng.randf_range(0.3, 0.7))
-		b.mesh = m
+		var size := Vector3(rng.randf_range(0.35, 0.8), rng.randf_range(0.2, 0.45), rng.randf_range(0.3, 0.7))
+		b.name = "Stone%d" % i
+		b.mesh = CoalPile.lump_mesh(0.85, shape_seed + 3.7 * float(i))
+		b.scale = size
 		b.material_override = stone
-		b.position = Vector3(rng.randf_range(-0.7, 0.7), m.size.y * 0.5 + rng.randf_range(0.0, 0.25), rng.randf_range(-0.6, 0.6))
+		b.position = Vector3(rng.randf_range(-0.7, 0.7), size.y * 0.5 + rng.randf_range(0.0, 0.25), rng.randf_range(-0.6, 0.6))
 		b.rotation_degrees = Vector3(rng.randf_range(-15, 15), rng.randf_range(0, 90), rng.randf_range(-15, 15))
 		_rubble.add_child(b)
 	var plank := MeshInstance3D.new()
