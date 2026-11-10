@@ -287,6 +287,19 @@ func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
 	for n: String in ["WindowFrameTop", "WindowSill", "WindowMullion", "Bowl0", "Candle", "BackShelf0", "DinnerBenchN", "LampGlass"]:
 		assert_true(tavern.has_node(n), "%s 有 %s" % [tag, n])
 	assert_eq(bool(tavern.call("candle_lit")), night, "%s 蠟燭%s" % [tag, "點著" if night else "沒點"])
+	# 窗外的光束（D-177）：東牆有真的窗洞、玻璃不擋光、聚光燈投影子；中午亮、入夜只剩淡藍
+	assert_false(tavern.has_node("WallE"), "%s 東牆拆成四塊（中間是窗洞）" % tag)
+	var glass: CSGBox3D = tavern.get_node("Window") as CSGBox3D
+	assert_eq(glass.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "%s 窗玻璃不擋光" % tag)
+	var beam: SpotLight3D = tavern.get_node_or_null("SunBeam") as SpotLight3D
+	assert_not_null(beam, "%s 窗外的光束" % tag)
+	if beam != null:
+		assert_true(beam.shadow_enabled, "%s 光束投影子（窗櫺的十字）" % tag)
+		assert_true(beam.global_position.x > float(tavern.get("ROOM_HALF").x), "%s 光從窗外來" % tag)
+		if night:
+			assert_true(beam.light_energy < 5.0 and beam.light_color.b > beam.light_color.r, "%s 入夜只剩淡藍" % tag)
+		else:
+			assert_true(beam.light_energy > 10.0, "%s 中午的光束夠亮" % tag)
 	if not night:
 		# 截圖旗標 --pos（第 53 輪）：格式不對不動，對的話把諾恩移過去
 		assert_false(bool(tavern.call("dev_place_player", "1.0")), "%s --pos 格式不對" % tag)

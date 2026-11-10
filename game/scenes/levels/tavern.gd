@@ -38,6 +38,15 @@ const DOOR_WET: Vector4 = Vector4(0.0, 4.4, 1.7, 0.85)
 ## 東牆的窗：玻璃中心、玻璃大小（高、寬）
 const WINDOW_CENTER: Vector3 = Vector3(6.86, 1.7, -1.0)
 const WINDOW_SIZE: Vector2 = Vector2(1.1, 1.6)
+## 中午從窗外斜照進來的光束（D-177）：東北方、窗外 SUN_DISTANCE 的聚光燈（放遠＝光線接近平行，像太陽），穿過窗洞
+## （東牆拆成窗的上下左右四塊）、從吧台南端旁邊斜斜落到地圖桌那一帶（SUN_TARGET）；窗櫺的十字影子落在光斑裡。入夜換成很淡的藍。
+const SUN_TARGET: Vector3 = Vector3(3.4, 0.0, 1.3)
+const SUN_DISTANCE: float = 7.0
+const SUN_ANGLE_DEG: float = 12.0
+const SUN_NOON: Color = Color(1.0, 0.95, 0.86)
+const SUN_NOON_ENERGY: float = 40.0
+const SUN_NIGHT: Color = Color(0.42, 0.52, 0.78)
+const SUN_NIGHT_ENERGY: float = 4.5
 ## 晚餐桌上的蠟燭（入夜才點）
 const CANDLE_POS: Vector3 = Vector3(-0.5, 0.8, -2.25)
 
@@ -45,6 +54,7 @@ var _door_inside: bool = false
 var _leaving: bool = false
 var _hearth_light: OmniLight3D
 var _window_light: OmniLight3D
+var _sun_beam: SpotLight3D
 var _window_mat: StandardMaterial3D
 var _look := InteriorLook.new()
 var _candle_light: OmniLight3D
@@ -210,7 +220,10 @@ func _apply_time_of_day() -> void:
 	var night: bool = is_night()
 	if _window_light != null:
 		_window_light.light_color = Color(0.36, 0.44, 0.62) if night else Color(0.86, 0.9, 1.0)
-		_window_light.light_energy = 0.5 if night else 2.2
+		_window_light.light_energy = 0.5 if night else 1.8
+	if _sun_beam != null:
+		_sun_beam.light_color = SUN_NIGHT if night else SUN_NOON
+		_sun_beam.light_energy = SUN_NIGHT_ENERGY if night else SUN_NOON_ENERGY
 	if _hearth_light != null:
 		_hearth_light.light_energy = 3.2 if night else 1.6
 	# 窗玻璃：中午是外面的雪光（自己發亮），入夜只剩一點暗藍
@@ -326,7 +339,7 @@ func _build_room() -> void:
 	var wall := wall_mat()
 	_box("WallN", Vector3(w * 2.0, WALL_H, WALL_T), Vector3(0, WALL_H * 0.5, -d), WALL, true, wall)
 	_box("WallW", Vector3(WALL_T, WALL_H, d * 2.0), Vector3(-w, WALL_H * 0.5, 0), WALL, true, wall)
-	_box("WallE", Vector3(WALL_T, WALL_H, d * 2.0), Vector3(w, WALL_H * 0.5, 0), WALL, true, wall)
+	_build_east_wall(wall)
 	# 南牆中間留門（1.6 m 寬、2.3 m 高）
 	var side: float = (w * 2.0 - 1.6) * 0.5
 	_box("WallS_W", Vector3(side, WALL_H, WALL_T), Vector3(-(0.8 + side * 0.5), WALL_H * 0.5, d), WALL, true, wall)
@@ -349,6 +362,8 @@ func _build_room() -> void:
 	var window := _box("Window", Vector3(0.06, WINDOW_SIZE.x, WINDOW_SIZE.y), WINDOW_CENTER, Color(0.75, 0.82, 0.95), false)
 	_window_mat = window.material as StandardMaterial3D
 	_window_mat.emission_enabled = true
+	# 玻璃不擋光：窗外的光束穿過去，只有窗櫺投影子
+	window.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_build_window_frame()
 	_window_light = OmniLight3D.new()
 	_window_light.name = "WindowLight"
@@ -356,6 +371,16 @@ func _build_room() -> void:
 	_window_light.omni_range = 8.0
 	_window_light.shadow_enabled = true
 	add_child(_window_light)
+	_sun_beam = SpotLight3D.new()
+	_sun_beam.name = "SunBeam"
+	_sun_beam.spot_angle = SUN_ANGLE_DEG
+	_sun_beam.spot_range = SUN_DISTANCE + WINDOW_CENTER.distance_to(SUN_TARGET) + 1.5
+	_sun_beam.shadow_enabled = true
+	# 衰減放緩：窗外到地板 7 m 多，照物理衰減落到地上只剩一點點
+	_sun_beam.spot_attenuation = 0.5
+	_sun_beam.light_volumetric_fog_energy = 1.6
+	add_child(_sun_beam)
+	_sun_beam.look_at_from_position(sun_beam_origin(), SUN_TARGET, Vector3.UP)
 	# 西北角的壁爐（第 52 輪：原本是一塊發光的長方形 → 石砌爐框＋凹進去的爐膛＋柴＋火焰與火星粒子＋會閃的火光）
 	_build_hearth(Vector3(-4.6, 0.0, -d + 0.45))
 	_hearth_light = OmniLight3D.new()
@@ -374,6 +399,31 @@ func _build_room() -> void:
 	lamp.position = Vector3(4.2, 2.4, -2.6)
 	add_child(lamp)
 	_build_hanging_lamp(lamp.position)
+
+
+## 光束從哪裡來：窗外、沿著「窗中心 → SUN_TARGET」往回 SUN_DISTANCE（D-177）。
+static func sun_beam_dir() -> Vector3:
+	return (SUN_TARGET - WINDOW_CENTER).normalized()
+
+
+static func sun_beam_origin() -> Vector3:
+	return WINDOW_CENTER - sun_beam_dir() * SUN_DISTANCE
+
+
+## 東牆（D-177）：原本一整塊、窗只是貼在牆前的發光板（光進不來）→ 拆成窗的北、南、下、上四塊，中間留真的窗洞。
+## 牆的 shader 用世界座標，拆開看不出接縫。
+func _build_east_wall(wall: Material) -> void:
+	var w: float = ROOM_HALF.x
+	var d: float = ROOM_HALF.y
+	var c: Vector3 = WINDOW_CENTER
+	var z0: float = c.z - WINDOW_SIZE.y * 0.5
+	var z1: float = c.z + WINDOW_SIZE.y * 0.5
+	var y0: float = c.y - WINDOW_SIZE.x * 0.5
+	var y1: float = c.y + WINDOW_SIZE.x * 0.5
+	_box("WallE_N", Vector3(WALL_T, WALL_H, z0 + d), Vector3(w, WALL_H * 0.5, (z0 - d) * 0.5), WALL, true, wall)
+	_box("WallE_S", Vector3(WALL_T, WALL_H, d - z1), Vector3(w, WALL_H * 0.5, (z1 + d) * 0.5), WALL, true, wall)
+	_box("WallE_Sill", Vector3(WALL_T, y0, z1 - z0), Vector3(w, y0 * 0.5, c.z), WALL, true, wall)
+	_box("WallE_Head", Vector3(WALL_T, WALL_H - y1, z1 - z0), Vector3(w, (y1 + WALL_H) * 0.5, c.z), WALL, true, wall)
 
 
 ## 窗框（第 53 輪）：窗框四邊＋往房裡突出的窗台＋窗櫺（一直兩橫＝六格）。原本只有一片發光板。

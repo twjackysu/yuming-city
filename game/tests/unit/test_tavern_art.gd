@@ -53,3 +53,54 @@ func test_clockless_clock_has_face_but_no_hands() -> void:
 			hands += 1
 	assert_eq(hands, 0, "沒有指針")
 	lv.free()
+
+
+## 窗外的光束（D-177）：從東北方窗外斜斜往下，越過吧台南端、落在地圖桌北邊；東牆四塊之間的洞剛好是窗。
+func test_sun_beam_through_window() -> void:
+	var script: GDScript = load("res://scenes/levels/tavern.gd") as GDScript
+	var c: Dictionary = script.get_script_constant_map()
+	var win: Vector3 = c["WINDOW_CENTER"]
+	var size: Vector2 = c["WINDOW_SIZE"]
+	var half: Vector2 = c["ROOM_HALF"]
+	var dir: Vector3 = script.call("sun_beam_dir")
+	var origin: Vector3 = script.call("sun_beam_origin")
+	assert_true(dir.x < 0.0 and dir.y < 0.0 and dir.z > 0.0, "從東北方斜斜往下（往西南）")
+	assert_true(origin.x > half.x + float(c["WALL_T"]), "光在窗外")
+	# 天花板板子伸到牆外 0.5 m（x ROOM_HALF.x + 0.5）：往窗頂的光在那裡要低於天花板底
+	var top: Vector3 = win + Vector3(0.0, size.x * 0.5, 0.0)
+	var k: float = (origin.x - (half.x + 0.5)) / (origin.x - top.x)
+	assert_true(lerpf(origin.y, top.y, k) < float(c["WALL_H"]), "光不會被伸出牆外的天花板擋住")
+	# 光線接近平行（像太陽）：窗洞中心的光越過吧台（東面 x 4.95）時在吧台南端（z -0.8）以南、落在目標上；
+	# 四個角落地都在目標 4.5 m 內（光斑不會拉成一長條），窗下緣的光落在吧台與地圖桌之間（x 4～5.2）
+	var target: Vector3 = c["SUN_TARGET"]
+	var mid: Vector3 = (win - origin).normalized()
+	var at_counter: Vector3 = origin + mid * ((4.95 - origin.x) / mid.x)
+	assert_true(at_counter.z > -0.8, "窗中心的光從吧台南端旁邊過（z %.2f）" % at_counter.z)
+	assert_true((origin + mid * (-origin.y / mid.y)).distance_to(target) < 0.05, "窗中心的光落在目標")
+	for sy: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			var p: Vector3 = win + Vector3(0.0, sy * size.x * 0.5, sz * size.y * 0.5)
+			var ray: Vector3 = (p - origin).normalized()
+			var on_floor: Vector3 = origin + ray * (-origin.y / ray.y)
+			assert_true(on_floor.distance_to(target) < 4.5, "窗角 (%d, %d) 落地在目標附近（%.1f m）" % [sy, sz, on_floor.distance_to(target)])
+			if sy < 0.0:
+				assert_true(on_floor.x > 4.0 and on_floor.x < 5.2, "窗下緣的光落在吧台與地圖桌之間（x %.2f）" % on_floor.x)
+	# 聚光燈的錐夠寬，整扇窗都在光裡（牆把多的擋掉）
+	var corner_angle: float = rad_to_deg((win + Vector3(0.0, size.x * 0.5, size.y * 0.5) - origin).normalized().angle_to(dir))
+	assert_true(corner_angle < float(c["SUN_ANGLE_DEG"]), "整扇窗都在光錐裡（%.1f°）" % corner_angle)
+	# 東牆四塊：中間的洞剛好是窗
+	var lv: Node3D = script.new() as Node3D
+	lv.call("_build_east_wall", StandardMaterial3D.new())
+	var names: PackedStringArray = ["WallE_N", "WallE_S", "WallE_Sill", "WallE_Head"]
+	for n: String in names:
+		assert_true(lv.has_node(n), "東牆有 " + n)
+	var north: CSGBox3D = lv.get_node("WallE_N") as CSGBox3D
+	var south: CSGBox3D = lv.get_node("WallE_S") as CSGBox3D
+	var sill: CSGBox3D = lv.get_node("WallE_Sill") as CSGBox3D
+	var head: CSGBox3D = lv.get_node("WallE_Head") as CSGBox3D
+	assert_true(absf(north.position.z + north.size.z * 0.5 - (win.z - size.y * 0.5)) < 0.001, "北塊停在窗的北緣")
+	assert_true(absf(south.position.z - south.size.z * 0.5 - (win.z + size.y * 0.5)) < 0.001, "南塊從窗的南緣開始")
+	assert_true(absf(sill.size.y - (win.y - size.x * 0.5)) < 0.001, "窗下的牆到窗台")
+	assert_true(absf(head.position.y - head.size.y * 0.5 - (win.y + size.x * 0.5)) < 0.001, "窗上的牆從窗頂開始")
+	assert_true(absf(north.size.z + south.size.z + size.y - half.y * 2.0) < 0.001, "加起來是整面牆")
+	lv.free()
