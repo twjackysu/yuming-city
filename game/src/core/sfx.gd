@@ -4,7 +4,7 @@ extends RefCounted
 ## 檔案不存在時安靜跳過，不影響遊戲。全部走 SFX 匯流排（設定裡的「音效」音量）。
 
 const DIR: String = "res://assets/generated/sfx/"
-const NAMES: PackedStringArray = ["bell", "bell_ninth", "blunt", "blunt_weak", "claw", "slash", "whoosh", "rubble_scrape", "iron_clang", "ignite", "ui_tick", "water_splash", "child_laugh", "daylight_ambience", "brace_creak", "slap", "deep_rumble", "cloth_knock", "chain_creak", "canal_ambience", "frost_wind", "frost_wind_indoor", "hearth_crackle", "title_theme", "step_snow", "step_stone", "step_wood", "stair_ambience"]
+const NAMES: PackedStringArray = ["bell", "bell_ninth", "blunt", "blunt_weak", "claw", "slash", "whoosh", "rubble_scrape", "iron_clang", "ignite", "ui_tick", "water_splash", "child_laugh", "daylight_ambience", "brace_creak", "slap", "deep_rumble", "cloth_knock", "chain_creak", "canal_ambience", "frost_wind", "frost_wind_indoor", "hearth_crackle", "title_theme", "step_snow", "step_stone", "step_wood", "stair_ambience", "heartbeat"]
 
 static var _cache: Dictionary = {}
 
@@ -39,14 +39,18 @@ static func play_at(parent: Node, sfx_name: String, pos: Vector3, volume_db: flo
 	return p
 
 
-## 不分位置（過場中的鐘聲等）。
-static func play_flat(parent: Node, sfx_name: String, volume_db: float = 0.0) -> AudioStreamPlayer:
+## 重現的心跳走這條（D-183：不經過 SFX 的低通，音量跟著「音效」）。
+const HEART_BUS: StringName = &"Heart"
+
+
+## 不分位置（過場中的鐘聲等）。bus 只有重現的心跳會換成 HEART_BUS。
+static func play_flat(parent: Node, sfx_name: String, volume_db: float = 0.0, bus: StringName = &"SFX") -> AudioStreamPlayer:
 	var s: AudioStream = stream(sfx_name)
 	if s == null or parent == null or not parent.is_inside_tree():
 		return null
 	var p := AudioStreamPlayer.new()
 	p.stream = s
-	p.bus = &"SFX"
+	p.bus = bus
 	p.volume_db = volume_db
 	p.finished.connect(p.queue_free)
 	parent.add_child(p)

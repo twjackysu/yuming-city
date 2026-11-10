@@ -63,6 +63,7 @@ var _prompt_shown: bool = false
 
 func _ready() -> void:
 	add_to_group("nine_breath_site")
+	add_to_group(RestoreMix.GROUP)
 	nb = NineBreath.new(object_id, memory_id)
 	nb.breath.connect(_on_breath)
 	nb.finished.connect(_on_finished)
@@ -135,6 +136,11 @@ func ring_visible() -> bool:
 ## 重現中（石拱立著、倒數中）。
 func is_counting() -> bool:
 	return nb.phase == NineBreath.Phase.RESTORED
+
+
+## 重現期間的混音（D-183）：倒數中就悶住其他聲音。
+func restore_mix_active() -> bool:
+	return is_counting()
 
 
 ## 還剩幾秒（心跳點亮著幾顆）。
@@ -217,7 +223,7 @@ func activate() -> bool:
 
 
 func _on_breath(i: int) -> void:
-	Sfx.play_flat(self, "heartbeat", -4.0 + float(i) * 0.4)
+	Sfx.play_flat(self, "heartbeat", -4.0 + float(i) * 0.4, Sfx.HEART_BUS)
 	var t := create_tween()
 	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW * 3.0, 0.06)
 	t.tween_property(_arch_mat, "shader_parameter/glow_energy", ARCH_GLOW, 0.6)

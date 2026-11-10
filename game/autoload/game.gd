@@ -71,6 +71,8 @@ var cutscene: CutsceneRunner
 var achievements: AchievementTracker
 ## 成就解鎖小卡（有 Steam 時不用）
 var achievement_toast: AchievementToast
+## 重現期間的混音（D-183）：輪詢 RestoreMix.GROUP，SFX 低通＋Music 壓低
+var restore_mix: RestoreMix
 ## 每隔多久再檢查一次成就（有些旗標直接寫進 state、沒經過 advance）
 const ACHIEVEMENT_POLL_SEC: float = 0.5
 var _achievement_poll: float = 0.0
@@ -88,6 +90,9 @@ func _ready() -> void:
 	achievement_toast = AchievementToast.new()
 	achievement_toast.blocked_check = is_player_locked
 	add_child(achievement_toast)
+	restore_mix = RestoreMix.new()
+	restore_mix.name = "RestoreMix"
+	add_child(restore_mix)
 	# 開發旗標（截圖、benchmark、直接進關卡）會跳著設旗標：成就只放在記憶體，不寫進玩家的檔案
 	var dev_run: bool = args.has("level") or args.has("benchmark") or args.has("screenshot") \
 		or args.has("dialogue") or args.has("cutscene")

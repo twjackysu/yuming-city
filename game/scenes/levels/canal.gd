@@ -362,6 +362,7 @@ func _ready() -> void:
 	hang_spot.position = HANG_SPOT
 	_init_story()
 	add_to_group("interact_prompts")
+	add_to_group(RestoreMix.GROUP)
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player != null:
 		_put(player, SPAWN, 0.0)
@@ -1222,6 +1223,11 @@ func noen_restoring() -> bool:
 	return not Game.is_player_locked() and Input.is_action_pressed("nine_breath")
 
 
+## 重現期間的混音（D-183）：牠醒著、諾恩按住重現（心跳變快）時，其他聲音悶下去。
+func restore_mix_active() -> bool:
+	return awake and noen_restoring()
+
+
 ## 醒著的送葬者：問 HeartTargets 現在聽起來最近的心跳 → 轉過去；是假心臟就走過去、走到旁邊停下來聽；
 ## 是重現中的諾恩就停下來轉向他（第一次提示「牠聽得到」）；走到閘道口 → 段落 3 完成。
 func _update_follow(player: PlayerController, delta: float) -> void:
@@ -1323,7 +1329,7 @@ func _update_heart() -> void:
 	if awake and noen_restoring():
 		if _t >= _noen_beat_at:
 			_noen_beat_at = _t + NOEN_RACE_SEC
-			Sfx.play_flat(self, "heartbeat", -7.0)
+			Sfx.play_flat(self, "heartbeat", -7.0, Sfx.HEART_BUS)
 	if _heart == null or not _heart.visible:
 		_heart_beat_i = -1
 		return
