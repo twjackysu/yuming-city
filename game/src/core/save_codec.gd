@@ -4,7 +4,7 @@ extends RefCounted
 ## 每次改格式：CURRENT_VERSION +1，並在 _migrate_step 加一段舊版 → 新版的轉換與測試。
 ## 寫檔先寫 .tmp 再改名，舊檔保留為 .bak，避免當機時毀掉存檔。
 
-const CURRENT_VERSION: int = 2
+const CURRENT_VERSION: int = 3
 
 enum Status { OK, NOT_FOUND, CORRUPT, TOO_NEW }
 
@@ -63,6 +63,19 @@ static func _migrate_step(from_version: int, data: Dictionary) -> Dictionary:
 			var st: Variant = data.get("state", null)
 			if st is Dictionary and not (st as Dictionary).has("guide"):
 				(st as Dictionary)["guide"] = {}
+		2:
+			# v2 → v3（第 66 輪，D-202）：新版劇情重寫的欄位。v2 以前一定是舊版（classic），
+			# 新欄位全空；memories_paid 照舊留著、不映射成新版任何資源。
+			var st3: Variant = data.get("state", null)
+			if st3 is Dictionary:
+				var sd: Dictionary = st3 as Dictionary
+				sd["mode"] = "classic"
+				for key: String in ["statuses", "grants"]:
+					if not sd.has(key):
+						sd[key] = []
+				for key: String in ["reversal", "items", "vitals"]:
+					if not sd.has(key):
+						sd[key] = {}
 	return data
 
 

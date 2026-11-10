@@ -1,0 +1,199 @@
+extends TestCase
+## 新版（劇情重寫）的狀態邏輯（D-202）：生命的三種變化、中毒開始／刷新／結束、反轉欄位、可攜藥劑。
+
+
+func _rules() -> StatusRules:
+	var r: StatusRules = StatusRules.load_default()
+	assert_true(r.errors.is_empty(), "狀態資料沒有錯：%s" % ", ".join(r.errors))
+	return r
+
+
+func _hurt(hp: float) -> Health:
+	var h := Health.new(100.0)
+	h.hp = hp
+	return h
+
+
+func test_health_keeps_damage_status_damage_and_heal_apart() -> void:
+	var h := _hurt(50.0)
+	var log: Array[String] = []
+	h.damaged.connect(func(_a: float, _i: Dictionary) -> void: log.append("damaged"))
+	h.status_damaged.connect(func(_a: float, _i: Dictionary) -> void: log.append("status"))
+	h.healed.connect(func(_a: float, _i: Dictionary) -> void: log.append("healed"))
+	h.invulnerable_check = func() -> bool: return true
+	assert_false(h.apply_damage(10.0), "閃避無敵擋得住直接傷害")
+	assert_eq(h.apply_status_damage(5.0), 5.0, "狀態傷害不被閃避擋")
+	assert_eq(h.heal(20.0), 20.0)
+	assert_eq(h.heal(100.0), 35.0, "治療不超過上限，回傳實際補到的量")
+	assert_eq(h.heal(5.0), 0.0, "滿血再補是 0")
+	assert_eq(log, ["status", "healed", "healed"], "狀態傷害、治療各有自己的訊號，不發 damaged")
+	assert_false(h.apply_damage(-10.0), "負數傷害不會變成治療")
+	assert_eq(h.hp, 100.0)
+
+
+func test_heal_does_not_revive() -> void:
+	var h := _hurt(0.0)
+	assert_eq(h.heal(30.0), 0.0, "死了不能補")
+	assert_true(h.is_dead())
+
+
+func test_poison_without_reversal_hurts() -> void:
+	var fx := StatusEffects.new(_rules(), null)
+	var h := _hurt(50.0)
+	assert_eq(fx.apply("poison", 6.0, 4.0, "barrel_mist"), "start")
+	fx.tick(1.0, h)
+	assert_true(absf(h.hp - 44.0) < 0.001, "沒有反轉（NPC）照常掉血")
+
+
+func test_first_poison_awakens_reversal_and_heals_from_first_frame() -> void:
+	var rev := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), rev)
+	var awakened: Array[String] = []
+	rev.awakened.connect(func(id: String) -> void: awakened.append(id))
+	var h := _hurt(55.0)
+	var took_damage: Array[bool] = [false]
+	h.status_damaged.connect(func(_a: float, _i: Dictionary) -> void: took_damage[0] = true)
+	fx.apply_source("barrel_mist")
+	assert_eq(awakened, ["poison"], "第一次中毒自動覺醒")
+	assert_true(rev.is_reversed("poison"))
+	assert_eq(rev.equipped[0], "poison", "裝進第一格")
+	assert_eq(rev.free_slots(), 1, "第二格空著")
+	fx.tick(0.5, h)
+	assert_true(absf(h.hp - 58.0) < 0.001, "6／秒 × 0.5 秒＝回 3")
+	assert_false(took_damage[0], "反轉發生在扣血之前：不會先扣一次再補回")
+	fx.apply_source("barrel_mist")
+	assert_eq(awakened.size(), 1, "覺醒只發生一次")
+
+
+func test_poison_refresh_does_not_stack() -> void:
+	var fx := StatusEffects.new(_rules(), null)
+	var events: Array[String] = []
+	fx.changed.connect(func(_id: String, e: String) -> void: events.append(e))
+	fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
+	assert_eq(fx.apply("poison", 3.0, 20.0, "mist_serpent_poison"), "refresh")
+	assert_eq(fx.rate("poison"), 3.0, "同強度不疊加")
+	assert_eq(fx.remaining("poison"), 20.0, "時間取較長者，不相加")
+	fx.apply("poison", 8.0, 3.0, "guardian_spray")
+	assert_eq(fx.rate("poison"), 8.0, "比較強的來源換掉強度")
+	assert_eq(fx.source_of("poison"), "guardian_spray")
+	assert_eq(fx.remaining("poison"), 20.0, "時間不會被比較短的縮短")
+	fx.apply("poison", 1.0, 25.0, "x")
+	assert_eq(fx.rate("poison"), 8.0, "比較弱的不會降強度")
+	for i: int in 10:
+		fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
+	assert_true(fx.remaining("poison") <= 30.0, "最長 30 秒：喝一百瓶也不會永久")
+	fx.apply("poison", 3.0, 999.0, "x")
+	assert_eq(fx.remaining("poison"), 30.0)
+	assert_eq(fx.ids().size(), 1, "同一種只有一份")
+	assert_eq(events[0], "start")
+
+
+func test_poison_ends_and_regen_stops() -> void:
+	var rev := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), rev)
+	var events: Array[String] = []
+	fx.changed.connect(func(_id: String, e: String) -> void: events.append(e))
+	var h := _hurt(50.0)
+	fx.apply_source("barrel_mist")  # 6／秒、4 秒
+	for i: int in 50:
+		fx.tick(0.1, h)
+	assert_false(fx.has("poison"), "4 秒後結束")
+	assert_eq(events, ["start", "end"])
+	assert_true(absf(h.hp - 74.0) < 0.01, "只回 4 秒份（24），之後停：%s" % h.hp)
+	fx.tick(1.0, h)
+	assert_true(absf(h.hp - 74.0) < 0.01, "結束後不再回血")
+
+
+func test_reversed_regen_is_capped() -> void:
+	var rev := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), rev)
+	var h := _hurt(10.0)
+	fx.apply("poison", 50.0, 2.0, "boss")
+	fx.tick(1.0, h)
+	assert_true(absf(h.hp - 18.0) < 0.001, "反轉回血最多 8／秒（特殊敵技再強也一樣）")
+
+
+func test_regen_cannot_outheal_standing_in_combos() -> void:
+	# 守衛噴毒 8／秒；橫掃 28、約 2 秒一輪（tuning.json）＝站著吃會輸（D-202）
+	var rev := ReversalSlots.new()
+	rev.on_status_applied("poison")
+	var fx := StatusEffects.new(_rules(), rev)
+	var h := _hurt(100.0)
+	var sweep: float = CombatTuning.num("undertaker.moves.sweep.damage", 28.0)
+	for round_i: int in 3:
+		fx.apply_source("guardian_spray")
+		h.apply_damage(sweep)
+		fx.tick(2.0, h)
+	assert_true(h.hp < 100.0 - 20.0, "三輪站著吃還是一路往下掉：%s" % h.hp)
+
+
+func test_tick_zero_is_paused() -> void:
+	var fx := StatusEffects.new(_rules(), null)
+	var h := _hurt(50.0)
+	fx.apply("poison", 6.0, 4.0)
+	fx.tick(0.0, h)
+	assert_eq(fx.remaining("poison"), 4.0, "暫停（沒有推進時間）不計時")
+	assert_eq(h.hp, 50.0)
+
+
+func test_unknown_status_and_bad_values_ignored() -> void:
+	var fx := StatusEffects.new(_rules(), ReversalSlots.new())
+	assert_eq(fx.apply("time_stop", 1.0, 1.0), "ignored", "還沒定義的狀態不上身")
+	assert_eq(fx.apply("poison", 0.0, 4.0), "ignored")
+	assert_eq(fx.apply("poison", 3.0, -1.0), "ignored")
+	assert_eq(fx.apply_source("nope"), "ignored")
+	assert_false(fx.reversal.awakened_once, "沒有真的中毒就不會覺醒")
+
+
+func test_status_save_round_trip_keeps_negative_effects() -> void:
+	var rev := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), rev)
+	fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
+	fx.tick(5.0, null)
+	var again := StatusEffects.new(_rules(), ReversalSlots.from_dict(rev.to_dict()))
+	again.load_array(fx.to_array())
+	assert_eq(again.remaining("poison"), 15.0, "讀檔照原樣：不清掉、不補滿時間")
+	assert_eq(again.source_of("poison"), "mist_serpent_poison")
+	assert_true(again.is_reversed("poison"))
+	again.load_array([{"id": "poison", "rate": 3.0, "remaining": 999.0}, {"id": "ghost", "rate": 1, "remaining": 5}, "junk"])
+	assert_eq(again.remaining("poison"), 30.0, "壞值夾到上限")
+	assert_eq(again.ids().size(), 1, "不認得的略過")
+
+
+func test_reversal_slots_rules() -> void:
+	var rev := ReversalSlots.new()
+	assert_eq(rev.equipped.size(), 2, "開場兩格")
+	assert_false(rev.equip("poison"), "沒解鎖不能裝")
+	assert_false(rev.on_status_applied("paralysis"), "只有中毒會自動覺醒")
+	assert_true(rev.on_status_applied("poison"))
+	assert_false(rev.equip("poison"), "同一種不能裝兩格")
+	var loaded: ReversalSlots = ReversalSlots.from_dict({"slots": 2, "unlocked": ["poison"], "equipped": ["poison", "poison", "x"], "awakened_once": true})
+	assert_eq(Array(loaded.equipped), ["poison", ""], "壞檔：重複、多出來的、沒解鎖的都不裝")
+	assert_true(loaded.awakened_once)
+
+
+func test_potion_belt_grant_once_and_use() -> void:
+	var state := GameState.new()
+	var belt := PotionBelt.new(state, _rules())
+	var rev := ReversalSlots.new()
+	rev.on_status_applied("poison")
+	var fx := StatusEffects.new(_rules(), rev)
+	assert_true(belt.grant_once("rb.guardian_crate", "mist_serpent_poison", 2))
+	assert_false(belt.grant_once("rb.guardian_crate", "mist_serpent_poison", 2), "同一個藥箱只給一次")
+	assert_eq(belt.count("mist_serpent_poison"), 2)
+	var full := Health.new(100.0)
+	assert_eq(belt.use("mist_serpent_poison", fx, full), "confirm_full", "滿血先問，不直接喝")
+	assert_eq(belt.count("mist_serpent_poison"), 2, "問的時候沒扣")
+	assert_false(fx.has("poison"))
+	var hurt := _hurt(60.0)
+	assert_eq(belt.use("mist_serpent_poison", fx, hurt), "used")
+	assert_eq(belt.count("mist_serpent_poison"), 1)
+	assert_eq(fx.remaining("poison"), 20.0, "霧蛇毒劑：中毒 20 秒")
+	fx.tick(1.0, hurt)
+	assert_true(absf(hurt.hp - 63.0) < 0.001, "喝下去確實回血（3／秒）")
+	assert_eq(belt.use("mist_serpent_poison", fx, full, true), "used", "滿血選「還是要喝」可以喝")
+	assert_eq(belt.use("mist_serpent_poison", fx, hurt), "none_left")
+	assert_eq(belt.use("not_a_potion", fx, hurt), "unknown")
+	var reloaded: GameState = SaveCodec.decode(SaveCodec.encode(state))["state"]
+	assert_eq(PotionBelt.new(reloaded, _rules()).count("mist_serpent_poison"), 0, "數量跟著存檔")
+	assert_false(PotionBelt.new(reloaded, _rules()).grant_once("rb.guardian_crate", "mist_serpent_poison", 2), "讀檔後也不會重複領")

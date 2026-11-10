@@ -87,3 +87,40 @@ func test_file_write_and_backup_recovery() -> void:
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	assert_eq(r.get("recovered_from_backup", false), true)
 	assert_eq((r["state"] as GameState).checkpoint, "after_bell")
+
+
+func test_migrate_v2_to_v3_is_classic_and_does_not_map_memories() -> void:
+	var v2: Dictionary = {"version": 2, "saved_at": "2026-11-09T00:00:00", "state": {
+		"chapter": "ch3", "checkpoint": "ch3_corner", "flags": {"ch3.done": true},
+		"quests": {"ch3_main": "corner"}, "memories_paid": ["arch_father_last_talk"], "guide": {}}}
+	var r: Dictionary = SaveCodec.decode(JSON.stringify(v2))
+	assert_eq(r["status"], SaveCodec.Status.OK)
+	assert_eq(r["from_version"], 2)
+	var s: GameState = r["state"]
+	assert_eq(s.mode, "classic", "v2 以前一定是舊版")
+	assert_true(s.has_paid_memory("arch_father_last_talk"), "舊版的記憶代價照舊留著")
+	assert_true(s.items.is_empty() and s.statuses.is_empty() and s.grants.is_empty(), "記憶不映射成新版任何資源")
+	assert_true(s.reversal.is_empty() and s.vitals.is_empty())
+	assert_eq(s.quests.get("ch3_main"), "corner", "舊進度不動")
+
+
+func test_v3_reboot_fields_round_trip() -> void:
+	var s := GameState.new()
+	s.mode = "reboot"
+	s.statuses = [{"id": "poison", "rate": 3.0, "remaining": 12.5, "source": "mist_serpent_poison"}]
+	s.reversal = {"slots": 2, "unlocked": ["poison"], "equipped": ["poison", ""], "awakened_once": true}
+	s.items["mist_serpent_poison"] = 1
+	assert_true(s.grant_once("rb.guardian_crate"))
+	s.vitals["hp"] = 55.0
+	var back: GameState = SaveCodec.decode(SaveCodec.encode(s))["state"]
+	assert_eq(back.mode, "reboot")
+	assert_eq(float((back.statuses[0] as Dictionary)["remaining"]), 12.5, "負面狀態照原樣存，不清掉")
+	assert_eq(int(back.items["mist_serpent_poison"]), 1)
+	assert_false(back.grant_once("rb.guardian_crate"))
+	assert_eq(float(back.vitals["hp"]), 55.0, "生命照原樣，不補滿")
+	assert_true(ReversalSlots.from_dict(back.reversal).is_reversed("poison"))
+
+
+func test_reboot_saves_live_in_their_own_folder() -> void:
+	assert_ne(GameSession.REBOOT_SAVE_DIR, GameSession.DEFAULT_SAVE_DIR, "新版存檔不會寫到舊版的資料夾")
+	assert_false(GameSession.REBOOT_SAVE_DIR.begins_with(GameSession.DEFAULT_SAVE_DIR + "/"), "也不在舊版資料夾裡面")

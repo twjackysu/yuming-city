@@ -2,8 +2,14 @@ class_name Health
 extends Node
 ## 生命值元件：掛在角色或木樁底下。受傷回傳是否真的扣到（無敵、已死亡時不扣）。
 ## invulnerable_check 由擁有者提供（例如玩家閃避的無敵時間），避免元件反過來讀角色。
+## 生命的三種變化分開（D-202，新版反轉）：直接傷害 apply_damage、狀態傷害 apply_status_damage、治療 heal。
+## 不用負數傷害代表治療。
 
 signal damaged(amount: float, info: Dictionary)
+## 狀態造成的持續傷害（中毒等）：不觸發受擊演出，所以跟 damaged 分開
+signal status_damaged(amount: float, info: Dictionary)
+## 治療（含中毒被反轉成的回血）：amount 是實際補到的量
+signal healed(amount: float, info: Dictionary)
 signal died
 signal revived
 
@@ -36,6 +42,34 @@ func apply_damage(amount: float, info: Dictionary = {}) -> bool:
 	if is_dead():
 		died.emit()
 	return true
+
+
+## 狀態傷害（中毒每幀扣的量）：不被閃避無敵擋、不發 damaged。回傳實際扣到的量。
+func apply_status_damage(amount: float, info: Dictionary = {}) -> float:
+	if is_dead() or amount <= 0.0:
+		return 0.0
+	var dealt: float = minf(amount, hp)
+	hp -= dealt
+	status_damaged.emit(dealt, info)
+	if is_dead():
+		died.emit()
+	return dealt
+
+
+## 治療：死了不能補、不超過上限。回傳實際補到的量（滿血時是 0，不發訊號）。
+func heal(amount: float, info: Dictionary = {}) -> float:
+	if is_dead() or amount <= 0.0:
+		return 0.0
+	var gained: float = minf(amount, max_hp - hp)
+	if gained <= 0.0:
+		return 0.0
+	hp += gained
+	healed.emit(gained, info)
+	return gained
+
+
+func is_full() -> bool:
+	return hp >= max_hp
 
 
 func reset() -> void:

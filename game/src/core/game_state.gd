@@ -15,6 +15,20 @@ var memories_paid: PackedStringArray = []
 ## 攻略筆記（GuideNotes，存檔 v2 起）：id -> {"unsure": bool, "result": "" | "wrong" | "confirmed"}
 var guide: Dictionary = {}
 
+## ── 存檔 v3 起（新版劇情重寫，D-202）。舊版存檔讀進來是 "classic"、下面全空；memories_paid 不映射成任何新資源。
+## "classic"＝舊版（切片、第 1～3 章）；"reboot"＝新版前十分鐘（存在另一個資料夾，GameSession.REBOOT_SAVE_DIR）
+var mode: String = "classic"
+## 身上還在的狀態（StatusEffects.to_array()），檢查點存的照原樣恢復
+var statuses: Array = []
+## 反轉欄位（ReversalSlots.to_dict()）；空＝還沒覺醒、兩個空格
+var reversal: Dictionary = {}
+## 道具數量：item_id -> int
+var items: Dictionary = {}
+## 已經發放過的一次性東西（藥箱、欠薪），讀檔重試不重複領
+var grants: PackedStringArray = []
+## 諾恩的生命（檢查點存檔記下）；沒有 "hp"＝滿血
+var vitals: Dictionary = {}
+
 
 func set_flag(key: String, value: Variant) -> void:
 	flags[key] = value
@@ -36,6 +50,14 @@ func pay_memory(memory_id: String) -> bool:
 	return true
 
 
+## 一次性發放：第一次回傳 true 並記下，之後一律 false
+func grant_once(grant_id: String) -> bool:
+	if grants.has(grant_id):
+		return false
+	grants.append(grant_id)
+	return true
+
+
 func to_dict() -> Dictionary:
 	return {
 		"chapter": chapter,
@@ -45,6 +67,12 @@ func to_dict() -> Dictionary:
 		"quests": quests.duplicate(true),
 		"memories_paid": Array(memories_paid),
 		"guide": guide.duplicate(true),
+		"mode": mode,
+		"statuses": statuses.duplicate(true),
+		"reversal": reversal.duplicate(true),
+		"items": items.duplicate(true),
+		"grants": Array(grants),
+		"vitals": vitals.duplicate(true),
 	}
 
 
@@ -66,4 +94,22 @@ static func from_dict(d: Dictionary) -> GameState:
 	if m is Array:
 		for item: Variant in (m as Array):
 			s.memories_paid.append(str(item))
+	s.mode = str(d.get("mode", "classic"))
+	var st: Variant = d.get("statuses", [])
+	if st is Array:
+		s.statuses = (st as Array).duplicate(true)
+	var rv: Variant = d.get("reversal", {})
+	if rv is Dictionary:
+		s.reversal = (rv as Dictionary).duplicate(true)
+	var it: Variant = d.get("items", {})
+	if it is Dictionary:
+		for k: Variant in (it as Dictionary):
+			s.items[str(k)] = int((it as Dictionary)[k])
+	var gr: Variant = d.get("grants", [])
+	if gr is Array:
+		for g_id: Variant in (gr as Array):
+			s.grants.append(str(g_id))
+	var vt: Variant = d.get("vitals", {})
+	if vt is Dictionary:
+		s.vitals = (vt as Dictionary).duplicate(true)
 	return s
