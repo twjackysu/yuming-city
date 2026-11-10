@@ -312,6 +312,11 @@ func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
 	assert_false(tavern.has_node("WallE"), "%s 東牆拆成四塊（中間是窗洞）" % tag)
 	var glass: CSGBox3D = tavern.get_node("Window") as CSGBox3D
 	assert_eq(glass.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "%s 窗玻璃不擋光" % tag)
+	# 結霜玻璃（D-186）：隔著霜看得到模糊的對街；入夜切到夜景（對街一扇點著燈的窗）
+	var glass_mat: ShaderMaterial = glass.material as ShaderMaterial
+	assert_true(glass_mat != null and glass_mat.shader.resource_path == str(tavern.get("FROST_WINDOW_SHADER")), "%s 窗是結霜玻璃" % tag)
+	if glass_mat != null:
+		assert_eq(float(glass_mat.get_shader_parameter("noon")), 0.0 if night else 1.0, "%s 窗外是%s" % [tag, "夜景" if night else "白天"])
 	var beam: SpotLight3D = tavern.get_node_or_null("SunBeam") as SpotLight3D
 	assert_not_null(beam, "%s 窗外的光束" % tag)
 	if beam != null:

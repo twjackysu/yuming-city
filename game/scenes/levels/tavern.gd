@@ -38,6 +38,7 @@ const DOOR_WET: Vector4 = Vector4(0.0, 4.4, 1.7, 0.85)
 ## 東牆的窗：玻璃中心、玻璃大小（高、寬）
 const WINDOW_CENTER: Vector3 = Vector3(6.86, 1.7, -1.0)
 const WINDOW_SIZE: Vector2 = Vector2(1.1, 1.6)
+const FROST_WINDOW_SHADER: String = "res://src/world/frost_window.gdshader"
 ## 中午從窗外斜照進來的光束（D-177）：東北方、窗外 SUN_DISTANCE 的聚光燈（放遠＝光線接近平行，像太陽），穿過窗洞
 ## （東牆拆成窗的上下左右四塊）、從吧台南端旁邊斜斜落到地圖桌那一帶（SUN_TARGET）；窗櫺的十字影子落在光斑裡。入夜換成很淡的藍。
 const SUN_TARGET: Vector3 = Vector3(3.4, 0.0, 1.3)
@@ -61,7 +62,7 @@ var _leaving: bool = false
 var _hearth_light: OmniLight3D
 var _window_light: OmniLight3D
 var _sun_beam: SpotLight3D
-var _window_mat: StandardMaterial3D
+var _window_mat: ShaderMaterial
 var _look := InteriorLook.new()
 var _candle_light: OmniLight3D
 var _candle_flame: MeshInstance3D
@@ -245,11 +246,9 @@ func _apply_time_of_day() -> void:
 		hearth_sound.volume_db = HEARTH_DB_NIGHT if night else HEARTH_DB_NOON
 	if wind_sound != null:
 		wind_sound.volume_db = WIND_INDOOR_DB_NIGHT if night else WIND_INDOOR_DB_NOON
-	# 窗玻璃：中午是外面的雪光（自己發亮），入夜只剩一點暗藍
+	# 窗玻璃（D-186）：中午是霜後面亮亮的陰天與雪地，入夜只剩暗藍＋對街一扇點著燈的窗
 	if _window_mat != null:
-		_window_mat.albedo_color = Color(0.06, 0.08, 0.13) if night else Color(0.75, 0.82, 0.95)
-		_window_mat.emission = Color(0.05, 0.07, 0.14) if night else Color(0.8, 0.86, 1.0)
-		_window_mat.emission_energy_multiplier = 0.4 if night else 1.6
+		_window_mat.set_shader_parameter("noon", 0.0 if night else 1.0)
 	# 晚餐桌上的蠟燭：入夜才點
 	if _candle_light != null:
 		_candle_light.visible = night
@@ -378,9 +377,11 @@ func _build_room() -> void:
 	for i: int in 4:
 		_box("Beam%d" % i, Vector3(w * 2.0, 0.22, 0.26), Vector3(0, WALL_H - 0.15, -3.6 + i * 2.4), BEAM, false, timber_mat())
 	# 東牆的窗（中午的光從這裡進來）
-	var window := _box("Window", Vector3(0.06, WINDOW_SIZE.x, WINDOW_SIZE.y), WINDOW_CENTER, Color(0.75, 0.82, 0.95), false)
-	_window_mat = window.material as StandardMaterial3D
-	_window_mat.emission_enabled = true
+	# 結霜玻璃（D-186）：隔著霜看得到模糊的對街（雪地、對面房子、積雪的屋頂；入夜對面的窗點著燈）
+	_window_mat = ShaderMaterial.new()
+	_window_mat.shader = load(FROST_WINDOW_SHADER) as Shader
+	_window_mat.set_shader_parameter("pane_size", Vector2(WINDOW_SIZE.y, WINDOW_SIZE.x))
+	var window := _box("Window", Vector3(0.06, WINDOW_SIZE.x, WINDOW_SIZE.y), WINDOW_CENTER, Color.WHITE, false, _window_mat)
 	# 玻璃不擋光：窗外的光束穿過去，只有窗櫺投影子
 	window.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_build_window_frame()
