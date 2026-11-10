@@ -414,7 +414,7 @@ func use_potion(confirmed: bool = false) -> String:
 	var result: String = PotionBelt.new(Game.session.state).use(PORTABLE_ITEM, status_effects, health, confirmed)
 	match result:
 		"used":
-			Sfx.play_at(self, "ui_tick", global_position + Vector3.UP, -6.0)
+			Sfx.play_at(self, "glass_clink", global_position + Vector3.UP * 1.3, -7.0)
 			Game.session.set_flag("rb.potion_tried", true)
 		"confirm_full":
 			potion_needs_confirm.emit(PORTABLE_ITEM)

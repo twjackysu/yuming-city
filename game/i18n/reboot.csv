@@ -22,6 +22,7 @@ RB_ITEM_MIST_SERPENT_DESC,Effect: Poisoned for 20 seconds. Label: NOT FOR DRINKI
 RB_POTION_FULL_ASK,"You're at full health, so you won't see any effect. Drink it anyway?",現在滿血，看不出效果。還是要喝嗎？
 RB_POTION_DRINK,Drink,喝
 RB_POTION_KEEP,Keep it for now,先收著
+RB_CRATE_HINT,Press {key} — take the bottles,按 {key}　拿走藥瓶
 RB_TO_BE_CONTINUED,To be continued: the underground market,待續：地下市場
 DLG_RB_OPEN_001,Open the gate!,你把門打開！
 DLG_RB_OPEN_002,The monster's after the cargo.,怪物追的是貨。

@@ -908,6 +908,25 @@ def poison_hiss(seconds=0.9, seed=107, charge=False):
     return out
 
 
+def glass_clink(seconds=0.42, seed=113):
+    """玻璃瓶互相碰到（D-209，藥箱）：三下很短的高音「叮」（玻璃的非諧波泛音，衰減快），最後一下最輕。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    out = [0.0] * n
+    tick = onepole_lp(hp(noise(int(0.003 * RATE), rng), 2500), 9000)
+    for at, f, gain in [(0.0, 3320.0, 1.0), (0.07, 4150.0, 0.7), (0.13, 2890.0, 0.4)]:
+        start = int(at * RATE)
+        for j in range(int(0.26 * RATE)):
+            if start + j >= n:
+                break
+            t = j / RATE
+            v = math.sin(2 * math.pi * f * t) + 0.5 * math.sin(2 * math.pi * f * 2.32 * t) + 0.25 * math.sin(2 * math.pi * f * 3.9 * t)
+            c = tick[j] * 0.6 if j < len(tick) else 0.0
+            out[start + j] += gain * (0.3 * v * math.exp(-t * 42) * min(1.0, t / 0.0008) + c)
+    peak = max(abs(v) for v in out) or 1.0
+    return [v / peak * 0.6 for v in out]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -946,6 +965,7 @@ def main():
         write("stair_ambience", stair_ambience()),
         write("poison_charge", poison_hiss(1.1, seed=107, charge=True)),
         write("poison_hiss", poison_hiss(0.9, seed=109)),
+        write("glass_clink", glass_clink()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

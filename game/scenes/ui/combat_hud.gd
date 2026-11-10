@@ -30,6 +30,8 @@ var sheila_down: bool = false
 var in_combat: bool = false
 ## 這一塊（生命條）看不看得到：戰鬥中，或諾恩身上有狀態（新版：中毒回血時要看得到生命往上爬，D-205）
 var bars_shown: bool = false
+## Hud 設定：不在戰鬥、身上也沒狀態時照樣顯示生命條（新版剛撿到藥、還沒決定喝不喝的那一段，D-209）
+var force_bars: bool = false
 ## cmd → 冷卻比例 0..1（0＝可用）
 var cooldowns: Dictionary = {}
 
@@ -106,7 +108,7 @@ func _process(delta: float) -> void:
 ## 從場景讀數值（測試直接呼叫）。
 func refresh(player: PlayerController, sheila: Sheila) -> void:
 	in_combat = player != null and _enemy_near(player.global_position)
-	bars_shown = in_combat or (player != null and player.status_effects != null and not player.status_effects.ids().is_empty())
+	bars_shown = in_combat or force_bars or (player != null and player.status_effects != null and not player.status_effects.ids().is_empty())
 	noen_ratio = player.health.ratio() if player != null else 0.0
 	sheila_present = sheila != null
 	if sheila != null:

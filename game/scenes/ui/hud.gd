@@ -28,6 +28,10 @@ var restore: RestorePrompt
 var interact: InteractPrompt
 ## 新版的狀態圖示（左下、諾恩生命條上方，D-202）；舊版沒有狀態，永遠是空的
 var status: StatusHud
+## 新版：可攜藥劑的數量（生命條右上方）與滿血時的確認框（D-209）
+var potion: PotionHud
+var potion_confirm: PotionConfirm
+var _potion_player: PlayerController
 var _banner_tween: Tween
 ## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」，D-204）
 var _center: VBoxContainer
@@ -151,6 +155,11 @@ func _build() -> void:
 	interact.avoid = restore
 	status = StatusHud.new()
 	add_child(status)
+	potion = PotionHud.new()
+	add_child(potion)
+	potion_confirm = PotionConfirm.new()
+	add_child(potion_confirm)
+	potion_confirm.decided.connect(_on_potion_decided)
 
 
 func _process(delta: float) -> void:
@@ -160,8 +169,36 @@ func _process(delta: float) -> void:
 	var pc: PlayerController = player as PlayerController
 	status.refresh(pc.status_effects if pc != null else null)
 	# 戰鬥 HUD 的諾恩名字在 size.y-174；狀態一列 34，往上長
-	status.position = Vector2(56.0, get_viewport().get_visible_rect().size.y - 182.0 - status.custom_minimum_size.y)
+	var view_h: float = get_viewport().get_visible_rect().size.y
+	status.position = Vector2(56.0, view_h - 182.0 - status.custom_minimum_size.y)
+	_refresh_potion(pc, view_h, delta)
 	guide.refresh(get_parent(), player, get_viewport().get_camera_3d(), combat.in_combat, delta)
+
+
+## 可攜藥劑（新版）：數量一格在諾恩生命條的右上方；釘住時生命條也跟著亮（看得到現在滿不滿血）。
+func _refresh_potion(pc: PlayerController, view_h: float, delta: float) -> void:
+	var reboot: bool = Game.session != null and Game.session.is_reboot()
+	var count: int = int(Game.session.state.items.get(PlayerController.PORTABLE_ITEM, 0)) if reboot else 0
+	combat.force_bars = potion.pinned and count > 0
+	potion.refresh(count, combat.bars_shown, delta)
+	potion.position = Vector2(56.0 + CombatHud.BAR_W - PotionHud.WIDTH, view_h - 150.0 - 34.0)
+	if pc != _potion_player:
+		_potion_player = pc
+		if pc != null and not pc.potion_needs_confirm.is_connected(_on_potion_needs_confirm):
+			pc.potion_needs_confirm.connect(_on_potion_needs_confirm)
+
+
+func _on_potion_needs_confirm(_item_id: String) -> void:
+	potion_confirm.open()
+
+
+## 確認框選完：喝＝帶 confirmed 再喝一次；先收著＝記下來（試用毒劑那一段可以這樣完成，09 第 5 節）
+func _on_potion_decided(drink: bool) -> void:
+	if drink:
+		if _potion_player != null and is_instance_valid(_potion_player):
+			_potion_player.use_potion(true)
+	elif Game.session != null and Game.session.is_reboot():
+		Game.session.set_flag("rb.potion_kept", true)
 
 
 func _set_objective(key: String, animate: bool) -> void:
