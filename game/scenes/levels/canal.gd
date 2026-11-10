@@ -309,14 +309,14 @@ const LET_GO_LINE: String = "DLG_CH3_CORNER_012"
 const LET_GO_GAP: float = 1.05
 ## 換班的鐘聲（對話裡那一句出現時，遠遠的一聲）
 const SHIFT_BELL_LINE: String = "DLG_CH3_CORNER_011"
-## 講完 → 幾秒後結尾卡（「第一部　死去的攻略」「前半　完」）→ 回標題
+## 講完 → 幾秒後結尾卡（「第一部　死去的攻略」「前半　完」）→「感謝試玩」一頁（D-176）→ 回標題
 const END_CARD_DELAY: float = 2.4
 const END_CARD_SCALE: float = 1.5
 ## 彌夏交完圖就先走了：往南走過牆角就不見
 const MISHA_EXIT: Vector3 = Vector3(5.0, 0.0, Z_SOUTH - 1.0)
 var misha_gone: bool = false
 var end_card_shown: bool = false
-## 結尾卡播完要做什麼（空的＝回標題；測試會換掉，不要真的回標題）
+## 結尾卡＋「感謝試玩」都關掉之後要做什麼（空的＝回標題；測試會換掉，不要真的回標題）
 var end_card_done: Callable = Callable()
 var _end_card_wait: float = -1.0
 var _corner_node: Node3D
@@ -545,8 +545,8 @@ func _ready() -> void:
 		_dev_hold_edge = true
 		talk_misha_map.call_deferred()
 	# 截圖用：`--canal-at=corner` 段落 7：轉角，她抓住領口那一句（鏡頭換成對話的固定鏡頭）；
-	# `--canal-at=end` 講完之後的結尾卡（停在字完整出現）
-	if at in ["corner", "end"] and player != null:
+	# `--canal-at=end` 講完之後的結尾卡（停在字完整出現）；`--canal-at=thanks` 結尾卡之後的「感謝試玩」（D-176）
+	if at in ["corner", "end", "thanks"] and player != null:
 		dev_start_cart(Game.session)
 		for flag: String in ["ch3.cart_planned", "ch3.cart_dropped", "ch3.clapper_taken", "ch3.map_accepted", "ch3.misha_map_given"]:
 			Game.session.set_flag(flag, true)
@@ -558,6 +558,9 @@ func _ready() -> void:
 		_dev_hold_edge = true
 		if at == "corner":
 			_dev_corner_to_collar.call_deferred()
+		elif at == "thanks":
+			end_card_done = func() -> void: pass
+			_dev_thanks.call_deferred()
 		else:
 			end_card_done = func() -> void: pass
 			_dev_end_card.call_deferred()
@@ -1950,14 +1953,26 @@ func _on_corner_end() -> void:
 	_end_card_wait = END_CARD_DELAY
 
 
-## 結尾卡（重用章節卡）：「第一部　死去的攻略」「前半　完」→ 回標題（end_card_done 測試會換掉）。
+## 結尾卡（重用章節卡）：「第一部　死去的攻略」「前半　完」→「感謝試玩」一頁 → 回標題（end_card_done 測試會換掉）。
 func play_end_card() -> ChapterCard:
 	_end_card_wait = -1.0
 	if end_card_shown:
 		return get_node_or_null("ChapterCard") as ChapterCard
 	end_card_shown = true
+	return ChapterCard.play(self, "PART1_END_NUMBER", "PART1_END_TITLE", show_thanks, END_CARD_SCALE)
+
+
+## 「感謝試玩」一頁（D-176）：結尾卡播完（或跳過）之後蓋在全黑上；關掉 → end_card_done（空的＝回標題）。
+## 諾恩停住（黑幕底下不會被按鍵推著走、不會跳出互動提示）。
+func show_thanks() -> ThanksPage:
+	var old: ThanksPage = get_node_or_null("ThanksPage") as ThanksPage
+	if old != null:
+		return old
+	var player: Node = get_node_or_null("Player")
+	if player != null:
+		player.process_mode = Node.PROCESS_MODE_DISABLED
 	var done: Callable = end_card_done if end_card_done.is_valid() else Game.back_to_title
-	return ChapterCard.play(self, "PART1_END_NUMBER", "PART1_END_TITLE", done, END_CARD_SCALE)
+	return ThanksPage.show_on(self, Game.session.state, done)
 
 
 ## 截圖用：轉角的對話推到她抓住領口那一句。
@@ -1982,6 +1997,16 @@ func _dev_end_card() -> void:
 	var card: ChapterCard = play_end_card()
 	if card != null:
 		card.hold_still()
+
+
+## 截圖用：結尾卡直接播完，停在「感謝試玩」完全淡入。
+func _dev_thanks() -> void:
+	var card: ChapterCard = play_end_card()
+	if card != null:
+		card.finish()
+	var page: ThanksPage = get_node_or_null("ThanksPage") as ThanksPage
+	if page != null:
+		page.hold_still()
 
 
 ## 畫面黑一下再亮回來（摔進泥裡的那一下）。

@@ -1376,7 +1376,25 @@ func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
 	if card != null:
 		assert_eq(card.title_text(), str(TranslationServer.translate("PART1_END_TITLE")), "結尾卡：前半　完")
 		card.finish()
-	assert_true(ended[0], "結尾卡播完 → 回標題")
+	# 結尾卡之後：「感謝試玩」一頁（D-176）；按鈕剛出現時不能按，關掉才回標題
+	var page: ThanksPage = canal.get_node_or_null("ThanksPage") as ThanksPage
+	assert_not_null(page, "結尾卡播完 → 感謝試玩")
+	assert_false(ended[0], "感謝試玩還沒關：不會直接回標題")
+	if page != null:
+		assert_eq(page.layer, ThanksPage.LAYER, "感謝試玩蓋在結尾卡上面")
+		assert_true(page.back_button.disabled, "剛出現時按鈕不能按（連按跳過結尾卡不會順手跳掉這頁）")
+		assert_eq((canal.get_node("Player") as Node).process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
+		var rescued: int = clampi(int(s.state.get_flag("slice.rescued_count", 0)), 0, 4)
+		assert_eq(page.value_text("THANKS_RUN_RESCUED"), "%d / 4" % rescued, "你的這一趟：北街救出幾個人")
+		assert_eq(page.value_text("THANKS_RUN_DEAD"), str(DeadListBoard.dead_count(s.state)), "你的這一趟：死者跟名單一樣")
+		assert_eq(page.value_text("THANKS_RUN_MEMORIES"), str(s.state.memories_paid.size()), "你的這一趟：忘掉幾段記憶")
+		assert_true(int(page.value_text("THANKS_RUN_GUIDE")) >= 1, "你的這一趟：至少一條攻略筆記被推翻")
+		page.elapsed = ThanksPage.INPUT_DELAY
+		await tree.process_frame
+		assert_false(page.back_button.disabled, "過一下子按鈕就能按")
+		assert_true(page.back_button.has_focus(), "焦點在「回到標題」（手把直接按 A）")
+		page.back_button.pressed.emit()
+	assert_true(ended[0], "感謝試玩關掉 → 回標題")
 	# 讀檔（＝標題的「繼續」）：站在轉角、「下一章還在製作中」，不會再講一次
 	canal = await _retry()
 	await tree.process_frame
