@@ -138,6 +138,8 @@ const COAL: Color = Color(0.09, 0.085, 0.085)
 ## 閘道裡那堆煤（D-195）：長（X）、高、寬（Z），公尺；CoalPile 的形狀種子
 const COAL_HEAP_SIZE: Vector3 = Vector3(2.7, 0.62, 2.3)
 const COAL_HEAP_SEED: float = 7.3
+## 煤車裡那堆（長、高、寬）：滾出去的小煤塊也要落在車身裡（車身 1.0 × 0.9）
+const CART_COAL_SIZE: Vector3 = Vector3(0.75, 0.26, 0.65)
 ## 閘道木架南邊橫樑下掛的小油燈（第 48、49 輪截圖：煤堆、倒吊都太暗）：掛鉤在橫樑底、鏈子多長、暖光
 const SLUICE_LAMP_HOOK: Vector3 = Vector3(2.0, GANTRY_Y, SLUICE_Z + 0.1)
 const SLUICE_LAMP_DROP: float = 1.4
@@ -2648,10 +2650,14 @@ func _build_sluice() -> void:
 	add_child(_cart)
 	_solid("CartBody", Vector3(1.0, 0.5, 0.9), Vector3(0.0, 0.42, -0.5), cart_mat(), false, _cart)
 	_solid("CartBand", Vector3(1.04, 0.06, 0.94), Vector3(0.0, 0.62, -0.5), iron, false, _cart)
-	var coal: StandardMaterial3D = _mat(COAL, 0.38)
-	coal.metallic_specular = 0.7
-	_solid("CartCoal", Vector3(0.92, 0.2, 0.82), Vector3(0.0, 0.74, -0.5), coal, false, _cart)
 	var heap_mat: StandardMaterial3D = CoalPile.material()
+	# 車裡堆得冒出車沿的煤（D-195）：小一號的 CoalPile，外圈埋在車身裡（原本是一塊平的黑方塊）
+	var cart_coal := MeshInstance3D.new()
+	cart_coal.name = "CartCoal"
+	cart_coal.mesh = CoalPile.build(CART_COAL_SIZE.x, CART_COAL_SIZE.z, CART_COAL_SIZE.y, COAL_HEAP_SEED + 3.0)
+	cart_coal.material_override = heap_mat
+	cart_coal.position = Vector3(0.0, 0.64, -0.5)
+	_cart.add_child(cart_coal)
 	for i: int in 6:
 		_coal_lump("CartLump%d" % i, 0.12, Vector3(-0.32 + 0.13 * i, 0.86 + 0.04 * (i % 2), -0.5 + 0.18 * sin(i * 1.7)), 3.0 + i, heap_mat, _cart)
 	for wx: float in [-0.42, 0.42]:
