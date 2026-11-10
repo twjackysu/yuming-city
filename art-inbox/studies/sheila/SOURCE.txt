@@ -43,3 +43,5 @@ Wool surface: Poly Haven Poly Wool Herringbone, CC0, photography colormass / pro
 https://polyhaven.com/a/poly_wool_herringbone
 https://polyhaven.com/license
 Modified: off-white dye, authored muddy-hem coordinate, 27cm object-scale scan detail, atlas rebake. Existing MakeHuman/MPFB, punkduck coat CC BY 3.0, ACCAD CC BY 3.0, generated-reference and sword credits remain applicable.
+
+2026-11-10 35cm blade derivative: world-space blade width .35m (shoulder joint width .33375m), guard width reduced to 88%, blade-local dark steel/roughness rebake. Existing atlas pixels outside the sword region preserved, and embedded PNG pixels checked against the saved bake after refreshing packed images. Non-weapon geometry/morph/skin arrays retained exactly; existing credits and licenses unchanged. Not a final character approval.

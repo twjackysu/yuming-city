@@ -35,3 +35,14 @@ blade_preview.png 為棚光近景；blade_night_preview.png 為背面暖燈檢�
 **此修正只涵蓋 walk。** 單獨 FBX 的 Without Skin 骨架動作不包含披肩形變；接遊戲時需保留 GLB 裡的 weights 軌道，其他動作也需要相應修形。披肩自然皺褶、領緣／厚度、毛料質感、暖光表現，以及攻擊／翻滾等極端姿勢仍須精修與驗收；不計為 3A 完成。
 
 cape_close_preview.png 為新版近景，其他棚光／夜景／刀身圖與影片也已更新。cape_export_gate.json、cape_engine_weights.log、cape_body_motion_preservation.json 等提供可核對證據；完整流程見 [披肩製作紀錄](../../../docs/art-trials/sheila-cape-correctives/README.md)。本版披肩開始使用下列 CC0 毛料，前版「未採用掃描披肩」的歷史說明不再代表本版。
+
+
+## 2026-11-10：35cm 實際寬度與鋼材貼圖封裝修正
+
+按第四點新回饋，刀身改為**世界座標寬 35cm**，往斷口收至約 22.75cm；肩關節間距約 33.38cm，保留略寬於肩部的設定。前版 44cm 是未計骨架縮放的網格尺寸，世界座標約 45.70cm。護手橫向縮至前版的 88%，握柄與纏帶比例保留。
+
+劍面底色降低、金屬度提高至約 0.98、非鏽蝕處粗糙度約 0.24～0.36，保留磨亮斜刃與局部刮磨／氧化。只對大劍 UV 區域烘焙；三張衣物圖集在大劍區域外的像素差為 0。GLB 內嵌 BaseColor／Normal／ORM 逐像素符合新烘焙 PNG，防止沿用 Blender 舊的已封裝影像。
+
+非武器的四個網格（含披肩全部形變）、頂點／法線／UV／蒙皮陣列比對差為 0；原身體動作與披肩 weights 保留，FBX 不變。更新刀身近景、背面暖燈、正面夜景、棚光與影片。暖光會反映在金屬高光中；不同關卡照明及成品質感仍需後續驗收，這版仍是工作候選。
+
+檢查見 sword_revision.json、sword_embedded_texture_check.json、sword_non_weapon_preservation.json；製作方法與封裝處理見製作紀錄末段。

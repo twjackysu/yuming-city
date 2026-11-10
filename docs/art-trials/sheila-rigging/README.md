@@ -32,3 +32,14 @@ Godot 使用 godot_review_atlas：複製 sheila_walk_preview.glb → import → 
 
 
 2026-11-10：rebuild_sheila_sword.py 更新為 44cm→28.6cm 漸窄劍身、3.2cm 中脊、2.6cm 深護手，以及局部氧化／短刮磨的鋼材。仍從原生 sheila-production/tailored_baked.blend 起建，不採用失敗披肩試作。依原 bake→split→review 流程；blade_night_review 新增背面暖燈檢查。來源、其他幾何與 FBX 不變，三材質／9 張 2K、38,396 三角面。披肩與正式戰鬥仍缺驗收。
+
+
+## 2026-11-10：35cm 世界座標大劍與局部烘焙
+
+refine_sheila_35cm_sword.py 以 YUMING_SHEILA_CAPE_BLEND 指向上一輪含 24 組披肩形變的原生三材質 .blend（sheila-cloth-walk/tailored_noen.blend），YUMING_SHEILA_SWORD_SOURCE 指向對應的原生分物件大劍來源（sheila-sword-v2/source.blend），YUMING_SHEILA_SWORD_WORK 指獨立輸出目錄。這是由前版 44cm 網格製作新版本的步驟，不能拿已縮至 35cm 的模型搭配舊幾何來源重做面片對應。
+
+以對應多邊形中心辨識原生刀面／斜刃／斷口／握柄區域，刀身縮至世界寬 35cm、護手橫向 88%，保留握柄直徑。僅在既有大劍 UV 區域烘焙 BaseColor／Normal／ORM，核對區域外像素不變。金屬約 0.98，非鏽蝕面粗糙度約 0.24～0.36，底色較暗。全角色情況仍為 39,028 面、53 骨、5 網格、3 材質與 9 張 2K。
+
+**之後必須執行 refresh_sheila_packed_textures.py。** 已封裝的舊 Image 在這次實測中，修改像素並 save／pack 仍讓 glTF 使用舊封裝資料。重新從新 PNG 載入獨立 Image、設定 sRGB／Non-Color、pack，再替換衣物材質的影像節點後，內嵌資料才符合新圖。check_sheila_embedded_atlas.py 對 GLB 內嵌三張 PNG 與烘焙檔逐像素核對。
+
+將前一輪 cloth_shapes.npz 複製至工作目錄，沿用 ../sheila-cape-correctives/merge_body_and_cape_animation.py、fit_cape_normals.py 合併原身體與披肩動作；對這兩支腳本另設 YUMING_SHEILA_CAPE_WORK=大劍工作目錄。最終為 sheila_walk_normal_fitted.glb。check_sheila_non_sword_preservation.py 可用 YUMING_SHEILA_BASE_GLB 指定上一版，核對非武器各陣列保持不變。新版仍需照先前 Godot 流程檢查光照／接地／披肩權重；不視為完整 3A 驗收。

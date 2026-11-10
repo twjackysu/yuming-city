@@ -1,0 +1,17 @@
+[
+  {
+    "map": "BaseColor",
+    "fresh_packed_image": "Revision_Sheila_Clothes_BaseColor",
+    "packed_bytes": 2396638
+  },
+  {
+    "map": "Normal",
+    "fresh_packed_image": "Revision_Sheila_Clothes_Normal",
+    "packed_bytes": 2195626
+  },
+  {
+    "map": "ORM",
+    "fresh_packed_image": "Revision_Sheila_Clothes_ORM",
+    "packed_bytes": 1596262
+  }
+]

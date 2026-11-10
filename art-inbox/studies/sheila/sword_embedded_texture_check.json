@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "maps": [
+    {
+      "map": "BaseColor",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "maximum_embedded_vs_baked_pixel_error": 0
+    },
+    {
+      "map": "Normal",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "maximum_embedded_vs_baked_pixel_error": 0
+    },
+    {
+      "map": "ORM",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "maximum_embedded_vs_baked_pixel_error": 0
+    }
+  ]
+}

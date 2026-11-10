@@ -1,10 +1,26 @@
 {
-  "blade_width_at_guard_m": 0.44,
-  "blade_width_at_break_m": 0.286,
-  "maximum_full_ridge_thickness_m": 0.032,
-  "guard_depth_m": 0.026,
-  "previous_width_m": 0.55,
-  "previous_break_width_m": 0.462,
-  "three_materials_retained": true,
-  "cape_status": "unchanged_not_approved"
+  "blade_world_width_before_m": 0.4570075868638668,
+  "blade_world_width_after_m": 0.35,
+  "arm_joint_width_world_m": 0.3337521553039551,
+  "blade_remains_wider_than_arm_joints": true,
+  "blade_scale_ratio": 0.7658516183545501,
+  "only_sword_geometry_changed": true,
+  "atlas_patch_checks": [
+    {
+      "map": "BaseColor",
+      "changed_pixels": 306006,
+      "maximum_pixel_difference_outside_sword_region": 0.0
+    },
+    {
+      "map": "Normal",
+      "changed_pixels": 4,
+      "maximum_pixel_difference_outside_sword_region": 0.0
+    },
+    {
+      "map": "ORM",
+      "changed_pixels": 308134,
+      "maximum_pixel_difference_outside_sword_region": 0.0
+    }
+  ],
+  "cape_corrective_shapes_retained": 24
 }
