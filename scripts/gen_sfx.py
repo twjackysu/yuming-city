@@ -20,6 +20,7 @@
 - frost_wind：霜橋鎮冬夜的風雪（可循環 12 秒，D-180）。低低的風（低通噪音）＋一道慢慢滑動的帶通「呼——」（中心 260～720 Hz）＋細細的雪粒沙沙聲（高通噪音），三層都跟著陣風的包絡起伏；頭尾交叉淡化。
 - frost_wind_indoor：同一段風從屋裡聽（酒館、柯德家）：再低通兩次、去掉雪粒，只剩牆外悶悶的呼呼聲。
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
+- title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -546,6 +547,56 @@ def hearth_crackle(seconds=7.0, seed=61):
     return [v / peak * 0.7 for v in looped]
 
 
+def _wavetable(partials, size=2048):
+    """一個週期的波形表（整數倍泛音），長音用查表比逐點算 sin 快得多。"""
+    return [sum(a * math.sin(2 * math.pi * k * i / size) for k, a in partials) for i in range(size)]
+
+
+def title_theme(seconds=24.0, seed=67):
+    """標題畫面的配樂：長音鋪底＋霧裡遠遠的鐘聲動機（往下走的三聲，第二次落得更低）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(2.0 * RATE)
+    total = n + fade
+    table = _wavetable([(1, 1.0), (2, 0.45), (3, 0.22), (4, 0.1), (5, 0.05)])
+    size = len(table)
+    drone = [0.0] * total
+    # D2、A2、D3；每個音兩個聲部差零點幾 Hz，慢慢拍頻
+    for f, amp in [(73.42, 0.5), (73.61, 0.42), (110.0, 0.3), (110.21, 0.26), (146.83, 0.12), (146.6, 0.1)]:
+        ph = rng.random() * size
+        step = f * size / RATE
+        for i in range(total):
+            drone[i] += amp * table[int(ph) % size]
+            ph += step
+    for i in range(total):
+        t = i / RATE
+        drone[i] *= 0.68 + 0.32 * math.sin(2 * math.pi * t / 12.0 - 1.2)  # 12 秒一次漲落，24 秒剛好兩次
+    drone = onepole_lp(onepole_lp(drone, 650), 900)
+    dpeak = max(abs(v) for v in drone) or 1.0
+    out = [v / dpeak * 0.42 for v in drone]
+    # 鐘聲動機：同一個音只合成一次
+    bells = {}
+    motif = [(2.0, 293.66, 1.0), (3.6, 261.63, 0.82), (5.2, 220.0, 0.9),
+             (14.0, 293.66, 0.75), (15.6, 261.63, 0.66), (17.6, 174.61, 1.0)]
+    for at, f, gain in motif:
+        if f not in bells:
+            b = onepole_lp(bell(f, 4.5), 2400)
+            bpeak = max(abs(v) for v in b) or 1.0
+            bells[f] = [v / bpeak for v in b]
+        b = bells[f]
+        # 原聲＋三個越來越小、越來越晚的回音（霧裡、石牆之間）
+        for delay, tap in [(0.0, 0.34), (0.43, 0.12), (1.01, 0.06), (1.67, 0.03)]:
+            start = int((at + delay) * RATE)
+            g = gain * tap
+            for j, v in enumerate(b):
+                if start + j >= total:
+                    break
+                out[start + j] += g * v
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.7 for v in looped]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -572,6 +623,7 @@ def main():
         write("frost_wind", frost_wind()),
         write("frost_wind_indoor", frost_wind(indoor=True)),
         write("hearth_crackle", hearth_crackle()),
+        write("title_theme", title_theme()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

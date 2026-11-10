@@ -43,3 +43,35 @@ func test_play_flat_and_positional() -> void:
 			p.call("stop")
 	root.queue_free()
 	await tree.process_frame
+
+
+func test_title_music_on_music_bus_fades_in() -> void:
+	var boot: Control = (load("res://scenes/boot/boot.tscn") as PackedScene).instantiate() as Control
+	tree.root.add_child(boot)
+	await tree.process_frame
+	var p: AudioStreamPlayer = boot.get_node_or_null("TitleMusic") as AudioStreamPlayer
+	assert_not_null(p, "標題畫面有配樂")
+	if p != null:
+		assert_eq(Ambience.sfx_of(p), "title_theme")
+		assert_eq(p.bus, &"Music", "走 Music 匯流排：設定頁的「音樂」音量管得到")
+		assert_true(p.playing, "一進標題就開始播")
+		assert_eq((p.stream as AudioStreamWAV).loop_mode, AudioStreamWAV.LOOP_FORWARD, "會循環")
+		assert_true(p.volume_db < float(boot.get("MUSIC_DB")) - 10.0, "剛開始是淡入（還很小聲）")
+		assert_true((p.stream as AudioStreamWAV).get_length() >= 20.0, "循環夠長，不會一下就聽出重複")
+		p.stop()
+	boot.queue_free()
+	await tree.process_frame
+
+
+func test_music_helper() -> void:
+	var root := Node.new()
+	tree.root.add_child(root)
+	var p: AudioStreamPlayer = Ambience.music(root, "title_theme", -4.0, 0.0, "Music")
+	assert_not_null(p)
+	if p != null:
+		assert_eq(p.bus, &"Music")
+		assert_eq(p.volume_db, -4.0, "不淡入就直接是目標音量")
+		p.stop()
+	assert_eq(Ambience.music(root, "no_such_sound", 0.0, 1.0, "Music2"), null, "缺檔安靜跳過")
+	root.queue_free()
+	await tree.process_frame
