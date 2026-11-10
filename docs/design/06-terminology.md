@@ -61,4 +61,6 @@
 | 噴毒 | `spray`（`RB_MOVE_SPRAY`） | 噴毒 | Poison spray | 守衛的新招：胸口的管子往前噴，地上留一團 3 秒的毒霧 |
 | 守衛 | `rb_guardian` | 目標寫「守衛」；名字照舊「送葬者」 | the guardian／Undertaker | 胸口裝噴霧罐的單階段送葬者 |
 | 地下市場 | — | 地下市場 | the underground market | 白晝城的市場；新版不用「地底城」 |
-| 貨梯 | — | 貨梯 | the freight lift | 通往地下市場 |
+| 貨梯 | `RbLift` | 貨梯 | the freight lift | 通往地下市場；梨攤後面地窖口上的木吊架 |
+| 工錢 | `coins`（`RB_WAGES_PAID`） | 工錢 | pay | 雷德欠的那份（艾妲只代付一半）；不寫「欠薪」「薪資」 |
+| 舊版 | `MENU_CLASSIC` | 舊版 | Classic version | 標題畫面的選項：之前的劇情（霜橋鎮的第九聲鐘），不再更新 |
