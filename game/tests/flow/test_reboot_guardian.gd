@@ -133,15 +133,29 @@ func test_spray_telegraph_leaves_mist_that_heals_noen_and_expires() -> void:
 	g.brain._set_move("spray")
 	g.brain._enter(EnemyBrain.State.TELEGRAPH)
 	assert_eq(g.pipe_glow() < 0.3, true, "前兆剛開始：管口還暗")
+	# 前兆的落點標記（D-208）：綠色、空心的虛線圈——跟霜色實線的下砸、跟噴完之後實心的毒霧都分得出來
+	var decals: Dictionary = g.get("_decals")
+	var ring: MeshInstance3D = decals["spray"] as MeshInstance3D
+	var ring_mat: ShaderMaterial = ring.material_override as ShaderMaterial
+	assert_eq(int(ring_mat.get_shader_parameter("shape")), Undertaker.SHAPE_RING, "噴毒前兆＝落點標記（虛線圈）")
+	assert_eq(int(((decals["slam"] as MeshInstance3D).material_override as ShaderMaterial).get_shader_parameter("shape")), Undertaker.SHAPE_DISC, "下砸照舊是實線的圓")
+	assert_true(absf((ring_mat.get_shader_parameter("extent") as Vector2).x - g.brain.move_num("spray", "radius", 2.0)) < 0.001, "圈的大小＝毒霧的半徑")
 	var lowest: float = player.health.hp
 	var peak_glow: float = 0.0
+	var ring_seen: bool = false
+	var ring_progress: float = 0.0
 	for i: int in 90:
 		await tree.physics_frame
 		lowest = minf(lowest, player.health.hp)
 		peak_glow = maxf(peak_glow, g.pipe_glow())
+		if ring.visible:
+			ring_seen = true
+			ring_progress = maxf(ring_progress, float(ring_mat.get_shader_parameter("progress")))
 		if g.spray_count > 0:
 			break
 	assert_eq(g.spray_count, 1, "前兆（1.1 秒）之後噴出去")
+	assert_true(ring_seen and ring_progress > 0.8, "前兆期間地上有落點標記，裡面那道細圈一路擴到邊（%.2f）" % ring_progress)
+	assert_false(ring.visible, "噴出去之後標記收掉，只剩毒霧")
 	assert_true(peak_glow > 0.8, "前兆：胸口的管子越來越亮（%.2f）" % peak_glow)
 	assert_true((g.get_node("Body/Torso/SprayPipes/PipeLight") as OmniLight3D).light_energy > 1.0, "綠光打在袍子與地上")
 	assert_true(level.has_node("SprayJet"), "管口到地面的一道綠色噴霧")

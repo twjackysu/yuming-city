@@ -13,13 +13,17 @@ const VOLUME_HEIGHT: float = 1.7
 const VOLUME_DENSITY: float = 1.2
 const VOLUME_ALBEDO: Color = Color(0.42, 0.92, 0.36)
 const VOLUME_EMISSION: Color = Color(0.07, 0.2, 0.05)
+## 那一團的濃淡與輪廓（D-208）：底濃上淡、邊緣用雜訊咬不規則、裡面慢慢流動（poison_mist_volume.gdshader）。
+const VOLUME_SHADER: Shader = preload("res://src/world/poison_mist_volume.gdshader")
+## 霧盤的面片比毒霧的範圍大一圈：邊緣用雜訊往裡外咬的時候不會被面片切出硬邊。
+const DISC_OVERSCAN: float = 1.14
 
 var zone: MistZone
 var radius: float = 3.0
 var source_id: String = "barrel_mist"
 var life: float = -1.0
 var _mats: Array[ShaderMaterial] = []
-var _volume_mat: FogMaterial
+var _volume_mat: ShaderMaterial
 
 
 static func create(p_radius: float, p_source: String, p_life: float = -1.0) -> PoisonMist:
@@ -35,10 +39,11 @@ func _ready() -> void:
 	zone = MistZone.new(global_position, radius, source_id, life)
 	for i: int in LAYERS:
 		var mesh := PlaneMesh.new()
-		mesh.size = Vector2(radius, radius) * 2.0 * (1.0 - 0.08 * float(i))
+		mesh.size = Vector2(radius, radius) * 2.0 * DISC_OVERSCAN * (1.0 - 0.08 * float(i))
 		var mat := ShaderMaterial.new()
 		mat.shader = SHADER
 		mat.set_shader_parameter("layer", float(i) / float(LAYERS - 1))
+		mat.set_shader_parameter("overscan", DISC_OVERSCAN)
 		_mats.append(mat)
 		var mi := MeshInstance3D.new()
 		mi.name = "MistLayer%d" % i
@@ -47,12 +52,13 @@ func _ready() -> void:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.position.y = 0.06 + LAYER_GAP * float(i)
 		add_child(mi)
-	_volume_mat = FogMaterial.new()
-	_volume_mat.density = VOLUME_DENSITY
-	_volume_mat.albedo = VOLUME_ALBEDO
-	_volume_mat.emission = VOLUME_EMISSION
-	_volume_mat.edge_fade = 0.6
-	_volume_mat.height_falloff = 1.2
+	_volume_mat = ShaderMaterial.new()
+	_volume_mat.shader = VOLUME_SHADER
+	_volume_mat.set_shader_parameter("density", VOLUME_DENSITY)
+	_volume_mat.set_shader_parameter("albedo", VOLUME_ALBEDO)
+	_volume_mat.set_shader_parameter("emission", VOLUME_EMISSION)
+	_volume_mat.set_shader_parameter("fade", 1.0)
+	_volume_mat.set_shader_parameter("ground_offset", VOLUME_HEIGHT * 0.4)
 	var vol := FogVolume.new()
 	vol.name = "MistVolume"
 	vol.shape = RenderingServer.FOG_VOLUME_SHAPE_ELLIPSOID
@@ -68,7 +74,7 @@ func _physics_process(delta: float) -> void:
 	var f: float = 1.0 if zone.life < 0.0 else clampf(zone.life / 0.6, 0.0, 1.0)
 	for m: ShaderMaterial in _mats:
 		m.set_shader_parameter("fade", f)
-	_volume_mat.density = VOLUME_DENSITY * f
+	_volume_mat.set_shader_parameter("fade", f)
 	if zone.expired():
 		queue_free()
 		return

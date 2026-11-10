@@ -35,6 +35,8 @@ const GROUND_SHADOW_STRENGTH: float = 0.6
 const SHAPE_DISC: int = 0
 const SHAPE_LANE: int = 1
 const SHAPE_FAN: int = 2
+## 落點標記（噴毒，D-208）：空心的虛線圈＋往外擴的細圈，跟實心的毒霧分得出來
+const SHAPE_RING: int = 3
 
 var phase: int = 1
 ## 測試或場景可以指定；空的就用 Game.session.state
@@ -534,13 +536,14 @@ func _build_spray_pipes() -> void:
 	# 放在管口前下方：照亮地面與袍子的下襬，不是把整個上身染綠
 	_pipe_light.position = PIPE_MOUTH + Vector3(0.0, -0.25, -0.75)
 	_pipes.add_child(_pipe_light)
-	# 噴毒的前兆範圍：地上一個綠色的圓（跟霜色的下砸分得出來）
+	# 噴毒的前兆範圍：地上一個綠色、空心的虛線圈（落點標記，D-208）——
+	# 跟霜色實線的下砸分得出來，也跟噴完之後那一團實心的毒霧分得出來
 	var disc := CylinderMesh.new()
 	var r: float = brain.move_num("spray", "radius", 2.0)
 	disc.top_radius = r
 	disc.bottom_radius = r
 	disc.height = 0.01
-	_decals["spray"] = _decal(disc, Vector3(0, 0.03, -brain.move_num("spray", "reach", 2.6)), SHAPE_DISC, Vector2(r, 0.0), 0.0, SPRAY_GREEN)
+	_decals["spray"] = _decal(disc, Vector3(0, 0.03, -brain.move_num("spray", "reach", 2.6)), SHAPE_RING, Vector2(r, 0.0), 0.0, SPRAY_GREEN)
 
 
 ## 管口的亮度：噴毒前兆跟著進度變亮、噴出去那一下最亮，其他時候慢慢暗回去。

@@ -104,13 +104,22 @@ func test_poison_mist_node_builds_layers_and_fades_out() -> void:
 	var vol: FogVolume = mist.get_node_or_null("MistVolume") as FogVolume
 	assert_not_null(vol, "有體積的那一團（體積霧裡的綠色橢球，D-207）")
 	assert_eq(vol.size.x, 4.0, "跟毒霧的範圍一樣寬")
-	# FogMaterial 的密度是 32 位元浮點數：不能直接比相等
-	assert_true(absf((vol.material as FogMaterial).density - PoisonMist.VOLUME_DENSITY) < 0.001, "一開始是滿的密度")
+	# 濃淡與輪廓用 fog shader（D-208：底濃上淡、邊緣不規則、會流動）；密度是 32 位元浮點數，不能直接比相等
+	var vol_mat: ShaderMaterial = vol.material as ShaderMaterial
+	assert_true(vol_mat != null and vol_mat.shader == PoisonMist.VOLUME_SHADER, "體積那一團用 poison_mist_volume.gdshader")
+	assert_true(absf(float(vol_mat.get_shader_parameter("density")) - PoisonMist.VOLUME_DENSITY) < 0.001, "密度照常數")
+	assert_true(absf(float(vol_mat.get_shader_parameter("fade")) - 1.0) < 0.001, "一開始是滿的")
+	assert_true(absf(float(vol_mat.get_shader_parameter("ground_offset")) - (vol.position.y - 0.0)) < 0.001, "地面的高度跟擺放的高度一致（底濃上淡從地面算起）")
+	# 霧盤的面片比毒霧的範圍大一圈（邊緣用雜訊咬的時候不會被面片切出硬邊），shader 知道大多少
+	var layer0: MeshInstance3D = mist.get_node("MistLayer0") as MeshInstance3D
+	assert_true(absf((layer0.mesh as PlaneMesh).size.x - 4.0 * PoisonMist.DISC_OVERSCAN) < 0.001, "貼地那層的面片＝直徑 × overscan")
+	assert_true(absf(float((layer0.material_override as ShaderMaterial).get_shader_parameter("overscan")) - PoisonMist.DISC_OVERSCAN) < 0.001)
 	assert_true(mist.is_in_group("poison_mist"))
 	assert_true(mist.contains(mist.global_position + Vector3(1.0, 0.2, 0.0)))
 	mist._physics_process(0.7)
 	assert_true(is_instance_valid(mist) and not mist.is_queued_for_deletion(), "還沒散完")
-	assert_true((vol.material as FogMaterial).density < PoisonMist.VOLUME_DENSITY * 0.75, "最後 0.6 秒跟著霧盤一起淡掉")
+	assert_true(float(vol_mat.get_shader_parameter("fade")) < 0.75, "最後 0.6 秒跟著霧盤一起淡掉")
+	assert_true(absf(float(vol_mat.get_shader_parameter("fade")) - float((layer0.material_override as ShaderMaterial).get_shader_parameter("fade"))) < 0.001, "體積跟霧盤淡得一樣快")
 	mist._physics_process(0.4)
 	assert_true(mist.is_queued_for_deletion(), "守衛噴的霧時間到自己移除")
 
