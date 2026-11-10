@@ -348,6 +348,9 @@ var _hang_pivot: Node3D
 var _hang_mount: Node3D
 var _hang_rope_up: MeshInstance3D
 var _hang_cut_sfx: float = 0.0
+## 切開胸口的火星（D-193）：她切得到（按住、在正中附近）的時候，鐘舌那裡迸出銅色的火星
+var _cut_sparks: CPUParticles3D
+const CUT_SPARK_COLOR: Color = Color(1.0, 0.72, 0.4)
 var _hang_cam: Camera3D
 var _prev_cam: Camera3D
 
@@ -535,9 +538,11 @@ func _ready() -> void:
 		_begin_hang()
 		_dev_hold_edge = true
 		if at == "hang":
-			hang.sway = 0.35
+			hang.sway = 0.3
 			hang.progress = 0.4
+			hang.holding = true
 			_update_hang_rig()
+			_update_cut_sparks()
 		else:
 			_grab_clapper()
 			_fall_in_mud.call_deferred()
@@ -1495,6 +1500,7 @@ func _begin_hang() -> void:
 		player.yaw = hang_yaw()
 		player.snap_camera()
 	_build_hang_rig()
+	_build_cut_sparks()
 	_use_hang_camera(true)
 	var ally: Node3D = get_node_or_null("Sheila") as Node3D
 	if ally != null:
@@ -1598,6 +1604,7 @@ func hang_tick(delta: float, hold: bool, steer: float) -> void:
 		if player != null:
 			player.shake(0.18)
 		_banner("CH3_HANG_BUMP", 1.6)
+	_update_cut_sparks()
 	_hang_cut_sfx -= delta
 	if hang.cutting() and _hang_cut_sfx <= 0.0:
 		_hang_cut_sfx = 0.55
@@ -1606,12 +1613,65 @@ func hang_tick(delta: float, hold: bool, steer: float) -> void:
 		_grab_clapper()
 
 
+## 切開胸口的地方：鐘舌的光（被拿走之前一直在），找不到就用牠胸口的高度。
+func cut_point() -> Vector3:
+	if _clapper_light != null and _clapper_light.is_inside_tree():
+		return _clapper_light.global_position
+	return (_undertaker.global_position if _undertaker != null else HANG_ANCHOR) + Vector3(0.0, 1.5, 0.0)
+
+
+## 火星（D-193）：一直掛著、只在她切得到的時候噴；很小、很亮（加法混色），往上迸、很快落下。
+func _build_cut_sparks() -> void:
+	if _cut_sparks != null:
+		return
+	var ps := CPUParticles3D.new()
+	ps.name = "CutSparks"
+	ps.amount = 40
+	ps.lifetime = 0.55
+	ps.randomness = 0.4
+	ps.direction = Vector3.UP
+	ps.spread = 65.0
+	ps.initial_velocity_min = 1.2
+	ps.initial_velocity_max = 3.2
+	ps.gravity = Vector3(0, -7.0, 0)
+	ps.damping_min = 0.5
+	ps.damping_max = 1.5
+	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	ps.emission_sphere_radius = 0.12
+	ps.scale_amount_min = 0.6
+	ps.scale_amount_max = 1.4
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.09, 0.09)
+	quad.material = ParticleLook.material(CUT_SPARK_COLOR, true)
+	ps.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1.0, 0.45, 0.25, 0))
+	ps.color_ramp = ramp
+	ps.emitting = false
+	add_child(ps)
+	ps.global_position = cut_point()
+	_cut_sparks = ps
+
+
+## 切得到才噴（測試、截圖也用）。
+func _update_cut_sparks() -> void:
+	if _cut_sparks == null:
+		return
+	_cut_sparks.emitting = hang != null and hang_active and hang.cutting()
+
+
+func cut_sparks() -> CPUParticles3D:
+	return _cut_sparks
+
+
 ## 她抓到鐘舌的瞬間煤堆塌了：繩子猛拉、畫面一震、彌夏撲過來壓住繩尾 → COLLAPSE_SEC 秒後三個人摔進泥裡。
 func _grab_clapper() -> void:
 	if _collapsing or clapper_taken:
 		return
 	hang_active = false
 	_collapsing = true
+	_update_cut_sparks()
 	_take_clapper()
 	var heap_at: Vector3 = Vector3(SLUICE_PASS_X, BED_Y + 0.3, CART_Z)
 	_coal_dust(heap_at)

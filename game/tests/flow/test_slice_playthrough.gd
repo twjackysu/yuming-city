@@ -1293,12 +1293,24 @@ func _chapter3_hang(canal: StoryLevel, alt: bool) -> void:
 		assert_true(hang.bumps >= 1, "按住但不修正：撞到鐵架")
 		assert_false(hang.done, "撞來撞去還沒切完")
 		assert_eq(str((canal.call("interact_hint") as Dictionary).get("fmt", "")), str(TranslationServer.translate("CH3_HANG_HOLD_HINT")), "提示：按住拉住、左右修正")
+	var sparks: CPUParticles3D = canal.call("cut_sparks") as CPUParticles3D
+	assert_not_null(sparks, "切開胸口的火星（D-193）")
+	if sparks != null:
+		canal.call("hang_tick", dt, false, 0.0)
+		assert_false(sparks.emitting, "沒按住：沒有火星")
+		assert_true(sparks.global_position.distance_to(clapper) < 0.05, "火星在鐘舌那裡")
+		assert_eq(ParticleLook.untextured(canal), [] as Array[String], "火星是圓點，不是方塊")
 	var sway_seen: float = 0.0
+	var sparked: bool = false
 	for i: int in 60 * 20:
 		if not bool(canal.get("hang_active")):
 			break
 		canal.call("hang_tick", dt, true, HangRope.counter_steer(hang))
 		sway_seen = maxf(sway_seen, absf((canal.get_node("HangPivot5") as Node3D).rotation.z))
+		if sparks != null and hang.cutting():
+			sparked = sparked or sparks.emitting
+	assert_true(sparked, "切得到的時候有火星")
+	assert_true(sparks == null or not sparks.emitting, "切完：火星停了")
 	assert_true(hang.done, "穩住：切開了")
 	assert_true(sway_seen > 0.01, "繩子跟著擺")
 	assert_true(bool(canal.get("clapper_taken")), "抓到鐘舌")
