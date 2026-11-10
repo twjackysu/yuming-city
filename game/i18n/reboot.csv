@@ -2,6 +2,7 @@ keys,en,zh_TW
 SPK_POK,Pok,波克
 SPK_RED,Red,雷德
 RB_TITLE_ENTRY,New version trial: the first ten minutes,新版試玩：前十分鐘
+RB_GAME_SUBTITLE,These Curses Are Far Too Useful to Me,這些詛咒對我太有用了
 Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
 Q_RB_OBJ_ESCAPE,Get Pok to South Street,把波克帶到南街
 Q_RB_OBJ_MIST,Get through the mist and take Pok to South Street,穿過毒霧，把波克帶到南街
@@ -24,6 +25,9 @@ RB_POTION_DRINK,Drink,喝
 RB_POTION_KEEP,Keep it for now,先收著
 RB_CRATE_HINT,Press {key} — take the bottles,按 {key}　拿走藥瓶
 RB_TO_BE_CONTINUED,To be continued: the underground market,待續：地下市場
+RB_END_NUMBER,To be continued,待續
+RB_END_TITLE,The Underground Market,地下市場
+RB_WAGES_PAID,"You got paid. Half of it, anyway.",拿到工錢了。只有一半
 DLG_RB_OPEN_001,Open the gate!,你把門打開！
 DLG_RB_OPEN_002,The monster's after the cargo.,怪物追的是貨。
 DLG_RB_OPEN_003,Then take the man!,那你把人接過去！

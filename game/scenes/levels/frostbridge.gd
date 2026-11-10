@@ -1987,8 +1987,9 @@ func _build_pear_stall(pos: Vector3) -> void:
 	var pear := look.mat(Color(0.78, 0.66, 0.3), 0.6)
 	for i: int in 6:
 		_batch.add_sphere(0.09, pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15), pear)
-	# 攤子後面的艾妲（剪影）；白天她站到地窖門口（Puppet，_build_day），攤子後面空著
-	if not day:
+	# 攤子後面的艾妲（剪影）；白天她站到地窖門口（Puppet，_build_day），攤子後面空著。
+	# 新版（D-210）艾妲是站在攤子前的人偶（RebootOpening._build_ada），不放剪影
+	if not day and not Game.session.is_reboot():
 		var cloak := look.mat(Color(0.12, 0.12, 0.14))
 		_batch.add_cylinder(0.05, 0.32, 1.55, pos + Vector3(0.3, 0.78, -0.75), cloak, false, 12)
 		_batch.add_sphere(0.15, pos + Vector3(0.3, 1.62, -0.75), cloak)

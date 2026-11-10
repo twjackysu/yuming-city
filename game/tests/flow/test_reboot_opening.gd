@@ -66,7 +66,10 @@ func test_opening_sets_up_gate_cart_and_hurt_noen() -> void:
 	await tree.process_frame
 	var rb: RebootOpening = level.get_node_or_null("RebootOpening") as RebootOpening
 	assert_not_null(rb, "新版：霜橋鎮掛上 RebootOpening")
-	assert_false(level.has_node("PearSellerTrigger"), "新版不跑切片的梨販觸發點")
+	# 第 72 輪（D-210）起新版有同名的任務標記（Marker3D，指向艾妲），但不是切片那個會開對話的觸發區
+	assert_false(level.get_node_or_null("PearSellerTrigger") is Area3D, "新版不跑切片的梨販觸發點")
+	assert_false(level.get_node_or_null("CellarTrigger") is Area3D, "也不跑切片的地窖觸發點")
+	assert_false(bool(Game.session.state.get_flag("slice.met_pear_seller", false)), "切片的梨販對話沒有被觸發")
 	assert_false(level.has_node("ArchMemoryTrigger"), "新版不跑石拱回憶")
 	assert_true(level.arch_site.dormant, "石拱停用（新版沒有重現）")
 	assert_true(level.has_node("RbGate") and level.has_node("Red") and level.has_node("RbCart"), "鐵門、門後的雷德、推車")

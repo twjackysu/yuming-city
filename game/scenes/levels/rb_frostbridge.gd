@@ -100,6 +100,23 @@ const POTION_TALK_SEC: float = 2.6
 const POTION_KEPT_TALK_SEC: float = 0.5
 ## 撿了藥、沒喝就走開這麼遠＝先收著（不強迫喝：09 第 5 節）
 const POTION_KEEP_RANGE: float = 9.0
+## 梨攤（frostbridge.gd 的 STALL_POS／CELLAR_POS；那支腳本沒有 class_name，這裡照抄，測試會比對）
+const STALL_POS: Vector3 = Vector3(4.5, 0.0, -1.0)
+## 貨梯＝梨攤後面的地窖口上方那座吊架（去地下市場，前十分鐘的終點）
+const LIFT_POS: Vector3 = Vector3(7.6, 0.0, -4.2)
+## 艾妲站在攤子的西南角（攤燈照得到、從南街走過來第一眼看得到）
+const ADA_POS: Vector3 = Vector3(3.3, 0.0, 0.1)
+const ADA_YAW_DEG: float = 165.0
+const ADA_TALK_RANGE: float = 3.2
+## 諾恩走到這麼近她才抬頭看人
+const ADA_NOTICE_RANGE: float = 9.0
+## 站上貨梯平台＝離平台中心這麼近
+const LIFT_RANGE: float = 1.25
+## 雷德寄存的一半工錢（一次性發放：GameState.grants 的 WAGES_GRANT，讀檔重試不重複領）
+const WAGES: int = 12
+const WAGES_GRANT: String = "rb.ada_wages"
+const WAGES_ITEM: String = "coins"
+const MARKET_SHOTS: PackedStringArray = ["market", "lift"]
 ## 席菈接應之後的階段（她在場、波克已經進店）
 const AFTER_SHEILA_STAGES: PackedStringArray = ["guardian_fight", "portable_poison", "market_lead"]
 
@@ -151,6 +168,12 @@ var crate: PotionCrate
 var _potion_talk_t: float = -1.0
 ## 測試可以調短
 var potion_talk_sec: float = POTION_TALK_SEC
+## 梨攤的艾妲（節點名 Ada）
+var ada: Puppet
+## 「待續」那張卡出來了（之後不再觸發任何東西）
+var ending: bool = false
+## 「待續」播完之後做什麼；空的＝回標題。測試換成自己的（不要真的換場景）
+var end_done: Callable = Callable()
 
 
 func _ready() -> void:
@@ -159,6 +182,8 @@ func _ready() -> void:
 	_build_markers()
 	_build_gate()
 	_build_bakery_lantern()
+	_build_ada()
+	_build_lift()
 	_build_barrels()
 	_build_cart()
 	var st: GameState = Game.session.state
@@ -234,12 +259,15 @@ func _ready() -> void:
 	# `--rb-at=potion|drank`：牠已經倒下，諾恩站在藥箱前（兩瓶還在、提示亮著）／拿了、剛喝一口
 	if shot_at in POTION_SHOTS:
 		_dev_stage_potion(shot_at == "drank")
+	# `--rb-at=market|lift`：藥的事講完了，諾恩站在梨攤前（艾妲抱著帳本）／艾妲講完了，站在貨梯前
+	if shot_at in MARKET_SHOTS:
+		_dev_stage_market(shot_at == "lift")
 
 
 ## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前；
 ## guardian／spray／sprayed＝南街守衛戰（席菈已經接應）
 static func dev_advance(s: GameSession, at: String) -> void:
-	var after_sheila: bool = at in GUARDIAN_SHOTS or at in POTION_SHOTS
+	var after_sheila: bool = at in GUARDIAN_SHOTS or at in POTION_SHOTS or at in MARKET_SHOTS
 	if at in ["mist", "pursuer", "throw", "flight", "impact"] or after_sheila:
 		s.set_flag("rb.opening_done", true)
 	if at in ["mist"] or after_sheila:
@@ -247,8 +275,17 @@ static func dev_advance(s: GameSession, at: String) -> void:
 	if after_sheila:
 		for flag: String in ["rb.reversal_awakened", "rb.mist_reentered", "rb.reached_south", "rb.sheila_met"]:
 			s.set_flag(flag, true)
-	if at in POTION_SHOTS:
+	if at in POTION_SHOTS or at in MARKET_SHOTS:
 		for flag: String in ["rb.guardian_down", "rb.guardian_talked"]:
+			s.set_flag(flag, true)
+	if at in MARKET_SHOTS:
+		PotionBelt.new(s.state).grant_once(PotionCrate.GRANT_ID, PotionCrate.ITEM, PotionCrate.AMOUNT)
+		for flag: String in [PotionCrate.FOUND_FLAG, "rb.potion_kept", "rb.potion_talked"]:
+			s.set_flag(flag, true)
+	if at == "lift":
+		s.state.grant_once(WAGES_GRANT)
+		s.state.items[WAGES_ITEM] = WAGES
+		for flag: String in ["rb.ada_talked", "rb.wages_paid"]:
 			s.set_flag(flag, true)
 
 
@@ -351,6 +388,8 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 			_pok_into_shop()
 			if stage() == "guardian_fight":
 				_spawn_guardian()
+		"rb_ada_wages":
+			pay_wages()
 
 
 ## 雷德頭也不回地往北跑掉（鐵門照樣鎖著）
@@ -376,6 +415,7 @@ func _physics_process(delta: float) -> void:
 	_update_guardian(delta)
 	var st: GameState = Game.session.state
 	_pin_potion_hud(st)
+	_update_ada(delta)
 	match stage():
 		"escape":
 			# 推車推到北街轉角（或諾恩自己先走下石階）→ 送葬者把那截燈柱扔過來，砸破藥桶
@@ -385,6 +425,8 @@ func _physics_process(delta: float) -> void:
 			_update_mist_test(st)
 		"portable_poison":
 			_update_potion(delta, st)
+		"market_lead":
+			_update_market(st)
 		"meet_sheila":
 			var sheila: Node3D = level.get_node_or_null("Sheila") as Node3D
 			if sheila != null and not Game.is_player_locked() and not st.get_flag("rb.sheila_met", false) \
@@ -590,6 +632,236 @@ func _update_potion(delta: float, st: GameState) -> void:
 	if _potion_talk_t == 0.0:
 		_potion_talk_t = -1.0
 		Game.start_dialogue("rb_potion_tried" if tried else "rb_potion_kept")
+
+
+# ---------------------------------------------------------------- 艾妲與貨梯（D-210）
+
+static func flat_distance(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## 去地下市場：走近梨攤 → 艾妲給一半工錢、說貨梯（rb_ada_wages）→ 站上貨梯 → rb.market_reached →「待續」→ 回標題。
+## 每幀量距離、不用 Area3D：上一段對話結束時諾恩可能已經站在攤子前（body_entered 不會再響一次）。
+func _update_market(st: GameState) -> void:
+	if ending or Game.is_player_locked():
+		return
+	if not bool(st.get_flag("rb.ada_talked", false)):
+		if flat_distance(player.global_position, ADA_POS) <= ADA_TALK_RANGE:
+			Game.start_dialogue("rb_ada_wages")
+		return
+	if flat_distance(player.global_position, LIFT_POS) <= LIFT_RANGE:
+		Game.session.set_flag("rb.market_reached", true)
+		play_end_card()
+
+
+## 雷德寄存的一半工錢：只給一次（讀檔、死亡重試回到檢查點時跟著退回，再聽一次也只拿一次）。回傳這次有沒有給。
+func pay_wages() -> bool:
+	var st: GameState = Game.session.state
+	if not st.grant_once(WAGES_GRANT):
+		return false
+	st.items[WAGES_ITEM] = int(st.items.get(WAGES_ITEM, 0)) + WAGES
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner("RB_WAGES_PAID", 4.0)
+	return true
+
+
+## 前十分鐘的結尾：畫面淡成黑 →「待續／地下市場」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
+func play_end_card() -> ChapterCard:
+	if ending:
+		return level.get_node_or_null("ChapterCard") as ChapterCard
+	ending = true
+	if player != null:
+		player.process_mode = Node.PROCESS_MODE_DISABLED
+	return ChapterCard.play(level, "RB_END_NUMBER", "RB_END_TITLE", _on_end_card_done)
+
+
+func _on_end_card_done() -> void:
+	if end_done.is_valid():
+		end_done.call()
+	else:
+		Game.back_to_title()
+
+
+## 艾妲在攤子前等人：諾恩走近了才抬頭轉過來
+func _update_ada(delta: float) -> void:
+	if ada == null or not is_instance_valid(ada):
+		return
+	var to: Vector3 = player.global_position - ada.global_position
+	to.y = 0.0
+	var want: float = deg_to_rad(ADA_YAW_DEG)
+	if to.length() > 0.4 and to.length() < ADA_NOTICE_RANGE:
+		want = atan2(-to.x, -to.z)
+	ada.rotation.y = lerp_angle(ada.rotation.y, want, minf(delta * 4.0, 1.0))
+
+
+## 梨攤的艾妲（新版：父親活著、她管帳）。夜裡的攤子原本只有一個剪影，新版換成人偶：暗紅外套、左手夾著帳本。
+## 任務標記 PearSellerTrigger 在她身上（名字照舊版的觸發點，rb_main.json 在找）。
+func _build_ada() -> void:
+	if level.has_node("Ada"):
+		ada = level.get_node("Ada") as Puppet
+		return
+	ada = Puppet.new()
+	ada.name = "Ada"
+	ada.coat_color = Color(0.36, 0.2, 0.17)
+	ada.trim_color = Color(0.62, 0.55, 0.42)
+	ada.position = Vector3(ADA_POS.x, level.ground_y(ADA_POS), ADA_POS.z)
+	ada.rotation_degrees.y = ADA_YAW_DEG
+	level.add_child(ada)
+	var hammer: Node = ada.hand("R").get_node_or_null("BellHammer") if ada.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
+	var hand: Node3D = ada.hand("L")
+	if hand != null:
+		var book := Node3D.new()
+		book.name = "Ledger"
+		book.position = Vector3(0.0, -0.1, 0.04)
+		book.rotation_degrees = Vector3(8.0, 0.0, 6.0)
+		var cover := StandardMaterial3D.new()
+		cover.albedo_color = Color(0.2, 0.12, 0.08)
+		cover.roughness = 0.7
+		var pages := StandardMaterial3D.new()
+		pages.albedo_color = Color(0.78, 0.72, 0.6)
+		pages.roughness = 0.9
+		_box_part(book, Vector3(0.05, 0.3, 0.22), Vector3.ZERO, cover)
+		_box_part(book, Vector3(0.036, 0.28, 0.2), Vector3(0.0, 0.0, 0.016), pages)
+		hand.add_child(book)
+	_marker("PearSellerTrigger", ADA_POS + Vector3(0.0, 1.0, 0.0))
+
+
+## 貨梯（去地下市場）：地窖口上方的木吊架——兩根柱子、橫樑、滑輪、四條繩子吊著一塊貨板、柱上一盞燈。
+## 灰盒的地窖口只是一塊貼地的木板，夜裡從梨攤看過去什麼都沒有；吊架＋燈讓「往那裡走」一眼看得到。
+## 柱子很細、不擋人；任務標記 CellarTrigger 在平台上方。
+func _build_lift() -> void:
+	if level.has_node("RbLift"):
+		return
+	var n := Node3D.new()
+	n.name = "RbLift"
+	n.position = Vector3(LIFT_POS.x, level.ground_y(LIFT_POS), LIFT_POS.z)
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.2, 0.15, 0.11)
+	wood.roughness = 0.88
+	var plank := StandardMaterial3D.new()
+	plank.albedo_color = Color(0.27, 0.2, 0.14)
+	plank.roughness = 0.9
+	var rope := StandardMaterial3D.new()
+	rope.albedo_color = Color(0.42, 0.35, 0.24)
+	rope.roughness = 1.0
+	var iron: Material = Undertaker.frame_iron_material()
+	# 兩根柱子＋橫樑＋斜撐
+	for sx: float in [-1.0, 1.0]:
+		_box_part(n, Vector3(0.2, 3.0, 0.2), Vector3(sx * 1.05, 1.5, 0.0), wood)
+		_box_part(n, Vector3(0.5, 0.1, 0.5), Vector3(sx * 1.05, 0.05, 0.0), wood)
+		_beam(n, Vector3(sx * 1.05, 2.2, 0.0), Vector3(sx * 0.45, 2.92, 0.0), 0.06, wood)
+	_box_part(n, Vector3(2.6, 0.22, 0.22), Vector3(0.0, 3.0, 0.0), wood)
+	# 滑輪（鐵輪，軸沿著南北）與主繩
+	var wheel := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.17
+	cyl.bottom_radius = 0.17
+	cyl.height = 0.07
+	cyl.radial_segments = 16
+	wheel.mesh = cyl
+	wheel.material_override = iron
+	wheel.rotation_degrees.x = 90.0
+	wheel.position = Vector3(0.0, 2.72, 0.0)
+	n.add_child(wheel)
+	_box_part(n, Vector3(0.04, 0.22, 0.12), Vector3(0.0, 2.84, 0.0), iron)
+	var ring := Vector3(0.0, 1.75, 0.0)
+	_beam(n, Vector3(0.0, 2.6, 0.0), ring, 0.022, rope)
+	_box_part(n, Vector3(0.1, 0.06, 0.1), ring, iron)
+	# 繞過滑輪、拉到西柱上的繫繩樁
+	_beam(n, Vector3(-0.16, 2.72, 0.0), Vector3(-0.95, 1.15, 0.0), 0.018, rope)
+	_box_part(n, Vector3(0.1, 0.05, 0.3), Vector3(-0.94, 1.12, 0.0), iron)
+	# 貨板：四條繩子收到吊環
+	var deck_y: float = 0.3
+	_box_part(n, Vector3(1.5, 0.07, 1.1), Vector3(0.0, deck_y, 0.0), plank)
+	for i: int in 5:
+		_box_part(n, Vector3(0.26, 0.02, 1.1), Vector3(-0.6 + i * 0.3, deck_y + 0.045, 0.0), wood)
+	for cx: float in [-0.7, 0.7]:
+		for cz: float in [-0.5, 0.5]:
+			_beam(n, Vector3(cx, deck_y + 0.04, cz), ring, 0.016, rope)
+	# 貨板上兩口封好的木箱（地下市場的貨）
+	_box_part(n, Vector3(0.56, 0.5, 0.5), Vector3(0.34, deck_y + 0.3, -0.2), plank)
+	_box_part(n, Vector3(0.6, 0.04, 0.54), Vector3(0.34, deck_y + 0.57, -0.2), wood)
+	_box_part(n, Vector3(0.6, 0.05, 0.06), Vector3(0.34, deck_y + 0.3, 0.06), wood)
+	_box_part(n, Vector3(0.4, 0.34, 0.4), Vector3(0.44, deck_y + 0.22, 0.32), plank)
+	_box_part(n, Vector3(0.36, 0.3, 0.36), Vector3(0.36, deck_y + 0.76, -0.22), plank)
+	# 西柱上的提燈（面向梨攤那一側）
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.35, 0.25, 0.14)
+	glass.roughness = 0.3
+	glass.emission_enabled = true
+	glass.emission = FrostbridgeLook.LAMP
+	glass.emission_energy_multiplier = 4.5
+	_box_part(n, Vector3(0.34, 0.04, 0.04), Vector3(-1.26, 2.2, 0.0), iron)
+	_box_part(n, Vector3(0.02, 0.12, 0.02), Vector3(-1.4, 2.13, 0.0), iron)
+	_box_part(n, Vector3(0.18, 0.03, 0.18), Vector3(-1.4, 2.07, 0.0), iron)
+	_box_part(n, Vector3(0.13, 0.2, 0.13), Vector3(-1.4, 1.96, 0.0), glass)
+	_box_part(n, Vector3(0.16, 0.03, 0.16), Vector3(-1.4, 1.85, 0.0), iron)
+	var light := OmniLight3D.new()
+	light.name = "Glow"
+	light.light_color = FrostbridgeLook.LAMP
+	light.light_energy = 2.3
+	light.omni_range = 7.5
+	light.omni_attenuation = 1.2
+	light.light_specular = 0.3
+	light.shadow_enabled = false
+	light.light_volumetric_fog_energy = 0.9
+	light.position = Vector3(-1.1, 1.9, 0.5)
+	n.add_child(light)
+	level.add_child(n)
+	_marker("CellarTrigger", LIFT_POS + Vector3(0.0, 1.0, 0.0))
+
+
+## 兩點之間的一根圓桿（繩子、斜撐）
+func _beam(parent: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = a.distance_to(b)
+	cm.radial_segments = 6
+	cm.rings = 0
+	mi.mesh = cm
+	mi.material_override = mat
+	mi.position = (a + b) * 0.5
+	var dir: Vector3 = (b - a).normalized()
+	if absf(dir.dot(Vector3.UP)) < 0.999:
+		mi.basis = Basis(Quaternion(Vector3.UP, dir))
+	parent.add_child(mi)
+
+
+## 截圖用：藥的事講完了。諾恩站在梨攤西南、面向艾妲（攤燈、帳本、後面的貨梯都在畫面裡）；
+## lift＝艾妲講完了，諾恩站在貨梯西南邊面向它。
+func _dev_stage_market(at_lift: bool) -> void:
+	if player == null:
+		return
+	var me := Vector3(2.5, 0.0, 2.1)
+	var target := ADA_POS
+	var her_off := Vector3(-1.5, 0.0, -0.5)
+	if at_lift:
+		# 攤子的東南邊：貨梯在正前方約 5 m，攤子不擋鏡頭
+		me = Vector3(7.9, 0.0, 0.5)
+		target = LIFT_POS
+		her_off = Vector3(-2.3, 0.0, 0.2)
+	player.global_position = Vector3(me.x, level.ground_y(me) + 0.05, me.z)
+	player.rotation.y = atan2(-(target.x - me.x), -(target.z - me.z))
+	player.yaw = player.rotation.y
+	player.health.hp = 82.0
+	player.reversal.awakened_once = true
+	player.reversal.unlock("poison")
+	player.reversal.equip("poison")
+	var sheila: Node3D = level.get_node_or_null("Sheila") as Node3D
+	if sheila != null:
+		sheila.set_physics_process(false)
+		var her: Vector3 = me + her_off
+		sheila.global_position = Vector3(her.x, level.ground_y(her), her.z)
+		sheila.rotation.y = player.rotation.y
+	if crate != null and is_instance_valid(crate):
+		crate.taken = true
+		crate._show_taken(false)
+	player.snap_camera()
 
 
 # ---------------------------------------------------------------- 追擊的送葬者（D-205）
