@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 57 輪）的程式 commit：9550f41 後門／門房／晾衣、09bc569 石碑黑石、f521816 樓梯底的門、fbc432e 彌夏的座鐘（**fbc432e 的 run 包含全部，CI 狀態見 PROGRESS 第 57 輪**——開工先看那個 run 與盤點截圖的綠燈；盤點截圖 `15-ch1-daylight`、`12-ch1-tavern` 可能換了樣子）。第 56 輪的 e3d2f72 run 42715653221 已全綠。開工照常先跑 `scripts/check.sh`（最後 385 個測試）。`docs/PROGRESS.md` 約 260 行；超過約 300 行再合併第 49～53 輪。
+- 上一輪（第 57 輪）的程式 commit：9550f41 後門／門房／晾衣、09bc569 石碑黑石、f521816 樓梯底的門、fbc432e 彌夏的座鐘（**fbc432e run 42724228554 包含全部：收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑**——開工先看那個 run 與盤點截圖的綠燈；9550f41 run 42722762842 已全綠；盤點截圖 `15-ch1-daylight`、`12-ch1-tavern` 可能換了樣子）。第 56 輪的 e3d2f72 run 42715653221 已全綠。開工照常先跑 `scripts/check.sh`（最後 385 個測試）。`docs/PROGRESS.md` 約 260 行；超過約 300 行再合併第 49～53 輪。
 - 第 49 輪起整套測試結束時多一行 `2 ObjectDB instances were leaked at exit`（`--verbose` 看是 `AudioStreamPlaybackWAV`：流程測試結束時還有一個音效在播），不影響結果；有空再查是哪一聲（可能是段落 5 煤堆塌的 `deep_rumble` 或 `_banner`），不急。第 53 輪起 c17d3ad 之前的程式 run 都已全綠（c17d3ad run 42689054966 全綠含盤點截圖）。CI 的 import 崩潰再出現（`check.sh` 重試也崩）就要查：兩次都在第一次 import 重新匯入翻譯 CSV（`strings.csv`／`slice.csv`）時。`33-ch3-map` 上方多一行煤車那段的橫幅跟對話疊在一起，多半只是截圖旗標直接跳過去造成的，有空確認。
 - **測試結束時的「2 ObjectDB instances were leaked at exit」警告**：只在 `TEST_FILTER=slice_playthrough` 與整套測試出現（9ef5632 上就有，第 45 輪之前沒查）；加 `--verbose` 跑同一組**沒有重現**（跟時間有關，懷疑是結束時還沒播完的 Sfx 播放器或 Tween）。不算失敗、不要卡住。
 - **第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。

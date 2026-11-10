@@ -2,7 +2,7 @@
 
 新的放最上面。時間為台北時間。
 
-## 2026-11-10 07:27–08:05　第 57 輪：白晝城剩下的白盒、樓梯底的門、彌夏的座鐘
+## 2026-11-10 07:27–08:15　第 57 輪：白晝城剩下的白盒、樓梯底的門、彌夏的座鐘
 
 **做了什麼**
 
@@ -16,7 +16,7 @@
 
 - `scripts/check.sh` 全綠（385 個測試，多 6 個：`test_daylight_art` 4 個、`test_stairs_art`、`test_tavern_art` 各 1 個）；流程測試 `_assert_daylight_art` 多看後門、門房、衣服不是方塊。
 - 本機截圖（lavapipe Vulkan）前後對照：`--daylight-at=gate`、`backdoor`、`laundry`、`stele`；`--level=stairs --stairs-door`／`--stairs-at=bottom`；酒館 `--face=ClocklessClock`。中途修了兩處：門房小窗放鐵條看起來像白色「Π」字 → 換成關著的窗板；石碑光澤 0.1 像灰色金屬板、字不清楚 → 0.035。晾衣繩從廣場北邊看剛好被爐子擋住（第一張截圖找不到衣服），截圖改從南邊看。
-- CI：fbc432e run 42724228554（包含全部；收尾時的狀態見下一輪 NEXT 第 0 節）。9550f41 run 42722762842 收尾時還在跑，09bc569、f521816 的 run 被下一個 push 取消。
+- CI：9550f41 run 42722762842 **全綠**（import、測試、Windows／Linux 匯出、smoke test、打包、盤點截圖）；09bc569、f521816 的 run 被下一個 push 取消；**fbc432e run 42724228554（包含全部）收尾時「Import、測試、匯出」已綠**，截圖、smoke test、打包、盤點截圖還在跑——下一輪開工先看。
 
 **問題**
 
