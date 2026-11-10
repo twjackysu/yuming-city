@@ -237,6 +237,8 @@ jobs:
           shot 45-rb-guardian 40 --level=frostbridge --rb-at=guardian --locale=zh_TW
           shot 46-rb-spray 40 --level=frostbridge --rb-at=spray --locale=zh_TW
           shot 47-rb-sprayed 40 --level=frostbridge --rb-at=sprayed --locale=zh_TW
+          # 燈柱砸在藥桶上的那一下（木屑與湧出來的藥霧，D-208）。時間很短（第 5 幀左右）：只給人看，不當固定鏡頭的基準
+          shot 48-rb-impact 5 --level=frostbridge --rb-at=impact --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

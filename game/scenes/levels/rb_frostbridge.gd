@@ -591,9 +591,42 @@ func _on_barrels_hit() -> void:
 	Game.session.set_flag("rb.barrels_broken", true)
 
 
-## 燈頭砸碎在藥桶上的那一下：一閃暖光（0.35 秒淡掉）。
-## 木屑與噴出來的綠霧試過用 _ground_puff 的粒子，`--rb-at=impact` 連拍三個時間點都拍不到，先拿掉（NEXT 有記）。
+## 燈頭砸碎在藥桶上的那一下：一閃暖光（0.35 秒淡掉）、往上噴的木屑、從桶裡湧出來的綠色藥霧。
+## 木屑與綠霧第 68 輪做過、怎麼拍都拍不到，拿掉了——原因是粒子其實噴在送葬者腳下（8 m 外、鏡頭後面），
+## 不是藥桶這裡（D-208，EnemyActor.puff_build 的說明）。現在先擺好位置才開始噴。
 func _impact_burst(at: Vector3) -> void:
+	if pursuer != null and is_instance_valid(pursuer) and pursuer.is_inside_tree():
+		# 木屑：細長的小片（不是圓點）、各轉各的、往上炸開、很快掉下來
+		var chips: CPUParticles3D = pursuer.puff_build(Vector3(1.1, 0.25, 0.5), 46, Color(0.62, 0.47, 0.3, 1.0))
+		chips.name = "RbImpactChips"
+		var sliver := QuadMesh.new()
+		sliver.size = Vector2(0.34, 0.075)
+		sliver.material = ParticleLook.material(Color(0.62, 0.47, 0.3, 1.0), false, BaseMaterial3D.BILLBOARD_PARTICLES)
+		chips.mesh = sliver
+		chips.angle_min = 0.0
+		chips.angle_max = 360.0
+		chips.angular_velocity_min = -540.0
+		chips.angular_velocity_max = 540.0
+		chips.lifetime = 0.9
+		chips.initial_velocity_min = 2.2
+		chips.initial_velocity_max = 5.2
+		chips.spread = 60.0
+		chips.gravity = Vector3(0, -9.0, 0)
+		chips.damping_min = 0.4
+		chips.damping_max = 1.2
+		chips.scale_amount_min = 0.5
+		chips.scale_amount_max = 1.1
+		pursuer.puff_start(chips, at + Vector3.UP * 0.5)
+		# 藥霧：很多顆很淡的大圓點疊成一團（一顆一顆太實會像彩色泡泡），慢慢往上湧，接上破桶之後主街的那一團毒霧
+		var puff: CPUParticles3D = pursuer.puff_build(Vector3(1.5, 0.3, 0.8), 56, Color(0.42, 0.88, 0.38, 0.24))
+		puff.name = "RbImpactPuff"
+		puff.lifetime = 1.6
+		puff.initial_velocity_min = 0.6
+		puff.initial_velocity_max = 2.0
+		puff.gravity = Vector3(0, 0.4, 0)
+		puff.scale_amount_min = 2.8
+		puff.scale_amount_max = 5.2
+		pursuer.puff_start(puff, at + Vector3.UP * 0.4)
 	var flash := OmniLight3D.new()
 	flash.name = "RbImpactFlash"
 	flash.light_color = Color(1.0, 0.7, 0.4)

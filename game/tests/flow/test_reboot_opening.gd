@@ -241,6 +241,17 @@ func test_pursuer_drops_follows_and_throws_lamp_at_barrels() -> void:
 	assert_eq(rb.throw_phase, 3)
 	assert_eq(s.state.get_flag("rb.barrels_broken"), true, "砸破藥桶")
 	assert_not_null(rb.mist, "毒霧")
+	# 砸到的那一下：木屑與湧出來的藥霧噴在藥桶那裡（D-208：原本噴在牠腳下，離藥桶好幾公尺、在鏡頭外）
+	var chips: CPUParticles3D = u.get_node_or_null("RbImpactChips") as CPUParticles3D
+	var puff: CPUParticles3D = u.get_node_or_null("RbImpactPuff") as CPUParticles3D
+	assert_true(chips != null and puff != null, "砸到的那一下有木屑與藥霧")
+	if chips != null and puff != null:
+		assert_true(u.global_position.distance_to(RebootOpening.THROW_TARGET) > 4.0, "牠自己離藥桶很遠")
+		assert_true(chips.global_position.distance_to(RebootOpening.THROW_TARGET) < 1.0, "木屑在藥桶那裡")
+		assert_true(puff.global_position.distance_to(RebootOpening.THROW_TARGET) < 1.0, "藥霧在藥桶那裡")
+		assert_true(chips.one_shot and puff.one_shot, "一次性")
+		assert_true(puff.scale_amount_max > chips.scale_amount_max * 3.0, "藥霧是大團的、木屑是小片的")
+	assert_eq(ParticleLook.untextured(u).size(), 0, "粒子都有柔邊圓點貼圖")
 	assert_true(rb.lamp_chunk.global_position.distance_to(RebootOpening.THROW_TARGET) < 1.0, "那截燈柱躺在藥桶旁")
 	assert_eq(player.health.hp, RebootOpening.OPENING_HP, "沒砸到人")
 	# 牠往前堵住北街，不下石階、不進毒霧

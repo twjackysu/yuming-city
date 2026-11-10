@@ -345,8 +345,19 @@ func _on_fall_impact() -> void:
 
 ## 倒地揚起的粉（雪或灰）：一次性的小粒子，節點名 FallPuff。
 func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> CPUParticles3D:
+	var ps: CPUParticles3D = puff_build(extents, amount, color)
+	puff_start(ps, at)
+	return ps
+
+
+## 一團粉的粒子：建好但**還沒開始噴**、也還沒進場景樹。要改速度、大小、重力的先改，再 puff_start()。
+## （D-208）CPUParticles3D 預設 emitting＝true，一進場景樹就會在「當下的位置」先噴出第一批；
+## 一次性、explosiveness 0.9 的粒子第一批就是全部——原本先 add_child 再擺位置，整團粉其實噴在敵人腳下的原點，
+## 不是指定的地方（倒地的粉偏 0.8 m 看不出來；燈柱砸藥桶那一下偏了 8 m，在鏡頭外，所以怎麼拍都拍不到）。
+func puff_build(extents: Vector3, amount: int, color: Color) -> CPUParticles3D:
 	var ps := CPUParticles3D.new()
 	ps.name = "FallPuff"
+	ps.emitting = false
 	ps.one_shot = true
 	ps.explosiveness = 0.9
 	ps.amount = amount
@@ -371,10 +382,14 @@ func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> C
 	ramp.set_color(0, Color(1, 1, 1, 1))
 	ramp.set_color(1, Color(1, 1, 1, 0))
 	ps.color_ramp = ramp
+	return ps
+
+
+## 把 puff_build() 的那一團放到 at（世界座標）再開始噴：先擺好位置才能開始（見 puff_build 的說明）。
+func puff_start(ps: CPUParticles3D, at: Vector3) -> void:
 	add_child(ps)
 	ps.global_position = at
 	ps.emitting = true
-	return ps
 
 
 ## 粒子用的柔邊圓點（共用 ParticleLook，D-056）。

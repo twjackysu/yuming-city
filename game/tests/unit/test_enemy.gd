@@ -100,6 +100,31 @@ func test_ashwalker_claws_player_and_dodge_avoids() -> void:
 	await tree.process_frame
 
 
+## 一團粉要噴在指定的地方（D-208）：CPUParticles3D 一進場景樹就會在當下的位置噴出第一批（一次性的就是全部），
+## 所以要先擺好位置才能開始——原本先 add_child 再擺位置，粉其實噴在敵人腳下的原點（燈柱砸藥桶那次偏了 8 m，在鏡頭外）。
+func test_ground_puff_starts_emitting_only_after_it_is_placed() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var walker := Ashwalker.new()
+	walker.position = Vector3(0, 0, -3)
+	root.add_child(walker)
+	walker.set_physics_process(false)
+	await tree.process_frame
+	var built: CPUParticles3D = walker.puff_build(Vector3(0.3, 0.05, 0.3), 12, Color(0.7, 0.7, 0.7, 0.5))
+	assert_false(built.emitting, "建好的時候還沒開始噴（不然一進場景樹就噴在原點）")
+	assert_false(built.is_inside_tree(), "也還沒進場景樹：要調速度、大小的先調")
+	assert_true(built.one_shot, "一次性")
+	var far := Vector3(6.0, 0.4, 5.0)
+	walker.puff_start(built, far)
+	assert_true(built.emitting, "擺好位置才開始噴")
+	assert_true(built.global_position.distance_to(far) < 0.001, "在指定的地方，不是敵人腳下")
+	var puff: CPUParticles3D = walker._ground_puff(far + Vector3.RIGHT, Vector3(0.3, 0.05, 0.3), 8, Color(0.7, 0.7, 0.7, 0.5))
+	assert_true(puff.emitting and puff.global_position.distance_to(far + Vector3.RIGHT) < 0.001, "_ground_puff 走同一條路")
+	assert_eq(ParticleLook.untextured(walker).size(), 0, "都是柔邊圓點")
+	root.queue_free()
+	await tree.process_frame
+
+
 ## 灰巡者倒下（D-054）：跪下 → 向前撲倒（頭在原本面向的前方、貼地）→ 灰粉、胸口的光熄掉 → 沉進雪裡移除；不再壓扁。
 func test_ashwalker_dies_falling_forward_not_squashed() -> void:
 	var root := Node3D.new()
