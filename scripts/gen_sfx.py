@@ -22,6 +22,7 @@
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
+- step_heavy：送葬者的拖步（D-187，約 0.65 秒；不分地面）。很重的低頻「咚」（72 → 38 Hz 往下掉、加一個高八度的泛音讓小喇叭也聽得到）＋落地的悶悶碎響＋拖在後面的鐵鏈擦地（高通噪音、斷斷續續地抖）＋三下鐵環碰撞。
 - stair_ambience：一百七十二階的環境音（可循環 9 秒，D-180）。很深的石井裡空空的低風（比乾運河更低更悶）＋上面某處的滴水，每一滴後面跟著四個越來越悶的長回音（井很高）；頭尾交叉淡化。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
@@ -690,6 +691,46 @@ def step_wood(seed=79):
     return [out[i] * env[i] for i in range(n)]
 
 
+def step_heavy(seed=89):
+    """送葬者的拖步：很重的「咚」＋落地碎響＋拖在後面的鐵鏈擦地＋三下鐵環碰撞。"""
+    rng = random.Random(seed)
+    n = int(0.66 * RATE)
+    out = [0.0] * n
+    body = onepole_lp(noise(n, rng), 320)
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        f = 38.0 + 34.0 * math.exp(-t * 14.0)
+        phase += 2 * math.pi * f / RATE
+        attack = min(1.0, t / 0.004)
+        boom = (math.sin(phase) + 0.7 * math.sin(2.0 * phase)) * math.exp(-t * 8.5) * attack
+        out[i] = boom + body[i] * 2.4 * math.exp(-t * 16.0) * attack
+    crunch = onepole_lp(hp(noise(int(0.07 * RATE), rng), 400), 2400)
+    for i, v in enumerate(crunch):
+        out[i] += 0.32 * v * math.exp(-(i / RATE) * 55.0) * min(1.0, (i / RATE) / 0.004)
+    # 鐵鏈擦地：0.08～0.62 秒，忽大忽小地抖（兩個不成比例的慢正弦相乘）
+    drag = onepole_lp(hp(noise(n, rng), 1600), 5200)
+    t0, t1 = 0.08, 0.62
+    for i in range(int(t0 * RATE), min(n, int(t1 * RATE))):
+        t = i / RATE
+        w = math.sin(math.pi * (t - t0) / (t1 - t0)) ** 1.5
+        flutter = 0.55 + 0.45 * math.sin(2 * math.pi * 23.0 * t + 0.7) * math.sin(2 * math.pi * 6.3 * t)
+        out[i] += 0.17 * drag[i] * w * flutter
+    for at, f in [(0.11, 1750.0), (0.27, 2320.0), (0.44, 1980.0)]:
+        start = int(at * RATE)
+        for j in range(int(0.09 * RATE)):
+            if start + j >= n:
+                break
+            t = j / RATE
+            v = math.sin(2 * math.pi * f * t) + 0.5 * math.sin(2 * math.pi * f * 2.71 * t)
+            out[start + j] += 0.1 * v * math.exp(-t * 60.0)
+    # 尾巴 20 ms 淡出，避免截斷的爆音
+    fade = int(0.02 * RATE)
+    for j in range(fade):
+        out[n - 1 - j] *= j / fade
+    return out
+
+
 def stair_ambience(seconds=9.0, seed=83):
     """一百七十二階：深石井裡空空的低風＋上面某處的滴水（長回音）。"""
     rng = random.Random(seed)
@@ -747,6 +788,7 @@ def main():
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),
+        write("step_heavy", step_heavy()),
         write("stair_ambience", stair_ambience()),
     ]
     for p in made:

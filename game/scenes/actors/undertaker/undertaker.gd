@@ -51,9 +51,25 @@ var _decals: Dictionary = {}
 var _charge_hit: Array[Node3D] = []
 var _hit_wall: bool = false
 
+## 腳步聲（D-187）：很重的拖步（低頻「咚」＋鐵鏈擦地，`step_heavy`），不分地面。步幅大、遠遠就聽得到；
+## 衝撞時步子更大、更響。乾運河裡牠的步態是關卡演的，關卡在步態落地時呼叫 footsteps.stomp()。
+const STRIDE: float = 1.3
+const CHARGE_STRIDE: float = 2.2
+const STEP_DB: float = -7.0
+const CHARGE_STEP_DB: float = -3.0
+const STEP_SOUND: String = "step_heavy"
+
 
 func intel_id() -> String:
 	return "undertaker"
+
+
+func _make_footsteps() -> Footsteps:
+	var f := Footsteps.new(STRIDE, CHARGE_STRIDE, STEP_DB, CHARGE_STEP_DB)
+	f.sound = STEP_SOUND
+	f.pitch_jitter = 0.05
+	f.unit_size = 7.0
+	return f
 
 
 ## 送葬者又高又寬（2.6 m、半徑 0.6 m），站在諾恩背後時離鏡頭 1.5 m 還是擋掉畫面三分之一：淡出範圍放大（D-115）

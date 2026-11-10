@@ -1075,10 +1075,12 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 		await _step_into(player, Vector3(canal.get("DECOY_BANK_X"), 0.0, (canal.get("DECOY_ZS") as PackedFloat32Array)[0]), 2)
 		canal.set("force_restoring", true)
 		var before: Vector3 = u.global_position
+		var steps_before: int = (u as Undertaker).footsteps.count
 		for i: int in 6:
 			await tree.physics_frame
 		assert_eq(str(canal.get("follow_kind")), HeartTargets.NOEN, "按住重現：牠轉向諾恩")
 		assert_true(Vector2(u.global_position.x - before.x, u.global_position.z - before.z).length() < 0.01, "轉向諾恩時停下來，不往假心臟走")
+		assert_eq((u as Undertaker).footsteps.count, steps_before, "[ch3_decoy] 停下來聽就沒有腳步聲（D-187）")
 		assert_eq(s.state.get_flag("ch3.heard_noen"), true)
 		assert_eq(hud.banner_text(), "CH3_HEARS_NOEN", "提示：重現時心跳變快，牠聽得到")
 		assert_true(Game.restore_mix.sources_active(), "[ch3_decoy] 按住重現：其他聲音悶下去、只剩心跳（D-183）")
@@ -1100,6 +1102,9 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 		assert_false(bool(canal.call("spot_actionable", spot + 1)), "假心臟還垂在第 %d 點：要先收上來" % spot)
 		canal.call("use_spot", spot)
 	assert_eq(s.state.get_flag("ch3.decoy_done"), true, "牠進了閘道")
+	var heavy: Footsteps = (u as Undertaker).footsteps
+	assert_true(heavy.count >= 1, "[ch3_decoy] 牠一路走過來有很重的拖步（%d 步，D-187）" % heavy.count)
+	assert_eq(heavy.last_sound, Undertaker.STEP_SOUND, "[ch3_decoy] 拖步不分地面")
 	assert_true(u.global_position.z <= float(canal.get("SLUICE_REACH_Z")), "送葬者走到閘道口")
 	assert_eq(s.quests.stage_of("ch3_main"), "coal_cart", "→ 段落 4 煤車")
 	assert_eq(s.state.checkpoint, "ch3_lured", "檢查點 ch3_lured")

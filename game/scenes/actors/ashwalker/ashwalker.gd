@@ -6,9 +6,22 @@ extends EnemyActor
 
 var _claw_mat: StandardMaterial3D
 
+## 腳步聲（D-187）：跟諾恩同一套地面聲，音高壓低、步子短而碎（佝僂著拖步），比諾恩小聲一點。
+const STRIDE: float = 0.85
+const STEP_DB: float = -15.0
+const STEP_PITCH: float = 0.8
+
 
 func intel_id() -> String:
 	return "ashwalker"
+
+
+func _make_footsteps() -> Footsteps:
+	var f := Footsteps.new(STRIDE, STRIDE, STEP_DB, STEP_DB)
+	f.pitch_base = STEP_PITCH
+	f.pitch_jitter = 0.08
+	f.unit_size = 3.5
+	return f
 
 
 ## 爪擊：前方扇形內的心跳（諾恩或席菈）受傷（閃避無敵時 Health 會拒絕）。

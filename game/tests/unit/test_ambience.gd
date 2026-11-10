@@ -136,6 +136,82 @@ func test_sheila_footsteps_when_she_moves() -> void:
 	await tree.process_frame
 
 
+## 敵人的腳步聲（D-187）：灰巡者照地面、音高壓低、比諾恩小聲；送葬者固定用很重的拖步，步幅大、遠遠就聽得到。
+## 都是 move_and_slide 之後的實際距離（站著出招不踏步）。
+func test_enemy_footsteps() -> void:
+	assert_true(Ashwalker.STEP_DB < PlayerController.STEP_DB, "灰巡者比諾恩小聲")
+	assert_true(Ashwalker.STEP_PITCH < 1.0, "灰巡者音高壓低")
+	assert_true(Undertaker.STRIDE > PlayerController.SPRINT_STRIDE, "送葬者步幅比諾恩跑步還大")
+	assert_true(Undertaker.STEP_DB > PlayerController.SPRINT_STEP_DB, "送葬者走路比諾恩跑步還響")
+	assert_true(Sfx.NAMES.has(Undertaker.STEP_SOUND), "拖步登記在 Sfx.NAMES")
+	assert_not_null(Sfx.stream(Undertaker.STEP_SOUND), "拖步的音檔在")
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var floor_body := CSGBox3D.new()
+	floor_body.size = Vector3(80, 1, 80)
+	floor_body.position = Vector3(0, -0.5, 0)
+	floor_body.use_collision = true
+	root.add_child(floor_body)
+	var hb := Node3D.new()
+	hb.add_to_group("heartbeat")
+	hb.position = Vector3(0, 0, -13)
+	root.add_child(hb)
+	var a := Ashwalker.new()
+	a.position = Vector3(-2.0, 0.05, 0)
+	root.add_child(a)
+	var u := Undertaker.new()
+	u.state = GameState.new()
+	u.position = Vector3(2.0, 0.05, 0)
+	root.add_child(u)
+	for i: int in 90:
+		await tree.physics_frame
+	var a_walked: float = Vector2(a.global_position.x + 2.0, a.global_position.z).length()
+	var u_walked: float = Vector2(u.global_position.x - 2.0, u.global_position.z).length()
+	assert_true(a_walked > 2.0 and u_walked > 2.0, "兩隻都追上去了（%.1f m、%.1f m）" % [a_walked, u_walked])
+	assert_true(a.footsteps.count >= 2, "灰巡者一路有腳步聲（%d 步）" % a.footsteps.count)
+	assert_eq(a.footsteps.last_sound, "step_stone", "灰巡者照地面（關卡沒說 → 石頭）")
+	assert_true(u.footsteps.count >= 1, "送葬者有腳步聲（%d 步）" % u.footsteps.count)
+	assert_true(u.footsteps.count < a.footsteps.count, "送葬者步子大、步數少")
+	assert_eq(u.footsteps.last_sound, Undertaker.STEP_SOUND, "送葬者固定用拖步")
+	# 走到面前停下來出招：不再踏步
+	a.position = hb.position + Vector3(0, 0.05, 1.0)
+	await tree.physics_frame
+	var standing: int = a.footsteps.count
+	for i: int in 20:
+		await tree.physics_frame
+	assert_eq(a.footsteps.count, standing, "站著出招不踏步")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
+## 乾運河裡送葬者的步態是關卡演的（D-187）：stomp() 不看距離直接踏一步，聲音掛在指定的節點（牠自己停著）。
+func test_stomp_plays_on_given_parent() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var owner := Node3D.new()
+	owner.process_mode = Node.PROCESS_MODE_DISABLED
+	root.add_child(owner)
+	var f := Footsteps.new(1.3, 2.2, -7.0, -3.0)
+	f.sound = Undertaker.STEP_SOUND
+	f.pitch_base = 0.5
+	f.stomp(owner, false, root)
+	assert_eq(f.count, 1)
+	assert_eq(f.last_sound, Undertaker.STEP_SOUND)
+	var players: Array[AudioStreamPlayer3D] = []
+	for c: Node in root.get_children():
+		if c is AudioStreamPlayer3D:
+			players.append(c as AudioStreamPlayer3D)
+	assert_eq(players.size(), 1, "聲音掛在關卡上，不掛在停著的牠身上")
+	if players.size() == 1:
+		assert_true(players[0].pitch_scale < 0.6, "基準音高有套上（%.2f）" % players[0].pitch_scale)
+		assert_true(players[0].playing, "有在播")
+	assert_eq(owner.get_child_count(), 0)
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
 ## 鐘院飯廳、柯德家是木板地（D-184）；鐘院內室、白晝城的街是石板。
 func test_wood_floors_in_bell_hall_and_kord_house() -> void:
 	var hall_script: GDScript = load("res://scenes/levels/bell_hall.gd") as GDScript

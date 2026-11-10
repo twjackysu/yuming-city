@@ -206,6 +206,8 @@ var _spots: Array[DecoySpot] = []
 var force_restoring: bool = false
 ## 測試用：送葬者走路的速度倍數（流程測試不用真的等十幾秒）
 var walk_scale: float = 1.0
+## 步態目前在第幾個半週期（-1＝站著）：換到下一個就是一步落地（D-187）
+var _gait_beat: int = -1
 ## 假心臟上一次「咚」是第幾拍；諾恩重現時自己的心跳聲（變快）下一次在什麼時候
 var _heart_beat_i: int = -1
 var _noen_beat_at: float = 0.0
@@ -1306,10 +1308,16 @@ func _gait(walking: bool) -> void:
 	if not walking:
 		_undertaker.global_position.y = BED_Y
 		_undertaker.rotation.z = 0.0
+		_gait_beat = -1
 		return
 	var ph: float = _t * TAU / GAIT_SEC
 	_undertaker.global_position.y = BED_Y + GAIT_LIFT * absf(sin(ph))
 	_undertaker.rotation.z = GAIT_ROLL * sin(ph)
+	# 腳步聲（D-187）：每半個步態週期身體落回河床一次＝一步（牠這時 process_mode 停著，聲音掛在關卡上）
+	var beat: int = int(floor(ph / PI))
+	if _gait_beat >= 0 and beat != _gait_beat and _undertaker.footsteps != null:
+		_undertaker.footsteps.stomp(_undertaker, false, self)
+	_gait_beat = beat
 
 
 ## 走到閘道口：段落 3 完成（ch3.decoy_done → 檢查點 ch3_lured）→ 段落 4 煤車待續。
