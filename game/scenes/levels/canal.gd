@@ -1066,10 +1066,40 @@ func clapper_light() -> OmniLight3D:
 # ---------------------------------------------------------------- 段落 3：假心臟（D-165）
 
 ## 找到速度、提示過攻略筆記之後（測試也用）：（第五夜）彌夏交出假心臟。只開一次。
+## 「給我一晚」之後過了一夜：畫面先黑一下（D-194），第一句旁白「第五夜」在黑幕上出現，再慢慢亮回來。
 func talk_misha() -> void:
 	if Game.is_in_dialogue() or Game.session.quests.stage_of(QUEST) != "decoy":
 		return
+	_night_pass()
 	Game.start_dialogue(DECOY_TALK)
+
+
+## 過了一夜的黑幕（D-194）：HUD 之上、對話框之下（字照樣看得到）；很快變黑、停一下、慢慢亮回來。
+const NIGHT_FADE_IN: float = 0.35
+const NIGHT_FADE_HOLD: float = 1.4
+const NIGHT_FADE_OUT: float = 1.3
+const NIGHT_FADE_LAYER: int = 12
+
+
+func _night_pass() -> void:
+	var old: Node = get_node_or_null("NightFade")
+	if old != null:
+		old.free()
+	var layer := CanvasLayer.new()
+	layer.name = "NightFade"
+	layer.layer = NIGHT_FADE_LAYER
+	var rect := ColorRect.new()
+	rect.color = Color.BLACK
+	rect.modulate.a = 0.0
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	add_child(layer)
+	var tw: Tween = layer.create_tween()
+	tw.tween_property(rect, "modulate:a", 1.0, NIGHT_FADE_IN)
+	tw.tween_interval(NIGHT_FADE_HOLD)
+	tw.tween_property(rect, "modulate:a", 0.0, NIGHT_FADE_OUT)
+	tw.tween_callback(layer.queue_free)
 
 
 ## 東岸的三個點（矮牆上一根小木樁）、假心臟（小銅盒＋一下一下亮的銅光）、垂下去的繩子。

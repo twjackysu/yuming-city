@@ -1040,6 +1040,10 @@ func _chapter3_decoy(canal: StoryLevel, alt: bool) -> void:
 	assert_true(_game.call("is_in_dialogue"), "找到速度之後、彌夏在旁邊 → 她交出假心臟")
 	var runner: DialogueRunner = _game.get("dialogue") as DialogueRunner
 	assert_eq(runner.dialogue_id, "ch3_decoy_make")
+	var night: CanvasLayer = canal.get_node_or_null("NightFade") as CanvasLayer
+	assert_not_null(night, "「給我一晚」之後過了一夜：黑一下（D-194）")
+	if night != null:
+		assert_true(night.layer > 10 and night.layer < 20, "黑幕在 HUD（10）之上、對話框（20）之下")
 	for i: int in 10:
 		if not runner.is_running():
 			break
