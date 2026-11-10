@@ -85,7 +85,13 @@ func active_save_dir() -> String:
 	return reboot_save_dir() if use_reboot_saves else save_dir
 
 
-## 讀新版的存檔（標題畫面的新版入口用）
+## 新版有沒有存檔（標題畫面的「繼續」；不改變現在讀寫哪個資料夾）
+func has_reboot_save(slot: String = AUTO_SLOT) -> bool:
+	var path: String = reboot_save_dir().path_join(slot + ".json")
+	return FileAccess.file_exists(path) or FileAccess.file_exists(path + ".bak")
+
+
+## 讀新版的存檔（標題畫面的「繼續」用）
 func load_reboot_slot(slot: String = AUTO_SLOT) -> SaveCodec.Status:
 	var was: bool = use_reboot_saves
 	use_reboot_saves = true

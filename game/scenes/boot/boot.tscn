@@ -51,7 +51,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.72, 0.82, 1)
 theme_override_font_sizes/font_size = 30
-text = "GAME_SUBTITLE"
+text = "RB_GAME_SUBTITLE"
 
 [node name="Spacer" type="Control" parent="TitleBlock"]
 custom_minimum_size = Vector2(0, 48)
@@ -81,6 +81,15 @@ text = "MENU_CONTINUE"
 alignment = 0
 flat = true
 
+[node name="Classic" type="Button" parent="TitleBlock/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "MENU_CLASSIC"
+alignment = 0
+flat = true
+
 [node name="Settings" type="Button" parent="TitleBlock/Menu"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 52)
@@ -96,6 +105,47 @@ custom_minimum_size = Vector2(320, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 text = "MENU_QUIT"
+alignment = 0
+flat = true
+
+[node name="ClassicMenu" type="VBoxContainer" parent="TitleBlock"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 10
+
+[node name="ClassicNote" type="Label" parent="TitleBlock/ClassicMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.66, 0.72, 0.9)
+theme_override_font_sizes/font_size = 20
+text = "MENU_CLASSIC_NOTE"
+
+[node name="ClassicNew" type="Button" parent="TitleBlock/ClassicMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "MENU_NEW_GAME"
+alignment = 0
+flat = true
+
+[node name="ClassicContinue" type="Button" parent="TitleBlock/ClassicMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "MENU_CONTINUE"
+alignment = 0
+flat = true
+
+[node name="ClassicBack" type="Button" parent="TitleBlock/ClassicMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "MENU_BACK"
 alignment = 0
 flat = true
 

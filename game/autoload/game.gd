@@ -168,22 +168,44 @@ func _on_achievement_unlocked(achievement_id: String) -> void:
 	achievement_toast.enqueue(achievement_id)
 
 
-## 標題畫面的「繼續」是舊版的存檔（新版有自己的資料夾與入口，D-202）
+## 標題畫面「舊版」選項裡的「繼續」：舊版的存檔（新版有自己的資料夾，D-202）
 func has_continue() -> bool:
 	session.use_reboot_saves = false
 	return session.has_save(GameSession.AUTO_SLOT)
 
 
-func new_game() -> void:
+## 舊版的新遊戲（標題畫面「舊版」選項，D-211）。load_level=false 給測試用（只重設狀態、不換場景）。
+func new_game(load_level: bool = true) -> void:
 	session.new_game()
-	go_to_level(level_for_checkpoint(session.state.checkpoint))
+	if load_level:
+		go_to_level(level_for_checkpoint(session.state.checkpoint))
 
 
-func continue_game() -> bool:
+func continue_game(load_level: bool = true) -> bool:
 	session.use_reboot_saves = false
 	if session.load_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
 		return false
-	go_to_level(level_for_checkpoint(session.state.checkpoint))
+	if load_level:
+		go_to_level(level_for_checkpoint(session.state.checkpoint))
+	return true
+
+
+## 標題畫面的「新遊戲／繼續」＝新版《這些詛咒對我太有用了》（D-211）；存檔在新版自己的資料夾，不碰舊版的。
+func has_reboot_continue() -> bool:
+	return session.has_reboot_save(GameSession.AUTO_SLOT)
+
+
+func new_reboot_game(load_level: bool = true) -> void:
+	session.new_reboot_game()
+	if load_level:
+		go_to_level(level_for_checkpoint(session.state.checkpoint))
+
+
+func continue_reboot_game(load_level: bool = true) -> bool:
+	if session.load_reboot_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
+		return false
+	if load_level:
+		go_to_level(level_for_checkpoint(session.state.checkpoint))
 	return true
 
 
