@@ -321,6 +321,13 @@ var end_card_shown: bool = false
 ## 結尾卡＋「感謝試玩」都關掉之後要做什麼（空的＝回標題；測試會換掉，不要真的回標題）
 var end_card_done: Callable = Callable()
 var _end_card_wait: float = -1.0
+## 收尾配樂（D-188）
+const PART_END_MUSIC: String = "part_end_theme"
+const PART_END_MUSIC_DB: float = -14.0
+const PART_END_MUSIC_FADE: float = 4.0
+## 配樂進來時乾運河的低風壓到多小（平常 -10）
+const PART_END_AMBIENCE_DB: float = -24.0
+var part_end_music: AudioStreamPlayer
 var _corner_node: Node3D
 var _corner_cam: Camera3D
 var _corner_tween: Tween
@@ -1960,7 +1967,19 @@ func play_end_card() -> ChapterCard:
 	if end_card_shown:
 		return get_node_or_null("ChapterCard") as ChapterCard
 	end_card_shown = true
+	_start_part_end_music()
 	return ChapterCard.play(self, "PART1_END_NUMBER", "PART1_END_TITLE", show_thanks, END_CARD_SCALE)
+
+
+## 第一部前半的收尾配樂（D-188）：結尾卡一出來就慢慢漲起來，一路墊到感謝試玩頁；乾運河的低風同時壓下去。
+## 照 03「配樂放在哪裡」：說完、安靜下來的地方才放。
+func _start_part_end_music() -> void:
+	if part_end_music != null:
+		return
+	part_end_music = Ambience.music(self, PART_END_MUSIC, PART_END_MUSIC_DB, PART_END_MUSIC_FADE, "PartEndMusic")
+	var wind: AudioStreamPlayer = get_node_or_null("Ambience") as AudioStreamPlayer
+	if wind != null:
+		wind.create_tween().tween_property(wind, "volume_db", PART_END_AMBIENCE_DB, PART_END_MUSIC_FADE)
 
 
 ## 「感謝試玩」一頁（D-176）：結尾卡播完（或跳過）之後蓋在全黑上；關掉 → end_card_done（空的＝回標題）。

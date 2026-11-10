@@ -1432,7 +1432,12 @@ func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
 	assert_not_null(card, "講完幾秒後結尾卡")
 	if card != null:
 		assert_eq(card.title_text(), str(TranslationServer.translate("PART1_END_TITLE")), "結尾卡：前半　完")
+		_assert_music(canal, "[結尾卡]", "part_end_theme", "PartEndMusic")
+		var low_wind: AudioStreamPlayer = _assert_ambience(canal, "[結尾卡]", "canal_ambience") as AudioStreamPlayer
 		card.finish()
+		await tree.process_frame
+		if low_wind != null:
+			assert_true(low_wind.volume_db < -10.0, "[結尾卡] 配樂進來時低風壓下去（%.1f dB）" % low_wind.volume_db)
 	# 結尾卡之後：「感謝試玩」一頁（D-176）；按鈕剛出現時不能按，關掉才回標題
 	var page: ThanksPage = canal.get_node_or_null("ThanksPage") as ThanksPage
 	assert_not_null(page, "結尾卡播完 → 感謝試玩")
@@ -1448,6 +1453,7 @@ func _chapter3_corner(canal: StoryLevel, alt: bool) -> void:
 		assert_true(int(page.value_text("THANKS_RUN_GUIDE")) >= 1, "你的這一趟：至少一條攻略筆記被推翻")
 		assert_true(s.state.playtime_sec > 1.0, "在關卡裡的時間有在累計（%.1f 秒）" % s.state.playtime_sec)
 		assert_eq(page.value_text("THANKS_RUN_TIME"), ThanksPage.time_text(s.state.playtime_sec), "你的這一趟：遊戲時間")
+		_assert_music(canal, "[感謝試玩]", "part_end_theme", "PartEndMusic")
 		page.elapsed = ThanksPage.INPUT_DELAY
 		await tree.process_frame
 		assert_false(page.back_button.disabled, "過一下子按鈕就能按")

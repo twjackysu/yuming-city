@@ -22,6 +22,7 @@
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
+- part_end_theme：第一部前半的收尾配樂（可循環 28 秒，D-188；結尾卡＋感謝試玩頁，走 Music 匯流排）。回答標題的鐘聲：標題是往下走（D4、C4、A3，第二次落到 F3），這裡從 F3 往上走（F3、A3、C4），第二次 A3、C4 停在 D4＝標題開頭那個音。底下是 F2＋C3 的長音（比收束的小三度暖一點）＋很小聲的 A3，14 秒一次漲落；鐘聲帶三個越來越悶的回音。
 - step_heavy：送葬者的拖步（D-187，約 0.65 秒；不分地面）。很重的低頻「咚」（72 → 38 Hz 往下掉、加一個高八度的泛音讓小喇叭也聽得到）＋落地的悶悶碎響＋拖在後面的鐵鏈擦地（高通噪音、斷斷續續地抖）＋三下鐵環碰撞。
 - stair_ambience：一百七十二階的環境音（可循環 9 秒，D-180）。很深的石井裡空空的低風（比乾運河更低更悶）＋上面某處的滴水，每一滴後面跟著四個越來越悶的長回音（井很高）；頭尾交叉淡化。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
@@ -639,6 +640,48 @@ def aftermath_theme(seconds=32.0, seed=83):
     return [v / peak * 0.6 for v in looped]
 
 
+def part_end_theme(seconds=28.0, seed=97):
+    """第一部前半的收尾配樂（D-188）：F2＋C3 的長音、往上走的鐘聲（回答標題往下走的那三聲），第二次停在 D4。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(2.5 * RATE)
+    total = n + fade
+    table = _wavetable([(1, 1.0), (2, 0.38), (3, 0.16), (4, 0.06)])
+    size = len(table)
+    drone = [0.0] * total
+    for f, amp in [(87.31, 0.5), (87.47, 0.42), (130.81, 0.32), (130.6, 0.27), (174.61, 0.12), (220.0, 0.07)]:
+        ph = rng.random() * size
+        step = f * size / RATE
+        for i in range(total):
+            drone[i] += amp * table[int(ph) % size]
+            ph += step
+    for i in range(total):
+        t = i / RATE
+        drone[i] *= 0.7 + 0.3 * math.sin(2 * math.pi * t / 14.0 - 1.0)  # 14 秒一次，28 秒剛好兩次
+    drone = onepole_lp(onepole_lp(drone, 750), 950)
+    dpeak = max(abs(v) for v in drone) or 1.0
+    out = [v / dpeak * 0.42 for v in drone]
+    bells = {}
+    motif = [(2.5, 174.61, 0.85), (4.1, 220.0, 0.8), (5.9, 261.63, 0.9),
+             (15.5, 220.0, 0.7), (17.1, 261.63, 0.75), (19.4, 293.66, 1.0)]
+    for at, f, gain in motif:
+        if f not in bells:
+            b = onepole_lp(bell(f, 4.5), 2600)
+            bpeak = max(abs(v) for v in b) or 1.0
+            bells[f] = [v / bpeak for v in b]
+        b = bells[f]
+        for delay, tap in [(0.0, 0.32), (0.43, 0.11), (1.01, 0.055), (1.67, 0.028)]:
+            start = int((at + delay) * RATE)
+            g = gain * tap
+            for j, v in enumerate(b):
+                if start + j >= total:
+                    break
+                out[start + j] += g * v
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.7 for v in looped]
+
+
 def _step_env(n, attack, decay):
     return [min(1.0, (i / RATE) / attack) * math.exp(-(i / RATE) * decay) for i in range(n)]
 
@@ -785,6 +828,7 @@ def main():
         write("hearth_crackle", hearth_crackle()),
         write("title_theme", title_theme()),
         write("aftermath_theme", aftermath_theme()),
+        write("part_end_theme", part_end_theme()),
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),
