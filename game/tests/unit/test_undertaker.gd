@@ -154,6 +154,10 @@ func test_phase_two_makes_slam_unverified() -> void:
 	lines = EnemyIntel.lines("undertaker", boss.intel_overrides)
 	assert_true(lines.has("招式：鐵架下砸（未證實？）"), "攻略開始失準：" + ", ".join(lines))
 	assert_true(absf(boss.brain.move_num("slam", "telegraph") - 0.7) < 0.001, "下砸前兆縮短到 0.7")
+	assert_false((boss.get_node("Body/Torso/ChainR") as Node3D).visible, "第二階段扯斷右手那條鐵鏈（D-200）")
+	assert_true((boss.get_node("Body/Torso/ChainL") as Node3D).visible, "左手那條還在")
+	assert_false((boss.get_node("Body/ChainTrailR") as Node3D).visible, "右邊地上那段也不見了")
+	assert_true((boss.get_node("Body/ChainTrailL") as Node3D).visible, "左邊地上那段還在")
 	root.queue_free()
 	await tree.process_frame
 
@@ -577,5 +581,27 @@ func test_telegraph_decals_use_shader_and_fill() -> void:
 			if grew:
 				break
 	assert_true(grew, "前兆進度往上長（最後 %.2f）" % seen)
+	root.queue_free()
+	await tree.process_frame
+
+
+func test_chains_hang_to_ground_and_trail_behind() -> void:
+	# 手裡拖著的兩條鐵鏈（D-200）：從手垂到地面附近、地上那段往身後（+Z）拖
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var boss: Undertaker = a[2]
+	await tree.physics_frame
+	for n: String in ["ChainL", "ChainR"]:
+		var chain: Node3D = boss.get_node("Body/Torso/" + n) as Node3D
+		assert_true(chain.visible, n + " 一開始看得到")
+		var hang: MeshInstance3D = chain.get_node("Hang") as MeshInstance3D
+		var trail: MeshInstance3D = boss.get_node("Body/ChainTrail" + n.substr(5)) as MeshInstance3D
+		var bottom: float = (hang.global_transform * hang.mesh.get_aabb()).position.y - boss.global_position.y
+		assert_true(bottom > -0.1 and bottom < 0.12, "%s 垂到地面附近（%.3f）" % [n, bottom])
+		var tb: AABB = boss.global_transform.affine_inverse() * (trail.global_transform * trail.mesh.get_aabb())
+		assert_true(tb.end.z > Undertaker.CHAIN_TRAIL * 0.8, "%s 地上那段往身後拖" % n)
+		assert_true(tb.size.y < 0.12 and tb.position.y > -0.05, "%s 地上那段是躺平的、貼地" % n)
+	boss.set_chain_trails(false)
+	assert_false((boss.get_node("Body/ChainTrailL") as Node3D).visible, "吊著／倒下時地上那段可以收掉")
 	root.queue_free()
 	await tree.process_frame

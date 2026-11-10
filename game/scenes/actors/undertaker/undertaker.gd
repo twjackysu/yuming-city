@@ -25,6 +25,10 @@ const FRAME_IRON_SHADER: String = "res://scenes/actors/undertaker/frame_iron.gds
 const GROUND_SHADOW_SHADER: String = "res://scenes/actors/undertaker/ground_shadow.gdshader"
 ## 大衣的底色：比霧暗得多，隔著霧才看得出一個深色的人形（原本 0.11，跟夜霧差不多亮）
 const ROBE_ALBEDO: Color = Color(0.055, 0.055, 0.065)
+## 手裡拖著的鐵鏈（D-200）：手的位置（Torso 座標，x 取左右）、一節的外長／外寬／鐵條半徑、地上往後拖多長
+const CHAIN_HAND: Vector3 = Vector3(0.66, 0.03, 0.06)
+const CHAIN_LINK: Vector3 = Vector3(0.12, 0.075, 0.014)
+const CHAIN_TRAIL: float = 0.9
 const GROUND_SHADOW_RADIUS: float = 1.15
 const GROUND_SHADOW_STRENGTH: float = 0.6
 ## 前兆範圍的形狀（telegraph.gdshader 的 shape）
@@ -317,6 +321,13 @@ func _apply_struggle_brain() -> void:
 ## 第二階段：扯斷一條鐵鏈；看穿裡「下砸」變成未證實，下砸前兆縮短；換招式輪替、出現攻略沒寫的招。
 func enter_phase_two() -> void:
 	phase = 2
+	# 扯斷一條鐵鏈（D-200）：右手那條不見了
+	var torn: Node3D = _body.get_node_or_null("Torso/ChainR") as Node3D if _body != null else null
+	if torn != null:
+		torn.visible = false
+	var torn_trail: Node3D = _body.get_node_or_null("ChainTrailR") as Node3D if _body != null else null
+	if torn_trail != null:
+		torn_trail.visible = false
 	intel_overrides["slam"] = false
 	intel_overrides["double_slam"] = false
 	brain.unreadable["double_slam_2"] = true
@@ -388,6 +399,8 @@ func _on_died() -> void:
 	for id: String in _decals:
 		(_decals[id] as MeshInstance3D).visible = false
 	var torso: Node3D = _body.get_node("Torso") as Node3D
+	# 倒下時地上那段鐵鏈收掉（整個 _body 往前轉，貼地的那段會翹到半空中，D-200）
+	set_chain_trails(false)
 	# 兜帽裡的霜光在跪下時熄掉（倒地的冷光由 _frost_exhale 接手）
 	var dim := create_tween()
 	dim.tween_property(torso.get_node("HoodLight"), "light_energy", 0.0, FALL_KNEEL_SEC)
@@ -611,8 +624,44 @@ func _build_body() -> void:
 		arm.rotation_degrees = Vector3(-20, 0, side * 8.0)
 		arm.material = robe
 		torso.add_child(arm)
+	_build_chains(torso, iron)
 	_build_ground_shadow()
 	_build_decals()
+
+
+## 手裡拖著的兩條鐵鏈（D-200）：從兩手垂到地上、再往身後拖一段（之前只有腳步聲裡的鐵鏈擦地，身上看不到）。
+## 名字 ChainL／ChainR（Torso 底下，跟著手）＋ChainTrailL／R（_body 底下，躺在地上）；第二階段扯斷右邊那條（enter_phase_two 藏起來）。
+func _build_chains(torso: Node3D, iron: Material) -> void:
+	for side: float in [-1.0, 1.0]:
+		var root := Node3D.new()
+		root.name = "ChainL" if side < 0.0 else "ChainR"
+		root.position = CHAIN_HAND * Vector3(side, 1.0, 1.0)
+		torso.add_child(root)
+		var drop: float = CHAIN_HAND.y + torso.position.y - 0.04
+		var hang := MeshInstance3D.new()
+		hang.name = "Hang"
+		hang.mesh = ChainMesh.build(drop, CHAIN_LINK.x, CHAIN_LINK.y, CHAIN_LINK.z)
+		hang.material_override = iron
+		root.add_child(hang)
+		# 躺在地上往身後（+Z）拖的一段：掛在 _body（不跟著上身前傾後仰，永遠貼地）。
+		# ChainMesh 是往 -Y 長的，繞 X 轉 -90° 變成往 +Z
+		var trail := MeshInstance3D.new()
+		trail.name = "ChainTrail" + ("L" if side < 0.0 else "R")
+		trail.mesh = ChainMesh.build(CHAIN_TRAIL, CHAIN_LINK.x, CHAIN_LINK.y, CHAIN_LINK.z)
+		trail.material_override = iron
+		trail.position = Vector3(side * CHAIN_HAND.x, CHAIN_LINK.z, CHAIN_HAND.z - CHAIN_LINK.x * 0.5)
+		trail.rotation_degrees = Vector3(-90.0, side * 12.0, 0.0)
+		_body.add_child(trail)
+
+
+## 地上拖的那兩段看不看得到（D-200）：吊著（第 3 章）、倒下的時候藏起來；第二階段扯斷的右邊那條不會再出現。
+func set_chain_trails(on: bool) -> void:
+	if _body == null:
+		return
+	for side: String in ["L", "R"]:
+		var trail: Node3D = _body.get_node_or_null("ChainTrail" + side) as Node3D
+		if trail != null:
+			trail.visible = on and not (side == "R" and phase >= 2)
 
 
 ## 鐵架材質（D-101）：背上的與擲出去的（ThrownFrame）共用

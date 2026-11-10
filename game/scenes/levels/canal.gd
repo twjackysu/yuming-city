@@ -1259,6 +1259,7 @@ func _wake_undertaker(drop: bool) -> void:
 	for c: Node in _pivot.get_children():
 		if str(c.name).begins_with("Chain"):
 			(c as Node3D).visible = false
+	_undertaker.set_chain_trails(true)
 	if not drop:
 		_undertaker.global_position.y = BED_Y
 		return
@@ -2826,6 +2827,8 @@ func _build_undertaker() -> void:
 	# 面朝東南（從東岸的說話點看得到胸口）
 	u.rotation.y = atan2(-0.55, -0.83)
 	_pivot.add_child(u)
+	# 吊著的時候手裡的鐵鏈只垂著，地上那段收掉（D-200）；掉到河床上再放出來
+	u.set_chain_trails(false)
 	u.remove_from_group("enemies")
 	u.remove_from_group("damageable")
 	u.process_mode = Node.PROCESS_MODE_DISABLED
