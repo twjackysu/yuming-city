@@ -561,6 +561,10 @@ func _ready() -> void:
 		finish_cut()
 		_take_clapper()
 		Game.session.set_flag("ch3.clapper_taken", true)
+		# 煤壓住牠的提示（4 秒）是好幾分鐘前的事：直接跳到這裡時收掉，不然會疊在彌夏的對話上方（盤點截圖 33）
+		var dev_hud: Hud = get_node_or_null("Hud") as Hud
+		if dev_hud != null:
+			dev_hud.hide_banner()
 		_put(player, Vector3(5.2, 0.0, MAP_TRIGGER_Z + 0.5), PI)
 		(player as PlayerController).yaw = PI + 0.5
 		(player as PlayerController).snap_camera()

@@ -201,6 +201,13 @@ func show_banner(key: String, seconds: float = 3.0) -> void:
 	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.6)
 
 
+## 立刻收掉上方的提示（截圖旗標直接跳段落時用：前一段的提示不該留到下一段的對話上）
+func hide_banner() -> void:
+	if _banner_tween != null:
+		_banner_tween.kill()
+	_banner.modulate.a = 0.0
+
+
 func banner_text() -> String:
 	return _banner.text if _banner.modulate.a > 0.0 or (_banner_tween != null and _banner_tween.is_running()) else ""
 
