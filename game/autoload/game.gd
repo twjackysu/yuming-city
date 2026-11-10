@@ -55,6 +55,13 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"ch3_pinned": "canal",
 	"ch3_clapper": "canal",
 	"ch3_map": "canal",
+	# 新版前十分鐘（劇情重寫，D-204）：都在霜橋鎮
+	"rb_start": "frostbridge",
+	"rb_before_mist": "frostbridge",
+	"rb_sheila": "frostbridge",
+	"rb_guardian": "frostbridge",
+	"rb_portable": "frostbridge",
+	"rb_market": "frostbridge",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
@@ -111,7 +118,11 @@ func _ready() -> void:
 	if args.has("benchmark"):
 		level = "benchmark"
 	if level != "":
-		session.new_game.call_deferred()
+		# 截圖用：`-- --level=frostbridge --rb-at=start|mist` 新版（劇情重寫）的新遊戲，推到那一段（D-204）
+		if args.has("rb-at"):
+			_dev_reboot_start.call_deferred(str(args["rb-at"]))
+		else:
+			session.new_game.call_deferred()
 		go_to_level.call_deferred(level)
 	# 截圖用：`-- --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2`
 	if args.has("dialogue"):
@@ -133,6 +144,11 @@ func _ready() -> void:
 				cutscene.press(cutscene.awaited_action())
 			if not cutscene.is_waiting():
 				cutscene.update(0.0))
+
+
+func _dev_reboot_start(at: String) -> void:
+	session.new_reboot_game()
+	RebootOpening.dev_advance(session, at)
 
 
 ## 換一套成就紀錄（測試用 store_path="" 的，不寫玩家的檔案）。
@@ -260,7 +276,10 @@ func retry(reload_level: bool = true) -> void:
 	cutscene = null
 	var played: float = session.state.playtime_sec
 	if session.retry_from_checkpoint() != SaveCodec.Status.OK:
-		session.new_game()
+		if session.is_reboot():
+			session.new_reboot_game()
+		else:
+			session.new_game()
 	session.state.playtime_sec = maxf(session.state.playtime_sec, played)
 	if reload_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))

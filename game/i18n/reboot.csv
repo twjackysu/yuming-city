@@ -14,6 +14,8 @@ RB_STATUS_POISON,Poisoned,中毒
 RB_STATUS_POISON_REVERSED,Poisoned → Regenerating,中毒 → 回血
 RB_AWAKEN_LINE1,[Poisoned],【中毒】
 RB_AWAKEN_LINE2,[Reversal Constitution activated] Poisoned → Regenerating,【逆轉體質已啟動】中毒 → 持續回血
+RB_BARREL_TOXIC,TOXIC,有毒
+RB_BARRELS_BROKEN,The barrels split open. Green mist is creeping along the ground.,藥桶裂開了。綠色的霧沿著地面流過來
 RB_SLOT_EMPTY,Empty reversal slot,空的反轉欄位
 RB_ITEM_MIST_SERPENT,Mist Serpent Venom,霧蛇毒劑
 RB_ITEM_MIST_SERPENT_DESC,Effect: Poisoned for 20 seconds. Label: NOT FOR DRINKING,效果：中毒，持續 20 秒。瓶上寫：不可飲用

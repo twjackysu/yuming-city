@@ -29,6 +29,12 @@ var interact: InteractPrompt
 ## 新版的狀態圖示（左下、諾恩生命條上方，D-202）；舊版沒有狀態，永遠是空的
 var status: StatusHud
 var _banner_tween: Tween
+## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」，D-204）
+var _center: VBoxContainer
+var _center_tween: Tween
+## 第二行比第一行晚出現幾秒
+const CENTER_LINE_GAP: float = 0.9
+const CENTER_LINE2_COLOR: Color = Color(0.55, 0.95, 0.6)
 
 
 func _ready() -> void:
@@ -117,6 +123,23 @@ func _build() -> void:
 	anchor.add_child(_banner)
 	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 110)
 	_banner.modulate.a = 0.0
+	_center = VBoxContainer.new()
+	_center.name = "CenterLines"
+	_center.alignment = BoxContainer.ALIGNMENT_CENTER
+	_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(_center)
+	for i: int in 2:
+		var l := Label.new()
+		l.name = "Line%d" % (i + 1)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_font_size_override("font_size", 34 if i == 0 else 30)
+		l.add_theme_color_override("font_color", Color(0.95, 0.42, 0.38) if i == 0 else CENTER_LINE2_COLOR)
+		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+		l.add_theme_constant_override("shadow_offset_y", 2)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_center.add_child(l)
+	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+	_center.modulate.a = 0.0
 	combat = CombatHud.new()
 	add_child(combat)
 	guide = ObjectiveGuide.new()
@@ -207,6 +230,32 @@ func show_banner(key: String, seconds: float = 3.0) -> void:
 	_banner_tween.tween_property(_banner, "modulate:a", 1.0, 0.2)
 	_banner_tween.tween_interval(seconds)
 	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.6)
+
+
+## 畫面中間的兩行字（不暫停遊戲）：第一行先出現，第二行晚 CENTER_LINE_GAP 秒，一起停留 seconds 秒後淡出。
+func show_center_lines(key1: String, key2: String, seconds: float = 4.0) -> void:
+	var l1: Label = _center.get_child(0) as Label
+	var l2: Label = _center.get_child(1) as Label
+	l1.text = key1
+	l2.text = key2
+	l2.modulate.a = 0.0
+	_center.reset_size()
+	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+	_center.position.y -= 150.0
+	if _center_tween != null:
+		_center_tween.kill()
+	_center_tween = create_tween()
+	_center_tween.tween_property(_center, "modulate:a", 1.0, 0.25)
+	_center_tween.tween_property(l2, "modulate:a", 1.0, 0.35).set_delay(CENTER_LINE_GAP)
+	_center_tween.tween_interval(seconds)
+	_center_tween.tween_property(_center, "modulate:a", 0.0, 0.8)
+
+
+## 中間兩行字現在的內容（測試用；沒顯示時是空的）
+func center_lines() -> PackedStringArray:
+	if _center.modulate.a <= 0.0 and (_center_tween == null or not _center_tween.is_running()):
+		return PackedStringArray()
+	return PackedStringArray([(_center.get_child(0) as Label).text, (_center.get_child(1) as Label).text])
 
 
 ## 立刻收掉上方的提示（截圖旗標直接跳段落時用：前一段的提示不該留到下一段的對話上）

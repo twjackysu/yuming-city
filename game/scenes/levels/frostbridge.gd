@@ -86,6 +86,8 @@ const WINDOW_ENERGY: float = 1.5
 const DAY_LIT_KEEP: float = 0.3
 ## 白天熄掉的窗數（測試用）
 var day_unlit_windows: int = 0
+## 新版（劇情重寫）的流程控制器；舊版是 null（D-204）
+var reboot_opening: RebootOpening = null
 
 
 func _ready() -> void:
@@ -110,7 +112,12 @@ func _ready() -> void:
 	arch_site.position = Vector3(0.0, 0.0, ARCH_Z)
 	arch_site.rotation.y = PI  # 正面朝北（車隊和玩家從廣場過來）
 	add_child(arch_site)
-	_build_story_triggers()
+	# 新版（劇情重寫，D-204）：不跑切片的觸發點（梨販、石拱回憶、車隊…），石拱停用；流程交給 RebootOpening
+	var reboot: bool = Game.session.is_reboot()
+	if reboot:
+		arch_site.set_dormant(true)
+	else:
+		_build_story_triggers()
 	_build_cutscene_cameras()
 	_init_story()
 	if day:
@@ -195,6 +202,10 @@ func _ready() -> void:
 	if str(dev_args.get("hide", "")) == "noen":
 		dev_hide_player.call_deferred()
 	player.snap_camera()
+	if reboot:
+		reboot_opening = RebootOpening.new()
+		reboot_opening.name = "RebootOpening"
+		add_child(reboot_opening)
 
 
 ## 截圖用：按住看穿（跟沙盒的 `--insight` 一樣，直接按下輸入動作；放開要呼叫 Input.action_release）。
@@ -368,6 +379,8 @@ func _begin_sheila_meet() -> void:
 func _physics_process(_delta: float) -> void:
 	if _dev_face != "":
 		_update_dev_face()
+	if reboot_opening != null:
+		return
 	if day:
 		_update_day()
 		return
