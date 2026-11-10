@@ -17,7 +17,7 @@
 
 - 新單元：`test_status_effects`（13）、`test_reboot_session`（5）、`test_mist_and_status_hud`（7）、`test_save` 多 3 個；本機 `scripts/check.sh` 每次 push 前全綠（424 → 452 個測試，舊測試一個沒改）。
 - 本機 Vulkan 截圖：沙盒 `--status-demo`（英文、繁中各一張：左下綠色「中毒 → 回血 27」、瓶子圖示＋反轉箭頭）、`--mist`（街上一團綠霧、地上一圈亮邊；第一版三層都有邊界像疊起來的光圈，改成只有貼地那層）。
-- CI：292a788 run 42784481836「測試與匯出」全綠（截圖 job 收尾時還在跑）；9666c02 run 被下一個 push 取消；7ebc45c run 42786643053 收尾時的狀態見下一行。
+- CI：292a788 run 42784481836「測試與匯出」全綠（截圖 job 收尾時還在跑）；9666c02 run 被下一個 push 取消；7ebc45c run 42786643053（包含全部程式）「Import、測試、匯出」已綠，截圖、smoke test、打包收尾時還在跑——下一輪開工先看這個 run。
 
 **問題**
 
