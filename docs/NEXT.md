@@ -4,7 +4,7 @@
 
 ## 0. 開工先確認
 
-- 上一輪（第 60 輪）的程式 commit：f90ca7e 環境音、ad8d5a8 標題配樂、eb57fbf 腳步聲、4c9b8cc 樓梯與鐘院的環境音（**4c9b8cc 的 run 包含全部**——中間的 run 被 Jacky 的美術 push 與下一個 push 取消；收尾時的狀態見 PROGRESS 第 60 輪，開工先確認它全綠）。第 59 輪的 d720c4d run 42738449436 已全綠（含盤點截圖）。開工照常先跑 `scripts/check.sh`（最後 401 個測試，結束時沒有 leaked 警告；只跑部分測試時偶爾會有 leaked 警告，是被釋放時還在播的音效，不影響結果）。`docs/PROGRESS.md` 第 60 輪把第 49～53 輪合併了（約 230 行）。
+- 上一輪（第 60 輪）的程式 commit：f90ca7e 環境音、ad8d5a8 標題配樂、eb57fbf 腳步聲、4c9b8cc 樓梯與鐘院的環境音（**4c9b8cc run 42745336235 包含全部：收尾時「Import、測試、匯出」已綠，截圖、smoke test、打包、盤點截圖還在跑**；eb57fbf run 42744898242 已全綠——中間的 run 被 Jacky 的美術 push 取消）。第 59 輪的 d720c4d run 42738449436 已全綠（含盤點截圖）。開工照常先跑 `scripts/check.sh`（最後 401 個測試，結束時沒有 leaked 警告；只跑部分測試時偶爾會有 leaked 警告，是被釋放時還在播的音效，不影響結果）。`docs/PROGRESS.md` 第 60 輪把第 49～53 輪合併了（約 230 行）。
 - 第 49 輪起的 `2 ObjectDB instances were leaked at exit` 第 58 輪修掉了（`run_tests.gd` 的 `_silence()`：結束前停掉音效、等 0.25 秒）。第 53 輪起 c17d3ad 之前的程式 run 都已全綠（c17d3ad run 42689054966 全綠含盤點截圖）。CI 的 import 崩潰再出現（`check.sh` 重試也崩）就要查：兩次都在第一次 import 重新匯入翻譯 CSV（`strings.csv`／`slice.csv`）時。`33-ch3-map` 上方多一行煤車那段的橫幅跟對話疊在一起，多半只是截圖旗標直接跳過去造成的，有空確認。
 - **第 41 輪開工時 `scripts/get-godot.sh` 連續兩次 504，隔幾分鐘第三次就成功**——504 時先做不需要 Godot 的事（讀程式、寫資料、`gdparse`），過幾分鐘再試。
 - **第 21～23 輪本機都拿得到 Godot 與字型**（第 23 輪一次就下載成功；`check.sh` 第一次約 1 分 40 秒）；`scripts/check.sh` 一次過（含字型下載）。第 20 輪那種一律 504 的情況如果再發生，照下面「本機拿不到 Godot 時」的做法。
