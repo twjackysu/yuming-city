@@ -125,3 +125,10 @@ godot_review_run 使用合併 GLB 複製成 noen_walk_preview.glb；夜景需沿
 drape_noen_walk_coat.py 讀取 YUMING_NOEN_WALK_BLEND（上一版原生 walk 中間檔），輸出 YUMING_NOEN_WORK/mocap_walk_trial.blend。只調整四根 Coat_*_Lower 的全域俯仰，35% 上段角度且限制 ±0.24rad；保留原身體動作。之後沿用 export_walk_rest_bind.py／review_walk_export.py，再用 merge_noen_draped_walk.py 合併到 YUMING_NOEN_BASE_GLB（預設 studies/noen 的現有 GLB）。需要靜態三材質 tailored_candidate.glb 放在工作目錄。godot_review_draped_walk 沿用其他預覽的 src/world 與 shader／匯入設定；以 Forward+ 執行場景，檢查腳本用 --headless --script。
 
 逐軌保留證據、FBX、接地、切換及褲面有向距離在 studies/noen/coat_*。負側頂點峰值下降但仍有既有穿插，不能聲稱完整碰撞驗收。此修整只進 walk，run/idle 未修改。棚光平地不投射自身陰影，25cm 格線供接地判讀；不影響遊戲內容。
+
+
+## 2026-11-10：待機左臂自然下垂
+
+build_noen_relaxed_idle.py 沿用既有原生 guard pose 與三材質靜態來源；YUMING_NOEN_WORK 設獨立工作目錄。左臂以約 98.5% 肩腕可達距離下垂，保留右前臂護傷；左手四指基部向中指方向收攏 70%，三節微彎約 20／35／15°。首尾明確使用同一組姿勢，FBX 循環矩陣差為 0。以 review_noen_idle.py（YUMING_SKIP_RENDERS=1）、check_noen_idle_fbx.py 重匯入，再用 merge_noen_relaxed_idle.py 合併既有三動作模型；YUMING_NOEN_BASE_GLB 可指定合併底本，預設 studies/noen。
+
+check_noen_relaxed_hand.py 對 97 個姿勢量測手掌／手指與排除左袖後衣物的間距，以及肘部側向偏移。實測最小約 8.65cm／最大約 8.21cm，不含袖口接觸與完整衣物碰撞。godot_review_relaxed_idle 以 Forward+ 播放；準備光照、匯入腳本方式同前述預覽，新增三動作切換檢查。97 點接地、右臂保護與腳骨穩定檢查通過。原網格／貼圖與 walk／run 不改，idle 圖片、影片與證據已更新至 studies/noen。

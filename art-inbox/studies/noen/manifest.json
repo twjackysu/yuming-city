@@ -12,8 +12,8 @@
     },
     {
       "file": "noen_walk_candidate.glb",
-      "bytes": 24979172,
-      "sha256": "59974678fd500a0bfbda203ef4427a6a51151acb7efb7642c8f42e6ed0f60e9e"
+      "bytes": 25014948,
+      "sha256": "42e245cc8b8c7bee418cbb66c67585e623e177070a9b497b94982c330ad4adec"
     },
     {
       "file": "portrait_front.png",
@@ -42,23 +42,23 @@
     },
     {
       "file": "idle_candidate.fbx",
-      "bytes": 710668,
-      "sha256": "4c68dcc98fed0f360771aaed8a8c391371ff2cd8e8e264cec4d528a47694118c"
+      "bytes": 711932,
+      "sha256": "eed3c67c96f699694c1949512ef1f61815e81d18f18200e11f14356a8279fd63"
     },
     {
       "file": "idle_night_preview.png",
-      "bytes": 431702,
-      "sha256": "5ab8b3c4e78c8e6f6fc6c48d92c964c18704a38798908f1f01d3d1f3d5a68331"
+      "bytes": 430166,
+      "sha256": "784f839b6b501a0b99517caf062a52c548bc542100bcea0565081f49c1fed0d9"
     },
     {
       "file": "idle_preview.mp4",
-      "bytes": 133719,
-      "sha256": "1f7969777471c735cfc768b3e0334f9bc567dfd99ee4448d40bff5a41c6da8d1"
+      "bytes": 135063,
+      "sha256": "3ae43c034da751b8509fd4f8f0a4d996a7dfd1f554411ed59135bba56d2c61e2"
     },
     {
       "file": "idle_preview.png",
-      "bytes": 297969,
-      "sha256": "fbbf8a9b1a1996bee5eba552413ed9decbf570b73422499f6f5cb7e82501c41b"
+      "bytes": 299492,
+      "sha256": "7d636331450ccad24648ffe04254a8b8d4abfd464ace95e028a805ff48a19844"
     },
     {
       "file": "run_candidate.fbx",
@@ -101,7 +101,7 @@
     "M_Noen_Skin"
   ],
   "godot_import_script": "noen_material_import.gd",
-  "glb_bytes": 24979172,
+  "glb_bytes": 25014948,
   "godot_animation_names": [
     "idle",
     "run",
@@ -113,5 +113,6 @@
   "run_contact_snap_m": 0.015,
   "walk_garment_variant": "lower_panel_gravity_drape_only",
   "walk_preview_renderer": "Godot 4.7.2 Forward+",
-  "walk_floor_grid_m": 0.25
+  "walk_floor_grid_m": 0.25,
+  "idle_left_hand_variant": "hanging_arm_adducted_relaxed_fingers"
 }

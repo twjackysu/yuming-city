@@ -54,3 +54,5 @@ Idle derivative: original scripted standing/breathing cycle in Blender, using th
 Run derivative: ACCAD / The Ohio State University Male1_C03_Run.bvh, same CC BY 3.0 source and pinned Male1 archive above. Frames 12–31, 30fps; heading/root travel removed, retargeted, fracture guard and free-hand clearance added, loop closed and phase shifted. Flight height scaled by leg length, calibrated toe heights below 15mm snapped to contact. No raw mocap archive redistributed. Not final animation approval.
 
 2026-11-10: Walk lower-panel rotation revised for a gravity-led hem; only four lower coat rotation tracks changed. Geometry/textures and idle/run clips retained. Existing cloth contacts remain unapproved.
+
+2026-11-10 idle left-arm derivative: authored two-bone hanging-arm solve and relaxed finger adduction/curl; right fracture guard and original assets retained. The prior ACCAD-derived pose and all existing credits continue to apply. Not formal animation approval.

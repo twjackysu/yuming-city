@@ -1,0 +1,593 @@
+{
+  "frames": 97,
+  "hand_vertices": 1341,
+  "cloth_triangles_excluding_left_sleeve": 17688,
+  "minimum_hand_body_cloth_distance_m": 0.0864579826593399,
+  "maximum_elbow_side_offset_m": 0.08212627470493317,
+  "minimum_wrist_vertical_drop_m": 0.49005353450775146,
+  "samples": [
+    {
+      "frame": 1,
+      "minimum_hand_body_cloth_distance_m": 0.08664680272340775,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 2,
+      "minimum_hand_body_cloth_distance_m": 0.08665915578603745,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 3,
+      "minimum_hand_body_cloth_distance_m": 0.08667159080505371,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 4,
+      "minimum_hand_body_cloth_distance_m": 0.08668404817581177,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 5,
+      "minimum_hand_body_cloth_distance_m": 0.0866960659623146,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 6,
+      "minimum_hand_body_cloth_distance_m": 0.08670809864997864,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 7,
+      "minimum_hand_body_cloth_distance_m": 0.08671966195106506,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 8,
+      "minimum_hand_body_cloth_distance_m": 0.08673121780157089,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 9,
+      "minimum_hand_body_cloth_distance_m": 0.08674213290214539,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 10,
+      "minimum_hand_body_cloth_distance_m": 0.08675272762775421,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 11,
+      "minimum_hand_body_cloth_distance_m": 0.08676296472549438,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 12,
+      "minimum_hand_body_cloth_distance_m": 0.08677259832620621,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 13,
+      "minimum_hand_body_cloth_distance_m": 0.08678183704614639,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 14,
+      "minimum_hand_body_cloth_distance_m": 0.08679047226905823,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 15,
+      "minimum_hand_body_cloth_distance_m": 0.08679835498332977,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 16,
+      "minimum_hand_body_cloth_distance_m": 0.08680585026741028,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 17,
+      "minimum_hand_body_cloth_distance_m": 0.08681250363588333,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 18,
+      "minimum_hand_body_cloth_distance_m": 0.08681835234165192,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 19,
+      "minimum_hand_body_cloth_distance_m": 0.08682364225387573,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 20,
+      "minimum_hand_body_cloth_distance_m": 0.08682791143655777,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 21,
+      "minimum_hand_body_cloth_distance_m": 0.08683166652917862,
+      "elbow_side_offset_m": 0.08212627470493317,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 22,
+      "minimum_hand_body_cloth_distance_m": 0.08683455735445023,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 23,
+      "minimum_hand_body_cloth_distance_m": 0.08683659136295319,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 24,
+      "minimum_hand_body_cloth_distance_m": 0.08683770895004272,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 25,
+      "minimum_hand_body_cloth_distance_m": 0.08683821558952332,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 26,
+      "minimum_hand_body_cloth_distance_m": 0.08683770895004272,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 27,
+      "minimum_hand_body_cloth_distance_m": 0.08683659136295319,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 28,
+      "minimum_hand_body_cloth_distance_m": 0.08683455735445023,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 29,
+      "minimum_hand_body_cloth_distance_m": 0.08683166652917862,
+      "elbow_side_offset_m": 0.08212627470493317,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 30,
+      "minimum_hand_body_cloth_distance_m": 0.08682791143655777,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 31,
+      "minimum_hand_body_cloth_distance_m": 0.08682364225387573,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 32,
+      "minimum_hand_body_cloth_distance_m": 0.08681835234165192,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 33,
+      "minimum_hand_body_cloth_distance_m": 0.08681250363588333,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 34,
+      "minimum_hand_body_cloth_distance_m": 0.08680585026741028,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 35,
+      "minimum_hand_body_cloth_distance_m": 0.08679835498332977,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 36,
+      "minimum_hand_body_cloth_distance_m": 0.08679047226905823,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 37,
+      "minimum_hand_body_cloth_distance_m": 0.08678183704614639,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 38,
+      "minimum_hand_body_cloth_distance_m": 0.08677259832620621,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 39,
+      "minimum_hand_body_cloth_distance_m": 0.08676296472549438,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 40,
+      "minimum_hand_body_cloth_distance_m": 0.08675272762775421,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 41,
+      "minimum_hand_body_cloth_distance_m": 0.08674213290214539,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 42,
+      "minimum_hand_body_cloth_distance_m": 0.08673121780157089,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 43,
+      "minimum_hand_body_cloth_distance_m": 0.08671966195106506,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 44,
+      "minimum_hand_body_cloth_distance_m": 0.08670809864997864,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 45,
+      "minimum_hand_body_cloth_distance_m": 0.0866960659623146,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 46,
+      "minimum_hand_body_cloth_distance_m": 0.08668404817581177,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 47,
+      "minimum_hand_body_cloth_distance_m": 0.08667159080505371,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 48,
+      "minimum_hand_body_cloth_distance_m": 0.08665915578603745,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 49,
+      "minimum_hand_body_cloth_distance_m": 0.08664680272340775,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 50,
+      "minimum_hand_body_cloth_distance_m": 0.0866343304514885,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 51,
+      "minimum_hand_body_cloth_distance_m": 0.08662217110395432,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 52,
+      "minimum_hand_body_cloth_distance_m": 0.08660973608493805,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 53,
+      "minimum_hand_body_cloth_distance_m": 0.08659772574901581,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 54,
+      "minimum_hand_body_cloth_distance_m": 0.08658584952354431,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 55,
+      "minimum_hand_body_cloth_distance_m": 0.08657432347536087,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 56,
+      "minimum_hand_body_cloth_distance_m": 0.08656299114227295,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 57,
+      "minimum_hand_body_cloth_distance_m": 0.08655200898647308,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 58,
+      "minimum_hand_body_cloth_distance_m": 0.08654171973466873,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 59,
+      "minimum_hand_body_cloth_distance_m": 0.08653147518634796,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 60,
+      "minimum_hand_body_cloth_distance_m": 0.08652205020189285,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 61,
+      "minimum_hand_body_cloth_distance_m": 0.08651307970285416,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 62,
+      "minimum_hand_body_cloth_distance_m": 0.08650468289852142,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 63,
+      "minimum_hand_body_cloth_distance_m": 0.08649677783250809,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 64,
+      "minimum_hand_body_cloth_distance_m": 0.08648958802223206,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 65,
+      "minimum_hand_body_cloth_distance_m": 0.08648312836885452,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 66,
+      "minimum_hand_body_cloth_distance_m": 0.08647730201482773,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 67,
+      "minimum_hand_body_cloth_distance_m": 0.08647232502698898,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 68,
+      "minimum_hand_body_cloth_distance_m": 0.0864679366350174,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 69,
+      "minimum_hand_body_cloth_distance_m": 0.08646434545516968,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 70,
+      "minimum_hand_body_cloth_distance_m": 0.0864616259932518,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 71,
+      "minimum_hand_body_cloth_distance_m": 0.08645964413881302,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 72,
+      "minimum_hand_body_cloth_distance_m": 0.08645830303430557,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 73,
+      "minimum_hand_body_cloth_distance_m": 0.0864579826593399,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 74,
+      "minimum_hand_body_cloth_distance_m": 0.08645830303430557,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 75,
+      "minimum_hand_body_cloth_distance_m": 0.08645964413881302,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 76,
+      "minimum_hand_body_cloth_distance_m": 0.0864616259932518,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 77,
+      "minimum_hand_body_cloth_distance_m": 0.08646434545516968,
+      "elbow_side_offset_m": 0.082126185297966,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 78,
+      "minimum_hand_body_cloth_distance_m": 0.0864679366350174,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 79,
+      "minimum_hand_body_cloth_distance_m": 0.08647232502698898,
+      "elbow_side_offset_m": 0.08212624490261078,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 80,
+      "minimum_hand_body_cloth_distance_m": 0.08647730201482773,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 81,
+      "minimum_hand_body_cloth_distance_m": 0.08648312836885452,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 82,
+      "minimum_hand_body_cloth_distance_m": 0.08648958802223206,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 83,
+      "minimum_hand_body_cloth_distance_m": 0.08649677783250809,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 84,
+      "minimum_hand_body_cloth_distance_m": 0.08650468289852142,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 85,
+      "minimum_hand_body_cloth_distance_m": 0.08651307970285416,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 86,
+      "minimum_hand_body_cloth_distance_m": 0.08652205020189285,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 87,
+      "minimum_hand_body_cloth_distance_m": 0.08653147518634796,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.49005359411239624
+    },
+    {
+      "frame": 88,
+      "minimum_hand_body_cloth_distance_m": 0.08654171973466873,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 89,
+      "minimum_hand_body_cloth_distance_m": 0.08655200898647308,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 90,
+      "minimum_hand_body_cloth_distance_m": 0.08656299114227295,
+      "elbow_side_offset_m": 0.08212625980377197,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 91,
+      "minimum_hand_body_cloth_distance_m": 0.08657432347536087,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.49005353450775146
+    },
+    {
+      "frame": 92,
+      "minimum_hand_body_cloth_distance_m": 0.08658584952354431,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 93,
+      "minimum_hand_body_cloth_distance_m": 0.08659772574901581,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 94,
+      "minimum_hand_body_cloth_distance_m": 0.08660973608493805,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 95,
+      "minimum_hand_body_cloth_distance_m": 0.08662217110395432,
+      "elbow_side_offset_m": 0.08212623000144958,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 96,
+      "minimum_hand_body_cloth_distance_m": 0.0866343304514885,
+      "elbow_side_offset_m": 0.08212621510028839,
+      "wrist_vertical_drop_m": 0.490053653717041
+    },
+    {
+      "frame": 97,
+      "minimum_hand_body_cloth_distance_m": 0.08664680272340775,
+      "elbow_side_offset_m": 0.0821262001991272,
+      "wrist_vertical_drop_m": 0.490053653717041
+    }
+  ],
+  "passed": true
+}
