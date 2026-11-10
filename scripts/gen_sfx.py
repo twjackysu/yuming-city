@@ -599,6 +599,45 @@ def title_theme(seconds=24.0, seed=67):
     return [v / peak * 0.7 for v in looped]
 
 
+def aftermath_theme(seconds=32.0, seed=83):
+    """切片收束的配樂（D-185）：車隊過去之後回到梨販攤。比標題更低、更空：
+    D2＋F2 的長音（小三度，慢慢拍頻）、16 秒一次很淺的漲落，偶爾一聲很遠很悶的鐘（不成旋律）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(3.0 * RATE)
+    total = n + fade
+    table = _wavetable([(1, 1.0), (2, 0.3), (3, 0.12), (4, 0.04)])
+    size = len(table)
+    drone = [0.0] * total
+    # 高八度的 D3／F3 小聲一點，筆電喇叭才聽得到
+    for f, amp in [(73.42, 0.5), (73.55, 0.4), (87.31, 0.26), (87.12, 0.22), (110.0, 0.1), (146.83, 0.16), (174.61, 0.1)]:
+        ph = rng.random() * size
+        step = f * size / RATE
+        for i in range(total):
+            drone[i] += amp * table[int(ph) % size]
+            ph += step
+    for i in range(total):
+        t = i / RATE
+        drone[i] *= 0.75 + 0.25 * math.sin(2 * math.pi * t / 16.0 - 0.6)  # 16 秒一次，32 秒剛好兩次
+    drone = onepole_lp(onepole_lp(drone, 700), 900)
+    dpeak = max(abs(v) for v in drone) or 1.0
+    out = [v / dpeak * 0.5 for v in drone]
+    # 很遠的鐘：只有兩聲，音很低、很悶，回音比聲音本身長
+    for at, f, gain in [(6.0, 146.83, 0.7), (21.5, 130.81, 0.55)]:
+        b = onepole_lp(onepole_lp(bell(f, 6.0), 900), 1200)
+        bpeak = max(abs(v) for v in b) or 1.0
+        for delay, tap in [(0.0, 0.22), (0.61, 0.1), (1.43, 0.06), (2.4, 0.035)]:
+            start = int((at + delay) * RATE)
+            g = gain * tap / bpeak
+            for j, v in enumerate(b):
+                if start + j >= total:
+                    break
+                out[start + j] += g * v
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.6 for v in looped]
+
+
 def _step_env(n, attack, decay):
     return [min(1.0, (i / RATE) / attack) * math.exp(-(i / RATE) * decay) for i in range(n)]
 
@@ -704,6 +743,7 @@ def main():
         write("frost_wind_indoor", frost_wind(indoor=True)),
         write("hearth_crackle", hearth_crackle()),
         write("title_theme", title_theme()),
+        write("aftermath_theme", aftermath_theme()),
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),

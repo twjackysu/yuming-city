@@ -17,6 +17,11 @@ const PLAZA_HALF: float = 11.0
 ## 冬夜的風雪（D-180）：整片鋪著、不分位置；白天（第 1 章）風小一點。
 const WIND_DB_NIGHT: float = -13.0
 const WIND_DB_DAY: float = -17.0
+## 收束的配樂（D-185）：車隊過去之後、回到梨販攤的路上（Music 匯流排，慢慢淡入）
+const AFTERMATH_MUSIC: String = "aftermath_theme"
+const AFTERMATH_MUSIC_DB: float = -16.0
+const AFTERMATH_MUSIC_FADE: float = 8.0
+var aftermath_music: AudioStreamPlayer
 const MAIN_HALF: float = 4.0
 const SOUTH_HALF: float = 3.5
 const PLAZA_N: float = -10.0
@@ -131,6 +136,8 @@ func _ready() -> void:
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
 	Game.session.stage_changed.connect(_on_stage_changed)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
+	if stage == "aftermath" and not day:
+		_start_aftermath_music()
 	# 截圖用：`--rescue` 直接跳到敲完九下、北街陷落的救援段落，諾恩站在第一個受困者旁
 	if dev_args.has("rescue"):
 		Game.session.set_flag("slice.met_pear_seller", true)
@@ -340,6 +347,15 @@ var _dev_face_off: float = 0.0
 func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
 	if quest_id == GameSession.MAIN_QUEST and to_stage == "meet_sheila":
 		_begin_sheila_meet()
+	if quest_id == GameSession.MAIN_QUEST and to_stage == "aftermath" and not day:
+		_start_aftermath_music()
+
+
+## 收束的配樂（D-185）：一整段切片只有這裡有音樂——打完之後，安靜下來的時候。
+func _start_aftermath_music() -> void:
+	if aftermath_music != null:
+		return
+	aftermath_music = Ambience.music(self, AFTERMATH_MUSIC, AFTERMATH_MUSIC_DB, AFTERMATH_MUSIC_FADE, "AftermathMusic")
 
 
 ## 席菈出現；已經談過（讀檔）就直接放灰巡者。

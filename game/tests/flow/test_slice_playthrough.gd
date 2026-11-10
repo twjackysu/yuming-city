@@ -190,6 +190,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 	assert_eq(_objective(level), "Q_SLICE_OBJ_CONVOY", "[undertaker] HUD 目標")
 	assert_true(_player(level).global_position.distance_to(Vector3(0, 0.05, 6)) < 0.6, "[undertaker] 廣場出生")
 	assert_true(level.has_node("Sheila"), "[undertaker] 席菈在身邊")
+	assert_false(level.has_node("AftermathMusic"), "[undertaker] 打的時候沒有配樂（只有環境音）")
 	assert_false(level.has_node("Ashwalker"), "[undertaker] 灰巡者不會再出現")
 	assert_false(level.has_node("Undertaker"), "[undertaker] 還沒走進南街")
 	assert_eq(s.state.get_flag("slice.told_truth_about_bell"), use_nine_breath, "[undertaker] 對話選擇保留")
@@ -225,6 +226,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 			break
 	assert_true(enc.done, "車隊通過路口")
 	assert_eq(_stage(s), "aftermath", "車隊通過 → 收束")
+	_assert_music(level, "[收束]", "aftermath_theme", "AftermathMusic")
 
 	# 檢查點 aftermath：重來
 	level = await _retry()
@@ -235,6 +237,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 	assert_true(level.has_node("Sheila"), "[aftermath] 席菈還在")
 	assert_eq(s.state.has_paid_memory("arch_father_last_talk"), use_nine_breath, "[aftermath] 記憶代價保留")
 	assert_false(level.arch_site.is_solid(), "[aftermath] 石拱不會還立著")
+	_assert_music(level, "[aftermath]", "aftermath_theme", "AftermathMusic")
 
 	# --- 段落 6：艾妲 → 地窖
 	await _step_into(_player(level), STALL_NEAR, 3)
@@ -1653,6 +1656,17 @@ func _assert_ambience(level: Node, tag: String, sfx_name: String, node_name: Str
 		var stream: AudioStreamWAV = p.get("stream") as AudioStreamWAV
 		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "%s %s 會循環" % [tag, node_name])
 	return p
+
+
+## 配樂（D-181、D-185）：走 Music 匯流排、在播、會循環。
+func _assert_music(level: Node, tag: String, sfx_name: String, node_name: String) -> void:
+	var p: AudioStreamPlayer = level.get_node_or_null(node_name) as AudioStreamPlayer
+	assert_eq(Ambience.sfx_of(p), sfx_name, "%s 配樂 %s" % [tag, sfx_name])
+	if p != null:
+		assert_eq(p.bus, &"Music", "%s %s 走音樂匯流排" % [tag, node_name])
+		assert_true(p.playing, "%s %s 在播" % [tag, node_name])
+		var stream: AudioStreamWAV = p.stream as AudioStreamWAV
+		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "%s %s 會循環" % [tag, node_name])
 
 
 ## 白天的霜橋鎮：陰天的太陽、路燈不點、沒有切片的敵人與車隊、席菈跟著。
