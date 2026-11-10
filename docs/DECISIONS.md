@@ -2,6 +2,24 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-203　2026-11-10　新版毒霧先做灰盒霧盤（PoisonMist），不用體積霧
+
+- 決策：`PoisonMist`＝`MistZone`（規則：直立圓柱、在裡面每 0.25 秒用來源刷新狀態）＋三層貼地的綠色霧盤（`src/world/poison_mist.gdshader`：不受光、fbm 流動、往外淡、景深接近地面時淡掉；只有貼地那層畫一圈淡亮邊界）。守衛噴的霧有壽命，最後 0.6 秒淡掉後自己移除。沙盒截圖旗標 `--mist`。
+- 理由：handoff 要「好認的灰盒」；FogVolume（體積霧）在低畫質會關掉，毒霧是玩法必須看得到的東西，不能隨畫質消失。邊界那圈亮線讓玩家看得出在哪裡進出（覺醒後要自己再踏回去一次）。
+- 影響：之後要更像霧再加粒子或體積霧當「加分」，灰盒這層照留著當保底。
+
+## D-202　2026-11-10　新版前十分鐘的狀態邏輯、任務與存檔（`docs/design/09-reboot-first-ten-minutes.md`）
+
+- 決策：
+  - `Health` 分成直接傷害 `apply_damage`（照舊）、狀態傷害 `apply_status_damage`（不被閃避擋、獨立訊號、不觸發受擊演出）、治療 `heal`（`healed` 訊號）；不用負數傷害代表治療。
+  - `StatusEffects`：同一種只有一份；較強的來源換強度、時間取較長者、上限 30 秒；反轉在扣血之前（每幀直接變回血）、回血上限 8／秒；擁有者在遊戲時間推進且沒在對話時才 `tick`。數值在 `data/reboot/statuses.json`：破藥桶毒霧 6／秒 4 秒、守衛噴毒 8／秒 3 秒、霧蛇毒劑 3／秒 20 秒（自備藥弱但久）。守衛橫掃 28、約 2 秒一輪 → 站著吃連擊會輸（單元測試鎖住）。數值不隨難度變。
+  - `ReversalSlots`：開場兩格；第一次中毒自動覺醒並裝進第一格（只一次）。`PotionBelt`：滿血時先問（`confirm_full`）；`grant_once` 讓藥箱與欠薪讀檔重試不重複領。
+  - 存檔 v3：`mode`（classic／reboot）、`statuses`、`reversal`、`items`、`grants`、`vitals`；v2→v3 一律 classic、`memories_paid` 不映射。新版存檔在另一個資料夾 `user://saves_reboot`（`GameSession.new_reboot_game()`／`load_reboot_slot()`），標題的「繼續」固定讀舊版。讀檔／重試生命照存的、至少一半。
+  - 任務 `rb_main` 六階段（每階段 marker＋檢查點，第一次進霧前 `rb_before_mist`）；覺醒後要自己再踏回霧裡一次才往下（`objective_if` 換目標字，新功能）；`portable_poison` 喝過或「先收著」都能完成。九段對話 `rb_*`、文字 `i18n/reboot.csv`。
+  - 可攜藥劑快捷鍵新動作 `use_item`：鍵盤 1、手把十字鍵左（Q／十字鍵上已經是席菈的「打弱點」）。狀態圖示 `StatusHud` 在左下生命條上方：原類型圖示＋反轉箭頭＋「中毒 → 回血 N」。
+- 理由：照 `claude-handoff.md` 的開場規則與驗收 7 條；先把規則做成純邏輯＋測試，場景接上時不用邊做邊猜。
+- 影響：舊流程完全沒有狀態來源，行為不變（全部舊測試照舊綠）。治療封鎖轉盾、第二種狀態、換欄位的畫面留到前十分鐘試玩通過之後。
+
 ## D-201　2026-11-10　接手劇情重寫：新版「前十分鐘」用獨立入口與存檔槽，舊版保留
 
 - 決策：Jacky 合併 PR #1（`docs/story-reboot/`：負面效果反向增益、暫名《這些詛咒對我太有用了》）。照 `claude-handoff.md`：下一輪起最優先做新版前十分鐘（任務 `escape → poison_discovery → meet_sheila → guardian_fight → portable_poison → market_lead`、一種狀態（中毒）一種藥、反轉欄位最小版、HUD 狀態圖示保留原類型＋反轉標記），新版用獨立入口與存檔槽；舊的切片、第 1～3 章、舊測試照舊保留、舊存檔照舊讀得到，新流程經 Jacky 試玩通過再換正式入口、改 PLAN 與舊改編文件。`docs/story/` 原作不動。

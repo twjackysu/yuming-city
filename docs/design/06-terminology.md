@@ -43,3 +43,20 @@
 
 - 新增玩家看得到的文字（`game/i18n/*.csv`）時，對照這張表；表上左欄的詞不可以出現在 CSV 的 `zh_TW`、`en` 欄（`tests/unit/test_i18n.gd::test_no_obscure_terms` 會擋）。
 - 新的系統名詞先寫進這張表再用。
+
+## 新版（劇情重寫「負面效果反向增益」，D-201、`09-reboot-first-ten-minutes.md`）
+
+新版照 Jacky 的指示直接用白話名稱；上面舊版的「重現」「敲鐘人」等不出現在新版畫面上。
+
+| 設計文件 | 程式識別碼 | 玩家看到（中） | 玩家看到（英） | 說明 |
+|---|---|---|---|---|
+| 中毒 | `poison` | 中毒 | Poisoned | 原本是持續掉血 |
+| 回血 | `heal`（`Health.heal`） | 回血 | Regenerating | 中毒被反轉後的結果；HUD 寫「中毒 → 回血」 |
+| 反轉 | `ReversalSlots` | 反轉 | Reversed | 負面狀態對諾恩變成好處 |
+| 反轉欄位 | `ReversalSlots.slots` | 反轉欄位 | Reversal Slot | 開場兩格；只有裝進去的狀態會反轉 |
+| 逆轉體質 | — | 逆轉體質 | Reversal Constitution | 諾恩的能力名，只在第一次覺醒的提示出現 |
+| 毒霧 | `PoisonMist` | 毒霧 | Poison Mist | 破藥桶、守衛噴出來的綠霧 |
+| 毒藥／霧蛇毒劑 | `mist_serpent_poison` | 霧蛇毒劑（瓶上寫「不可飲用」） | Mist Serpent Venom | 虛構藥劑，只標效果（中毒 20 秒），不寫配方 |
+| 守衛 | `rb_guardian` | 目標寫「守衛」；名字照舊「送葬者」 | the guardian／Undertaker | 胸口裝噴霧罐的單階段送葬者 |
+| 地下市場 | — | 地下市場 | the underground market | 白晝城的市場；新版不用「地底城」 |
+| 貨梯 | — | 貨梯 | the freight lift | 通往地下市場 |

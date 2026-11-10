@@ -2,6 +2,28 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-10 16:26–17:10　第 66 輪：劇情重寫「前十分鐘」開工——設計落地、狀態邏輯層、任務與對話、毒霧灰盒、狀態圖示
+
+**做了什麼**
+
+- 開工：回覆區、Issue 沒有新的；上一輪 b017905 run 42779407861 全綠。照 NEXT「00」開始做新版（Jacky 的 PR #1）。
+- **設計落地**：`docs/design/09-reboot-first-ten-minutes.md`（段落↔任務↔檢查點↔位置、狀態與藥的數值、反轉欄位、可攜藥劑、UI、存檔與難度規則、驗收對照）；`06-terminology.md` 補新版名詞（中毒／回血／反轉欄位／霧蛇毒劑…）。
+- **狀態邏輯層**（D-202，9e58e50）：`Health` 分成直接傷害／狀態傷害／治療；`StatusEffects`（不疊加、取強、上限 30 秒、反轉在扣血前、回血上限 8／秒）、`ReversalSlots`（兩格、第一次中毒自動覺醒）、`PotionBelt`（滿血先問、一次性發放）、`StatusRules`（`data/reboot/statuses.json`）；存檔 v3（v2→v3 一律舊版、記憶不映射）。
+- **任務與對話**（292a788）：`rb_main` 六階段＋`objective_if`（新）；九段對話 `rb_*` 從新版開場小說精選；`i18n/reboot.csv` 中英 73 條；`GameSession.new_reboot_game()`、新版存檔在 `user://saves_reboot`，舊版存檔不會被寫到，標題「繼續」固定讀舊版。
+- **畫面與操作**（9666c02、7ebc45c）：`MistZone`／`PoisonMist`（三層貼地綠霧盤＋邊界亮線，D-203）、`StatusHud`（左下「中毒 → 回血 N」＋反轉箭頭）、諾恩身上的狀態與反轉欄位（新版讀檔／重試照存的、生命至少一半）、新動作 `use_item`（鍵盤 1、手把十字鍵左）。沙盒截圖旗標 `--status-demo`、`--mist`。
+- 還不能玩新版：霜橋鎮的新版控制器（開場→貨梯）、標題入口、確認框、流程測試是下一輪（NEXT「00」寫好步驟）。
+
+**怎麼驗證**
+
+- 新單元：`test_status_effects`（13）、`test_reboot_session`（5）、`test_mist_and_status_hud`（7）、`test_save` 多 3 個；本機 `scripts/check.sh` 每次 push 前全綠（424 → 452 個測試，舊測試一個沒改）。
+- 本機 Vulkan 截圖：沙盒 `--status-demo`（英文、繁中各一張：左下綠色「中毒 → 回血 27」、瓶子圖示＋反轉箭頭）、`--mist`（街上一團綠霧、地上一圈亮邊；第一版三層都有邊界像疊起來的光圈，改成只有貼地那層）。
+- CI：292a788 run 42784481836「測試與匯出」全綠（截圖 job 收尾時還在跑）；9666c02 run 被下一個 push 取消；7ebc45c run 42786643053 收尾時的狀態見下一行。
+
+**問題**
+
+- `Hud` 是 CanvasLayer，沒有 `size`（第一次 import 抓到 parse error，改用 viewport 大小）。
+- 測試裡 `CombatTuning` 的路徑是 `undertaker.moves.sweep.damage`（不是 attacks）。
+
 ## 2026-11-10 15:27–16:10　第 65 輪：乾運河河床的碎石、一節節的鐵鏈、送葬者手上的鐵鏈、席菈大劍新版的意見；收到劇情重寫
 
 **做了什麼**
