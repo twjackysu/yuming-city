@@ -97,11 +97,19 @@ func test_use_item_action_is_bound_and_rebindable() -> void:
 func test_poison_mist_node_builds_layers_and_fades_out() -> void:
 	var mist: PoisonMist = PoisonMist.create(2.0, "guardian_spray", 1.0)
 	tree.root.add_child(mist)
-	assert_eq(mist.get_child_count(), PoisonMist.LAYERS, "貼地的幾層霧盤")
+	var discs: int = 0
+	for c: Node in mist.get_children():
+		discs += 1 if c is MeshInstance3D else 0
+	assert_eq(discs, PoisonMist.LAYERS, "貼地的幾層霧盤")
+	var vol: FogVolume = mist.get_node_or_null("MistVolume") as FogVolume
+	assert_not_null(vol, "有體積的那一團（體積霧裡的綠色橢球，D-207）")
+	assert_eq(vol.size.x, 4.0, "跟毒霧的範圍一樣寬")
+	assert_eq((vol.material as FogMaterial).density, PoisonMist.VOLUME_DENSITY)
 	assert_true(mist.is_in_group("poison_mist"))
 	assert_true(mist.contains(mist.global_position + Vector3(1.0, 0.2, 0.0)))
 	mist._physics_process(0.7)
 	assert_true(is_instance_valid(mist) and not mist.is_queued_for_deletion(), "還沒散完")
+	assert_true((vol.material as FogMaterial).density < PoisonMist.VOLUME_DENSITY, "最後 0.6 秒跟著霧盤一起淡掉")
 	mist._physics_process(0.4)
 	assert_true(mist.is_queued_for_deletion(), "守衛噴的霧時間到自己移除")
 

@@ -7,12 +7,19 @@ extends Node3D
 const LAYERS: int = 3
 const LAYER_GAP: float = 0.32
 const SHADER: Shader = preload("res://src/world/poison_mist.gdshader")
+## 真的有體積的那一團（D-207）：體積霧裡的一個綠色橢球（FogVolume）。貼地的霧盤從上往下看是一個平的圓盤，
+## 加上這一團之後，從旁邊看霧有厚度、後面的人和牆被染綠。畫質低（沒有體積霧）時只剩霧盤。
+const VOLUME_HEIGHT: float = 1.7
+const VOLUME_DENSITY: float = 1.2
+const VOLUME_ALBEDO: Color = Color(0.42, 0.92, 0.36)
+const VOLUME_EMISSION: Color = Color(0.07, 0.2, 0.05)
 
 var zone: MistZone
 var radius: float = 3.0
 var source_id: String = "barrel_mist"
 var life: float = -1.0
 var _mats: Array[ShaderMaterial] = []
+var _volume_mat: FogMaterial
 
 
 static func create(p_radius: float, p_source: String, p_life: float = -1.0) -> PoisonMist:
@@ -40,6 +47,19 @@ func _ready() -> void:
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.position.y = 0.06 + LAYER_GAP * float(i)
 		add_child(mi)
+	_volume_mat = FogMaterial.new()
+	_volume_mat.density = VOLUME_DENSITY
+	_volume_mat.albedo = VOLUME_ALBEDO
+	_volume_mat.emission = VOLUME_EMISSION
+	_volume_mat.edge_fade = 0.6
+	_volume_mat.height_falloff = 1.2
+	var vol := FogVolume.new()
+	vol.name = "MistVolume"
+	vol.shape = RenderingServer.FOG_VOLUME_SHAPE_ELLIPSOID
+	vol.size = Vector3(radius * 2.0, VOLUME_HEIGHT, radius * 2.0)
+	vol.material = _volume_mat
+	vol.position.y = VOLUME_HEIGHT * 0.4
+	add_child(vol)
 
 
 func _physics_process(delta: float) -> void:
@@ -48,6 +68,7 @@ func _physics_process(delta: float) -> void:
 	var f: float = 1.0 if zone.life < 0.0 else clampf(zone.life / 0.6, 0.0, 1.0)
 	for m: ShaderMaterial in _mats:
 		m.set_shader_parameter("fade", f)
+	_volume_mat.density = VOLUME_DENSITY * f
 	if zone.expired():
 		queue_free()
 		return
