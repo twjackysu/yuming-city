@@ -1243,6 +1243,10 @@ func _chapter3_cart(canal: StoryLevel, alt: bool) -> void:
 	assert_true(bool(canal.get("pinned")), "煤壓住了牠")
 	assert_true(u.global_position.y < float(canal.get("BED_Y")), "陷進煤堆")
 	assert_true((canal.get_node("CoalHeap") as Node3D).visible, "閘道裡一堆煤")
+	var heap_mesh: MeshInstance3D = canal.get_node("CoalHeap/Mound") as MeshInstance3D
+	assert_true(heap_mesh.mesh is ArrayMesh and (heap_mesh.material_override as StandardMaterial3D).vertex_color_use_as_albedo, "煤堆是 CoalPile 的高度場（不是壓扁的球，D-195）")
+	var heap_box: AABB = heap_mesh.global_transform * heap_mesh.get_aabb()
+	assert_true(heap_box.end.y > u.global_position.y + 0.3, "煤堆蓋得住陷下去的牠（煤頂 %.2f、牠 %.2f）" % [heap_box.end.y, u.global_position.y])
 	assert_true(canal.has_node("CoalDust"), "黑色粉塵")
 	assert_eq(ParticleLook.untextured(canal), [] as Array[String], "粉塵是柔邊圓點")
 	assert_eq(s.state.get_flag("ch3.cart_dropped"), true)

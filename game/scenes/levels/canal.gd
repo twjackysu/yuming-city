@@ -135,6 +135,9 @@ const ROPE_RANGE: float = 1.3
 const PIN_SINK: float = 0.55
 const PIN_TILT: float = -0.3
 const COAL: Color = Color(0.09, 0.085, 0.085)
+## 閘道裡那堆煤（D-195）：長（X）、高、寬（Z），公尺；CoalPile 的形狀種子
+const COAL_HEAP_SIZE: Vector3 = Vector3(2.7, 0.62, 2.3)
+const COAL_HEAP_SEED: float = 7.3
 ## 閘道木架南邊橫樑下掛的小油燈（第 48、49 輪截圖：煤堆、倒吊都太暗）：掛鉤在橫樑底、鏈子多長、暖光
 const SLUICE_LAMP_HOOK: Vector3 = Vector3(2.0, GANTRY_Y, SLUICE_Z + 0.1)
 const SLUICE_LAMP_DROP: float = 1.4
@@ -2400,6 +2403,17 @@ func _build_environment() -> void:
 	add_child(sun)
 
 
+## 一顆煤塊（D-195）：CoalPile 的不規則八面體，取代原本的小方塊
+func _coal_lump(node_name: String, size: float, pos: Vector3, seed: float, mat: Material, parent: Node3D) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = node_name
+	mi.mesh = CoalPile.lump_mesh(size, seed)
+	mi.material_override = mat
+	mi.position = pos
+	parent.add_child(mi)
+	return mi
+
+
 func _solid(node_name: String, size: Vector3, pos: Vector3, mat: Material, collide: bool = true, parent: Node3D = null) -> MeshInstance3D:
 	var host: Node3D = parent if parent != null else self
 	var mi := MeshInstance3D.new()
@@ -2633,9 +2647,9 @@ func _build_sluice() -> void:
 	var coal: StandardMaterial3D = _mat(COAL, 0.38)
 	coal.metallic_specular = 0.7
 	_solid("CartCoal", Vector3(0.92, 0.2, 0.82), Vector3(0.0, 0.74, -0.5), coal, false, _cart)
+	var heap_mat: StandardMaterial3D = CoalPile.material()
 	for i: int in 6:
-		var lump: MeshInstance3D = _solid("CartLump%d" % i, Vector3(0.22, 0.16, 0.2), Vector3(-0.32 + 0.13 * i, 0.86 + 0.04 * (i % 2), -0.5 + 0.18 * sin(i * 1.7)), coal, false, _cart)
-		lump.rotation = Vector3(0.4 * i, 0.7 * i, 0.2)
+		_coal_lump("CartLump%d" % i, 0.12, Vector3(-0.32 + 0.13 * i, 0.86 + 0.04 * (i % 2), -0.5 + 0.18 * sin(i * 1.7)), 3.0 + i, heap_mat, _cart)
 	for wx: float in [-0.42, 0.42]:
 		for wz: float in [-0.15, -0.85]:
 			var wheel := MeshInstance3D.new()
@@ -2660,27 +2674,17 @@ func _build_sluice() -> void:
 	_coal_mass.visible = false
 	add_child(_coal_mass)
 	for i: int in 7:
-		var chunk: MeshInstance3D = _solid("Chunk%d" % i, Vector3(0.5, 0.35, 0.45) * (0.7 + 0.12 * (i % 3)), Vector3(0.35 * sin(i * 2.1), 0.3 * cos(i * 1.3), 0.3 * cos(i * 2.7)), coal, false, _coal_mass)
-		chunk.rotation = Vector3(0.6 * i, 0.9 * i, 0.3 * i)
+		_coal_lump("Chunk%d" % i, 0.26 * (0.7 + 0.12 * (i % 3)), Vector3(0.35 * sin(i * 2.1), 0.3 * cos(i * 1.3), 0.3 * cos(i * 2.7)), 11.0 + i, heap_mat, _coal_mass)
 	_coal_heap = Node3D.new()
 	_coal_heap.name = "CoalHeap"
 	_coal_heap.visible = false
 	add_child(_coal_heap)
+	# 一堆倒出來的煤（D-195）：錐形高度場＋塊狀起伏、平面著色（一塊塊切面各自反光）、散落的小煤塊
 	var mound := MeshInstance3D.new()
 	mound.name = "Mound"
-	var sm := SphereMesh.new()
-	sm.radius = 1.35
-	sm.height = 2.7
-	sm.radial_segments = 20
-	sm.rings = 10
-	mound.mesh = sm
-	mound.material_override = coal
-	mound.scale = Vector3(1.0, 0.42, 0.85)
+	mound.mesh = CoalPile.build(COAL_HEAP_SIZE.x, COAL_HEAP_SIZE.z, COAL_HEAP_SIZE.y, COAL_HEAP_SEED)
+	mound.material_override = heap_mat
 	_coal_heap.add_child(mound)
-	for i: int in 9:
-		var a: float = i * TAU / 9.0
-		var lump2: MeshInstance3D = _solid("HeapLump%d" % i, Vector3(0.28, 0.2, 0.26), Vector3(cos(a) * 1.25, 0.08, sin(a) * 1.05), coal, false, _coal_heap)
-		lump2.rotation = Vector3(0.5 * i, 1.1 * i, 0.2 * i)
 	# 正好有一道縫的光落在煤車正下方（跟斜光同一個方向的窄聚光）：陷阱在哪裡一眼看得到，牠走進去時也被照亮
 	var spot := SpotLight3D.new()
 	spot.name = "SlitOnSluice"
