@@ -220,6 +220,11 @@ func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
 		_apply_time_of_day()
 
 
+## 腳步聲（D-182）：木板地。
+func footstep_surface(_p: Vector3) -> String:
+	return "wood"
+
+
 ## 中午：窗外的冷白光；入夜（晚餐之後）：窗外暗藍、壁爐變成主光。
 func is_night() -> bool:
 	var stage: String = Game.session.quests.stage_of(QUEST)

@@ -52,6 +52,11 @@ func ground_y(_p: Vector3) -> float:
 	return 0.0
 
 
+## 腳下是什麼（腳步聲，D-182）：snow、stone、wood。預設石頭；霜橋鎮是雪、酒館是木板。
+func footstep_surface(_p: Vector3) -> String:
+	return "stone"
+
+
 func _sheila_spawn() -> Vector3:
 	return Vector3(-1.4, 0.0, 3.2)
 

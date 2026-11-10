@@ -104,6 +104,7 @@ func _playthrough(use_nine_breath: bool) -> void:
 		return
 	await _assert_restore(level, "[slice_start]", ["south_arch"])
 	_assert_ambience(level, "[slice_start]", "frost_wind")
+	assert_eq(_player(level).footstep_surface(), "snow", "[slice_start] 腳步踩在雪上")
 	assert_eq(_stage(s), "explore_town", "新遊戲：找梨販")
 	assert_true(_player(level).global_position.distance_to(Vector3(0, 0.05, 7)) < 0.6, "廣場南邊出生")
 
@@ -294,6 +295,7 @@ func _assert_tavern_art(tavern: StoryLevel, night: bool) -> void:
 	assert_eq(bool(tavern.call("candle_lit")), night, "%s 蠟燭%s" % [tag, "點著" if night else "沒點"])
 	# 聲音（D-180）：牆外悶悶的風＋壁爐的柴火從爐膛發出來；入夜火旺、比中午大聲
 	_assert_ambience(tavern, tag, "frost_wind_indoor")
+	assert_eq(_player(tavern).footstep_surface(), "wood", "%s 腳步踩在木板上" % tag)
 	var crackle: AudioStreamPlayer3D = _assert_ambience(tavern, tag, "hearth_crackle", "HearthCrackle") as AudioStreamPlayer3D
 	if crackle != null:
 		var hearth: Node3D = tavern.get_node("Hearth") as Node3D

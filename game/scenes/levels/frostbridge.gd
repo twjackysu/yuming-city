@@ -777,6 +777,11 @@ func _step_snow(y: float, front: float, run: float, snow: Material) -> void:
 		step_snow.append(Vector4(pos2.x, y + h2, pos2.z, w2 * 0.5))
 
 
+## 腳步聲（D-182）：整座鎮都積著雪（白天也是）。
+func footstep_surface(_p: Vector3) -> String:
+	return "snow"
+
+
 ## 地面高度（台地上是 RISE；石階上沿斜坡）。測試與開發用瞬移用。
 func ground_y(p: Vector3) -> float:
 	var run: float = (STEPS_S - STEPS_N) / float(STEP_COUNT - 1)

@@ -75,3 +75,34 @@ func test_music_helper() -> void:
 	assert_eq(Ambience.music(root, "no_such_sound", 0.0, 1.0, "Music2"), null, "缺檔安靜跳過")
 	root.queue_free()
 	await tree.process_frame
+
+
+## 腳步聲（D-182）：每走一個步幅踏一步、跑步步幅比較大、閃避與騰空不算；聲音照關卡的地面，沒有就當石頭。
+func test_footsteps_follow_distance_and_surface() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
+	root.add_child(player)
+	player.set_physics_process(false)
+	var steps: int = 0
+	for i: int in 100:  # 走 10 公尺
+		if player.footstep_tick(0.1, false, true):
+			steps += 1
+	assert_eq(steps, int(10.0 / PlayerController.STRIDE), "走 10 m 踏 %d 步" % int(10.0 / PlayerController.STRIDE))
+	assert_eq(player.step_count, steps)
+	assert_eq(player.last_step_surface, "stone", "關卡沒說地面是什麼 → 石頭")
+	var run_steps: int = 0
+	for i: int in 100:
+		if player.footstep_tick(0.1, true, true):
+			run_steps += 1
+	assert_true(run_steps < steps, "跑步的步幅比較大（%d < %d）" % [run_steps, steps])
+	var air: int = 0
+	for i: int in 100:
+		if player.footstep_tick(0.1, false, false):
+			air += 1
+	assert_eq(air, 0, "騰空、閃避時不踏步")
+	assert_false(player.footstep_tick(0.0, false, true), "站著不動不踏步")
+	for surface: String in PlayerController.STEP_SURFACES:
+		assert_not_null(Sfx.stream("step_" + surface), "有 step_%s" % surface)
+	root.queue_free()
+	await tree.process_frame

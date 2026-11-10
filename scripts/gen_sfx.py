@@ -21,6 +21,7 @@
 - frost_wind_indoor：同一段風從屋裡聽（酒館、柯德家）：再低通兩次、去掉雪粒，只剩牆外悶悶的呼呼聲。
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
+- step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -597,6 +598,58 @@ def title_theme(seconds=24.0, seed=67):
     return [v / peak * 0.7 for v in looped]
 
 
+def _step_env(n, attack, decay):
+    return [min(1.0, (i / RATE) / attack) * math.exp(-(i / RATE) * decay) for i in range(n)]
+
+
+def step_snow(seed=71):
+    """踩在雪上：很密的細小顆粒「喀嚓」＋很輕的悶聲。"""
+    rng = random.Random(seed)
+    n = int(0.16 * RATE)
+    out = [0.0] * n
+    # 顆粒：0.13 秒內 60 個極短的噪音點，越後面越稀
+    for _ in range(60):
+        at = int(abs(rng.gauss(0.03, 0.035)) * RATE)
+        amp = rng.uniform(0.2, 1.0)
+        for j in range(int(0.0025 * RATE)):
+            if at + j >= n:
+                break
+            out[at + j] += amp * rng.uniform(-1, 1) * (1 - j / (0.0025 * RATE))
+    out = onepole_lp(hp(out, 900), 4200)
+    thud = onepole_lp(noise(n, rng), 160)
+    env = _step_env(n, 0.006, 32)
+    return [(out[i] * 0.9 + thud[i] * 3.0) * env[i] for i in range(n)]
+
+
+def step_stone(seed=73):
+    """踩在石板上：很短的低頻「咚」＋一點砂粒的擦聲。"""
+    rng = random.Random(seed)
+    n = int(0.12 * RATE)
+    out = []
+    grit = hp(noise(n, rng), 2500)
+    for i in range(n):
+        t = i / RATE
+        thump = math.sin(2 * math.pi * (130 - 300 * t) * t) * math.exp(-t * 60)
+        out.append(thump * 0.9 + grit[i] * 0.25 * math.exp(-t * 90))
+    env = _step_env(n, 0.002, 18)
+    return [out[i] * env[i] for i in range(n)]
+
+
+def step_wood(seed=79):
+    """踩在木板地上：中空的「叩」＋一點木板的吱。"""
+    rng = random.Random(seed)
+    n = int(0.15 * RATE)
+    out = []
+    click = onepole_lp(noise(n, rng), 3000)
+    for i in range(n):
+        t = i / RATE
+        body = math.sin(2 * math.pi * 182 * t) * math.exp(-t * 38) * 0.8 + math.sin(2 * math.pi * 421 * t) * math.exp(-t * 70) * 0.45
+        creak = math.sin(2 * math.pi * (760 + 900 * t) * t) * math.exp(-((t - 0.05) / 0.025) ** 2) * 0.05
+        out.append(body + click[i] * 0.3 * math.exp(-t * 200) + creak)
+    env = _step_env(n, 0.002, 10)
+    return [out[i] * env[i] for i in range(n)]
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -624,6 +677,9 @@ def main():
         write("frost_wind_indoor", frost_wind(indoor=True)),
         write("hearth_crackle", hearth_crackle()),
         write("title_theme", title_theme()),
+        write("step_snow", step_snow()),
+        write("step_stone", step_stone()),
+        write("step_wood", step_wood()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

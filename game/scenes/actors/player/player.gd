@@ -297,6 +297,7 @@ func _physics_process(delta: float) -> void:
 	_puppet.set_move_speed(horizontal.length())
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
+	footstep_tick(horizontal.length() * delta, sprinting, is_on_floor() and _dodge_left <= 0.0)
 
 	if lock_target != null and _dodge_left <= 0.0 and not sprinting:
 		var to_t: Vector3 = lock_target.global_position - global_position
@@ -308,6 +309,42 @@ func _physics_process(delta: float) -> void:
 	var fov_target: float = FOV_SPRINT if sprinting else FOV_WALK
 	_camera.fov = lerpf(_camera.fov, fov_target, clampf(4.0 * delta, 0.0, 1.0))
 	_follow_rig(delta)
+
+
+## 腳步聲（D-182）：每走 STRIDE 公尺（跑步 SPRINT_STRIDE）踏一步，聲音照關卡的地面
+## （關卡的 `footstep_surface(位置)`：雪、石、木；沒有就當石頭）。閃避、騰空時不算步。回傳這一幀有沒有踏一步。
+const STRIDE: float = 0.8
+const SPRINT_STRIDE: float = 1.1
+const STEP_DB: float = -13.0
+const SPRINT_STEP_DB: float = -9.0
+const STEP_SURFACES: PackedStringArray = ["snow", "stone", "wood"]
+var step_count: int = 0
+var last_step_surface: String = ""
+var _step_acc: float = 0.0
+
+
+func footstep_tick(moved: float, sprinting: bool, grounded: bool) -> bool:
+	if not grounded or moved <= 0.0:
+		return false
+	_step_acc += moved
+	var stride: float = SPRINT_STRIDE if sprinting else STRIDE
+	if _step_acc < stride:
+		return false
+	_step_acc = fmod(_step_acc, stride)
+	step_count += 1
+	last_step_surface = footstep_surface()
+	Sfx.play_at(self, "step_" + last_step_surface, global_position + Vector3.UP * 0.05,
+			(SPRINT_STEP_DB if sprinting else STEP_DB) + randf_range(-1.5, 1.5), 0.1, 3.0)
+	return true
+
+
+func footstep_surface() -> String:
+	var level: Node = get_parent()
+	if level != null and level.has_method("footstep_surface"):
+		var surface: String = str(level.call("footstep_surface", global_position))
+		if STEP_SURFACES.has(surface):
+			return surface
+	return "stone"
 
 
 ## 被抓住 seconds 秒；這段時間連按閃避或攻擊掙扎，滿 need 次掙脫；時間到被捏一下（squeeze 傷害）才放開。
