@@ -2,7 +2,7 @@
 
 新的放最上面。時間為台北時間。
 
-## 2026-11-10 09:26–10:10　第 59 輪：「重現」與記憶代價在第 1～3 章的一致性、遊戲時間
+## 2026-11-10 09:26–10:04　第 59 輪：「重現」與記憶代價在第 1～3 章的一致性、遊戲時間
 
 **做了什麼**
 
@@ -15,7 +15,7 @@
 - `scripts/check.sh` 全綠（396 個測試，多 6 個：`test_nine_breath_site::test_dormant_site_cannot_restore`、`test_journal::test_paid_memory_is_always_visible`、`test_playtime` 3 個、`test_thanks_page::test_time_played_text`）；沒有 leaked 警告。
 - 兩次「拿掉修正、看測試會不會紅」：白天改回只停物理 → 燃燒劍路線 `[ch1_day_town] 現在能重現的地方` 紅；拿掉白天的擋 → 兩條路線 `白天走進南街不會再播石拱回憶` 紅。
 - 本機截圖（lavapipe Vulkan）：感謝試玩中英各一張（五列排得下）；白天的南街（`--day --pos=0.5,13.5 --face=arch`，這張就是發現「石拱回憶」會播的那張）。
-- CI：見收尾補記。
+- CI：36a1a22 run 42737106955 **全綠**（含盤點截圖）；79ceb20 的 run 被下一個 push 取消；**d720c4d run 42738449436（包含全部）收尾時「Import、測試、匯出」已綠**，截圖、smoke test、打包、盤點截圖還在跑——下一輪開工先看。
 
 **問題**
 
