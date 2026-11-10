@@ -715,13 +715,12 @@ func _build_ceiling_lamp() -> void:
 	add_child(root)
 	var iron := _mat(IRON, 0.55)
 	iron.metallic = 0.6
+	# 細鐵鏈（D-199：ChainMesh，從天花板往下垂到鐵環）
 	var chain := MeshInstance3D.new()
 	chain.name = "Chain"
-	var cb := BoxMesh.new()
-	cb.size = Vector3(0.025, 0.4, 0.025)
-	chain.mesh = cb
+	chain.mesh = ChainMesh.build(0.4, 0.06, 0.036, 0.0055)
 	chain.material_override = iron
-	chain.position = Vector3(0, 0.2, 0)
+	chain.position = Vector3(0, 0.4, 0)
 	root.add_child(chain)
 	var ring := MeshInstance3D.new()
 	ring.name = "Ring"

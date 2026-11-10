@@ -470,7 +470,8 @@ func _build_hanging_lamp(at: Vector3) -> void:
 	iron.roughness = 0.5
 	var chain_len: float = WALL_H - (at.y + 0.14)
 	var parts: Array[MeshInstance3D] = []
-	parts.append(_prop("LampChain", _cyl(0.008, 0.008, chain_len, 6), Vector3(at.x, at.y + 0.14 + chain_len * 0.5, at.z), iron))
+	# 細鐵鏈（D-199：ChainMesh，從天花板往下垂到燈罩頂）
+	parts.append(_prop("LampChain", ChainMesh.build(chain_len, 0.05, 0.03, 0.0045), Vector3(at.x, WALL_H, at.z), iron))
 	var glass := StandardMaterial3D.new()
 	glass.albedo_color = Color(1.0, 0.8, 0.5)
 	glass.emission_enabled = true
