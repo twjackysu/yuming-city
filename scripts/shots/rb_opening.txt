@@ -1,0 +1,5 @@
+# 新版前十分鐘（霜橋鎮開場）的固定鏡頭組：名稱 幀數 旗標…
+# 名稱跟 CI 盤點截圖（.github/workflows/ci.yml 的 shot）同名：基準可以直接用 screens release 的那張（--fetch-baseline）。
+40-rb-start 30 --level=frostbridge --rb-at=start --locale=zh_TW
+42-rb-pursuer 40 --level=frostbridge --rb-at=pursuer --locale=zh_TW
+41-rb-mist 30 --level=frostbridge --rb-at=mist --locale=zh_TW
