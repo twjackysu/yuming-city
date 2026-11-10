@@ -234,6 +234,9 @@ jobs:
           shot 42-rb-pursuer 40 --level=frostbridge --rb-at=pursuer --locale=zh_TW
           shot 43-rb-throw 40 --level=frostbridge --rb-at=throw --locale=zh_TW
           shot 44-rb-flight 40 --level=frostbridge --rb-at=flight --locale=zh_TW
+          shot 45-rb-guardian 40 --level=frostbridge --rb-at=guardian --locale=zh_TW
+          shot 46-rb-spray 40 --level=frostbridge --rb-at=spray --locale=zh_TW
+          shot 47-rb-sprayed 40 --level=frostbridge --rb-at=sprayed --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

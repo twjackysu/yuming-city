@@ -222,3 +222,31 @@ func _refuse(line: String) -> Dictionary:
 
 func _result(outcome: String, line: String) -> Dictionary:
 	return {"accepted": true, "outcome": outcome, "line": line}
+
+
+## 繞開毒霧（新版，D-207）：席菈沒有逆轉體質，不走進毒霧。centers／radii＝場上每團毒霧的中心與半徑。
+## 人在霧裡（或貼著邊）→ 往外走；下一步會踏進去 → 把往裡走的分量拿掉，沿著霧的邊緣滑過去；
+## 正對著霧心走（沒有切線分量）→ 選一邊繞。move 是這一幀想走的水平速度，回傳修正後的速度。
+static func steer_clear(pos: Vector3, move: Vector3, centers: PackedVector3Array, radii: PackedFloat32Array, margin: float = 0.6) -> Vector3:
+	var out: Vector3 = Vector3(move.x, 0.0, move.z)
+	var speed: float = out.length()
+	for i: int in mini(centers.size(), radii.size()):
+		var away := Vector3(pos.x - centers[i].x, 0.0, pos.z - centers[i].z)
+		var keep: float = radii[i] + margin
+		var dist: float = away.length()
+		if dist >= keep + maxf(speed, 1.0) * 0.5:
+			continue
+		var n: Vector3 = away / dist if dist > 0.01 else Vector3.BACK
+		if dist < radii[i]:
+			# 已經在霧裡：先出去（至少用走路的速度）
+			out = n * maxf(speed, 3.0)
+			continue
+		var inward: float = -out.dot(n)
+		if inward <= 0.0:
+			continue
+		var tangent: Vector3 = out + n * inward
+		if tangent.length() < speed * 0.3:
+			tangent = Vector3(-n.z, 0.0, n.x)
+		out = tangent.normalized() * speed
+	return out
+

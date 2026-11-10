@@ -114,6 +114,8 @@ func _on_strike() -> void:
 				note_second_slam(unhurt, _player.global_position.distance_to(global_position) <= WITNESS_RANGE)
 		"grab":
 			_grab()
+		"spray":
+			_spray()
 		"charge":
 			_charge_hit.clear()
 			_hit_wall = false
@@ -376,6 +378,195 @@ func _apply_struggle_brain() -> void:
 	brain.stagger_max = CombatTuning.num("undertaker.struggle_stagger_max", brain.stagger_max)
 
 
+# ---- 南街守衛（新版前十分鐘，D-207）----
+## 單階段：招式輪替 pattern_guardian（沒有衝撞、多一招「噴毒」）、生命 guardian_hp、不會進第二階段。
+## 胸口多三根排氣管（只有守衛有；舊版的送葬者外觀不變）。
+const SPRAY_GREEN: Color = Color(0.5, 1.0, 0.38)
+const PIPE_IDLE_ENERGY: float = 0.3
+const PIPE_HOT_ENERGY: float = 7.0
+const PIPE_LIGHT_ENERGY: float = 2.0
+const SPRAY_JET_SHADER: String = "res://scenes/actors/undertaker/spray_jet.gdshader"
+const SPRAY_JET_SEC: float = 0.55
+## 排氣管口（上身座標，-Z 是前方）
+const PIPE_MOUTH: Vector3 = Vector3(0.0, 0.42, -0.5)
+
+var guardian_mode: bool = false
+## 噴過幾次、最後一團毒霧（測試用）
+var spray_count: int = 0
+var last_spray: PoisonMist
+var _pipes: Node3D
+var _pipe_mat: StandardMaterial3D
+var _pipe_light: OmniLight3D
+var _pipe_glow: float = 0.0
+var _spray_charging: bool = false
+## 截圖用：噴出去的那一道不淡掉
+var debug_hold_jet: bool = false
+
+
+func begin_guardian() -> void:
+	guardian_mode = true
+	struggle_mode = true
+	_apply_guardian_brain()
+	health.max_hp = CombatTuning.num("undertaker.guardian_hp", health.max_hp)
+	health.hp = health.max_hp
+	# 攻略沒寫的招：看穿裡列成未證實
+	intel_overrides["spray"] = false
+	_build_spray_pipes()
+
+
+func _apply_guardian_brain() -> void:
+	var pat: Variant = CombatTuning.value("undertaker.pattern_guardian", [])
+	if pat is Array:
+		brain.set_pattern(PackedStringArray(pat as Array))
+	brain.stagger_max = CombatTuning.num("undertaker.guardian_stagger_max", brain.stagger_max)
+
+
+## 噴毒落在哪裡（前方 reach 公尺的地面）
+func spray_center() -> Vector3:
+	var c: Vector3 = global_position + forward() * brain.move_num("spray", "reach", 2.6)
+	return Vector3(c.x, global_position.y, c.z)
+
+
+## 噴毒：胸口的管子往前下方噴，地上留一團毒霧（life 秒後散掉）。霧本身不分敵我：站進去就中毒；
+## 這一下沒有直接傷害（跟爪子、下砸不同：諾恩站在裡面會回血，但牠照樣可以接著打）。
+func _spray() -> PoisonMist:
+	var parent: Node = get_parent()
+	if parent == null:
+		return null
+	spray_count += 1
+	var center: Vector3 = spray_center()
+	var m: PoisonMist = PoisonMist.create(brain.move_num("spray", "radius", 2.0), "guardian_spray", brain.move_num("spray", "life", 3.0))
+	m.name = "GuardianSpray%d" % spray_count
+	m.position = center
+	parent.add_child(m)
+	last_spray = m
+	Sfx.play_at(parent, "poison_hiss", global_position + forward() * 0.8 + Vector3.UP * 1.4, 2.0, 0.04, 9.0)
+	_spray_jet(center)
+	return m
+
+
+## 管口到地面的一道綠色噴霧（錐形面片＋流動的雜訊，不用粒子：截圖與慢幀下都看得到），半秒淡掉。
+func _spray_jet(center: Vector3) -> void:
+	var torso: Node3D = _body.get_node_or_null("Torso") as Node3D
+	if torso == null or not is_inside_tree():
+		return
+	var from: Vector3 = torso.global_transform * PIPE_MOUTH
+	var to: Vector3 = center + Vector3.UP * 0.1
+	var length: float = from.distance_to(to)
+	if length < 0.2:
+		return
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.07
+	cone.bottom_radius = brain.move_num("spray", "radius", 2.0) * 0.55
+	cone.height = length
+	cone.radial_segments = 20
+	cone.rings = 6
+	cone.cap_top = false
+	cone.cap_bottom = false
+	var mat := ShaderMaterial.new()
+	mat.shader = load(SPRAY_JET_SHADER) as Shader
+	mat.set_shader_parameter("tint", SPRAY_GREEN)
+	mat.set_shader_parameter("fade", 1.0)
+	var jet := MeshInstance3D.new()
+	jet.name = "SprayJet"
+	jet.mesh = cone
+	jet.material_override = mat
+	jet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	get_parent().add_child(jet)
+	# 圓柱的 +Y（窄的那一端）對著管口
+	var up: Vector3 = (from - to).normalized()
+	var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.95 else Vector3.RIGHT).normalized()
+	jet.global_transform = Transform3D(Basis(side, up, side.cross(up)), (from + to) * 0.5)
+	if debug_hold_jet:
+		return
+	var t := jet.create_tween()
+	t.tween_method(func(v: float) -> void: mat.set_shader_parameter("fade", v), 1.0, 0.0, SPRAY_JET_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(jet.queue_free)
+
+
+## 胸口的三根排氣管：平常只有一點暗綠，噴毒的前兆越來越亮（＋一盞綠光打在袍子與地上）。
+func _build_spray_pipes() -> void:
+	var torso: Node3D = _body.get_node_or_null("Torso") as Node3D if _body != null else null
+	if torso == null or _pipes != null:
+		return
+	_pipes = Node3D.new()
+	_pipes.name = "SprayPipes"
+	torso.add_child(_pipes)
+	var iron: Material = frame_iron_material()
+	_pipe_mat = StandardMaterial3D.new()
+	_pipe_mat.albedo_color = Color(0.05, 0.09, 0.04)
+	_pipe_mat.roughness = 0.4
+	_pipe_mat.emission_enabled = true
+	_pipe_mat.emission = SPRAY_GREEN
+	_pipe_mat.emission_energy_multiplier = PIPE_IDLE_ENERGY
+	for x: float in [-0.17, 0.0, 0.17]:
+		var pipe := MeshInstance3D.new()
+		var pm := CylinderMesh.new()
+		pm.top_radius = 0.05
+		pm.bottom_radius = 0.06
+		pm.height = 0.34
+		pm.radial_segments = 10
+		pipe.mesh = pm
+		pipe.material_override = iron
+		# 從胸口往前下方伸出來（圓柱的 +Y 朝前下）
+		pipe.position = Vector3(x, 0.5 - absf(x) * 0.25, -0.34)
+		pipe.rotation_degrees = Vector3(-68.0, 0.0, 0.0)
+		_pipes.add_child(pipe)
+		var mouth := MeshInstance3D.new()
+		var mm := CylinderMesh.new()
+		mm.top_radius = 0.042
+		mm.bottom_radius = 0.042
+		mm.height = 0.03
+		mm.radial_segments = 10
+		mouth.mesh = mm
+		mouth.material_override = _pipe_mat
+		mouth.position = Vector3(0.0, 0.165, 0.0)
+		pipe.add_child(mouth)
+	_pipe_light = OmniLight3D.new()
+	_pipe_light.name = "PipeLight"
+	_pipe_light.light_color = SPRAY_GREEN
+	_pipe_light.light_energy = 0.0
+	_pipe_light.omni_range = 4.0
+	_pipe_light.omni_attenuation = 1.3
+	_pipe_light.shadow_enabled = false
+	# 體積霧裡只留一點點（不然牠整個人會被一顆綠色光球蓋掉，袍子的黑色輪廓就沒了）
+	_pipe_light.light_volumetric_fog_energy = 0.2
+	# 放在管口前下方：照亮地面與袍子的下襬，不是把整個上身染綠
+	_pipe_light.position = PIPE_MOUTH + Vector3(0.0, -0.25, -0.75)
+	_pipes.add_child(_pipe_light)
+	# 噴毒的前兆範圍：地上一個綠色的圓（跟霜色的下砸分得出來）
+	var disc := CylinderMesh.new()
+	var r: float = brain.move_num("spray", "radius", 2.0)
+	disc.top_radius = r
+	disc.bottom_radius = r
+	disc.height = 0.01
+	_decals["spray"] = _decal(disc, Vector3(0, 0.03, -brain.move_num("spray", "reach", 2.6)), SHAPE_DISC, Vector2(r, 0.0), 0.0, SPRAY_GREEN)
+
+
+## 管口的亮度：噴毒前兆跟著進度變亮、噴出去那一下最亮，其他時候慢慢暗回去。
+func pipe_glow() -> float:
+	return _pipe_glow
+
+
+func _update_pipes() -> void:
+	if _pipe_mat == null:
+		return
+	var want: float = 0.0
+	if brain.move_id == "spray":
+		if brain.state == EnemyBrain.State.TELEGRAPH:
+			want = 0.15 + 0.85 * brain.telegraph_progress()
+		elif brain.state == EnemyBrain.State.STRIKE:
+			want = 1.0
+	# 前兆開始的那一刻：嘶聲（越來越大），跟舉手的招式聽起來不一樣
+	var charging: bool = want > 0.0 and brain.state == EnemyBrain.State.TELEGRAPH
+	if charging and not _spray_charging and is_inside_tree():
+		Sfx.play_at(get_parent(), "poison_charge", global_position + forward() * 0.6 + Vector3.UP * 1.4, 0.0, 0.03, 8.0)
+	_spray_charging = charging
+	_pipe_glow = want if want > _pipe_glow else lerpf(_pipe_glow, want, 0.08)
+	_pipe_mat.emission_energy_multiplier = lerpf(PIPE_IDLE_ENERGY, PIPE_HOT_ENERGY, _pipe_glow)
+	_pipe_light.light_energy = PIPE_LIGHT_ENERGY * _pipe_glow
+
+
 ## 第二階段：扯斷一條鐵鏈；看穿裡「下砸」變成未證實，下砸前兆縮短；換招式輪替、出現攻略沒寫的招。
 func enter_phase_two() -> void:
 	phase = 2
@@ -410,6 +601,8 @@ func _on_settings_changed() -> void:
 	brain.unreadable = unread
 	if phase == 2:
 		_apply_phase_two_brain()
+	elif guardian_mode:
+		_apply_guardian_brain()
 	elif struggle_mode:
 		_apply_struggle_brain()
 
@@ -553,6 +746,7 @@ func _update_look() -> void:
 		var k: float = 1.0 - throw_windup / _throw_total
 		lean = Vector3(-FALL_FORWARD * (10.0 + 25.0 * k), 0, 0)
 	(_body.get_node("Torso") as Node3D).rotation_degrees = lean
+	_update_pipes()
 
 
 ## 前兆姿勢（上身的旋轉角度）：橫掃身體向左擰、下砸上身後仰、抓取與衝撞往前探。
@@ -567,6 +761,9 @@ static func telegraph_lean(move_id: String, p: float) -> Vector3:
 			return Vector3(FALL_FORWARD * 30.0 * p, 0, 0)
 		"charge":
 			return Vector3(FALL_FORWARD * 22.0 * p, 0, 0)
+		"spray":
+			# 噴毒：挺胸吸氣（微微後仰、往右擰一點），跟舉手的招式分得出來
+			return Vector3(-FALL_FORWARD * 9.0 * p, -8.0 * p, 0)
 	return Vector3.ZERO
 
 
@@ -785,10 +982,10 @@ func _build_decals() -> void:
 
 
 ## 前兆範圍的材質（D-088）：telegraph.gdshader，亮邊＋淡底＋隨前兆進度從敵人那一端往外填滿。
-func _decal(mesh: Mesh, pos: Vector3, shape: int, extent: Vector2, arc_deg: float = 0.0) -> MeshInstance3D:
+func _decal(mesh: Mesh, pos: Vector3, shape: int, extent: Vector2, arc_deg: float = 0.0, tint: Color = FROST) -> MeshInstance3D:
 	var mat := ShaderMaterial.new()
 	mat.shader = load(TELEGRAPH_SHADER) as Shader
-	mat.set_shader_parameter("tint", FROST)
+	mat.set_shader_parameter("tint", tint)
 	mat.set_shader_parameter("shape", shape)
 	mat.set_shader_parameter("extent", extent)
 	mat.set_shader_parameter("half_arc", deg_to_rad(arc_deg * 0.5))

@@ -4,7 +4,7 @@ extends Node
 ## frostbridge.gd 在 Game.session.is_reboot() 時掛上這個節點，不跑切片的觸發點、石拱（石拱停用）。
 ## 這一版做到：開場（雷德在鐵門後、波克在推車上、生命 55）→ 推車到北街轉角 → 藥桶破了、主街上一片毒霧 →
 ## 第一次中毒自動覺醒（畫面中間兩行字）→ 離開、毒效結束 → 再踏回去確認 → 霧散了 → 推車到南街口。
-## 席菈接應之後（meet_sheila 以後）是下一步。
+## 席菈接應 → 南街守衛戰（D-207：單階段送葬者＋噴毒）→ 倒下、席菈問名字。藥箱、艾妲、貨梯是下一步。
 
 const QUEST: String = GameSession.REBOOT_MAIN_QUEST
 ## 跟 frostbridge.gd 的 RISE 一樣（北街台地高度）
@@ -17,9 +17,10 @@ const GATE_Z: float = -45.6
 const GATE_HALF: float = 3.4
 const RED_POS: Vector3 = Vector3(0.6, RISE, -46.8)
 ## 推車路線：鐵門前 → 北街轉角（石階頂）→ 石階中段（等霧散）→ 主街 → 廣場 → 南街口
+## （最後停在南街口西側、麵包店門邊：街心留給守衛戰，推車不擋路、不擋鏡頭，D-207）
 const CART_ROUTE_XZ: Array[Vector2] = [
 	Vector2(-0.8, -42.6), Vector2(-0.6, -31.0), Vector2(-0.5, -29.2), Vector2(-0.5, -27.4),
-	Vector2(-0.4, -25.2), Vector2(-0.2, -16.0), Vector2(0.4, -6.0), Vector2(0.9, 3.0), Vector2(1.0, 11.0),
+	Vector2(-0.4, -25.2), Vector2(-0.2, -16.0), Vector2(0.4, -6.0), Vector2(0.9, 3.0), Vector2(-1.6, 10.8),
 ]
 ## 路線上第幾個點＝北街轉角（推車到這裡藥桶就破了）、在霧散之前停在哪一點（石階中段，高處）
 const CORNER_POINT: int = 2
@@ -71,6 +72,17 @@ var throw_flight_sec: float = THROW_FLIGHT_SEC
 ## 席菈從南街西側的側門出來（推車停在南街口），走近就開始接應的對話
 const SHEILA_DOOR: Vector3 = Vector3(-2.3, 0.0, 13.2)
 const SHEILA_TALK_RANGE: float = 3.4
+## 南街守衛戰（D-207）：席菈接應的對話一結束，牠從南街南端（石拱那一頭）走過來——北街繞過來的那一隻。
+## 走到離諾恩 GUARDIAN_ENGAGE_RANGE 以內（或走到定點）就開打：單階段（Undertaker.begin_guardian()：橫掃、下砸、噴毒）。
+## 噴毒在地上留一團 3 秒的毒霧：諾恩站進去回血、席菈繞開；爪子和下砸照常扣血。倒下 → rb.guardian_down → 對話 rb_guardian_down。
+const GUARDIAN_SPAWN: Vector3 = Vector3(0.4, 0.0, 27.0)
+const GUARDIAN_MEET: Vector3 = Vector3(0.3, 0.0, 17.5)
+const GUARDIAN_WALK_SPEED: float = 2.0
+const GUARDIAN_ENGAGE_RANGE: float = 8.5
+## 牠倒下之後隔這麼久，席菈才開口（等牠倒地的那一下）
+const GUARDIAN_DOWN_TALK_SEC: float = 2.2
+## 截圖旗標 `--rb-at=` 裡屬於守衛戰的三個
+const GUARDIAN_SHOTS: PackedStringArray = ["guardian", "spray", "sprayed"]
 ## 席菈接應之後的階段（她在場、波克已經進店）
 const AFTER_SHEILA_STAGES: PackedStringArray = ["guardian_fight", "portable_poison", "market_lead"]
 
@@ -79,10 +91,10 @@ const SPAWNS: Dictionary = {
 	# 開場面向北：鐵門與門後的雷德在眼前（對話結束後自己轉身往南）
 	"rb_start": [Vector3(0.6, RISE + 0.05, -40.4), 0.0],
 	"rb_before_mist": [Vector3(0.9, 0.5, -27.6), 180.0],
-	"rb_sheila": [Vector3(0.0, 0.05, 9.6), 180.0],
-	"rb_guardian": [Vector3(0.0, 0.05, 9.6), 180.0],
-	"rb_portable": [Vector3(0.0, 0.05, 9.6), 180.0],
-	"rb_market": [Vector3(0.0, 0.05, 9.6), 0.0],
+	"rb_sheila": [Vector3(0.9, 0.05, 9.6), 180.0],
+	"rb_guardian": [Vector3(0.9, 0.05, 9.6), 180.0],
+	"rb_portable": [Vector3(0.9, 0.05, 9.6), 180.0],
+	"rb_market": [Vector3(0.9, 0.05, 9.6), 0.0],
 }
 
 var level: StoryLevel
@@ -106,6 +118,16 @@ var _throw_from: Vector3 = Vector3.ZERO
 var _pursuer_landed: bool = true
 ## 截圖用（`--rb-at=throw|flight`）：把丟燈柱停在某一刻——"windup"＝舉到最高、"flight"＝飛到三分之一
 var debug_hold_throw: String = ""
+## 南街的守衛（節點名 RbGuardian＝任務標記）；倒下、沉進雪裡之後是 null
+var guardian: Undertaker
+## 牠開打了沒（走過來的那一段不出招、打不動）
+var guardian_engaged: bool = false
+## >0＝牠倒下了，倒數到 0 就播 rb_guardian_down
+var _guardian_down_t: float = -1.0
+## 測試可以調短
+var guardian_down_talk_sec: float = GUARDIAN_DOWN_TALK_SEC
+## 截圖用（`--rb-at=guardian|spray|sprayed`）："walk"＝站在街上盯著人、"telegraph"＝噴毒前兆停在八成、"jet"＝剛噴出去
+var debug_hold_guardian: String = ""
 
 
 func _ready() -> void:
@@ -113,6 +135,7 @@ func _ready() -> void:
 	player = level.get_node_or_null("Player") as PlayerController
 	_build_markers()
 	_build_gate()
+	_build_bakery_lantern()
 	_build_barrels()
 	_build_cart()
 	var st: GameState = Game.session.state
@@ -140,6 +163,11 @@ func _ready() -> void:
 		_spawn_pursuer(false)
 	elif now == "poison_discovery":
 		_spawn_pursuer_blocking()
+	elif now == "guardian_fight":
+		if st.get_flag("rb.guardian_down", false):
+			_guardian_down_t = 0.4
+		else:
+			_spawn_guardian()
 	# 截圖用：`--rb-at=mist` 一進場就站在毒霧裡（第一次覺醒的兩行字）
 	var shot_at: String = str(App.parse_user_args(OS.get_cmdline_user_args()).get("rb-at", ""))
 	if player != null and shot_at == "mist":
@@ -174,14 +202,67 @@ func _ready() -> void:
 		player.rotation.y = deg_to_rad(180.0)
 		player.yaw = player.rotation.y
 		player.snap_camera()
+	# `--rb-at=guardian|spray|sprayed`：南街守衛戰（牠站在街上／噴毒前兆／剛噴出去，諾恩站在毒霧邊）
+	if shot_at in GUARDIAN_SHOTS:
+		_dev_stage_guardian(shot_at)
 
 
-## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前
+## 截圖用（`--rb-at=`）：照正式流程設旗標，推到那一段。start＝開場對話；mist＝藥桶破了、第一次進霧前；
+## guardian／spray／sprayed＝南街守衛戰（席菈已經接應）
 static func dev_advance(s: GameSession, at: String) -> void:
-	if at in ["mist", "pursuer", "throw", "flight", "impact"]:
+	if at in ["mist", "pursuer", "throw", "flight", "impact"] or at in GUARDIAN_SHOTS:
 		s.set_flag("rb.opening_done", true)
-	if at in ["mist"]:
+	if at in ["mist"] or at in GUARDIAN_SHOTS:
 		s.set_flag("rb.barrels_broken", true)
+	if at in GUARDIAN_SHOTS:
+		for flag: String in ["rb.reversal_awakened", "rb.mist_reentered", "rb.reached_south", "rb.sheila_met"]:
+			s.set_flag(flag, true)
+
+
+## 截圖用：守衛站在南街中段（不開打），諾恩在牠北邊、面向牠；席菈在旁邊。
+func _dev_stage_guardian(at: String) -> void:
+	if guardian == null or player == null:
+		return
+	var holds: Dictionary = {"guardian": "walk", "spray": "telegraph", "sprayed": "jet"}
+	debug_hold_guardian = str(holds.get(at, "walk"))
+	var gap: float = 5.2 if at == "guardian" else 3.6
+	var boss_at := Vector3(0.0, 0.0, 18.4)
+	guardian.global_position = Vector3(boss_at.x, level.ground_y(boss_at) + 0.05, boss_at.z)
+	guardian.set_physics_process(false)
+	guardian.set_facing(0.0)
+	var me := Vector3(1.1, 0.0, boss_at.z - gap)
+	player.global_position = Vector3(me.x, level.ground_y(me) + 0.05, me.z)
+	player.rotation.y = deg_to_rad(168.0)
+	player.yaw = player.rotation.y
+	# 逆轉體質已經覺醒（不再跳中間那兩行字）
+	player.reversal.awakened_once = true
+	player.reversal.unlock("poison")
+	player.reversal.equip("poison")
+	var sheila: Node3D = level.get_node_or_null("Sheila") as Node3D
+	if sheila != null:
+		sheila.set_physics_process(false)
+		sheila.global_position = Vector3(-1.7, level.ground_y(me), me.z + 0.6)
+	if at == "sprayed":
+		guardian.debug_hold_jet = true
+		guardian.brain._set_move("spray")
+		guardian._spray()
+	player.snap_camera()
+
+
+## 截圖用：每幀把守衛停在那一刻（physics_process 關掉了，姿勢與管口的光自己更新）
+func _dev_hold_guardian() -> void:
+	if guardian == null or not is_instance_valid(guardian):
+		return
+	match debug_hold_guardian:
+		"telegraph":
+			guardian.brain._set_move("spray")
+			guardian.brain.state = EnemyBrain.State.TELEGRAPH
+			guardian.brain.time_in_state = guardian.brain.telegraph_sec * 0.85
+		"jet":
+			guardian.brain.state = EnemyBrain.State.STRIKE
+			if guardian.last_spray != null and is_instance_valid(guardian.last_spray) and guardian.last_spray.zone != null:
+				guardian.last_spray.zone.life = 2.4
+	guardian._update_look()
 
 
 func stage() -> String:
@@ -205,6 +286,8 @@ func _on_dialogue_ended(dialogue_id: String) -> void:
 			_clear_mist()
 		"rb_sheila_meet":
 			_pok_into_shop()
+			if stage() == "guardian_fight":
+				_spawn_guardian()
 
 
 ## 雷德頭也不回地往北跑掉（鐵門照樣鎖著）
@@ -227,6 +310,7 @@ func _physics_process(delta: float) -> void:
 	_update_cart(delta)
 	_update_pursuer()
 	_update_throw(delta)
+	_update_guardian(delta)
 	var st: GameState = Game.session.state
 	match stage():
 		"escape":
@@ -316,6 +400,64 @@ func _pok_into_shop() -> void:
 func _on_cart_arrived() -> void:
 	if Game.session.is_reboot() and stage() == "poison_discovery":
 		Game.session.set_flag("rb.reached_south", true)
+
+
+# ---------------------------------------------------------------- 南街守衛戰（D-207）
+
+## 牠從南街南端走過來（新遊戲、讀檔、死亡重試都一樣：滿血、從頭走）
+func _spawn_guardian() -> void:
+	if guardian != null or level.has_node("RbGuardian") or Game.session.state.get_flag("rb.guardian_down", false):
+		return
+	guardian = Undertaker.new()
+	guardian.name = "RbGuardian"
+	guardian.position = Vector3(GUARDIAN_SPAWN.x, level.ground_y(GUARDIAN_SPAWN) + 0.05, GUARDIAN_SPAWN.z)
+	level.add_child(guardian)
+	guardian.begin_guardian()
+	guardian.set_facing(0.0)
+	guardian.scripted_walk(GUARDIAN_MEET, 0.0)
+	guardian.health.died.connect(_on_guardian_died)
+	guardian_engaged = false
+
+
+func _update_guardian(delta: float) -> void:
+	if _guardian_down_t > 0.0 and not Game.is_player_locked():
+		_guardian_down_t = maxf(_guardian_down_t - delta, 0.0)
+		if _guardian_down_t == 0.0:
+			_guardian_down_t = -1.0
+			if not Game.session.state.get_flag("rb.guardian_talked", false):
+				Game.start_dialogue("rb_guardian_down")
+	if debug_hold_guardian != "":
+		_dev_hold_guardian()
+		return
+	if guardian == null or not is_instance_valid(guardian) or guardian_engaged or guardian.health.is_dead():
+		return
+	guardian.scripted_walk(GUARDIAN_MEET, 0.0 if Game.is_player_locked() else GUARDIAN_WALK_SPEED)
+	guardian.scripted_look_at(player.global_position)
+	if Game.is_player_locked():
+		return
+	var gap: Vector3 = player.global_position - guardian.global_position
+	gap.y = 0.0
+	if gap.length() <= GUARDIAN_ENGAGE_RANGE or guardian.scripted_arrived():
+		_engage_guardian()
+
+
+## 交給狀態機：開打。一行提示把規則講白（毒＝回血，直接打擊照樣會痛）。
+func _engage_guardian() -> void:
+	guardian_engaged = true
+	guardian.end_scripted()
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner("RB_GUARDIAN_START", 5.0)
+
+
+func _on_guardian_died() -> void:
+	Game.session.set_flag("rb.guardian_down", true)
+	_guardian_down_t = guardian_down_talk_sec
+	# 牠噴在地上的毒霧跟著散掉（倒下之後這一帶是安全區：下一步的藥箱在這裡試）
+	for n: Node in get_tree().get_nodes_in_group("poison_mist"):
+		var m: PoisonMist = n as PoisonMist
+		if m != null and m.zone != null and m.zone.life > 0.6:
+			m.zone.life = 0.6
 
 
 # ---------------------------------------------------------------- 追擊的送葬者（D-205）
@@ -566,7 +708,7 @@ func _build_lamp_stump() -> void:
 func _build_markers() -> void:
 	_marker("RbNorthCorner", Vector3(0.0, RISE + 1.0, -30.0))
 	_marker("RbMistEdge", Vector3(0.0, 1.0, MIST_CENTER.z - MIST_RADIUS + 0.6))
-	_marker("RbSouthGate", Vector3(1.0, 1.0, 11.0))
+	_marker("RbSouthGate", Vector3(-0.6, 1.0, 10.8))
 
 
 func _marker(marker_name: String, pos: Vector3) -> void:
@@ -576,6 +718,41 @@ func _marker(marker_name: String, pos: Vector3) -> void:
 	m.name = marker_name
 	m.position = pos
 	level.add_child(m)
+
+
+## 麵包店側門上的門燈（D-207）：南街口西側原本整面牆沒有光（近看是一片死黑）。一盞暖燈照亮門邊、推車與守衛戰的北半場，
+## 跟牠噴出來的綠霧一暖一冷。不投影（多一盞投影燈太貴）。
+const BAKERY_LANTERN: Vector3 = Vector3(-3.28, 2.35, 12.6)
+
+
+func _build_bakery_lantern() -> void:
+	var n := Node3D.new()
+	n.name = "RbBakeryLantern"
+	n.position = BAKERY_LANTERN
+	var iron: Material = Undertaker.frame_iron_material()
+	# 牆上的鐵架：一根橫桿＋吊著的燈
+	_box_part(n, Vector3(0.5, 0.04, 0.04), Vector3(0.08, 0.3, 0.0), iron)
+	_box_part(n, Vector3(0.03, 0.14, 0.03), Vector3(0.3, 0.22, 0.0), iron)
+	_box_part(n, Vector3(0.22, 0.04, 0.22), Vector3(0.3, 0.14, 0.0), iron)
+	_box_part(n, Vector3(0.2, 0.03, 0.2), Vector3(0.3, -0.13, 0.0), iron)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.35, 0.25, 0.14)
+	glass.roughness = 0.3
+	glass.emission_enabled = true
+	glass.emission = FrostbridgeLook.LAMP
+	glass.emission_energy_multiplier = 5.0
+	_box_part(n, Vector3(0.15, 0.24, 0.15), Vector3(0.3, 0.0, 0.0), glass)
+	var light := OmniLight3D.new()
+	light.name = "Glow"
+	light.light_color = FrostbridgeLook.LAMP
+	light.light_energy = 1.7
+	light.omni_range = 7.5
+	light.omni_attenuation = 1.2
+	light.shadow_enabled = false
+	light.light_volumetric_fog_energy = 0.7
+	light.position = Vector3(0.45, 0.0, 0.0)
+	n.add_child(light)
+	level.add_child(n)
 
 
 ## 北街北端的鐵門（灰盒：鐵條＋兩道橫槓，擋人）；雷德在門後

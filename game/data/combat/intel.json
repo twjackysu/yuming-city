@@ -71,6 +71,12 @@
         "label": "MOVE_GRAB",
         "verified": false,
         "hidden": true
+      },
+      {
+        "id": "spray",
+        "label": "RB_MOVE_SPRAY",
+        "verified": false,
+        "hidden": true
       }
     ]
   }

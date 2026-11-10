@@ -883,6 +883,31 @@ def stair_ambience(seconds=9.0, seed=83):
     return [v / peak * 0.6 for v in looped]
 
 
+def poison_hiss(seconds=0.9, seed=107, charge=False):
+    """守衛噴毒（D-207）：高頻的嘶聲（滑動的帶通噪音＋一點更高的氣聲）。
+    charge＝前兆：慢慢變大、音高往上（跟舉手揮擊的「呼」分得出來）；否則是噴出去那一下：快起慢落＋一聲很短的低頻「噗」。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    src = noise(n, rng)
+    if charge:
+        band = svf_band(src, lambda i: 2600.0 + 2800.0 * (i / n), 0.35)
+    else:
+        band = svf_band(src, lambda i: 5200.0 - 1800.0 * (i / n), 0.45)
+    air = hp(src, 6000)
+    out = []
+    for i in range(n):
+        t = i / n
+        if charge:
+            env = t ** 1.6 * (1.0 if t < 0.93 else (1.0 - t) / 0.07)
+        else:
+            env = min(t / 0.04, 1.0) * math.exp(-t * 4.2)
+        s = (band[i] * 0.9 + air[i] * 0.25) * env
+        if not charge:
+            s += 0.5 * math.sin(2 * math.pi * 95 * i / RATE) * math.exp(-t * 18)
+        out.append(s)
+    return out
+
+
 def main():
     made = [
         write("bell", bell(196.0, 3.0)),
@@ -919,6 +944,8 @@ def main():
         write("step_wood", step_wood()),
         write("step_heavy", step_heavy()),
         write("stair_ambience", stair_ambience()),
+        write("poison_charge", poison_hiss(1.1, seed=107, charge=True)),
+        write("poison_hiss", poison_hiss(0.9, seed=109)),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

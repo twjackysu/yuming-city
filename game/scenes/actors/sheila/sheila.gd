@@ -191,6 +191,7 @@ func _move(delta: float, leader_dist: float, target_dist: float) -> void:
 		d.y = 0.0
 		if d.length() > 0.3:
 			horizontal = d.normalized() * speed
+		horizontal = _avoid_mist(horizontal)
 		if target != null and brain.mode != CompanionBrain.Mode.FOLLOW:
 			_face(target, delta)
 		elif horizontal.length() > 0.3:
@@ -204,6 +205,20 @@ func _move(delta: float, leader_dist: float, target_dist: float) -> void:
 	var moved: float = Vector2(real.x, real.z).length() * delta
 	footsteps.tick(self, moved, horizontal.length() > (WALK_SPEED + RUN_SPEED) * 0.5,
 			is_on_floor() and _dodge_left <= 0.0)
+
+
+## 繞開毒霧（新版，D-207）：她沒有逆轉體質，不走進毒霧；已經在裡面就先出來。場上沒有毒霧時原樣回傳。
+func _avoid_mist(move: Vector3) -> Vector3:
+	var centers := PackedVector3Array()
+	var radii := PackedFloat32Array()
+	for n: Node in get_tree().get_nodes_in_group("poison_mist"):
+		var m: PoisonMist = n as PoisonMist
+		if m != null and m.zone != null and not m.zone.expired():
+			centers.append(m.global_position)
+			radii.append(m.zone.radius)
+	if centers.is_empty():
+		return move
+	return CompanionBrain.steer_clear(global_position, move, centers, radii)
 
 
 func _face(n: Node3D, delta: float = -1.0) -> void:
