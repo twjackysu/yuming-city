@@ -345,6 +345,23 @@ func _on_settings_changed() -> void:
 		_apply_struggle_brain()
 
 
+## 跪地（D-191）：比走路的拖步更重的一聲「咚」（音高壓低）＋鐵架晃一下的鐵響，鏡頭小震一下。
+const KNEEL_DB: float = -1.0
+const KNEEL_PITCH: float = 0.78
+const KNEEL_SHAKE: float = 0.14
+
+
+func _play_kneel(parent: Node) -> PackedStringArray:
+	var at: Vector3 = global_position + forward() * 0.6
+	var p: AudioStreamPlayer3D = Sfx.play_at(parent, STEP_SOUND, at, KNEEL_DB, 0.03, 7.0)
+	if p != null:
+		p.pitch_scale *= KNEEL_PITCH
+	Sfx.play_at(parent, "iron_clang", at + Vector3.UP * 1.6, -12.0, 0.05, 6.0)
+	_shake_player(KNEEL_SHAKE)
+	_kneel_puff(at, Vector3(0.55, 0.05, 0.55), 18)
+	return PackedStringArray([STEP_SOUND, "iron_clang"])
+
+
 func _shake_player(amount: float) -> void:
 	if _player != null and global_position.distance_to(_player.global_position) < 12.0:
 		_player.shake(amount)

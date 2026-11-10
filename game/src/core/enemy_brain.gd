@@ -10,6 +10,9 @@ extends RefCounted
 
 enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD }
 
+## 跪下的那一刻（失衡滿了、撞牆）：角色節點播「膝蓋落地」的重音（D-191）。已經跪著再被逼跪不算。
+signal knelt
+
 const STATE_NAMES: PackedStringArray = ["idle", "chase", "telegraph", "strike", "recover", "staggered", "dead"]
 
 var state: State = State.IDLE
@@ -216,8 +219,11 @@ func is_moving() -> bool:
 
 
 func _enter(s: State) -> void:
+	var was: State = state
 	state = s
 	time_in_state = 0.0
+	if s == State.STAGGERED and was != State.STAGGERED:
+		knelt.emit()
 
 
 static func _has(path: String) -> bool:

@@ -45,6 +45,7 @@ func _ready() -> void:
 		difficulty = Settings.difficulty
 		Settings.changed.connect(_on_settings_changed)
 	brain = EnemyBrain.new().configure(intel_id(), difficulty)
+	brain.knelt.connect(_on_kneel)
 	move_speed = CombatTuning.num(intel_id() + ".move_speed", move_speed)
 	health = Health.new(CombatTuning.num(intel_id() + ".max_hp", 60.0))
 	health.name = "Health"
@@ -242,6 +243,41 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 		Game.session.add_stat("stats.%s_weak_kneels" % intel_id())
 
 
+# ---------------------------------------------------------------- 跪地（D-191）
+## 失衡滿了跪下的那一刻：膝蓋落地的重音＋一小團雪粉——「現在是破綻」聽得出來，不用盯著畫面。
+## 致命的一擊不算（接著就是倒下，倒下有自己的聲音）。聲音掛在關卡上（跟腳步一樣）。
+
+## 跪下過幾次、最後一次播了哪些音（測試用）
+var kneel_count: int = 0
+var last_kneel_sounds: PackedStringArray = []
+
+
+func _on_kneel() -> void:
+	if (health != null and health.is_dead()) or not is_inside_tree():
+		return
+	kneel_count += 1
+	last_kneel_sounds = _play_kneel(get_parent() if get_parent() != null else self)
+
+
+## 子類別決定跪地的聲音與雪粉；回傳播了哪些音名。一般敵人：腳下地面的腳步聲壓低八度左右＋很輕的悶響。
+func _play_kneel(parent: Node) -> PackedStringArray:
+	var at: Vector3 = global_position + forward() * 0.35
+	var step: String = "step_" + Footsteps.surface_at(self)
+	var p: AudioStreamPlayer3D = Sfx.play_at(parent, step, at, -6.0, 0.04, 4.0)
+	if p != null:
+		p.pitch_scale *= 0.62
+	Sfx.play_at(parent, "blunt", at + Vector3.UP * 0.2, -15.0, 0.05, 4.0)
+	_kneel_puff(at, Vector3(0.3, 0.04, 0.3), 10)
+	return PackedStringArray([step, "blunt"])
+
+
+## 跪地的雪粉：可能跪很多次，噴完就釋放（倒下的雪粉跟著敵人一起被釋放）。
+func _kneel_puff(at: Vector3, extents: Vector3, amount: int) -> void:
+	var ps: CPUParticles3D = _ground_puff(at, extents, amount, Color(0.74, 0.77, 0.84, 0.5))
+	ps.name = "KneelPuff"
+	ps.finished.connect(ps.queue_free)
+
+
 # ---------------------------------------------------------------- 倒下（D-052、D-054）
 ## 一般敵人：跪下 → 向前撲倒（頭朝 forward()）→ 落地揚起灰粉、胸口的光熄掉 → 躺一會兒 → 沉進雪裡。
 ## 不再「往後倒＋壓扁成一片」。送葬者覆寫成更長、更重的版本。
@@ -300,7 +336,7 @@ func _on_fall_impact() -> void:
 
 
 ## 倒地揚起的粉（雪或灰）：一次性的小粒子，節點名 FallPuff。
-func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> void:
+func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> CPUParticles3D:
 	var ps := CPUParticles3D.new()
 	ps.name = "FallPuff"
 	ps.one_shot = true
@@ -330,6 +366,7 @@ func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> v
 	add_child(ps)
 	ps.global_position = at
 	ps.emitting = true
+	return ps
 
 
 ## 粒子用的柔邊圓點（共用 ParticleLook，D-056）。

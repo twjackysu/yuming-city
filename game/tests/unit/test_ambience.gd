@@ -229,6 +229,61 @@ func test_stomp_plays_on_given_parent() -> void:
 	await tree.process_frame
 
 
+## 跪地的重音（D-191）：灰巡者是地面腳步聲壓低＋輕悶響，送葬者是更重的拖步＋鐵架的鐵響；
+## 掛在關卡上、跪著再被逼跪不重播、致命的一擊不算（接著是倒下的聲音）；雪粉噴完就釋放。
+func test_enemy_kneel_thud() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var a := Ashwalker.new()
+	a.position = Vector3(-2.0, 0.05, 0)
+	root.add_child(a)
+	a.set_physics_process(false)
+	var u := Undertaker.new()
+	u.state = GameState.new()
+	u.position = Vector3(3.0, 0.05, 0)
+	root.add_child(u)
+	u.set_physics_process(false)
+	await tree.physics_frame
+	assert_true(a.brain.add_stagger(9999.0), "灰巡者失衡滿了跪下")
+	assert_eq(a.kneel_count, 1, "灰巡者跪下有聲音")
+	assert_eq(a.last_kneel_sounds, PackedStringArray(["step_stone", "blunt"]), "照地面（關卡沒說 → 石頭）＋悶響")
+	var low_step: int = 0
+	for c: Node in root.get_children():
+		if c is AudioStreamPlayer3D and (c as AudioStreamPlayer3D).stream == Sfx.stream("step_stone"):
+			low_step += 1 if (c as AudioStreamPlayer3D).pitch_scale < 0.75 else 0
+	assert_eq(low_step, 1, "膝蓋落地掛在關卡上、音高壓低")
+	assert_not_null(a.get_node_or_null("KneelPuff"), "一小團雪粉")
+	a.brain.force_kneel(1.0)
+	assert_eq(a.kneel_count, 1, "跪著再被逼跪不重播")
+	u.brain.force_kneel(1.2)
+	assert_eq(u.kneel_count, 1, "送葬者撞牆跪下有聲音")
+	assert_eq(u.last_kneel_sounds, PackedStringArray([Undertaker.STEP_SOUND, "iron_clang"]), "更重的拖步＋鐵架晃一下")
+	var heavy: AudioStreamPlayer3D = null
+	for c: Node in root.get_children():
+		if c is AudioStreamPlayer3D and (c as AudioStreamPlayer3D).stream == Sfx.stream(Undertaker.STEP_SOUND):
+			heavy = c as AudioStreamPlayer3D
+	assert_not_null(heavy, "送葬者的跪地掛在關卡上")
+	if heavy != null:
+		assert_true(heavy.volume_db > Undertaker.STEP_DB, "比走路的拖步響")
+		assert_true(heavy.pitch_scale < 0.85, "比走路的拖步低（%.2f）" % heavy.pitch_scale)
+	# 致命的一擊：接著就倒下，不另外播跪地
+	var b := Ashwalker.new()
+	b.position = Vector3(0.0, 0.05, 3.0)
+	root.add_child(b)
+	b.set_physics_process(false)
+	b.health.apply_damage(b.health.max_hp + 1.0, {"stagger": 9999.0})
+	assert_eq(b.kneel_count, 0, "致命的一擊不算跪地")
+	# 雪粉噴完就釋放（可能跪很多次，不能一直留在身上）
+	for i: int in 180:
+		if a.get_node_or_null("KneelPuff") == null:
+			break
+		await tree.physics_frame
+	assert_true(a.get_node_or_null("KneelPuff") == null, "雪粉噴完就釋放")
+	root.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+
+
 ## 鐘院飯廳、柯德家是木板地（D-184）；鐘院內室、白晝城的街是石板。
 func test_wood_floors_in_bell_hall_and_kord_house() -> void:
 	var hall_script: GDScript = load("res://scenes/levels/bell_hall.gd") as GDScript

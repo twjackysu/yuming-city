@@ -42,6 +42,25 @@ func test_stagger_interrupts_telegraph() -> void:
 	assert_eq(b.stagger, 0.0, "失衡歸零")
 
 
+## 跪下的那一刻發 knelt（D-191）：跪著再被逼跪（撞牆）不再發；起身後再跪才又發。
+func test_knelt_signal_once_per_kneel() -> void:
+	var b := EnemyBrain.new().configure("ashwalker")
+	var count: Array[int] = [0]
+	b.knelt.connect(func() -> void: count[0] += 1)
+	b.tick(0.1, 10.0)
+	assert_true(b.add_stagger(999.0))
+	assert_eq(count[0], 1, "失衡滿了跪下 → 發一次")
+	b.force_kneel(1.5)
+	assert_false(b.add_stagger(999.0), "跪著不再累積")
+	assert_eq(count[0], 1, "已經跪著：不再發")
+	b.tick(3.0, 1.0)
+	assert_eq(b.state_name(), "chase")
+	b.force_kneel(1.0)
+	assert_eq(count[0], 2, "起身後撞牆跪下 → 再發一次")
+	b.kill()
+	assert_eq(count[0], 2, "死掉不算跪")
+
+
 func test_ashwalker_claws_player_and_dodge_avoids() -> void:
 	var root := Node3D.new()
 	tree.root.add_child(root)
