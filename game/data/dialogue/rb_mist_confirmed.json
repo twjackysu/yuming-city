@@ -1,0 +1,25 @@
+{
+  "id": "rb_mist_confirmed",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_CONF_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_POK",
+      "text": "DLG_RB_CONF_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_CONF_003",
+      "do": {
+        "set": {
+          "rb.mist_confirmed_talked": true
+        }
+      }
+    }
+  }
+}

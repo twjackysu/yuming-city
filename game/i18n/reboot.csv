@@ -1,0 +1,74 @@
+keys,en,zh_TW
+SPK_POK,Pok,波克
+SPK_RED,Red,雷德
+RB_TITLE_ENTRY,New version trial: the first ten minutes,新版試玩：前十分鐘
+Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
+Q_RB_OBJ_ESCAPE,Get Pok to South Street,把波克帶到南街
+Q_RB_OBJ_MIST,Get through the mist and take Pok to South Street,穿過毒霧，把波克帶到南街
+Q_RB_OBJ_MIST_TEST,The healing stopped when you left the mist. Step back in to check,離開毒霧，回血就停了。再踏回去確認一次
+Q_RB_OBJ_SHEILA,Follow Sheila,跟上席菈
+Q_RB_OBJ_GUARDIAN,Defeat the guardian with Sheila,和席菈打倒守衛
+Q_RB_OBJ_POTION,Try the Mist Serpent Venom (or keep it for later),試用霧蛇毒劑（也可以先收著）
+Q_RB_OBJ_MARKET,Head for the freight lift to the underground market,去地下市場的貨梯
+RB_STATUS_POISON,Poisoned,中毒
+RB_STATUS_POISON_REVERSED,Poisoned → Regenerating,中毒 → 回血
+RB_AWAKEN_LINE1,[Poisoned],【中毒】
+RB_AWAKEN_LINE2,[Reversal Constitution activated] Poisoned → Regenerating,【逆轉體質已啟動】中毒 → 持續回血
+RB_SLOT_EMPTY,Empty reversal slot,空的反轉欄位
+RB_ITEM_MIST_SERPENT,Mist Serpent Venom,霧蛇毒劑
+RB_ITEM_MIST_SERPENT_DESC,Effect: Poisoned for 20 seconds. Label: NOT FOR DRINKING,效果：中毒，持續 20 秒。瓶上寫：不可飲用
+RB_POTION_FULL_ASK,"You're at full health, so you won't see any effect. Drink it anyway?",現在滿血，看不出效果。還是要喝嗎？
+RB_POTION_DRINK,Drink,喝
+RB_POTION_KEEP,Keep it for now,先收著
+RB_TO_BE_CONTINUED,To be continued: the underground market,待續：地下市場
+DLG_RB_OPEN_001,Open the gate!,你把門打開！
+DLG_RB_OPEN_002,The monster's after the cargo.,怪物追的是貨。
+DLG_RB_OPEN_003,Then take the man!,那你把人接過去！
+DLG_RB_OPEN_004,You still owe us our pay!,你工錢還沒付！
+DLG_RB_OPEN_005,Noen. That can wait.,諾恩，這句可以等一下再喊。
+DLG_RB_TEST_001,The warmth stopped when the mist thinned... Step back in. Just to be sure.,霧散了，溫熱感也停了……再踏回去一次。確認一下就好。
+DLG_RB_CONF_001,It's real. Not just once.,真的。不是只有一次。
+DLG_RB_CONF_002,...Are you all right?,……你還好嗎？
+DLG_RB_CONF_003,I think today might not be that unlucky after all.,我想，我今天可能沒那麼倒楣。
+DLG_RB_SHEILA_001,Who brought poison into a residential street?,誰把藥運進住宅區的？
+DLG_RB_SHEILA_002,The guy who just ran off!,剛跑掉那個！
+DLG_RB_SHEILA_003,Take the injured man inside! ...You too. Get in.,接一下人！……你也進去。
+DLG_RB_SHEILA_004,Don't hit its chest yet. That's where the poison sprays from.,先別打牠胸口。那是噴毒的地方。
+DLG_RB_SHEILA_005,So?,所以？
+DLG_RB_SHEILA_C_SHOW,(Step into the mist and show her the closing wound),（走進毒霧，讓她看手上正在收口的傷）
+DLG_RB_SHEILA_C_TELL,"""Poison heals me.""",「毒會讓我回血。」
+DLG_RB_SHEILA_L_SHOW,...You'd better explain this later.,……你最好等一下解釋清楚。
+DLG_RB_SHEILA_L_TELL,Did that thing hit your head? ...Fine. Prove it while we fight.,你被打昏頭了？……算了，邊打邊證明。
+DLG_RB_SHEILA_006,Its right knee. Take it down.,右膝。把牠打跪。
+DLG_RB_DOWN_001,Name.,名字。
+DLG_RB_DOWN_002,Noen.,諾恩。
+DLG_RB_DOWN_003,Sheila. Hold still.,席菈。別動。
+DLG_RB_DOWN_004,Ow. Gently.,輕點。
+DLG_RB_DOWN_005,"If you're scared of pain, stop running into poison.",會怕痛就別一直往毒裡跑。
+DLG_RB_DOWN_006,Those are two different things.,那是兩件事。
+DLG_RB_FOUND_001,"Two sealed bottles left. ""Mist Serpent Venom. Poisoned, 20 seconds.""",還有兩瓶封好的。「霧蛇毒劑：中毒，持續二十秒。」
+DLG_RB_FOUND_002,Breathing it in worked. Would a sip be any different?,剛才只是吸到霧。喝一點會不會不一樣？
+DLG_RB_TRIED_001,What are you drinking?,你在喝什麼？
+DLG_RB_TRIED_002,Look here first.,妳先看這裡。
+DLG_RB_TRIED_003,So you're not immune to poison.,所以你不是不怕毒。
+DLG_RB_TRIED_004,"From what I can tell, poison helps me heal.",目前看起來，毒會幫我恢復。
+DLG_RB_TRIED_005,Any poison?,別的毒也行？
+DLG_RB_TRIED_006,Don't know yet.,還不知道。
+DLG_RB_TRIED_007,Then don't drink random things. You've checked this one. Get the others tested first.,那就先別亂喝。這瓶你確認過，其他的先找人驗。
+DLG_RB_KEPT_001,You're keeping that?,你要留著那個？
+DLG_RB_KEPT_002,For when I'm actually hurt.,等真的受傷再用。
+DLG_RB_KEPT_003,"Fine. Anything else, get it tested first.",好。其他的先找人驗。
+DLG_RB_ADA_001,Red left this in my keeping. Pok says it's what he owed you.,雷德寄存的。欠你們的那份，波克認出來了。
+DLG_RB_ADA_002,Money. Real money.,錢。真正的錢。
+DLG_RB_ADA_003,"Only half. The broken crates, we'll settle later.",只有一半。那些打壞的木箱之後算。
+DLG_RB_ADA_004,I didn't break them.,不是我打的。
+DLG_RB_ADA_005,Which is why I'm going after the man who ran.,所以我先找跑掉的人。
+DLG_RB_ADA_006,This batch was supposed to be destroyed. The report says monsters hit the shipment.,這批藥應該已經銷毀了。報告上寫，運送途中遭怪物襲擊。
+DLG_RB_ADA_007,Red asked about the freight lift to the underground market this morning. They've been taking in loads of goods that can't pass certification.,雷德早上問過地下市場的貨梯。那裡最近收一大批不能過認證的東西。
+DLG_RB_ADA_008,What kind of goods?,什麼東西？
+DLG_RB_ADA_009,Poisonous ones. Ones that make your limbs stop listening. Ones that sap your strength. Nobody normal buys them.,有毒的、會讓人手腳不聽話的、戴上就沒力氣的。正常客人不會買。
+DLG_RB_ADA_010,Don't make that face.,不要露出那種表情。
+DLG_RB_ADA_011,What face?,哪種？
+DLG_RB_ADA_012,Like you're about to get a free meal.,好像要去免費吃飯。
+DLG_RB_ADA_013,Partners? You find evidence. I find my pay.,合作嗎？妳找證據，我找工錢。
+DLG_RB_ADA_014,Deal. Bring your own drinks. Nothing goes in my canteen.,可以。飲料自己帶，不准放進我的水壺。

@@ -47,7 +47,12 @@ func is_done(quest_id: String) -> bool:
 func objective_key(quest_id: String) -> String:
 	if not is_active(quest_id):
 		return ""
-	return str(db.stage(quest_id, stage_of(quest_id)).get("objective", ""))
+	var st: Dictionary = db.stage(quest_id, stage_of(quest_id))
+	for alt: Variant in (st.get("objective_if", []) as Array):
+		var a: Dictionary = alt as Dictionary
+		if StoryLogic.check(a["when"] as Dictionary, state):
+			return str(a["objective"])
+	return str(st.get("objective", ""))
 
 
 ## 目前階段的目標指引（QuestDB.validate_marker 的格式）；marker_if 第一個成立的優先。沒有就回傳 null。

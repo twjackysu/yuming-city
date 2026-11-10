@@ -152,7 +152,9 @@ func _on_achievement_unlocked(achievement_id: String) -> void:
 	achievement_toast.enqueue(achievement_id)
 
 
+## 標題畫面的「繼續」是舊版的存檔（新版有自己的資料夾與入口，D-202）
 func has_continue() -> bool:
+	session.use_reboot_saves = false
 	return session.has_save(GameSession.AUTO_SLOT)
 
 
@@ -162,6 +164,7 @@ func new_game() -> void:
 
 
 func continue_game() -> bool:
+	session.use_reboot_saves = false
 	if session.load_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
 		return false
 	go_to_level(level_for_checkpoint(session.state.checkpoint))

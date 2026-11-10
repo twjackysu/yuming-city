@@ -1,0 +1,15 @@
+{
+  "id": "rb_mist_test",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_TEST_001",
+      "do": {
+        "set": {
+          "rb.mist_test_hinted": true
+        }
+      }
+    }
+  }
+}

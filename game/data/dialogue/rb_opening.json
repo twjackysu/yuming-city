@@ -1,0 +1,35 @@
+{
+  "id": "rb_opening",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_OPEN_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_RED",
+      "text": "DLG_RB_OPEN_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_OPEN_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_OPEN_004",
+      "next": "l04"
+    },
+    "l04": {
+      "speaker": "SPK_POK",
+      "text": "DLG_RB_OPEN_005",
+      "do": {
+        "set": {
+          "rb.opening_done": true
+        }
+      }
+    }
+  }
+}

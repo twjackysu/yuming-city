@@ -1,0 +1,20 @@
+{
+  "id": "rb_potion_found",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_FOUND_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_FOUND_002",
+      "do": {
+        "set": {
+          "rb.potion_found_talked": true
+        }
+      }
+    }
+  }
+}

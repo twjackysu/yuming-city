@@ -8,7 +8,8 @@ extends RefCounted
 ##     {"id": "explore_town", "objective": "Q_...", "checkpoint": "start",
 ##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段",
 ##      "marker": "選填：目標指引指向哪裡（見 validate_marker）",
-##      "marker_if": [{"when": {...條件}, "marker": ...}]  選填：第一個成立的取代 marker}
+##      "marker_if": [{"when": {...條件}, "marker": ...}]  選填：第一個成立的取代 marker,
+##      "objective_if": [{"when": {...條件}, "objective": "Q_..."}]  選填：第一個成立的取代 objective（D-202）}
 ##   ],
 ##   "on_complete": {...效果}
 ## }
@@ -98,6 +99,8 @@ func translation_keys() -> PackedStringArray:
 		out.append(str(q["title"]))
 		for s: Variant in (q["stages"] as Array):
 			out.append(str((s as Dictionary)["objective"]))
+			for alt: Variant in ((s as Dictionary).get("objective_if", []) as Array):
+				out.append(str((alt as Dictionary)["objective"]))
 	return out
 
 
@@ -147,6 +150,17 @@ static func validate_quest(q: Dictionary) -> PackedStringArray:
 					var me2: String = validate_marker((alt as Dictionary)["marker"])
 					if ce != "" or me2 != "":
 						out.append("階段 %s 的 marker_if：%s%s" % [sid, ce, me2])
+		if st.has("objective_if"):
+			if not st["objective_if"] is Array:
+				out.append("階段 %s 的 objective_if 必須是陣列" % sid)
+			else:
+				for alt: Variant in (st["objective_if"] as Array):
+					if not alt is Dictionary or not (alt as Dictionary).has("when") or not (alt as Dictionary).has("objective"):
+						out.append("階段 %s 的 objective_if 每一項都要有 when 與 objective" % sid)
+						continue
+					var oe: String = StoryLogic.validate_condition((alt as Dictionary)["when"])
+					if oe != "":
+						out.append("階段 %s 的 objective_if：%s" % [sid, oe])
 		if st.has("on_done"):
 			var e: String = StoryLogic.validate_effects(st["on_done"])
 			if e != "":

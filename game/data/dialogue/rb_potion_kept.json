@@ -1,0 +1,25 @@
+{
+  "id": "rb_potion_kept",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_KEPT_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_KEPT_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_KEPT_003",
+      "do": {
+        "set": {
+          "rb.potion_talked": true
+        }
+      }
+    }
+  }
+}

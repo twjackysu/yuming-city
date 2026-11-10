@@ -1,0 +1,45 @@
+{
+  "id": "rb_potion_tried",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_TRIED_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_TRIED_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_TRIED_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_TRIED_004",
+      "next": "l04"
+    },
+    "l04": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_TRIED_005",
+      "next": "l05"
+    },
+    "l05": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_TRIED_006",
+      "next": "l06"
+    },
+    "l06": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_TRIED_007",
+      "do": {
+        "set": {
+          "rb.potion_talked": true
+        }
+      }
+    }
+  }
+}

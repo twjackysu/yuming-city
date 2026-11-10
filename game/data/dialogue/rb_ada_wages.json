@@ -1,0 +1,81 @@
+{
+  "id": "rb_ada_wages",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_RB_ADA_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_ADA_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_RB_ADA_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_ADA_004",
+      "next": "l04"
+    },
+    "l04": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_RB_ADA_005",
+      "next": "l05"
+    },
+    "l05": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_ADA_006",
+      "next": "l06"
+    },
+    "l06": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_RB_ADA_007",
+      "next": "l07"
+    },
+    "l07": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_ADA_008",
+      "next": "l08"
+    },
+    "l08": {
+      "speaker": "SPK_ADA",
+      "text": "DLG_RB_ADA_009",
+      "next": "l09"
+    },
+    "l09": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_ADA_010",
+      "next": "l10"
+    },
+    "l10": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_ADA_011",
+      "next": "l11"
+    },
+    "l11": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_ADA_012",
+      "next": "l12"
+    },
+    "l12": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB_ADA_013",
+      "next": "l13"
+    },
+    "l13": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB_ADA_014",
+      "do": {
+        "set": {
+          "rb.ada_talked": true,
+          "rb.wages_paid": true
+        }
+      }
+    }
+  }
+}

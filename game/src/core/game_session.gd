@@ -10,6 +10,8 @@ signal stage_changed(quest_id: String, from_stage: String, to_stage: String)
 signal quest_completed(quest_id: String)
 ## 攻略筆記有條目被推翻或證實：[{id, result, was_unsure}]（D-148）
 signal guide_changed(changes: Array[Dictionary])
+## 要寫存檔之前（新版：玩家把生命、狀態、反轉欄位寫回 state，D-202）
+signal saving(state: GameState)
 
 const MAIN_QUEST: String = "slice_main"
 ## 主線任務依章節順序；HUD 目標、目標指引跟著最後一個已開始的走（D-149）
@@ -23,11 +25,19 @@ const CHAPTER_CHAIN: Array[Dictionary] = [
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
 const DEFAULT_SAVE_DIR: String = "user://saves"
+## 新版（劇情重寫）的存檔放另一個資料夾：舊版存檔不會被新版寫到（D-202）
+const REBOOT_SAVE_DIR: String = "user://saves_reboot"
+## 新版的主線（docs/design/09-reboot-first-ten-minutes.md）
+const REBOOT_MAIN_QUEST: String = "rb_main"
+const REBOOT_CHAPTER: String = "rb_ch1"
 
 var db: QuestDB
 ## 攻略筆記的條目定義（共用一份）
 var guide: GuideNotes = GuideNotes.load_default()
+## 舊版的存檔資料夾；新版用 reboot_save_dir()（另一個資料夾）
 var save_dir: String
+## true＝存讀檔走新版的資料夾（new_reboot_game／load_reboot_slot 設定）
+var use_reboot_saves: bool = false
 var state: GameState
 var quests: QuestRunner
 ## 最近一次自動存檔的錯誤碼（給 UI 顯示「存檔失敗」用）
@@ -44,9 +54,45 @@ func _init(p_db: QuestDB, p_save_dir: String = DEFAULT_SAVE_DIR) -> void:
 
 
 func new_game() -> void:
+	use_reboot_saves = false
 	_bind(GameState.new())
 	quests.start(MAIN_QUEST)
 	advance()
+
+
+## 新版（劇情重寫）的新遊戲：mode="reboot"、主線 rb_main、存檔寫到新版資料夾，不碰舊版存檔（D-202）。
+func new_reboot_game() -> void:
+	use_reboot_saves = true
+	var s := GameState.new()
+	s.mode = "reboot"
+	s.chapter = REBOOT_CHAPTER
+	s.checkpoint = "rb_start"
+	_bind(s)
+	quests.start(REBOOT_MAIN_QUEST)
+	advance()
+
+
+func is_reboot() -> bool:
+	return state.mode == "reboot"
+
+
+## 新版的存檔資料夾：正式是 REBOOT_SAVE_DIR；測試自己給了資料夾時放在旁邊（<資料夾>_reboot），不會寫到真的 user://
+func reboot_save_dir() -> String:
+	return REBOOT_SAVE_DIR if save_dir == DEFAULT_SAVE_DIR else save_dir + "_reboot"
+
+
+func active_save_dir() -> String:
+	return reboot_save_dir() if use_reboot_saves else save_dir
+
+
+## 讀新版的存檔（標題畫面的新版入口用）
+func load_reboot_slot(slot: String = AUTO_SLOT) -> SaveCodec.Status:
+	var was: bool = use_reboot_saves
+	use_reboot_saves = true
+	var status: SaveCodec.Status = load_slot(slot)
+	if status != SaveCodec.Status.OK:
+		use_reboot_saves = was
+	return status
 
 
 func set_flag(key: String, value: Variant) -> void:
@@ -95,7 +141,7 @@ func check_achievements() -> PackedStringArray:
 
 
 func slot_path(slot: String) -> String:
-	return save_dir.path_join(slot + ".json")
+	return active_save_dir().path_join(slot + ".json")
 
 
 func has_save(slot: String = AUTO_SLOT) -> bool:
@@ -103,7 +149,8 @@ func has_save(slot: String = AUTO_SLOT) -> bool:
 
 
 func save(slot: String) -> Error:
-	DirAccess.make_dir_recursive_absolute(save_dir)
+	saving.emit(state)
+	DirAccess.make_dir_recursive_absolute(active_save_dir())
 	return SaveCodec.write_file(slot_path(slot), state)
 
 
@@ -132,6 +179,8 @@ func objective_key() -> String:
 
 ## 目前的主線任務：MAIN_QUESTS 裡最後一個已經開始（或完成）的。
 func main_quest() -> String:
+	if is_reboot():
+		return REBOOT_MAIN_QUEST
 	var current: String = MAIN_QUEST
 	for qid: String in MAIN_QUESTS:
 		if state.quests.has(qid):
@@ -180,7 +229,7 @@ func _on_stage_changed(quest_id: String, from_stage: String, to_stage: String) -
 
 func _on_quest_completed(quest_id: String) -> void:
 	# 一章（主線）完成也自動存檔：最後一章還沒有下一章的檢查點時（第 2 章結尾，D-161），重來、讀檔不會回到結尾之前
-	if quest_id in MAIN_QUESTS:
+	if quest_id in MAIN_QUESTS or quest_id == REBOOT_MAIN_QUEST:
 		_autosave_pending = true
 	quest_completed.emit(quest_id)
 
