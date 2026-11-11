@@ -89,7 +89,6 @@ Q_RB2_OBJ_ARRIVE,Walk down into the underground market,走進地下市場
 Q_RB2_OBJ_FIND_SHOP,Find the potion seller: the shop with the green window at the end of the street,找賣藥的人：街底那間綠色窗戶的藥店
 Q_RB2_OBJ_TEST_BOARD,Go into the shop and put your hand on the test board,走進藥店，把手放到測試板上
 RB_LIFT_NUMBER,The freight lift goes down,貨梯往下
-RB2_END2_TITLE,The Black-Market Demo,黑市示範場
 RB2_BOARD_HINT,Hold {key} — put your hand on the test board,按住 {key}　把手放到測試板上
 DLG_RB2_RULES_001,"Nothing down here passed certification. There is one rule: the side effect goes on the tag. Every item, every tag.",這裡賣的東西都沒通過認證。規矩只有一條：副作用要寫在吊牌上。每一件都要。
 DLG_RB2_RULES_002,So the curses are labelled honestly. That is more than I can say for the bottles upstairs.,所以詛咒都老實寫出來了。比上面那些貼著認證的瓶子還誠實。
@@ -104,3 +103,16 @@ DLG_RB2_MISHA_DEAL_002,So can I buy something now?,所以我可以買了嗎？
 DLG_RB2_MISHA_DEAL_003,"No. My poisons are dosed for people who do not want to be poisoned. Not one of them was made for drinking. What you want has to be mixed from scratch.",不行。我賣的毒是算好劑量、給不想中毒的人防身用的，沒有一瓶是做來喝的。你要的東西得重新調。
 DLG_RB2_MISHA_DEAL_004,That sounds like a yes.,聽起來是願意調的意思。
 DLG_RB2_MISHA_DEAL_005,"It means I want to know what else you can do. Someone at the black-market demo is selling a bracer that paralyzes whoever wears it. He says his medicine fixes the side effect. Go and see whether that is true. Then we talk prices.",是「我要先知道你還會什麼」的意思。黑市示範場今天有人在賣一種戴了會麻痺的護腕，說副作用吃他的藥就會好。你去看看是不是真的，回來我們再談價錢。
+SPK_DEMO_SELLER,Bracer Seller,護腕商人
+Q_RB_DEMO_TITLE,The Black-Market Demo,黑市示範場
+Q_RB2_OBJ_GO_DEMO,Go to the black-market demo: the stage halfway up the street,去黑市示範場：街中段搭著台子的地方
+Q_RB2_OBJ_STOP_DEMO,Stop the demo: deal with the guards,打斷示範：解決示範場的守衛
+RB2_END3_TITLE,The Demo Guards,示範場的守衛
+DLG_RB2_DEMO_PITCH_001,"Step up and look. The speed bracer. Strap it on and your hand moves twice as fast. My man will show you.",各位看好：高速護腕。戴上去，出手快一倍。我的人示範給你們看。
+DLG_RB2_DEMO_PITCH_002,"Yes, wear it a while and the arm goes numb. It is on the tag. I hide nothing. But one bottle of my antidote, forty coins, and the paralysis is gone.",對，戴久了手會麻、會動不了，牌子上寫了，我沒騙人。不過配我的解藥，一瓶四十枚，麻痺馬上消。
+DLG_RB2_DEMO_PITCH_003,"The bracer is fifteen coins. The antidote is forty, and you need one every time you wear it. He is not selling bracers. He is selling antidote.",護腕十五枚，解藥四十枚，而且每戴一次就要喝一瓶。他賣的不是護腕，是解藥。
+DLG_RB2_DEMO_PITCH_004,"The side effect is on the tag. By the rules down here, he has done nothing wrong.",牌子上有寫副作用。照這裡的規矩，他沒犯規。
+DLG_RB2_DEMO_PITCH_005,"The tag says it may go numb now and then. The man on the stage has not moved his left hand once since he stepped up.",牌子上寫「偶爾會麻」。台上那個人從上台到現在，左手一次都沒動過。
+DLG_RB2_DEMO_PITCH_006,...What do you want me to do?,……你要我做什麼？
+DLG_RB2_DEMO_PITCH_007,"Ask him to show it again, without the antidote. He will say no, and the guards will come over first.",請他再示範一次，不准喝解藥。他不會答應，守衛會先走過來。
+DLG_RB2_DEMO_PITCH_008,That part I can do.,這個我會。

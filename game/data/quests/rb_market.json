@@ -24,5 +24,5 @@
       "done_when": {"flag": "rb2.first_shop_done"}
     }
   ],
-  "on_complete": {"set": {"rb2.market_a_done": true}}
+  "on_complete": {"set": {"rb2.market_a_done": true}, "start_quest": ["rb_demo"]}
 }

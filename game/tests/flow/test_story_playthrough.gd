@@ -381,10 +381,23 @@ func test_new_game_to_lift_in_one_run() -> void:
 	await _run_dialogue(market)
 	await _frames(4)
 	assert_true(s.quests.is_done("rb_market"), "地下市場這一段做完")
+	assert_false(market.has_node("ChapterCard"), "藥店不是結尾：還要去黑市示範場")
+	assert_eq(s.quests.stage_of("rb_demo"), "go_demo")
+	# 出店門往北走到示範台前 → 商人叫賣、諾恩看出他賣的是解藥 → 席菈「這個我會」→ 待續（守衛戰還沒做）
+	_stand(market, UndergroundMarket.SHOP_DOOR + Vector3(0.0, 0.0, -2.0))
+	await _frames(6)
+	assert_false(_talking(), "店門外還聽不到叫賣")
+	_stand(market, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
+	await _frames(4)
+	assert_true(_talking(), "商人的叫賣")
+	await _run_dialogue(market)
+	await _frames(4)
+	assert_eq(s.quests.stage_of("rb_demo"), "stop_demo", "聽完了")
+	assert_eq(s.state.checkpoint, "rb2_demo_fight")
 	var end_card: ChapterCard = market.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(end_card, "待續的卡")
 	if end_card != null:
-		assert_eq(end_card.title_text(), tr("RB2_END2_TITLE"))
+		assert_eq(end_card.title_text(), tr("RB2_END3_TITLE"))
 		end_card.finish()
 	assert_eq(ended[0], 1, "卡播完 → 回標題")
 	# 一路走完：狀態不會留一堆、藥還剩一瓶、工錢只有一份

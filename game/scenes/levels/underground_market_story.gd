@@ -4,10 +4,13 @@ extends Node
 ## arrive：貨梯下來 → 走下坡道到街上（席菈說這裡的規矩）→ find_shop：走到街底的藥店門口 →
 ## test_board（D-231）：走進店裡到櫃台前 → 彌夏以為他來鬧事（rb2_misha_meet）→ 生命是滿的話她先扎一針 →
 ## 按住互動 2 秒把手放上測試板（弱的中毒：1／秒、6 秒）→ 指針甩到「回復」、綠燈亮 → 她願意談（rb2_misha_deal）
-## → 「待續／黑市示範場」→ 回標題。
-## 掛在 UndergroundMarket 底下（`Game.session.in_story()` 時）。沒有戰鬥，不會倒下；讀檔回到三個檢查點之一。
+## → 任務 rb_demo（第二段 B，D-232）：go_demo：走出藥店、往北走到街中段的示範台 → 商人當眾賣「高速護腕」
+## （rb2_demo_pitch：諾恩看出他賣的其實是解藥）→ stop_demo：打斷示範的守衛——**這一段還沒做**，現在在這裡
+## 「待續／示範場的守衛」→ 回標題。
+## 掛在 UndergroundMarket 底下（`Game.session.in_story()` 時）。還沒有戰鬥，不會倒下；讀檔回到檢查點。
 
 const QUEST: String = GameSession.MARKET_QUEST
+const DEMO_QUEST: String = GameSession.DEMO_QUEST
 ## 檢查點 → 諾恩出生的位置與朝向（度；180＝面向南）
 const SPAWNS: Dictionary = {
 	"rb2_arrive": [Vector3(0.0, 0.0, -2.6), 180.0],
@@ -15,6 +18,13 @@ const SPAWNS: Dictionary = {
 	"rb2_shop": [Vector3(-0.9, 0.0, UndergroundMarket.SHOP_Z - 7.0), 180.0],
 	# 截圖用（--rb-at=board）：站在櫃台前、測試板的東邊半步（鏡頭在他右後方＝西邊，板子與彌夏才不會被他擋住）
 	"dev_board": [Vector3(UndergroundMarket.BOARD_POS.x + 0.55, 0.0, UndergroundMarket.COUNTER_Z - 1.2), 180.0],
+	# 黑市示範場（任務 rb_demo）：談完之後讀檔＝站在藥店門外、面向北（街的方向）
+	"rb2_demo": [Vector3(UndergroundMarket.SHOP_DOOR.x, 0.0, UndergroundMarket.SHOP_Z - 2.2), 0.0],
+	# 聽完叫賣之後讀檔＝示範台南邊幾步、街心偏西、斜對著台子（離台子比 DEMO_RANGE 遠：不會一讀檔就觸發；
+	# 鏡頭在他右後方，要留在街上——再往東站鏡頭會跑進東側的攤子裡，被柱子擋住）
+	"rb2_demo_fight": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
+	# 截圖用（--rb-at=demo，固定鏡頭 64）：跟上面同一個站位，還沒聽叫賣
+	"dev_demo": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
 }
 ## 走過這條線＝到街上了
 const STREET_LINE_Z: float = UndergroundMarket.RAMP_S + 0.6
@@ -38,7 +48,10 @@ const BOARD_READ_SEC: float = 3.0
 const NEEDLE_PRICK: float = 3.0
 const BOARD_SOURCE: String = "test_board"
 const BOARD_HINT_KEY: String = "RB2_BOARD_HINT"
-const END_TITLE_KEY: String = "RB2_END2_TITLE"
+## --- 黑市示範場（任務 rb_demo）
+## 離示範台多近商人的叫賣聽得到（對話 rb2_demo_pitch）／「待續」
+const DEMO_RANGE: float = 4.6
+const END_TITLE_KEY: String = "RB2_END3_TITLE"
 
 var level: UndergroundMarket
 var player: PlayerController
@@ -50,6 +63,7 @@ var end_music: AudioStreamPlayer
 ## 手按在測試板上幾秒了、板子讀了幾秒
 var board_hold: float = 0.0
 var board_read: float = 0.0
+var _sheila_sent_out: bool = false
 
 
 func _ready() -> void:
@@ -67,6 +81,9 @@ func _ready() -> void:
 		# 席菈站在他斜前方（已經在往街上看）：不擋在鏡頭與街之間；人在店裡的話她站在門的西邊（不擋鏡頭）
 		if player.global_position.z > UndergroundMarket.SHOP_INNER_Z:
 			_spawn_sheila(Vector3(UndergroundMarket.SHOP_DOOR.x - 1.5, 0.0, UndergroundMarket.SHOP_INNER_Z + 1.3))
+		elif absf(player.rotation_degrees.y) < 90.0:
+			# 面向北（示範場那兩個檢查點）：她在他右前方、靠街的東邊（站近一點會剛好擋在鏡頭與示範台中間）
+			_spawn_sheila(player.global_position + Vector3(2.7, 0.0, -1.7))
 		else:
 			_spawn_sheila(player.global_position + Vector3(1.7, 0.0, 1.1))
 		player.snap_camera()
@@ -87,6 +104,15 @@ static func dev_advance(s: GameSession, at: String) -> void:
 		s.set_flag("rb2.dev_spawn", "dev_board")
 	if at == "board_read":
 		s.set_flag("rb2.board_done", true)
+	# deal＝跟彌夏談完了（rb_market 做完、rb_demo 開始，站在藥店門外）；demo＝走到示範台前幾步、還沒聽叫賣（固定鏡頭 64）；
+	# demo_end＝聽完了（現在的結尾：走近就是「待續」）
+	if at in ["deal", "demo", "demo_end"]:
+		for flag: String in ["rb2.street_reached", "rb2.rules_heard", "rb2.shop_reached", "rb2.misha_met", "rb2.pricked", "rb2.board_done", "rb2.first_shop_done"]:
+			s.set_flag(flag, true)
+	if at == "demo":
+		s.set_flag("rb2.dev_spawn", "dev_demo")
+	if at == "demo_end":
+		s.set_flag("rb2.pitch_heard", true)
 
 
 func stage() -> String:
@@ -98,10 +124,9 @@ func _physics_process(delta: float) -> void:
 		return
 	var st: GameState = Game.session.state
 	var pos: Vector3 = player.global_position
-	# 這一段做完了（剛談完，或讀檔回來再走進店裡）：站在櫃台前就是「待續」
+	# 藥店那一段做完了：接黑市示範場（任務 rb_demo）
 	if Game.session.quests.is_done(QUEST):
-		if at_counter(pos):
-			play_end_card()
+		_tick_demo(pos)
 		return
 	match stage():
 		"arrive":
@@ -115,6 +140,34 @@ func _physics_process(delta: float) -> void:
 				Game.session.set_flag("rb2.shop_reached", true)
 		"test_board":
 			_tick_test_board(delta, st, pos)
+
+
+## 黑市示範場（design/10「B 的流程」）。go_demo：走到示範台附近 → 商人的叫賣；stop_demo：守衛戰還沒做，走近就是「待續」。
+func _tick_demo(pos: Vector3) -> void:
+	# 剛談完人還在店裡：席菈先到門外等（她是直線跟人，站在 1.3 m 寬的門洞裡會把人堵在店裡）
+	if not _sheila_sent_out and pos.z > UndergroundMarket.SHOP_INNER_Z:
+		_sheila_sent_out = true
+		_send_sheila_outside()
+	match Game.session.quests.stage_of(DEMO_QUEST):
+		"go_demo":
+			if near_demo(pos):
+				Game.start_dialogue("rb2_demo_pitch")
+		"stop_demo":
+			if near_demo(pos):
+				play_end_card()
+
+
+## 走到示範台附近了（在街上，不是隔著牆在店裡）
+func near_demo(pos: Vector3) -> bool:
+	return pos.z < UndergroundMarket.SHOP_Z and FrostbridgeOpening.flat_distance(pos, UndergroundMarket.DEMO_POS) <= DEMO_RANGE
+
+
+func _send_sheila_outside() -> void:
+	var ally: Node3D = level.get_node_or_null("Sheila") as Node3D
+	if ally == null or ally.global_position.z < UndergroundMarket.SHOP_Z - 0.8:
+		return
+	ally.global_position = Vector3(UndergroundMarket.SHOP_DOOR.x + 1.9, 0.0, UndergroundMarket.SHOP_Z - 2.6)
+	ally.rotation_degrees.y = 180.0
 
 
 ## 在店裡、而且走到櫃台前了
@@ -170,7 +223,7 @@ func _tick_test_board(delta: float, st: GameState, pos: Vector3) -> void:
 		Game.start_dialogue("rb2_misha_deal")
 
 
-## 目前做到的地方的結尾：畫面淡成黑 →「待續／黑市示範場」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
+## 目前做到的地方的結尾：畫面淡成黑 →「待續／示範場的守衛」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
 func play_end_card() -> ChapterCard:
 	if ending:
 		return level.get_node_or_null("ChapterCard") as ChapterCard

@@ -48,6 +48,28 @@ const BOARD_HURT_DEG: float = -48.0
 const BOARD_HEAL_DEG: float = 56.0
 const BOARD_NEEDLE_SPEED: float = 140.0
 const BOARD_LAMP_ENERGY: float = 0.9
+## 黑市示範場（第二段 B，D-232）：街中段西側那個空位（`WEST_KINDS` 的 `KIND_GAP`）搭的台子。
+## DEMO_POS＝台子前緣的中間（任務標記 DemoStage、劇情量距離用）
+const DEMO_SLOT: int = 4
+const DEMO_Z: float = STALL_Z0 + STALL_PITCH * float(DEMO_SLOT)
+const DEMO_STAGE_H: float = 0.6
+const DEMO_STAGE_LEN: float = 3.6
+const DEMO_STAGE_FRONT_X: float = -2.55
+const DEMO_POS: Vector3 = Vector3(DEMO_STAGE_FRONT_X, 0.0, DEMO_Z)
+const DEMO_BACKDROP_H: float = 4.3
+const DEMO_LANTERNS: int = 6
+## 看熱鬧的人：x、身高倍率、相對 DEMO_Z 的 z（都在街的西半邊；東半邊留 3 m 走路）
+const DEMO_CROWD: Array[Vector3] = [Vector3(-0.9, 1.0, -1.1), Vector3(-0.6, 0.94, -0.2), Vector3(-0.85, 1.03, 0.7)]
+## 伸到街上的一截台子（商人站在這裡）：從街的南邊走過來，貼牆的台子被隔壁的攤子擋住，只有伸出來的這一截看得到
+const DEMO_TONGUE_OUT: float = 1.0
+const DEMO_BOOM_OUT: float = 0.45
+const DEMO_TONGUE_Z: Vector2 = Vector2(-1.2, 0.6)
+const DEMO_SPOT_COLOR: Color = Color(1.0, 0.86, 0.64)
+const DEMO_SPOT_ENERGY: float = 7.0
+## 護腕箍上的冷光（整條街唯一冷色的小東西：眼睛會先看到它）、解藥瓶的金色；都是發光材質，不是燈
+const DEMO_BRACER_GLOW: Color = Color(0.6, 0.85, 1.0)
+const DEMO_ANTIDOTE: Color = Color(1.0, 0.7, 0.24)
+const DEMO_CUFF: Color = Color(0.16, 0.15, 0.17)
 const FRAME_Z0: float = 9.0
 const FRAME_STEP: float = 8.4
 const FRAME_COUNT: int = 4
@@ -162,6 +184,13 @@ var board_lamp_light: OmniLight3D
 var board_target_deg: float = 0.0
 var board_lamp_on: bool = false
 var shop_bottle_count: int = 0
+## 示範台（D-232）：商人、守衛（[0]＝台上示範的、[1]＝台下的）、看熱鬧的人、聚光燈
+var demo_seller: Puppet
+var demo_guards: Array[Puppet] = []
+var demo_crowd: Array[Puppet] = []
+var demo_spot: SpotLight3D
+var demo_drape_count: int = 0
+var demo_bracer_count: int = 0
 var _board_lamp_mat: StandardMaterial3D
 var _board_deg: float = 0.0
 var _vendor_home_yaw: Array[float] = []
@@ -192,6 +221,7 @@ func _ready() -> void:
 	_build_shop()
 	_build_shop_interior()
 	_build_wall_lamps()
+	_build_demo_stage()
 	var market: Node3D = _batch.build(self, "Market")
 	_build_paper_lanterns()
 	_build_probes(market)
@@ -571,11 +601,15 @@ func _stall(z: float, side: float, kind: int, cloth: int, vendor: bool) -> void:
 	var crates: ShaderMaterial = look.door()
 	if kind == KIND_GAP:
 		# 空位：靠牆堆幾個木箱和一個桶，沒有燈——街上的暗處
+		# 西側那一格現在是示範台（D-232）：木箱與桶不放，但亂數照抽——少抽一次後面的攤子全部會變
+		var is_demo: bool = side < 0.0 and absf(z - DEMO_Z) < 0.01
 		for i: int in 4:
 			var s: float = _rng.randf_range(0.55, 0.9)
 			var pos := Vector3(side * _rng.randf_range(STREET_HALF + 0.9, WALL_X - 0.6), s * 0.5, z + _rng.randf_range(-1.4, 1.4))
-			_batch.add_box_tinted(Vector3(s, s, s), pos, crates, FrostbridgeLook.crate_tint(pos), true)
-		_barrel(Vector3(side * (STREET_HALF + 0.6), 0.0, z + 0.4))
+			if not is_demo:
+				_batch.add_box_tinted(Vector3(s, s, s), pos, crates, FrostbridgeLook.crate_tint(pos), true)
+		if not is_demo:
+			_barrel(Vector3(side * (STREET_HALF + 0.6), 0.0, z + 0.4))
 		return
 	stall_count += 1
 	var half_len: float = _rng.randf_range(1.5, 1.75)
@@ -1255,6 +1289,264 @@ func _animate_board(delta: float) -> void:
 # ---------------------------------------------------------------- 小工具
 
 ## 方形小燈：發光的玻璃＋鐵的上下蓋。at＝燈的中心。
+# ---------------------------------------------------------------- 黑市示範場（第二段 B，D-232）
+
+## 蓋掉人偶某幾個關節的姿勢（人偶自己的 `_pose` 每一幀都會重設）：掛在人偶底下，所以排在它後面跑。
+## 用角色模型（沒有這些關節）的時候什麼都不做。
+class PoseOverride extends Node:
+	var puppet: Puppet
+	## 關節名 → 角度（弧度）；sway＝同一個關節來回擺的幅度
+	var pose: Dictionary = {}
+	var sway: Dictionary = {}
+	var speed: float = 1.0
+	var t: float = 0.0
+
+	func _process(delta: float) -> void:
+		t += delta
+		for k: String in pose:
+			var j: Node3D = puppet.joint(k)
+			if j != null:
+				j.rotation = (pose[k] as Vector3) + (sway.get(k, Vector3.ZERO) as Vector3) * sin(t * speed)
+
+
+## 示範台：街中段西側的空位。木板台子＋紅白直條紋的背景布（整條街只有這裡是直條紋）＋一盞往下打的聚光燈、兩盞腳燈；
+## 台子中間有一截伸到街上，賣護腕的商人站在那裡（舉著一個護腕）；台上還有示範的守衛（兩手都戴著，左手垂著不動）、一桌發冷光的護腕、一箱金色的解藥；
+## 台下一個守衛、三個看熱鬧的人（站在街的西半邊，東半邊留著走路）。
+func _build_demo_stage() -> void:
+	var z0: float = DEMO_Z - DEMO_STAGE_LEN * 0.5
+	var z1: float = DEMO_Z + DEMO_STAGE_LEN * 0.5
+	var front: float = DEMO_STAGE_FRONT_X
+	var back: float = -WALL_X + 0.03
+	var depth: float = front - back
+	var mid_x: float = (front + back) * 0.5
+	var top: float = DEMO_STAGE_H
+	var marker := Marker3D.new()
+	marker.name = "DemoStage"
+	marker.position = DEMO_POS + Vector3(0.0, 1.9, 0.0)
+	add_child(marker)
+	# --- 台子、靠南的一階、前緣的裙布
+	var deck: ShaderMaterial = interior.plank("demo_deck", Color(0.31, 0.22, 0.145), 0.2, 2.4, {"along_z": true, "wear": 0.6})
+	_batch.add_box_at(Vector3(depth, top, DEMO_STAGE_LEN), Vector3(mid_x, top * 0.5, DEMO_Z), deck)
+	_batch.add_box_at(Vector3(0.4, top * 0.5, 1.2), Vector3(front + 0.2, top * 0.25, z1 - 0.6), deck)
+	# 伸到街上的那一截＋裙布（主台前緣到伸出去的地方為止，伸出去的三面各一幅）
+	var tz0: float = DEMO_Z + DEMO_TONGUE_Z.x
+	var tz1: float = DEMO_Z + DEMO_TONGUE_Z.y
+	var tip: float = front + DEMO_TONGUE_OUT
+	_batch.add_box_at(Vector3(DEMO_TONGUE_OUT, top, tz1 - tz0), Vector3(front + DEMO_TONGUE_OUT * 0.5, top * 0.5, (tz0 + tz1) * 0.5), deck)
+	var hem: float = top - 0.02
+	_drape(Vector3(front + 0.02, hem, z0), Vector3(front + 0.02, hem, tz0), top - 0.05, _cloths[0], 0.025, 2.0, 0.12)
+	_drape(Vector3(front, hem, tz0 - 0.02), Vector3(tip, hem, tz0 - 0.02), top - 0.05, _cloths[0], 0.025, 3.0, 0.2)
+	_drape(Vector3(tip + 0.02, hem, tz0), Vector3(tip + 0.02, hem, tz1), top - 0.05, _cloths[0], 0.025, 5.0, 0.36)
+	_drape(Vector3(tip, hem, tz1 + 0.02), Vector3(front, hem, tz1 + 0.02), top - 0.05, _cloths[0], 0.025, 3.0, 0.2)
+	# --- 背景：前後各兩根柱子＋橫樑；後面掛一整幅直條紋的布，前緣橫樑下一條短垂簾，兩側各一片靛藍的側幕
+	var back_h: float = DEMO_BACKDROP_H
+	var front_h: float = back_h - 0.55
+	for pz: float in [z0 + 0.07, z1 - 0.07]:
+		_batch.add_box_at(Vector3(0.14, back_h, 0.14), Vector3(back + 0.1, back_h * 0.5, pz), _timber, false)
+		_batch.add_box_at(Vector3(0.12, front_h, 0.12), Vector3(front - 0.08, front_h * 0.5, pz), _timber, false)
+		_beam(Vector3(back + 0.1, back_h - 0.07, pz), Vector3(front - 0.08, front_h - 0.06, pz), 0.1, _timber)
+	_batch.add_box_at(Vector3(0.14, 0.14, DEMO_STAGE_LEN), Vector3(back + 0.1, back_h - 0.07, DEMO_Z), _timber, false)
+	_batch.add_box_at(Vector3(0.12, 0.12, DEMO_STAGE_LEN), Vector3(front - 0.08, front_h - 0.06, DEMO_Z), _timber, false)
+	_drape(Vector3(back + 0.2, back_h - 0.16, z0 + 0.14), Vector3(back + 0.2, back_h - 0.16, z1 - 0.14), back_h - 0.16 - top - 0.03, _cloths[0], 0.06, 5.0, 1.0)
+	_drape(Vector3(front - 0.08, front_h - 0.13, z0 + 0.14), Vector3(front - 0.08, front_h - 0.13, z1 - 0.14), 0.42, _cloths[1], 0.03, 9.0, 1.0)
+	for pz: float in [z0 + 0.17, z1 - 0.17]:
+		_drape(Vector3(back + 0.18, back_h - 0.3, pz), Vector3(back + 1.0, back_h - 0.3, pz), back_h - 0.3 - top - 0.06, _cloths[2], 0.05, 2.0, 0.3)
+	# 台子兩端各一根伸到街邊的橫桿，掛一幅跟街垂直的直條紋布：人是沿著街走過來的，背景布貼著牆、從街上只看得到斜斜的一條，
+	# 這兩幅才是遠遠就看得到的「這裡有東西」（下緣 3.2 m，不擋台上的人）
+	for pz: float in [z0 - 0.06, z1 + 0.06]:
+		var boom_a := Vector3(back + 0.1, back_h + 0.42, pz)
+		# 橫桿只伸到街邊再多一點：再長（試過伸到 x＝-1.35）從高台往下看會擋到街底藥店的綠窗（固定鏡頭 60）
+		var boom_b := Vector3(front + DEMO_BOOM_OUT, back_h + 0.42, pz)
+		_beam(boom_a, boom_b, 0.09, _timber)
+		_beam(Vector3(back + 0.1, back_h - 0.5, pz), Vector3(back + 1.1, back_h + 0.4, pz), 0.07, _timber)
+		_drape(boom_a + Vector3(0.25, -0.05, 0.0), boom_b + Vector3(-0.08, -0.05, 0.0), 1.5, _cloths[0], 0.04, 3.0, 0.72)
+	# 前緣橫樑上一串暖色的紙燈籠（跟街上的同一個 MultiMesh）
+	for i: int in DEMO_LANTERNS:
+		var lz: float = lerpf(z0 + 0.3, z1 - 0.3, float(i) / float(DEMO_LANTERNS - 1))
+		var lp := Vector3(front + 0.1, front_h - 0.5 - 0.06 * float(i % 2), lz)
+		_rod(lp + Vector3(0.0, 0.5, 0.0), lp + Vector3(0.0, 0.17, 0.0), 0.005, _rope, 4)
+		_paper.append(Vector4(lp.x, lp.y, lp.z, float(i % PAPER_COLORS.size())))
+	# --- 聚光燈：前緣橫樑中間一盞，往台子中間打（投影；光柱在蒸氣裡看得到）
+	var lamp_at := Vector3(front - 0.08, front_h - 0.32, DEMO_Z + 0.3)
+	_box_lantern(lamp_at, 0.2, LAMP, 5.0)
+	var spot := SpotLight3D.new()
+	spot.name = "DemoSpot"
+	spot.light_color = DEMO_SPOT_COLOR
+	spot.light_energy = DEMO_SPOT_ENERGY
+	spot.spot_range = 7.5
+	spot.spot_angle = 38.0
+	spot.spot_angle_attenuation = 0.8
+	spot.shadow_enabled = true
+	spot.light_volumetric_fog_energy = 0.7
+	var spot_at: Vector3 = lamp_at + Vector3(-0.05, -0.34, 0.0)
+	var aim := Vector3(front + DEMO_TONGUE_OUT * 0.45, top + 1.1, DEMO_Z - 0.3)
+	spot.transform = Transform3D(Basis.looking_at(aim - spot_at, Vector3.UP), spot_at)
+	add_child(spot)
+	demo_spot = spot
+	light_count += 1
+	shadow_light_count += 1
+	# 腳燈：台子前緣兩盞有擋板的小燈，從下往上打（臉與背後的布從下面亮起來；街上的人看不到燈芯）
+	for fz: float in [tz0 + 0.3, tz1 - 0.3]:
+		var f := Vector3(tip - 0.22, top, fz)
+		_batch.add_box_at(Vector3(0.03, 0.2, 0.36), f + Vector3(0.14, 0.1, 0.0), _iron, false)
+		_batch.add_box_at(Vector3(0.1, 0.1, 0.22), f + Vector3(0.05, 0.06, 0.0), look.glow(LAMP, 3.0), false)
+		_light("DemoFoot", f + Vector3(-0.25, 0.32, 0.0), LAMP, 1.3, 4.2, false, 0.5)
+	# 背景布腳下一盞看不到燈芯的燈（藏在桌子與木箱後面）：直條紋從下面亮上去，人站在前面是剪影加上聚光燈的亮邊
+	_light("DemoBackGlow", Vector3(back + 0.8, top + 0.35, DEMO_Z), LAMP, 1.7, 4.6, false, 0.6)
+	# --- 一桌護腕（靠北）：深色絨布、三個立在木釘上的護腕，箍上兩圈冷色的光
+	var table := Vector3(mid_x - 0.3, top, z0 + 0.85)
+	var velvet: Material = look.mat(Color(0.1, 0.08, 0.17), 0.95)
+	_batch.add_box_at(Vector3(0.62, 0.8, 1.0), table + Vector3(0.0, 0.4, 0.0), _timber, false)
+	_batch.add_box_at(Vector3(0.7, 0.04, 1.08), table + Vector3(0.0, 0.82, 0.0), velvet, false)
+	_batch.add_box_at(Vector3(0.03, 0.52, 1.08), table + Vector3(0.35, 0.58, 0.0), velvet, false)
+	for i: int in 3:
+		_bracer_on_peg(table + Vector3(0.05, 0.84, -0.32 + 0.32 * float(i)), 0.16 if i == 1 else 0.09)
+	# --- 一箱解藥（靠南）：兩個疊起來的木箱，上面九瓶金色的小瓶（他真正在賣的東西）
+	var crates: ShaderMaterial = look.door()
+	var stack := Vector3(mid_x - 0.45, top, z1 - 0.75)
+	_batch.add_box_tinted(Vector3(0.7, 0.55, 0.8), stack + Vector3(0.0, 0.275, 0.0), crates, FrostbridgeLook.crate_tint(stack), false)
+	_batch.add_box_tinted(Vector3(0.55, 0.4, 0.6), stack + Vector3(0.03, 0.75, 0.05), crates, FrostbridgeLook.crate_tint(stack + Vector3.ONE), false)
+	var gold: Material = look.glow(DEMO_ANTIDOTE, 1.6)
+	var cork: Material = look.mat(Color(0.42, 0.32, 0.2), 0.9)
+	for i: int in 3:
+		for k: int in 3:
+			var b: Vector3 = stack + Vector3(-0.12 + 0.15 * float(i), 0.95, -0.12 + 0.17 * float(k))
+			_batch.add_cylinder(0.034, 0.04, 0.13, b + Vector3(0.0, 0.065, 0.0), gold, false, 8)
+			_batch.add_cylinder(0.014, 0.018, 0.05, b + Vector3(0.0, 0.155, 0.0), gold, false, 6)
+			_batch.add_cylinder(0.016, 0.016, 0.02, b + Vector3(0.0, 0.19, 0.0), cork, false, 6)
+	# --- 人。商人：酒紅外套、金邊，右手高舉一個護腕、左手往旁邊攤開
+	demo_seller = _demo_person("DemoSeller", Vector3(front + DEMO_TONGUE_OUT * 0.45, top, DEMO_Z - 0.3), -90.0, 1.0, Color(0.42, 0.09, 0.13), Color(0.8, 0.64, 0.3), false)
+	_pose_puppet(demo_seller, {
+		"shoulder_R": Vector3(2.55, 0.0, 0.3), "elbow_R": Vector3(0.3, 0.0, 0.0),
+		"shoulder_L": Vector3(0.75, 0.0, -0.75), "elbow_L": Vector3(0.7, 0.0, 0.0),
+		"chest": Vector3(-0.08, 0.16, 0.0),
+	}, {"shoulder_R": Vector3(0.07, 0.0, 0.0), "chest": Vector3(0.0, 0.07, 0.0), "shoulder_L": Vector3(0.05, 0.0, 0.0)}, 1.7)
+	var held: Node3D = demo_seller.hand("R")
+	if held != null:
+		held.add_child(_bracer_node(1.0))
+	# 示範的守衛：兩手都戴著護腕；右手握拳舉在胸前，左手垂著一動也不動（諾恩注意到的就是這個）
+	var guard_coat := Color(0.12, 0.14, 0.19)
+	var guard_trim := Color(0.5, 0.47, 0.42)
+	var shown: Puppet = _demo_person("DemoGuard0", Vector3(front - 0.95, top, DEMO_Z + 1.0), -90.0, 1.08, guard_coat, guard_trim, false)
+	_pose_puppet(shown, {
+		"shoulder_R": Vector3(1.25, 0.0, 0.1), "elbow_R": Vector3(1.1, 0.0, 0.0),
+		"shoulder_L": Vector3(0.0, 0.0, -0.04), "elbow_L": Vector3(0.02, 0.0, 0.0),
+	}, {"shoulder_R": Vector3(0.05, 0.0, 0.0)}, 2.3)
+	for side: String in ["L", "R"]:
+		var elbow: Node3D = shown.joint("elbow_" + side)
+		if elbow != null:
+			var worn: Node3D = _bracer_node(1.15)
+			worn.position = Vector3(0.0, -Puppet.FOREARM_LEN * 0.62, 0.0)
+			elbow.add_child(worn)
+	# 台下的守衛：站在台子北邊的角落、面向街上，手上有棍子
+	var floor_guard: Puppet = _demo_person("DemoGuard1", Vector3(front + 0.5, 0.0, z0 + 0.1), -60.0, 1.1, guard_coat, guard_trim, true)
+	demo_guards = [shown, floor_guard]
+	_person_block(floor_guard.position)
+	# 看熱鬧的人：街的西半邊、面向台子
+	var coats: Array[Color] = [Color(0.27, 0.22, 0.15), Color(0.16, 0.2, 0.27), Color(0.3, 0.16, 0.13)]
+	for i: int in DEMO_CROWD.size():
+		var spec: Vector3 = DEMO_CROWD[i]
+		var at := Vector3(spec.x, 0.0, DEMO_Z + spec.z)
+		demo_crowd.append(_demo_person("DemoCrowd%d" % i, at, 90.0 + _hash01(float(i), 3.0) * 24.0 - 12.0, spec.y, coats[i % coats.size()], Color(0.46, 0.4, 0.3), false))
+		_person_block(at)
+
+
+## 垂掛的一幅布：上緣從 a 到 b，往下垂 drop。fold＝皺褶往外凸多少、waves＝幾道皺褶；越往下皺得越深（上緣是綁住的）。
+## UV.x 沿著上緣（條紋是直的），uv_span＝這幅布佔整匹布的幾分之幾（1＝條紋數就是布料設定的那麼多）。
+func _drape(a: Vector3, b: Vector3, drop: float, cloth: Material, fold: float, waves: float, uv_span: float) -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var along: Vector3 = b - a
+	var out: Vector3 = Vector3.UP.cross(along).normalized()
+	var cols: int = maxi(int(along.length() / 0.15), 4)
+	var rows: int = 5
+	for c: int in cols:
+		for r: int in rows:
+			var quad: Array = []
+			var uvs: Array = []
+			for corner: Array in [[0, 0], [1, 0], [1, 1], [0, 1]]:
+				var u: float = float(c + int(corner[0])) / float(cols)
+				var v: float = float(r + int(corner[1])) / float(rows)
+				var push: float = sin(u * waves * TAU) * fold * (0.2 + 0.8 * v)
+				quad.append(a + along * u + Vector3(0.0, -drop * v, 0.0) + out * push)
+				uvs.append(Vector2(u * uv_span, v * 0.6))
+			_awning_quad(st, quad, uvs)
+	st.generate_normals()
+	_batch.add_mesh(st.commit(), Transform3D.IDENTITY, cloth)
+	demo_drape_count += 1
+
+
+## 立在木釘上的一個護腕（合併進場景）。
+func _bracer_on_peg(at: Vector3, peg: float) -> void:
+	_batch.add_cylinder(0.018, 0.022, peg, at + Vector3(0.0, peg * 0.5, 0.0), _timber, false, 6)
+	var c: Vector3 = at + Vector3(0.0, peg + 0.03, 0.0)
+	_batch.add_cylinder(0.056, 0.062, 0.12, c, look.mat(DEMO_CUFF, 0.32), false, 10)
+	for dy: float in [-0.036, 0.036]:
+		_batch.add_cylinder(0.065, 0.065, 0.016, c + Vector3(0.0, dy, 0.0), look.glow(DEMO_BRACER_GLOW, 2.6), false, 10)
+	demo_bracer_count += 1
+
+
+## 拿在手上／戴在手臂上的護腕（自己一個節點，跟著關節動）。
+func _bracer_node(size: float) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Bracer"
+	var cuff := CylinderMesh.new()
+	cuff.top_radius = 0.062 * size
+	cuff.bottom_radius = 0.056 * size
+	cuff.height = 0.12 * size
+	cuff.radial_segments = 10
+	cuff.material = look.mat(DEMO_CUFF, 0.32)
+	var body := MeshInstance3D.new()
+	body.mesh = cuff
+	root.add_child(body)
+	for dy: float in [-0.036, 0.036]:
+		var ring := CylinderMesh.new()
+		ring.top_radius = 0.066 * size
+		ring.bottom_radius = 0.066 * size
+		ring.height = 0.016 * size
+		ring.radial_segments = 10
+		ring.material = look.glow(DEMO_BRACER_GLOW, 2.6)
+		var band := MeshInstance3D.new()
+		band.mesh = ring
+		band.position.y = dy * size
+		root.add_child(band)
+	return root
+
+
+## 示範場的一個人偶。keep_club＝留著右手的棍子（守衛）。
+func _demo_person(person_name: String, at: Vector3, face_deg: float, height: float, coat: Color, trim: Color, keep_club: bool) -> Puppet:
+	var v := Puppet.new()
+	v.name = person_name
+	v.coat_color = coat
+	v.trim_color = trim
+	v.position = at
+	v.rotation_degrees.y = face_deg
+	v.scale = Vector3.ONE * height
+	add_child(v)
+	if not keep_club:
+		var hammer: Node = v.hand("R").get_node_or_null("BellHammer") if v.hand("R") != null else null
+		if hammer != null:
+			hammer.queue_free()
+	return v
+
+
+func _pose_puppet(p: Puppet, pose: Dictionary, sway: Dictionary, speed: float) -> void:
+	var o := PoseOverride.new()
+	o.name = "PoseOverride"
+	o.puppet = p
+	o.pose = pose
+	o.sway = sway
+	o.speed = speed
+	p.add_child(o)
+
+
+## 站著的人腳邊的碰撞盒：諾恩不會穿過去。
+func _person_block(at: Vector3) -> void:
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(0.5, 1.7, 0.5)
+	_batch.add_shape(Transform3D(Basis(), at + Vector3(0.0, 0.85, 0.0)), shape)
+
+
 func _box_lantern(at: Vector3, size: float, color: Color, energy: float) -> void:
 	_batch.add_box_at(Vector3(size, size * 1.3, size), at, look.glow(color, energy), false)
 	_batch.add_box_at(Vector3(size * 1.25, size * 0.16, size * 1.25), at + Vector3(0.0, size * 0.73, 0.0), _iron, false)

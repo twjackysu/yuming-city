@@ -321,18 +321,45 @@ func test_arrive_street_shop_then_to_be_continued() -> void:
 	assert_true(player.health.hp > hp0 - UndergroundMarketStory.NEEDLE_PRICK + 0.5, "生命往上（%.1f）" % player.health.hp)
 	assert_true(player.health.hp <= player.health.max_hp, "不會超過上限")
 	assert_false(level.has_node("ChapterCard"), "她還沒講完")
-	# 讀數出來幾秒之後她才開口；談完 → 這一段做完 →「待續／黑市示範場」
+	# 讀數出來幾秒之後她才開口；談完 → 藥店這一段做完 → 接黑市示範場（任務 rb_demo，D-232），櫃台前不再是結尾
 	await _frames(int(UndergroundMarketStory.BOARD_READ_SEC * 60.0))
 	assert_true(bool(_game().call("is_in_dialogue")), "彌夏願意談了")
 	await _run_dialogue(level)
 	assert_true(bool(s.state.get_flag("rb2.first_shop_done", false)))
 	assert_true(s.quests.is_done("rb_market"))
 	assert_eq(bool(s.state.get_flag("rb2.market_a_done", false)), true)
+	assert_eq(s.quests.stage_of("rb_demo"), "go_demo", "下一條任務自己開始")
+	assert_eq(s.main_quest(), "rb_demo")
+	assert_eq(s.state.checkpoint, "rb2_demo")
+	assert_eq(s.objective_key(), "Q_RB2_OBJ_GO_DEMO")
+	await _frames(6)
+	assert_false(story.ending, "櫃台前不再是結尾")
+	assert_false(level.has_node("ChapterCard"))
+	# 席菈先到門外等：不會站在門洞裡把人堵在店裡
+	var sheila: Node3D = level.get_node("Sheila") as Node3D
+	assert_true(sheila.global_position.z < UndergroundMarket.SHOP_Z - 1.0, "席菈在門外（%s）" % sheila.global_position)
+	assert_true(absf(sheila.global_position.x - UndergroundMarket.SHOP_DOOR.x) > 1.0, "不在門的正前面")
+	# 隔著牆（人還在店裡）離示範台再近也不算；走出店門、還離得遠：沒有事
+	assert_false(story.near_demo(Vector3(UndergroundMarket.DEMO_POS.x, 0.0, UndergroundMarket.SHOP_INNER_Z + 1.0)))
+	_stand(level, UndergroundMarket.DEMO_POS + Vector3(3.5, 0.0, UndergroundMarketStory.DEMO_RANGE + 3.0))
+	await _frames(6)
+	assert_false(bool(_game().call("is_in_dialogue")), "離示範台還遠")
+	# 走到示範台前：商人的叫賣（兩句）→ 諾恩看出他賣的是解藥 → 席菈「這個我會」→ 下一個階段（守衛戰，還沒做）
+	_stand(level, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
+	await _frames(4)
+	assert_true(bool(_game().call("is_in_dialogue")), "商人開始叫賣")
+	assert_false(bool(s.state.get_flag("rb2.pitch_heard", false)), "還沒聽完")
+	await _run_dialogue(level)
+	assert_true(bool(s.state.get_flag("rb2.pitch_heard", false)))
+	assert_eq(s.quests.stage_of("rb_demo"), "stop_demo")
+	assert_eq(s.state.checkpoint, "rb2_demo_fight")
+	assert_eq(s.objective_key(), "Q_RB2_OBJ_STOP_DEMO")
+	assert_false(s.quests.is_done("rb_demo"), "守衛還沒打：這條任務沒做完")
 	await _frames(4)
 	assert_true(story.ending)
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(card, "待續的卡")
-	assert_eq(card.title_text(), tr("RB2_END2_TITLE"))
+	assert_eq(card.title_text(), tr("RB2_END3_TITLE"))
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
 	assert_eq(story.play_end_card(), card, "不會疊第二張")
@@ -424,18 +451,49 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	tree.root.get_node("Game").set("session", done_again)
 	assert_eq(done_again.load_story_slot(), SaveCodec.Status.OK)
 	assert_true(done_again.quests.is_done("rb_market"), "做完的那一刻存過檔")
-	assert_eq(done_again.state.checkpoint, "rb2_shop")
+	assert_eq(done_again.quests.stage_of("rb_demo"), "go_demo")
+	assert_eq(done_again.state.checkpoint, "rb2_demo")
 	assert_eq(str(_game().call("level_for_checkpoint", done_again.state.checkpoint)), "market")
 	var level4: UndergroundMarket = await _load()
 	level4.story.end_done = func() -> void: pass
+	var p4: PlayerController = level4.get_node("Player") as PlayerController
 	await _frames(6)
 	assert_false(level4.has_node("ChapterCard"), "讀檔回來不會馬上黑掉")
+	assert_false(bool(_game().call("is_in_dialogue")), "也不會馬上開始叫賣")
+	assert_true(p4.global_position.z < UndergroundMarket.SHOP_Z - 1.0, "站在藥店門外（%s）" % p4.global_position)
+	assert_true(absf(p4.rotation_degrees.y) < 1.0, "面向街上（北）")
+	var sheila4: Node3D = level4.get_node("Sheila") as Node3D
+	assert_true(sheila4.global_position.z < p4.global_position.z, "席菈在他前面（往街上那一邊）")
 	assert_true(level4.board_lamp_on, "板子上的燈還亮著")
 	_stand(level4, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
 	await _frames(6)
-	assert_false(bool(_game().call("is_in_dialogue")), "不會從頭再講")
-	assert_true(level4.has_node("ChapterCard"), "走到櫃台前才是待續")
+	assert_false(bool(_game().call("is_in_dialogue")), "回店裡彌夏不會從頭再講")
+	assert_false(level4.has_node("ChapterCard"), "櫃台前不再是待續")
 	level4.queue_free()
+	await tree.process_frame
+	# 聽完叫賣的存檔（現在的結尾）：回到示範台南邊幾步，不會一讀檔就黑掉；走近才是「待續」，商人不會從頭再喊
+	var s5 := _session_at("demo_end")
+	assert_eq(s5.quests.stage_of("rb_demo"), "stop_demo")
+	var heard := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", heard)
+	assert_eq(heard.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(heard.state.checkpoint, "rb2_demo_fight")
+	assert_eq(str(_game().call("level_for_checkpoint", heard.state.checkpoint)), "market")
+	var level5: UndergroundMarket = await _load()
+	level5.story.end_done = func() -> void: pass
+	var p5: PlayerController = level5.get_node("Player") as PlayerController
+	await _frames(6)
+	assert_false(level5.has_node("ChapterCard"), "讀檔回來不會馬上黑掉")
+	assert_true(FrostbridgeOpening.flat_distance(p5.global_position, UndergroundMarket.DEMO_POS) > UndergroundMarketStory.DEMO_RANGE, "出生點在觸發範圍外")
+	assert_true(FrostbridgeOpening.flat_distance(p5.global_position, UndergroundMarket.DEMO_POS) < 10.0, "但是看得到台子")
+	_stand(level5, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
+	await _frames(6)
+	assert_false(bool(_game().call("is_in_dialogue")), "不會從頭再喊")
+	var card5: ChapterCard = level5.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card5, "走近才是待續")
+	if card5 != null:
+		assert_eq(card5.title_text(), tr("RB2_END3_TITLE"))
+	level5.queue_free()
 	await tree.process_frame
 
 
@@ -518,3 +576,96 @@ func test_shop_interior_has_counter_misha_and_a_working_board() -> void:
 	level.queue_free()
 	await tree.process_frame
 
+
+## 舊存檔的遷移（D-232）：第 85 輪的存檔——藥店那一段做完了、還沒有黑市示範場這條任務。讀檔時補開，「繼續」從藥店門外開始。
+func test_old_save_that_finished_the_shop_continues_to_the_demo() -> void:
+	var s := _session_at("shop")
+	for flag: String in ["rb2.misha_met", "rb2.pricked", "rb2.board_done", "rb2.first_shop_done"]:
+		s.set_flag(flag, true)
+	assert_true(s.quests.is_done("rb_market"))
+	# 模擬舊資料：把 rb_demo 從存檔裡拿掉、檢查點退回藥店門口
+	s.state.quests.erase("rb_demo")
+	s.state.checkpoint = "rb2_shop"
+	assert_eq(s.save(GameSession.AUTO_SLOT), OK)
+	var again := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", again)
+	assert_eq(again.load_story_slot(), SaveCodec.Status.OK)
+	assert_true(again.quests.is_done("rb_market"))
+	assert_eq(again.quests.stage_of("rb_demo"), "go_demo", "補開了")
+	assert_eq(again.main_quest(), "rb_demo")
+	assert_eq(again.state.checkpoint, "rb2_demo")
+	assert_eq(str(_game().call("level_for_checkpoint", again.state.checkpoint)), "market")
+	# 再讀一次不會重開、進度不會退回去
+	again.set_flag("rb2.pitch_heard", true)
+	assert_eq(again.save(GameSession.AUTO_SLOT), OK)
+	var third := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(third.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(third.quests.stage_of("rb_demo"), "stop_demo")
+
+
+## 示範台（D-232）：街中段西側的空位。台子、直條紋的背景布、聚光燈、商人與守衛、看熱鬧的人；街的東半邊還走得過去。
+func test_demo_stage_is_built_and_the_street_stays_walkable() -> void:
+	var s := _session_at("deal")
+	assert_eq(s.state.checkpoint, "rb2_demo")
+	var level: UndergroundMarket = await _load()
+	level.story.set_physics_process(false)
+	var marker: Node3D = level.get_node_or_null("DemoStage") as Node3D
+	assert_not_null(marker, "任務標記")
+	assert_true(absf(UndergroundMarket.DEMO_Z - level.stall_z(UndergroundMarket.DEMO_SLOT)) < 0.001, "就在西側那個空位")
+	assert_eq(UndergroundMarket.WEST_KINDS[UndergroundMarket.DEMO_SLOT], UndergroundMarket.KIND_GAP)
+	assert_true(marker.global_position.z > UndergroundMarket.RAMP_S + 4.0 and marker.global_position.z < UndergroundMarket.SHOP_Z - 8.0, "在街的中段")
+	# 人：商人在台上、面向街；兩個守衛（台上示範的戴著護腕、台下的拿棍子）；看熱鬧的人在街的西半邊
+	assert_not_null(level.demo_seller, "商人")
+	assert_true(level.demo_seller.global_position.y > UndergroundMarket.DEMO_STAGE_H - 0.05, "站在台上")
+	assert_true(level.demo_seller.global_position.x > UndergroundMarket.DEMO_STAGE_FRONT_X and level.demo_seller.global_position.x < UndergroundMarket.DEMO_STAGE_FRONT_X + UndergroundMarket.DEMO_TONGUE_OUT, "站在伸到街上的那一截（從街的南邊走過來看得到）")
+	assert_true(level.demo_seller.hand("R").get_node_or_null("BellHammer") == null or level.demo_seller.hand("R").get_node("BellHammer").is_queued_for_deletion(), "商人不拿棍子")
+	assert_not_null(level.demo_seller.hand("R").get_node_or_null("Bracer"), "手上舉著一個護腕")
+	assert_not_null(level.demo_seller.get_node_or_null("PoseOverride"), "擺著叫賣的姿勢")
+	await _frames(3)
+	assert_true(level.demo_seller.joint("shoulder_R").rotation.x > 2.0, "右手真的舉著（%.2f）" % level.demo_seller.joint("shoulder_R").rotation.x)
+	assert_eq(level.demo_guards.size(), 2, "兩個守衛")
+	var shown: Puppet = level.demo_guards[0]
+	assert_true(shown.global_position.y > UndergroundMarket.DEMO_STAGE_H - 0.05, "示範的那個在台上")
+	assert_not_null(shown.joint("elbow_L").get_node_or_null("Bracer"), "左手戴著")
+	assert_not_null(shown.joint("elbow_R").get_node_or_null("Bracer"), "右手戴著")
+	assert_true(absf(shown.joint("shoulder_L").rotation.x) < 0.05, "左手垂著不動（諾恩注意到的那一點）")
+	assert_true(level.demo_guards[1].global_position.y < 0.1, "另一個在台下")
+	assert_true(level.demo_crowd.size() >= 3, "看熱鬧的人（%d）" % level.demo_crowd.size())
+	for c: Puppet in level.demo_crowd:
+		assert_true(c.global_position.x < -0.4 and c.global_position.x > UndergroundMarket.DEMO_STAGE_FRONT_X + UndergroundMarket.DEMO_TONGUE_OUT + 0.5, "在街的西半邊、不貼著台子（%s）" % c.global_position)
+		assert_true(absf(c.global_position.z - UndergroundMarket.DEMO_Z) < UndergroundMarket.DEMO_STAGE_LEN * 0.5, "站在台子前面")
+	assert_eq(level.demo_bracer_count, 3, "桌上三個護腕")
+	assert_true(level.demo_drape_count >= 4, "背景布、垂簾、側幕、裙布（%d）" % level.demo_drape_count)
+	# 燈：一盞投影的聚光燈（往下打、暖白色），投影的大燈總數還在上限內；彩色的燈沒有變多
+	assert_not_null(level.demo_spot, "聚光燈")
+	assert_true(level.demo_spot.shadow_enabled)
+	assert_true(-level.demo_spot.global_transform.basis.z.y < -0.5, "往下打")
+	assert_true(level.demo_spot.light_color.r >= 0.9 and level.demo_spot.light_color.g >= 0.6, "暖白，不是第四種彩色")
+	assert_true(level.shadow_light_count <= 4, "投影的大燈最多四盞（%d）" % level.shadow_light_count)
+	var coloured: Dictionary = {}
+	for n: Node in level.get_children():
+		var l: OmniLight3D = n as OmniLight3D
+		if l != null and (l.light_color.r < 0.9 or l.light_color.g < 0.4):
+			coloured[l.light_color.to_html(false)] = true
+	assert_eq(coloured.size(), 3, "彩色的燈還是只有三種")
+	# 用物理走：從藥店門外沿著街的東半邊往北，走得過示範台前面（看熱鬧的人沒有把街堵死）
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	_stand(level, Vector3(1.0, 0.0, UndergroundMarket.DEMO_Z + 4.0))
+	await _frames(2)
+	for i: int in 200:
+		player.velocity = Vector3(0.0, 0.0, -4.0)
+		player.move_and_slide()
+		await tree.physics_frame
+		if player.global_position.z < UndergroundMarket.DEMO_Z - 4.0:
+			break
+	assert_true(player.global_position.z < UndergroundMarket.DEMO_Z - 4.0, "東半邊走得過去（停在 %s）" % player.global_position)
+	# 台子是實心的：從街上往西直直走，會被台子前緣擋住（不會走進背景布裡）
+	_stand(level, Vector3(0.6, 0.0, UndergroundMarket.DEMO_Z - 1.55))
+	await _frames(2)
+	for i: int in 120:
+		player.velocity = Vector3(-4.0, 0.0, 0.0)
+		player.move_and_slide()
+		await tree.physics_frame
+	assert_true(player.global_position.x > UndergroundMarket.DEMO_STAGE_FRONT_X - 0.2, "台子擋得住（停在 %s）" % player.global_position)
+	level.queue_free()
+	await tree.process_frame

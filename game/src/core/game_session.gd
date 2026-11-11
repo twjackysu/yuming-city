@@ -23,8 +23,10 @@ const STORY_DIR_SUFFIX: String = "_reboot"
 const MAIN_QUEST: String = "rb_main"
 ## 第二段：地下市場（docs/design/10-reboot-underground-market.md）。rb_main 做完時自動開始（rb_main.json 的 on_complete）
 const MARKET_QUEST: String = "rb_market"
+## 第二段 B：黑市示範場（design/10「B 的流程」，D-232）。rb_market 做完時自動開始（rb_market.json 的 on_complete）
+const DEMO_QUEST: String = "rb_demo"
 ## 主線照順序排；HUD 的目標與任務標記指「第一條還沒做完的」
-const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST, MARKET_QUEST]
+const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST, MARKET_QUEST, DEMO_QUEST]
 const FIRST_CHAPTER: String = "rb_ch1"
 
 var db: QuestDB
@@ -131,6 +133,9 @@ func load_slot(slot: String) -> SaveCodec.Status:
 	# 舊存檔的遷移：前十分鐘做完時還沒有地下市場這條任務——補開（檢查點跟著變成 rb2_arrive，「繼續」直接到地下市場）
 	if in_story() and quests.is_done(MAIN_QUEST) and not state.quests.has(MARKET_QUEST):
 		quests.start(MARKET_QUEST)
+	# 同樣的遷移：藥店那一段做完時還沒有黑市示範場這條任務（第 85 輪的存檔）——補開，「繼續」從藥店門外開始
+	if in_story() and quests.is_done(MARKET_QUEST) and not state.quests.has(DEMO_QUEST):
+		quests.start(DEMO_QUEST)
 	_autosave_pending = false
 	return status
 

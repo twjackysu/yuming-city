@@ -1,0 +1,21 @@
+{
+  "id": "rb_demo",
+  "title": "Q_RB_DEMO_TITLE",
+  "stages": [
+    {
+      "id": "go_demo",
+      "objective": "Q_RB2_OBJ_GO_DEMO",
+      "checkpoint": "rb2_demo",
+      "marker": "node:DemoStage",
+      "done_when": {"flag": "rb2.pitch_heard"}
+    },
+    {
+      "id": "stop_demo",
+      "objective": "Q_RB2_OBJ_STOP_DEMO",
+      "checkpoint": "rb2_demo_fight",
+      "marker": "node:DemoStage",
+      "done_when": {"flag": "rb2.demo_won"}
+    }
+  ],
+  "on_complete": {"set": {"rb2.market_b_done": true}}
+}
