@@ -61,18 +61,6 @@
         "verified": true
       },
       {
-        "id": "double_slam",
-        "label": "MOVE_DOUBLE_SLAM",
-        "verified": false,
-        "hidden": true
-      },
-      {
-        "id": "grab",
-        "label": "MOVE_GRAB",
-        "verified": false,
-        "hidden": true
-      },
-      {
         "id": "spray",
         "label": "RB_MOVE_SPRAY",
         "verified": false,

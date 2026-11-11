@@ -52,14 +52,6 @@ var last_weak_hits: int = 0
 ## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
 var lock_target: Node3D = null
 var lock_blocked: float = 0.0
-## 被抓（送葬者抓取）：抓住的人、剩餘秒數、已掙扎次數、需要幾次
-## 關卡要玩家站著不動（例如第 3 章倒吊時抓著繩子）：移動、閃避、攻擊都不吃；左右輸入交給關卡
-var held_in_place: bool = false
-var grabbed_by: Node3D = null
-var grab_left: float = 0.0
-var struggle: int = 0
-var struggle_need: int = 5
-var _grab_squeeze: float = 12.0
 var _flick_acc: float = 0.0
 var _pad_flick_armed: bool = true
 var _lock_marker: MeshInstance3D
@@ -188,16 +180,8 @@ func _physics_process(delta: float) -> void:
 	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進（D-202）
 	if not Game.is_player_locked():
 		status_effects.tick(delta, health)
-	if grabbed_by != null:
-		_grab_tick(delta)
-		velocity = Vector3(0.0, 0.0 if is_on_floor() else velocity.y - GRAVITY * delta, 0.0)
-		_puppet.set_move_speed(0.0)
-		move_and_slide()
-		_follow_rig(delta)
-		return
-
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var talking: bool = Game.is_player_locked() or held_in_place
+	var talking: bool = Game.is_player_locked()
 	if talking:
 		input = Vector2.ZERO
 	insight_active = Input.is_action_pressed("insight") and not talking and not health.is_dead()
@@ -278,60 +262,6 @@ func footstep_surface() -> String:
 	return Footsteps.surface_at(self)
 
 
-## 被抓住 seconds 秒；這段時間連按閃避或攻擊掙扎，滿 need 次掙脫；時間到被捏一下（squeeze 傷害）才放開。
-func begin_grab(by: Node3D, seconds: float, need: int = 5, squeeze: float = 12.0) -> void:
-	if health.is_dead():
-		return
-	grabbed_by = by
-	grab_left = seconds
-	struggle = 0
-	struggle_need = need
-	_grab_squeeze = squeeze
-	_dodge_left = 0.0
-	invulnerable = false
-	shake(0.35)
-
-
-## 掙扎一下。回傳是否因此掙脫。
-func struggle_press() -> bool:
-	if grabbed_by == null:
-		return false
-	struggle += 1
-	shake(0.12)
-	if struggle >= struggle_need:
-		release_grab(true)
-		return true
-	return false
-
-
-func release_grab(escaped: bool) -> void:
-	if grabbed_by == null:
-		return
-	var by: Node3D = grabbed_by
-	grabbed_by = null
-	grab_left = 0.0
-	if not escaped:
-		health.apply_damage(_grab_squeeze, {"source": by, "kind": "grab_squeeze"})
-	if is_instance_valid(by):
-		var away: Vector3 = global_position - by.global_position
-		away.y = 0.0
-		if away.length() > 0.01:
-			global_position += away.normalized() * 1.0
-
-
-func _grab_tick(delta: float) -> void:
-	var h: Health = grabbed_by.get_node_or_null("Health") as Health if is_instance_valid(grabbed_by) else null
-	if not is_instance_valid(grabbed_by) or (h != null and h.is_dead()):
-		release_grab(true)
-		return
-	if not Game.is_player_locked() and (Input.is_action_just_pressed("dodge") or Input.is_action_just_pressed("attack")):
-		if struggle_press():
-			return
-	grab_left -= delta
-	if grab_left <= 0.0:
-		release_grab(false)
-
-
 ## 新版：喝可攜藥劑。回傳 PotionBelt.use 的結果；滿血時發 potion_needs_confirm（confirmed=true 再喝一次）。
 func use_potion(confirmed: bool = false) -> String:
 	var result: String = PotionBelt.new(Game.session.state).use(PORTABLE_ITEM, status_effects, health, confirmed)
@@ -367,7 +297,6 @@ func _write_reboot_vitals(st: GameState) -> void:
 
 
 func _on_died() -> void:
-	release_grab(true)
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Game.on_player_died()

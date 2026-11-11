@@ -20,21 +20,16 @@
   },
   "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8, "telegraph_stagger_mult": 0.5, "recover_stagger_mult": 2.0, "stagger_kneel": 2.0, "move_speed": 2.6},
   "undertaker": {
-    "max_hp": 900, "phase2_hp": 450, "stagger_max": 200, "stagger_kneel": 3.0, "attack_range": 3.2, "telegraph": 0.9, "recover": 0.8, "move_speed": 2.3,
+    "max_hp": 900, "stagger_max": 200, "stagger_kneel": 3.0, "attack_range": 3.2, "telegraph": 0.9, "recover": 0.8, "move_speed": 2.3,
     "telegraph_stagger_mult": 0.3, "recover_stagger_mult": 2.0,
     "pattern": ["sweep", "slam", "sweep", "charge"],
-    "pattern_phase2": ["double_slam", "sweep", "grab", "charge"],
     "pattern_struggle": ["sweep", "slam"], "struggle_stagger_max": 140,
     "pattern_guardian": ["sweep", "spray", "slam", "sweep"], "guardian_hp": 480, "guardian_stagger_max": 140,
-    "frame_throw_hp": 300, "frame_throw_caravan_progress": 0.5,
     "moves": {
       "sweep": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.2, "arc_deg": 150, "damage": 28},
-      "slam": {"telegraph": 1.0, "telegraph_phase2": 0.7, "active": 0.15, "recover": 0.6, "range": 3.0, "reach": 1.9, "radius": 2.0, "damage": 40},
+      "slam": {"telegraph": 1.0, "active": 0.15, "recover": 0.6, "range": 3.0, "reach": 1.9, "radius": 2.0, "damage": 40},
       "charge": {"telegraph": 0.6, "active": 1.0, "recover": 0.9, "min_range": 4.0, "range": 11.0, "speed": 11.0, "hit_radius": 1.1, "damage": 22, "wall_kneel": 2.0},
-      "double_slam": {"telegraph": 0.7, "active": 0.15, "range": 3.0, "reach": 1.9, "radius": 2.0, "damage": 40, "chain": "double_slam_2", "intel": "double_slam"},
-      "double_slam_2": {"telegraph": 0.5, "active": 0.15, "recover": 0.7, "reach": 1.9, "radius": 2.0, "damage": 40, "intel": "double_slam"},
-      "spray": {"telegraph": 1.1, "active": 0.3, "recover": 1.0, "range": 3.4, "reach": 2.6, "radius": 2.0, "life": 3.0},
-      "grab": {"telegraph": 0.8, "active": 0.2, "recover": 1.0, "range": 2.2, "arc_deg": 90, "damage": 20, "hold": 2.0, "struggle": 5, "squeeze_damage": 12}
+      "spray": {"telegraph": 1.1, "active": 0.3, "recover": 1.0, "range": 3.4, "reach": 2.6, "radius": 2.0, "life": 3.0}
     }
   },
   "caravan": {"speed": 1.1, "stop_sec": 2.0},

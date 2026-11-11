@@ -1,5 +1,5 @@
 extends TestCase
-## 傷者車隊：推進與進度、被打停下＋傷者、停下中不重複計、抵達、存讀；場景中被送葬者第二階段追著打。
+## 推車（新劇情的 RbCart 用同一個 Caravan）：推進與進度、被打停下＋傷者、停下中不重複計、抵達、存讀；貼近鏡頭淡出、車的造型。
 
 
 func _route() -> PackedVector3Array:
@@ -57,47 +57,6 @@ func test_save_roundtrip() -> void:
 	assert_false(r2.is_stopped(), "讀檔不停在被打的瞬間")
 	r2.from_dict({"traveled": 999.0})
 	assert_true(absf(r2.traveled - 15.0) < 0.001, "超出路線長度會夾住")
-
-
-func test_phase_two_chases_and_hits_caravan() -> void:
-	var root := Node3D.new()
-	tree.root.add_child(root)
-	var floor_body := CSGBox3D.new()
-	floor_body.size = Vector3(60, 1, 60)
-	floor_body.position = Vector3(0, -0.5, 0)
-	floor_body.use_collision = true
-	root.add_child(floor_body)
-	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
-	player.position = Vector3(-3, 0, 7)
-	root.add_child(player)
-	var caravan := Caravan.new()
-	caravan.route = PackedVector3Array([Vector3(4, 0, 0), Vector3(4, 0, -30)])
-	root.add_child(caravan)
-	caravan.runner.speed = 0.4
-	var boss := Undertaker.new()
-	boss.state = GameState.new()
-	boss.position = Vector3(0, 0, 4)
-	root.add_child(boss)
-	await tree.physics_frame
-	await tree.physics_frame
-	assert_true(boss.target == player, "第一階段追最近的心跳（諾恩）")
-	boss.enter_phase_two()
-	await tree.physics_frame
-	await tree.physics_frame
-	assert_true(boss.target == caravan, "第二階段優先追車隊")
-	var hits: Array[int] = [0]
-	caravan.hit_taken.connect(func(_n: int) -> void: hits[0] += 1)
-	for i: int in 400:
-		await tree.physics_frame
-		if hits[0] > 0:
-			break
-	assert_true(hits[0] > 0, "送葬者打中車隊")
-	assert_eq(caravan.runner.injured, 1, "多一名傷者")
-	assert_true(caravan.runner.is_stopped(), "車隊停下")
-	assert_eq(caravan.health.hp, caravan.health.max_hp, "車隊的生命值不會真的掉")
-	root.queue_free()
-	await tree.process_frame
-	await tree.process_frame
 
 
 ## 車隊從鏡頭旁經過時，提燈的燈罩貼近鏡頭不能變成一個白色圓盤：太近就淡掉。

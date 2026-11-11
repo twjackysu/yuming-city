@@ -44,9 +44,6 @@ var cooldowns: Dictionary = {}
 var _sheila_name: Label
 var _noen_name: Label
 var _cmd_lines: Array[GlyphLine] = []
-var _struggle: GlyphLine
-## 被抓時的掙扎提示
-var struggle_shown: bool = false
 var guard_on: bool = false
 var _alpha: float = 0.0
 
@@ -65,10 +62,6 @@ func _ready() -> void:
 		line.alignment = BoxContainer.ALIGNMENT_BEGIN
 		add_child(line)
 		_cmd_lines.append(line)
-	_struggle = GlyphLine.new().configure(30, Color(1.0, 0.92, 0.85))
-	_struggle.name = "Struggle"
-	add_child(_struggle)
-	_struggle.visible = false
 	modulate.a = 0.0
 
 
@@ -95,10 +88,6 @@ func command_label(i: int) -> String:
 
 func command_line(i: int) -> GlyphLine:
 	return _cmd_lines[i]
-
-
-func struggle_line() -> GlyphLine:
-	return _struggle
 
 
 func _process(delta: float) -> void:
@@ -133,10 +122,6 @@ func refresh(player: PlayerController, sheila: Sheila) -> void:
 			_sheila_name.text = "SPK_SHEILA"
 	_sheila_name.visible = sheila_present
 	guard_on = sheila_present and not sheila_down and sheila.brain.guard_active
-	struggle_shown = player != null and player.grabbed_by != null
-	_struggle.visible = struggle_shown
-	if struggle_shown:
-		_struggle.set_line(tr("HUD_STRUGGLE").format({"n": player.struggle_need - player.struggle}), "dodge", App.last_device)
 	for i: int in COMMANDS.size():
 		var c: Array = COMMANDS[i]
 		_cmd_lines[i].set_line("{key} %s" % tr(str(c[2])), str(c[0]), App.last_device)
@@ -173,7 +158,6 @@ func _layout() -> void:
 		var line: GlyphLine = _cmd_lines[i]
 		# 每格以第 i 列的中線對齊（圖示比字高，不能用左上角對齊）
 		line.position = o + Vector2(BAR_W + 40.0, -12.0 + 28.0 * float(i) - line.size.y * 0.5)
-	_struggle.position = Vector2((size.x - _struggle.size.x) * 0.5, size.y * 0.62)
 
 
 func _draw() -> void:

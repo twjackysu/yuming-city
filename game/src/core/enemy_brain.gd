@@ -5,7 +5,7 @@ extends RefCounted
 ## 數值來自 CombatTuning（<prefix>.*、difficulty.*.telegraph）。
 ## 一般敵人只有一招（attack_range 內就出）；精英敵人在 <prefix>.moves 定義多招，依 <prefix>.pattern 輪流，
 ## 每招有自己的距離（min_range～range）、前兆、出招、破綻時間（送葬者：橫掃／下砸／衝撞）。
-## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻；送葬者連續下砸）。
+## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻）。現在沒有招式用，留給之後的頭目（D-225）。
 ## 讀不懂的招（unreadable[id] = true）：席菈的「閃開」對它一律算失敗，直到諾恩看過一次（看穿變已證實）。
 
 enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD }
@@ -141,7 +141,7 @@ func _chain_of(id: String) -> String:
 	return str((m as Dictionary).get("chain", "")) if m is Dictionary else ""
 
 
-## 換招式輪替（第二階段）。從新 pattern 的第一招開始。
+## 換招式輪替（送葬者的追擊版與守衛版）。從新 pattern 的第一招開始。
 func set_pattern(p: PackedStringArray) -> void:
 	if p.is_empty():
 		return
@@ -151,7 +151,7 @@ func set_pattern(p: PackedStringArray) -> void:
 		move_id = pattern[0]
 
 
-## 看穿用的招式 id：連段的後續招（"intel": "double_slam"）對回同一條資訊。
+## 看穿用的招式 id：連段的後續招（"intel": "<第一招 id>"）對回同一條資訊。
 func intel_move() -> String:
 	var cur: String = current_move()
 	if cur == "":

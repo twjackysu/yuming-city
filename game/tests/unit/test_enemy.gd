@@ -21,6 +21,58 @@ func test_brain_cycle() -> void:
 	assert_eq(b.state_name(), "chase", "破綻結束繼續追")
 
 
+## 連段與「讀不懂的招」是 EnemyBrain 的通用機制。資料裡現在沒有招式用到（送葬者的連續下砸刪了，D-225），
+## 所以用測試內的小招式表驗，不靠遊戲資料。
+func _chain_brain() -> EnemyBrain:
+	var b := EnemyBrain.new().configure("ashwalker")
+	b.moves = {
+		"first": {"telegraph": 0.7, "active": 0.15, "range": 3.0, "chain": "second", "intel": "first"},
+		"second": {"telegraph": 0.5, "active": 0.15, "recover": 0.7, "intel": "first"},
+		"other": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.0},
+	}
+	b.set_pattern(PackedStringArray(["first", "other"]))
+	return b
+
+
+func test_chained_move_skips_recover_and_stays_out_of_pattern() -> void:
+	var b: EnemyBrain = _chain_brain()
+	b.tick(0.1, 10.0)
+	b.tick(0.01, 2.0)
+	assert_eq(b.move_id, "first")
+	assert_true(absf(b.telegraph_sec - 0.7) < 0.001, "第一下前兆 0.7")
+	assert_eq(b.intel_move(), "first")
+	b.tick(b.telegraph_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "strike")
+	b.tick(b.strike_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "telegraph", "第一下之後沒有破綻，直接第二下的前兆")
+	assert_eq(b.move_id, "second")
+	assert_true(absf(b.telegraph_sec - 0.5) < 0.001, "第二下前兆只有 0.5")
+	assert_eq(b.intel_move(), "first", "看穿把第二下對回第一招那一條")
+	b.tick(b.telegraph_sec + 0.01, 2.0)
+	b.tick(b.strike_sec + 0.01, 2.0)
+	assert_eq(b.state_name(), "recover", "第二下之後才有破綻")
+	assert_true(absf(b.recover_sec - 0.7) < 0.001)
+	b.tick(b.recover_sec + 0.01, 2.0)
+	b.tick(0.01, 2.0)
+	assert_eq(b.move_id, "other", "連段的後續招不在輪替裡")
+
+
+func test_unreadable_move_fails_evade_call_until_seen() -> void:
+	var b: EnemyBrain = _chain_brain()
+	b.unreadable["second"] = true
+	b.move_id = "second"
+	b.state = EnemyBrain.State.TELEGRAPH
+	b.telegraph_sec = 0.5
+	b.time_in_state = 0.45
+	var c := CompanionBrain.new().configure("story")
+	assert_false(b.is_readable())
+	assert_false(c.evade_in_window(b), "讀不懂的招：席菈的「閃開」抓不到時機")
+	b.unreadable.erase("second")
+	assert_true(c.evade_in_window(b), "看過之後閃開有效")
+	b.move_id = "other"
+	assert_true(c.evade_in_window(b), "別的招不受影響")
+
+
 func test_story_difficulty_longer_telegraph() -> void:
 	var b := EnemyBrain.new().configure("ashwalker", "story")
 	assert_true(absf(b.telegraph_sec - 0.8 * 1.3) < 0.001, "故事難度前兆 ×1.3")

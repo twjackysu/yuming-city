@@ -72,7 +72,7 @@ func _physics_process(delta: float) -> void:
 			var face: float = atan2(-d.x, -d.z)
 			_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
 	if _held(delta):
-		# 劇情動作中（送葬者舉起鐵架）：不追、不出招。劇情走位（D-205）由 _held_velocity 給水平速度，照樣用自己的腳走
+		# 劇情動作中（送葬者把燈柱舉過頭）：不追、不出招。劇情走位（D-205）由 _held_velocity 給水平速度，照樣用自己的腳走
 		var held_v: Vector3 = _held_velocity(delta)
 		velocity = Vector3(held_v.x, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, held_v.z)
 		move_and_slide()

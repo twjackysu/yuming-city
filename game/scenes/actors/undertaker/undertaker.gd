@@ -1,18 +1,12 @@
 class_name Undertaker
 extends EnemyActor
-## 送葬者（精英）：背負鐵架、追著心跳走。第一階段三招（02-gameplay「送葬者」）：
-##   鐵架橫掃（扇形霜紋）／鐵架下砸（圓形霜紋，砸地後 0.6 秒破綻）／追心跳衝撞（直線霜紋，撞牆跪地 2 秒）。
-## 生命降到 phase2_hp 進入第二階段：看穿裡「下砸」變成未證實，前兆縮短（攻略開始失準），轉向傷者車隊。
-## 第二階段（pattern_phase2）：連續下砸（第二下前兆 0.5，攻略沒寫：諾恩沒挨打地看過一次才變已證實，
-## 之前席菈的「閃開」對第二下算失敗）、抓取（抓前方最近的心跳；席菈守在旁邊就擋下）、橫掃、衝撞。
-## 鐵架拋擲：第二階段生命 ≤ frame_throw_hp 或車隊過半時觸發一次（`slice.frame_thrown`），接九息或薪火劍。
+## 送葬者（精英）：背負鐵架、追著心跳走。四招：
+##   鐵架橫掃（扇形霜紋）／鐵架下砸（圓形霜紋，砸地後 0.6 秒破綻）／追心跳衝撞（直線霜紋，撞牆跪地 2 秒）／
+##   噴毒（只有南街守衛：虛線圈，地上留一團毒霧）。
+## 兩種用法：追擊的那一隻（begin_struggle：橫掃＋下砸）、南街守衛（begin_guardian：再加噴毒、生命另計）；
+## 兩個都沒呼叫時是預設輪替（橫掃、下砸、橫掃、衝撞），目前只有測試這樣用。
 ## 弱點：鐵架關節，從背後打得到；跪地時全露。
 
-signal phase_changed(phase: int)
-## 鐵架拋擲（劇情觸發一次）：場景接九息石拱或席菈的薪火劍
-signal frame_throw_started
-## 連續下砸的第二下：諾恩看過一次（沒被打到）就變已證實
-signal double_slam_verified
 ## 被斬倒、身體撞到地面的那一刻（D-052）
 signal fell
 
@@ -38,19 +32,12 @@ const SHAPE_FAN: int = 2
 ## 落點標記（噴毒，D-208）：空心的虛線圈＋往外擴的細圈，跟實心的毒霧分得出來
 const SHAPE_RING: int = 3
 
+## 只有一個階段（第二階段連同舊劇情刪了，D-225）；留著是因為守衛戰的測試還在驗它不會變。
 var phase: int = 1
-## 測試或場景可以指定；空的就用 Game.session.state
-var state: GameState
-var frame_thrown: bool = false
-## 舉起鐵架的剩餘秒數（>0 時站著不動）
+## 把東西舉過頭的剩餘秒數（>0 時站著不動）
 var throw_windup: float = 0.0
 var _throw_total: float = 1.0
-## 最近抓住的諾恩（被打中弱點時鬆手）
-var _grabbed: PlayerController
-## 第二下的觀察距離：諾恩在這個範圍內沒被打到才算「看過」
-const WITNESS_RANGE: float = 8.0
-
-## 第 3 章的掙脫戰（D-169）：只有第一階段、少一招（不衝撞：運河岸太窄）、失衡上限比較低，不會進第二階段。
+## 追擊的那一隻（D-169、D-205）：少一招（不衝撞）、失衡上限比較低。守衛也會設成 true。
 var struggle_mode: bool = false
 
 var _decals: Dictionary = {}
@@ -102,21 +89,14 @@ func _on_strike() -> void:
 			Sfx.play_at(self, "claw", origin + fwd * 1.5 + Vector3.UP, 2.0, 0.04)
 			hit_heartbeats(brain.move_num("sweep", "damage", 28.0), "sweep",
 				func(p: Vector3) -> bool: return PlayerController.in_strike_arc(origin, fwd, p, reach + 0.3, arc))
-		"slam", "double_slam", "double_slam_2":
-			var id: String = brain.move_id
+		"slam":
 			var center: Vector3 = slam_center()
-			var r: float = brain.move_num(id, "radius", 2.0)
+			var r: float = brain.move_num("slam", "radius", 2.0)
 			Sfx.play_at(self, "blunt_weak", center + Vector3.UP * 0.3, 4.0, 0.03, 10.0)
 			_shake_player(0.45)
 			_slam_fx(center, r)
-			var player_hp: float = _player.health.hp if _player != null else 0.0
-			hit_heartbeats(brain.move_num(id, "damage", 40.0), id,
+			hit_heartbeats(brain.move_num("slam", "damage", 40.0), "slam",
 				func(p: Vector3) -> bool: return Vector2(p.x - center.x, p.z - center.z).length() <= r)
-			if id == "double_slam_2" and _player != null:
-				var unhurt: bool = _player.health.hp >= player_hp
-				note_second_slam(unhurt, _player.global_position.distance_to(global_position) <= WITNESS_RANGE)
-		"grab":
-			_grab()
 		"spray":
 			_spray()
 		"charge":
@@ -143,7 +123,6 @@ func _on_strike_tick(_delta: float) -> Vector3:
 
 ## 衝撞撞到牆（水平法線的碰撞）→ 跪地。
 func _after_move() -> void:
-	_after_move_phase2()
 	if brain.state != EnemyBrain.State.STRIKE or brain.move_id != "charge" or _hit_wall:
 		return
 	for i: int in get_slide_collision_count():
@@ -158,81 +137,10 @@ func _after_move() -> void:
 
 
 func slam_center() -> Vector3:
-	return global_position + forward() * brain.move_num(brain.move_id if brain.move_id.contains("slam") else "slam", "reach", 1.9)
+	return global_position + forward() * brain.move_num("slam", "reach", 1.9)
 
 
-## 連續下砸第二下的結果：諾恩在近處沒被打到＝看過一次 → 看穿變已證實、席菈之後抓得到時機。
-func note_second_slam(unhurt: bool, witnessed: bool) -> void:
-	if not (unhurt and witnessed) or bool(intel_overrides.get("double_slam", false)):
-		return
-	intel_overrides["double_slam"] = true
-	brain.unreadable.erase("double_slam_2")
-	double_slam_verified.emit()
-
-
-## 抓取：前方 arc 內最近的心跳；席菈守著那個人（或她自己就是目標）時擋下。回傳被抓的對象（擋下或沒抓到＝null）。
-func _grab() -> Node3D:
-	var reach: float = brain.move_num("grab", "range", 2.2)
-	var arc: float = brain.move_num("grab", "arc_deg", 90.0)
-	var me: Vector3 = global_position
-	var fwd: Vector3 = forward()
-	var best: Node3D = null
-	var best_d: float = INF
-	for n: Node in get_tree().get_nodes_in_group("heartbeat"):
-		var hb: Node3D = n as Node3D
-		if hb == null or not PlayerController.in_strike_arc(me, fwd, hb.global_position, reach + 0.6, arc):
-			continue
-		var d: float = me.distance_squared_to(hb.global_position)
-		if d < best_d:
-			best_d = d
-			best = hb
-	intel_overrides["grab"] = true  # 抓過一次就知道了
-	Sfx.play_at(self, "claw", me + fwd + Vector3.UP, 3.0, 0.04)
-	if best == null:
-		return null
-	var guard: Node3D = _guard_for(best)
-	if guard != null:
-		hurt(guard, brain.move_num("grab", "damage", 20.0) * 0.5, "grab_blocked")
-		return null
-	hurt(best, brain.move_num("grab", "damage", 20.0), "grab")
-	var p: PlayerController = best as PlayerController
-	if p != null:
-		_grabbed = p
-		p.begin_grab(self, brain.move_num("grab", "hold", 2.0), int(brain.move_num("grab", "struggle", 5.0)), brain.move_num("grab", "squeeze_damage", 12.0))
-		# 抓著人的時候站著不動
-		brain.recover_sec = maxf(brain.recover_sec, brain.move_num("grab", "hold", 2.0))
-	return best
-
-
-## 守住：席菈開著守住、而且站在被抓的人旁邊（2.5 公尺內）就替他擋。
-func _guard_for(victim: Node3D) -> Node3D:
-	for n: Node in get_tree().get_nodes_in_group("heartbeat"):
-		var s: Sheila = n as Sheila
-		if s == null or s == victim or not s.brain.guard_active or s.brain.mode == CompanionBrain.Mode.DOWN:
-			continue
-		if s.global_position.distance_to(victim.global_position) <= 2.5:
-			return s
-	return null
-
-
-func _game_state() -> GameState:
-	if state != null:
-		return state
-	return Game.session.state if Game.session != null else null
-
-
-## 第二階段：生命 ≤ frame_throw_hp 或車隊過半 → 鐵架拋擲（只一次）。
-func _check_frame_throw() -> void:
-	if phase != 2 or frame_thrown or health.is_dead():
-		return
-	var low: bool = health.hp <= CombatTuning.num("undertaker.frame_throw_hp", 300.0)
-	var c: Caravan = _caravan()
-	var half: bool = c != null and c.runner.progress() >= CombatTuning.num("undertaker.frame_throw_caravan_progress", 0.5)
-	if low or half:
-		trigger_frame_throw()
-
-
-## 鐵架拋擲的前兆：站定、把鐵架舉過頭（ConvoyEncounter 呼叫）。
+## 站定、把東西舉過頭（追擊者舉燈柱，D-205）：seconds 秒內不動、上身越來越後仰。
 func begin_throw_windup(seconds: float) -> void:
 	throw_windup = seconds
 	_throw_total = maxf(seconds, 0.01)
@@ -308,37 +216,6 @@ func _held_velocity(delta: float) -> Vector3:
 	return d.normalized() * script_speed if moving else Vector3.ZERO
 
 
-func trigger_frame_throw() -> void:
-	if frame_thrown:
-		return
-	frame_thrown = true
-	var st: GameState = _game_state()
-	if st != null:
-		st.set_flag("slice.frame_thrown", true)
-	frame_throw_started.emit()
-
-
-func _caravan() -> Caravan:
-	for n: Node in get_tree().get_nodes_in_group("caravan"):
-		var c: Caravan = n as Caravan
-		if c != null and not c.runner.is_arrived:
-			return c
-	return null
-
-
-## 第二階段優先追車隊的心跳（前兆、出招中不換目標）。
-func _nearest_heartbeat() -> Node3D:
-	if phase == 2 and not (brain.state in [EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE] and target != null and is_instance_valid(target)):
-		var c: Caravan = _caravan()
-		if c != null:
-			return c
-	return super._nearest_heartbeat()
-
-
-func _after_move_phase2() -> void:
-	_check_frame_throw()
-
-
 ## 命中點（D-217）：牠比人大一圈——胸口的高度、大衣的外緣
 func _hit_radius() -> float:
 	return 0.6
@@ -348,16 +225,7 @@ func _hit_height() -> float:
 	return 1.45
 
 
-func _on_damaged(amount: float, info: Dictionary) -> void:
-	super._on_damaged(amount, info)
-	# 抓著諾恩時被打中弱點（席菈「打弱點」）就鬆手
-	if str(info.get("weak", "")) != "" and _grabbed != null and is_instance_valid(_grabbed) and _grabbed.grabbed_by == self:
-		_grabbed.release_grab(true)
-	if phase == 1 and not struggle_mode and health.hp <= CombatTuning.num("undertaker.phase2_hp", 450.0) and not health.is_dead():
-		enter_phase_two()
-
-
-## 掙脫戰（D-169）：招式輪替換成 pattern_struggle（沒有衝撞）、失衡上限 struggle_stagger_max；之後不會進第二階段。
+## 追擊的那一隻（D-169、D-205）：招式輪替換成 pattern_struggle（沒有衝撞）、失衡上限 struggle_stagger_max。
 func begin_struggle() -> void:
 	struggle_mode = true
 	_apply_struggle_brain()
@@ -371,8 +239,8 @@ func _apply_struggle_brain() -> void:
 
 
 # ---- 南街守衛（新版前十分鐘，D-207）----
-## 單階段：招式輪替 pattern_guardian（沒有衝撞、多一招「噴毒」）、生命 guardian_hp、不會進第二階段。
-## 胸口多三根排氣管（只有守衛有；舊版的送葬者外觀不變）。
+## 招式輪替 pattern_guardian（沒有衝撞、多一招「噴毒」）、生命 guardian_hp。
+## 胸口多三根排氣管（只有守衛有）。
 const SPRAY_GREEN: Color = Color(0.5, 1.0, 0.38)
 const PIPE_IDLE_ENERGY: float = 0.3
 const PIPE_HOT_ENERGY: float = 7.0
@@ -560,41 +428,9 @@ func _update_pipes() -> void:
 	_pipe_light.light_energy = PIPE_LIGHT_ENERGY * _pipe_glow
 
 
-## 第二階段：扯斷一條鐵鏈；看穿裡「下砸」變成未證實，下砸前兆縮短；換招式輪替、出現攻略沒寫的招。
-func enter_phase_two() -> void:
-	phase = 2
-	# 扯斷一條鐵鏈（D-200）：右手那條不見了
-	var torn: Node3D = _body.get_node_or_null("Torso/ChainR") as Node3D if _body != null else null
-	if torn != null:
-		torn.visible = false
-	var torn_trail: Node3D = _body.get_node_or_null("ChainTrailR") as Node3D if _body != null else null
-	if torn_trail != null:
-		torn_trail.visible = false
-	intel_overrides["slam"] = false
-	intel_overrides["double_slam"] = false
-	brain.unreadable["double_slam_2"] = true
-	_apply_phase_two_brain()
-	phase_changed.emit(phase)
-	_check_frame_throw()
-
-
-## 第二階段的招式數值與輪替（難度改了、brain 重新 configure 後也要再套一次）。
-func _apply_phase_two_brain() -> void:
-	var slam: Dictionary = (brain.moves.get("slam", {}) as Dictionary).duplicate()
-	slam["telegraph"] = float(slam.get("telegraph_phase2", 0.7))
-	brain.moves["slam"] = slam
-	var pat: Variant = CombatTuning.value("undertaker.pattern_phase2", [])
-	if pat is Array:
-		brain.set_pattern(PackedStringArray(pat as Array))
-
-
 func _on_settings_changed() -> void:
-	var unread: Dictionary = brain.unreadable.duplicate()
 	super._on_settings_changed()
-	brain.unreadable = unread
-	if phase == 2:
-		_apply_phase_two_brain()
-	elif guardian_mode:
+	if guardian_mode:
 		_apply_guardian_brain()
 	elif struggle_mode:
 		_apply_struggle_brain()
@@ -888,7 +724,7 @@ func _update_look() -> void:
 	var p: float = brain.telegraph_progress()
 	for id: String in _decals:
 		var mi: MeshInstance3D = _decals[id] as MeshInstance3D
-		var on: bool = brain.state == EnemyBrain.State.TELEGRAPH and _decal_for(brain.move_id) == id
+		var on: bool = brain.state == EnemyBrain.State.TELEGRAPH and brain.move_id == id
 		mi.visible = on
 		if on:
 			(mi.material_override as ShaderMaterial).set_shader_parameter("progress", p)
@@ -896,26 +732,24 @@ func _update_look() -> void:
 	var lean := Vector3.ZERO
 	if brain.state == EnemyBrain.State.TELEGRAPH:
 		lean = telegraph_lean(brain.move_id, p)
-	elif brain.move_id.contains("slam") and brain.state in [EnemyBrain.State.STRIKE, EnemyBrain.State.RECOVER]:
+	elif brain.move_id == "slam" and brain.state in [EnemyBrain.State.STRIKE, EnemyBrain.State.RECOVER]:
 		lean = slam_follow_lean(brain.state == EnemyBrain.State.RECOVER, brain.time_in_state, brain.recover_sec)
 	if throw_windup > 0.0:
-		# 舉起鐵架：上身後仰，越接近擲出越後仰
+		# 舉過頭：上身後仰，越接近擲出越後仰
 		var k: float = 1.0 - throw_windup / _throw_total
 		lean = Vector3(-FALL_FORWARD * (10.0 + 25.0 * k), 0, 0)
 	(_body.get_node("Torso") as Node3D).rotation_degrees = lean
 	_update_pipes()
 
 
-## 前兆姿勢（上身的旋轉角度）：橫掃身體向左擰、下砸上身後仰、抓取與衝撞往前探。
+## 前兆姿勢（上身的旋轉角度）：橫掃身體向左擰、下砸上身後仰、衝撞往前探。
 ## 繞 X 軸負角度是往前（FALL_FORWARD）；之前正負號寫反，下砸變成前傾、衝撞變成後仰。
 static func telegraph_lean(move_id: String, p: float) -> Vector3:
 	match move_id:
 		"sweep":
 			return Vector3(0, 35.0 * p, 0)
-		"slam", "double_slam", "double_slam_2":
+		"slam":
 			return Vector3(-FALL_FORWARD * 18.0 * p, 0, 0)
-		"grab":
-			return Vector3(FALL_FORWARD * 30.0 * p, 0, 0)
 		"charge":
 			return Vector3(FALL_FORWARD * 22.0 * p, 0, 0)
 		"spray":
@@ -1024,7 +858,7 @@ func _build_body() -> void:
 	hood_light.light_volumetric_fog_energy = HOOD_LIGHT_FOG
 	hood_light.position = Vector3(0, 1.05, -0.78)
 	torso.add_child(hood_light)
-	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）；擲出去之後整組藏起來（ThrownFrame 接手）
+	# 背上的鐵架：兩根立柱＋三根橫桿＋關節（弱點）
 	var frame := Node3D.new()
 	frame.name = "Frame"
 	torso.add_child(frame)
@@ -1054,7 +888,7 @@ func _build_body() -> void:
 
 
 ## 手裡拖著的兩條鐵鏈（D-200）：從兩手垂到地上、再往身後拖一段（之前只有腳步聲裡的鐵鏈擦地，身上看不到）。
-## 名字 ChainL／ChainR（Torso 底下，跟著手）＋ChainTrailL／R（_body 底下，躺在地上）；第二階段扯斷右邊那條（enter_phase_two 藏起來）。
+## 名字 ChainL／ChainR（Torso 底下，跟著手）＋ChainTrailL／R（_body 底下，躺在地上）。
 func _build_chains(torso: Node3D, iron: Material) -> void:
 	for side: float in [-1.0, 1.0]:
 		var root := Node3D.new()
@@ -1078,17 +912,17 @@ func _build_chains(torso: Node3D, iron: Material) -> void:
 		_body.add_child(trail)
 
 
-## 地上拖的那兩段看不看得到（D-200）：吊著（第 3 章）、倒下的時候藏起來；第二階段扯斷的右邊那條不會再出現。
+## 地上拖的那兩段看不看得到（D-200）：倒下的時候藏起來。
 func set_chain_trails(on: bool) -> void:
 	if _body == null:
 		return
 	for side: String in ["L", "R"]:
 		var trail: Node3D = _body.get_node_or_null("ChainTrail" + side) as Node3D
 		if trail != null:
-			trail.visible = on and not (side == "R" and phase >= 2)
+			trail.visible = on
 
 
-## 鐵架材質（D-101）：背上的與擲出去的（ThrownFrame）共用
+## 鐵架材質（D-101）
 static func frame_iron_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = load(FRAME_IRON_SHADER) as Shader
@@ -1123,13 +957,6 @@ func _set_shadow_strength(v: float) -> void:
 		(mi.material_override as ShaderMaterial).set_shader_parameter("strength", v)
 
 
-## 招式 → 地面霜紋（連續下砸共用下砸的圓、抓取用小扇形）
-static func _decal_for(move: String) -> String:
-	if move.contains("slam"):
-		return "slam"
-	return move
-
-
 func _build_decals() -> void:
 	var sweep_r: float = brain.move_num("sweep", "range", 3.2)
 	var sweep_arc: float = brain.move_num("sweep", "arc_deg", 150.0)
@@ -1145,9 +972,6 @@ func _build_decals() -> void:
 	var half_w: float = brain.move_num("charge", "hit_radius", 1.1)
 	lane.size = Vector3(half_w * 2.0, 0.01, length)
 	_decals["charge"] = _decal(lane, Vector3(0, 0.03, -length * 0.5), SHAPE_LANE, Vector2(half_w, length * 0.5))
-	var grab_r: float = brain.move_num("grab", "range", 2.2)
-	var grab_arc: float = brain.move_num("grab", "arc_deg", 90.0)
-	_decals["grab"] = _decal(_fan_mesh(grab_r, grab_arc), Vector3(0, 0.03, 0), SHAPE_FAN, Vector2(grab_r, 0.0), grab_arc)
 
 
 ## 前兆範圍的材質（D-088）：telegraph.gdshader，亮邊＋淡底＋隨前兆進度從敵人那一端往外填滿。

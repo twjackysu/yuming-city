@@ -71,7 +71,7 @@ func test_two_keys_and_unbound_fallback() -> void:
 	line.free()
 
 
-func test_combat_hud_commands_and_struggle() -> void:
+func test_combat_hud_commands() -> void:
 	var hud := CombatHud.new()
 	tree.root.add_child(hud)
 	App.set_device(InputGlyphs.Device.KBM)
@@ -91,16 +91,6 @@ func test_combat_hud_commands_and_struggle() -> void:
 	assert_false(hud.command_line(0).uses_glyph(), "切回鍵鼠變回文字")
 	assert_true(hud.command_label(0).begins_with("[Q]"))
 	hud.free()
-
-
-func test_struggle_line_uses_glyph() -> void:
-	var line: GlyphLine = _line()
-	var fmt: String = tr("HUD_STRUGGLE").format({"n": 3})
-	assert_true(fmt.contains("{key}"), "只代入次數，{key} 留給 GlyphLine")
-	line.set_line(fmt, "dodge", InputGlyphs.Device.PAD)
-	assert_eq(line.plain_text(), "連按 [B] 掙脫（3）")
-	assert_eq(line.parts(), PackedStringArray(["連按", "掙脫（3）"]))
-	line.free()
 
 
 func test_dialogue_hint_follows_device() -> void:

@@ -126,8 +126,6 @@ WEAK_FRAME_JOINT,Frame joint,鐵架關節
 MOVE_SWEEP,Frame sweep,鐵架橫掃
 MOVE_SLAM,Frame slam,鐵架下砸
 MOVE_CHARGE,Charge (follows heartbeats),衝撞（追著心跳）
-MOVE_DOUBLE_SLAM,Double slam,連續下砸
-MOVE_GRAB,Grab,抓取
 SHEILA_REVIVE_HINT,{key} Pull Sheila up,{key} 拉起席菈
 SHEILA_REVIVED,Still breathing. Thanks.,還有氣。謝了。
 HUD_CMD_WEAKPOINT,Weak point,打弱點
@@ -135,4 +133,3 @@ HUD_CMD_EVADE,Evade,閃開
 HUD_CMD_GUARD,Hold,守住
 HUD_SHEILA_DOWN,Sheila is down — {0}s to pull her up,席菈倒下——{0} 秒內拉起
 HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒下——戰鬥結束後會起來
-HUD_STRUGGLE,Mash {key} to break free ({n}),連按 {key} 掙脫（{n}）

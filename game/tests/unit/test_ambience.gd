@@ -160,7 +160,6 @@ func test_enemy_footsteps() -> void:
 	a.position = Vector3(-2.0, 0.05, 0)
 	root.add_child(a)
 	var u := Undertaker.new()
-	u.state = GameState.new()
 	u.position = Vector3(2.0, 0.05, 0)
 	root.add_child(u)
 	for i: int in 90:
@@ -239,7 +238,6 @@ func test_enemy_kneel_thud() -> void:
 	root.add_child(a)
 	a.set_physics_process(false)
 	var u := Undertaker.new()
-	u.state = GameState.new()
 	u.position = Vector3(3.0, 0.05, 0)
 	root.add_child(u)
 	u.set_physics_process(false)
