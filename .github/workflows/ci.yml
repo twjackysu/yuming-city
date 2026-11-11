@@ -153,8 +153,13 @@ jobs:
 
       - name: 截圖（軟體 Vulkan）
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
+          # 這個 job 一開始就裝套件，連續三次（第 81、82 輪）遇到 runner 解析不到 azure.archive.ubuntu.com、一張圖都沒拍：重試
+          for i in 1 2 3 4; do
+            sudo apt-get update -qq && sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null && break
+            echo "apt 第 $i 次失敗，30 秒後重試"
+            sleep 30
+          done
+          command -v xvfb-run > /dev/null
           mkdir -p build/screens
           shot() {
             local name="$1" frames="$2"
