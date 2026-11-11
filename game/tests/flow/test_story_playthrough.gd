@@ -330,7 +330,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	level.queue_free()
 	await tree.process_frame
 
-	# --- 地下市場：高台 → 坡道 → 街上（席菈說規矩）→ 藥店門口 → 待續 → 回標題
+	# --- 地下市場：高台 → 坡道 → 街上（席菈說規矩）→ 藥店門口 → 進店、測試板 → 待續 → 回標題
 	var market: UndergroundMarket = (load(MARKET_PATH) as PackedScene).instantiate() as UndergroundMarket
 	tree.root.add_child(market)
 	await tree.physics_frame
@@ -359,10 +359,32 @@ func test_new_game_to_lift_in_one_run() -> void:
 	await _frames(6)
 	assert_eq(s.quests.stage_of("rb_market"), "test_board", "到藥店門口")
 	assert_eq(s.state.checkpoint, "rb2_shop")
+	assert_false(market.has_node("ChapterCard"), "門口不是結尾：還要進店")
+	# 進店 → 彌夏 → 按住互動 2 秒把手放上測試板 → 中毒回血、指針往「回復」→ 她願意談 → 待續
+	var hp_shop: float = p2.health.hp
+	_stand(market, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(4)
+	assert_true(_talking(), "彌夏開口")
+	await _run_dialogue(market)
+	await _frames(4)
+	assert_true(absf(p2.health.hp - hp_shop) < 3.0, "身上有傷：不扎針（%.1f → %.1f）" % [hp_shop, p2.health.hp])
+	Input.action_press("interact")
+	await _frames(int(UndergroundMarketStory.BOARD_HOLD_SEC * 60.0) + 6)
+	Input.action_release("interact")
+	assert_true(bool(s.state.get_flag("rb2.board_done", false)), "手放滿 2 秒")
+	assert_true(p2.status_effects.has("poison"), "測試板下的毒")
+	var hp_board: float = p2.health.hp
+	await _frames(int(UndergroundMarketStory.BOARD_READ_SEC * 60.0) + 6)
+	assert_true(p2.health.hp > hp_board + 1.5, "中毒 → 回血（%.1f → %.1f）" % [hp_board, p2.health.hp])
+	assert_true(market.board_lamp_on and market.board_needle_deg() > 30.0, "指針在「回復」、綠燈亮")
+	assert_true(_talking(), "彌夏願意談")
+	await _run_dialogue(market)
+	await _frames(4)
+	assert_true(s.quests.is_done("rb_market"), "地下市場這一段做完")
 	var end_card: ChapterCard = market.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(end_card, "待續的卡")
 	if end_card != null:
-		assert_eq(end_card.title_text(), tr("RB2_END_TITLE"))
+		assert_eq(end_card.title_text(), tr("RB2_END2_TITLE"))
 		end_card.finish()
 	assert_eq(ended[0], 1, "卡播完 → 回標題")
 	# 一路走完：狀態不會留一堆、藥還剩一瓶、工錢只有一份

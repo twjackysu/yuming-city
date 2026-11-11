@@ -257,16 +257,82 @@ func test_arrive_street_shop_then_to_be_continued() -> void:
 	assert_false(bool(_game().call("is_in_dialogue")), "只講一次")
 	assert_false(level.has_node("ChapterCard"))
 	assert_false(level.has_node("RbEndMusic"), "配樂等卡出來才進")
-	# 走到街底的藥店門口：檢查點、「待續」
+	# 走到街底的藥店門口：檢查點；門開著，還沒進去就不會有事
 	_stand(level, UndergroundMarket.SHOP_DOOR + Vector3(0.4, 0.0, -1.4))
 	await _frames(6)
 	assert_eq(story.stage(), "test_board")
 	assert_eq(s.state.checkpoint, "rb2_shop")
 	assert_eq(s.objective_key(), "Q_RB2_OBJ_TEST_BOARD")
+	assert_false(story.ending, "門口不再是結尾")
+	assert_false(bool(_game().call("is_in_dialogue")))
+	assert_false(story.board_ready())
+	# 走進店裡到櫃台前：彌夏開口；生命是滿的，她多一句「先扎一針」
+	var hp0: float = player.health.hp
+	assert_true(hp0 >= player.health.max_hp - 0.5, "這個測試從滿的生命開始")
+	_stand(level, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(4)
+	assert_true(bool(_game().call("is_in_dialogue")), "彌夏開口")
+	assert_eq(bool(s.state.get_flag("rb2.full_health", false)), true)
+	await _run_dialogue(level)
+	assert_true(bool(s.state.get_flag("rb2.misha_met", false)))
+	await _frames(4)
+	assert_true(absf(player.health.hp - (hp0 - UndergroundMarketStory.NEEDLE_PRICK)) < 0.01, "扎一針：直接傷害 3 點（%.1f → %.1f）" % [hp0, player.health.hp])
+	assert_false(player.status_effects.has("poison"), "還沒碰板子")
+	assert_true(story.board_ready(), "可以把手放上去了")
+	var hint: Dictionary = story.interact_hint()
+	assert_eq(str(hint.get("action", "")), "interact")
+	assert_true(absf(float(hint.get("progress", -1.0))) < 0.001, "按住的進度條從 0 開始")
+	# 按一下就放開：不算；指針回到中間
+	Input.action_press("interact")
+	await _frames(40)
+	assert_true(story.board_hold > 0.5 and story.board_hold < 1.0, "按住在累計（%.2f）" % story.board_hold)
+	assert_true(level.board_target_deg < -5.0, "按著的時候指針往「受傷」那邊偏（%.1f）" % level.board_target_deg)
+	assert_true(float(story.interact_hint().get("progress", 0.0)) > 0.2, "進度條在長")
+	Input.action_release("interact")
+	await _frames(3)
+	assert_eq(story.board_hold, 0.0, "放開就歸零")
+	assert_false(player.status_effects.has("poison"))
+	assert_false(bool(s.state.get_flag("rb2.board_done", false)))
+	# 走開再按：也不算
+	_stand(level, UndergroundMarket.BOARD_POS + Vector3(0.0, 0.0, -2.2))
+	Input.action_press("interact")
+	await _frames(30)
+	assert_eq(story.board_hold, 0.0, "離太遠按沒有用")
+	Input.action_release("interact")
+	# 按滿 2 秒：板子下一個弱的中毒（1／秒、6 秒），反轉 → 回血；指針甩到「回復」、綠燈亮
+	_stand(level, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	Input.action_press("interact")
+	await _frames(int(UndergroundMarketStory.BOARD_HOLD_SEC * 60.0) + 6)
+	Input.action_release("interact")
+	assert_true(bool(s.state.get_flag("rb2.board_done", false)), "按滿了")
+	assert_true(player.status_effects.has("poison"), "板子下的毒")
+	var effects: Array = player.status_effects.to_array()
+	assert_eq(effects.size(), 1, "只有一個中毒")
+	assert_eq(str((effects[0] as Dictionary).get("source", "")), UndergroundMarketStory.BOARD_SOURCE)
+	assert_true(absf(float((effects[0] as Dictionary).get("rate", 0.0)) - 1.0) < 0.01, "很弱：每秒 1 點")
+	assert_eq(player.status_effects.apply_source(UndergroundMarketStory.BOARD_SOURCE), "refresh", "同一個來源再來一次只是更新，不疊加")
+	assert_eq(player.status_effects.to_array().size(), 1)
+	assert_true(story.interact_hint().is_empty(), "測過了，提示收掉")
+	assert_true(level.board_lamp_on, "綠燈亮")
+	assert_eq(level.board_target_deg, UndergroundMarket.BOARD_HEAL_DEG, "指針往「回復」")
+	await _frames(60)
+	assert_true(level.board_needle_deg() > 30.0, "指針真的擺過去了（%.1f）" % level.board_needle_deg())
+	assert_true(level.board_lamp_light.light_energy > 0.5, "燈真的亮了")
+	assert_true(player.health.hp > hp0 - UndergroundMarketStory.NEEDLE_PRICK + 0.5, "生命往上（%.1f）" % player.health.hp)
+	assert_true(player.health.hp <= player.health.max_hp, "不會超過上限")
+	assert_false(level.has_node("ChapterCard"), "她還沒講完")
+	# 讀數出來幾秒之後她才開口；談完 → 這一段做完 →「待續／黑市示範場」
+	await _frames(int(UndergroundMarketStory.BOARD_READ_SEC * 60.0))
+	assert_true(bool(_game().call("is_in_dialogue")), "彌夏願意談了")
+	await _run_dialogue(level)
+	assert_true(bool(s.state.get_flag("rb2.first_shop_done", false)))
+	assert_true(s.quests.is_done("rb_market"))
+	assert_eq(bool(s.state.get_flag("rb2.market_a_done", false)), true)
+	await _frames(4)
 	assert_true(story.ending)
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(card, "待續的卡")
-	assert_eq(card.title_text(), tr("RB2_END_TITLE"))
+	assert_eq(card.title_text(), tr("RB2_END2_TITLE"))
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
 	assert_eq(story.play_end_card(), card, "不會疊第二張")
@@ -322,7 +388,7 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	assert_eq(again.quests.stage_of("rb_market"), "find_shop")
 	level2.queue_free()
 	await tree.process_frame
-	# 到了藥店門口的存檔：回到門口前幾步，再走過去才是「待續」（不會一讀檔就黑掉）
+	# 到了藥店門口的存檔：回到門口前幾步；走到門口、走進店裡都不會黑掉，彌夏的話從頭講（講話在檢查點之後）
 	var s3 := _session_at("shop")
 	assert_eq(s3.state.checkpoint, "rb2_shop")
 	var level3: UndergroundMarket = await _load()
@@ -334,8 +400,42 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	level3.story.end_done = func() -> void: pass
 	_stand(level3, UndergroundMarket.SHOP_DOOR + Vector3(0.4, 0.0, -1.4))
 	await _frames(6)
-	assert_true(level3.has_node("ChapterCard"), "走到門口才是待續")
+	assert_false(level3.has_node("ChapterCard"), "門口不是結尾了")
+	# 生命不是滿的時候進店：不扎針，台詞也沒有那一句
+	p3.health.hp = p3.health.max_hp - 20.0
+	_stand(level3, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(4)
+	assert_true(bool(_game().call("is_in_dialogue")))
+	assert_eq(bool(s3.state.get_flag("rb2.full_health", true)), false)
+	await _run_dialogue(level3)
+	await _frames(4)
+	assert_true(absf(p3.health.hp - (p3.health.max_hp - 20.0)) < 0.01, "有傷就不扎針（%.1f）" % p3.health.hp)
+	assert_true(level3.story.board_ready())
 	level3.queue_free()
+	await tree.process_frame
+	# 整段做完會自動存檔：重開遊戲讀檔，任務是做完的、回到藥店前；走進店裡到櫃台前才再看到「待續」，彌夏不會從頭再講
+	var s4 := _session_at("shop")
+	s4.set_flag("rb2.misha_met", true)
+	s4.set_flag("rb2.pricked", true)
+	s4.set_flag("rb2.board_done", true)
+	s4.set_flag("rb2.first_shop_done", true)
+	assert_true(s4.quests.is_done("rb_market"))
+	var done_again := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", done_again)
+	assert_eq(done_again.load_story_slot(), SaveCodec.Status.OK)
+	assert_true(done_again.quests.is_done("rb_market"), "做完的那一刻存過檔")
+	assert_eq(done_again.state.checkpoint, "rb2_shop")
+	assert_eq(str(_game().call("level_for_checkpoint", done_again.state.checkpoint)), "market")
+	var level4: UndergroundMarket = await _load()
+	level4.story.end_done = func() -> void: pass
+	await _frames(6)
+	assert_false(level4.has_node("ChapterCard"), "讀檔回來不會馬上黑掉")
+	assert_true(level4.board_lamp_on, "板子上的燈還亮著")
+	_stand(level4, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(6)
+	assert_false(bool(_game().call("is_in_dialogue")), "不會從頭再講")
+	assert_true(level4.has_node("ChapterCard"), "走到櫃台前才是待續")
+	level4.queue_free()
 	await tree.process_frame
 
 
@@ -369,3 +469,52 @@ func test_old_save_that_finished_the_first_ten_minutes_continues_in_the_market()
 			for f: String in DirAccess.get_files_at(d):
 				DirAccess.remove_absolute(d.path_join(f))
 			DirAccess.remove_absolute(d)
+
+
+## 店內（D-231）：門洞走得過去、櫃台與彌夏在裡面、測試板是會動的節點、彩色的燈沒有變多。
+func test_shop_interior_has_counter_misha_and_a_working_board() -> void:
+	var s := _session_at("shop")
+	assert_eq(s.state.checkpoint, "rb2_shop")
+	var level: UndergroundMarket = await _load()
+	# 這個測試只看場景：劇情停住（不然走到櫃台前彌夏會開口，對話會留到下一個測試）
+	level.story.set_physics_process(false)
+	assert_not_null(level.misha, "彌夏")
+	assert_eq(level.misha.get_parent(), level)
+	assert_true(level.misha.global_position.z > UndergroundMarket.COUNTER_Z, "她在櫃台後面")
+	assert_true(level.shop_bottle_count >= 60, "藥架上的瓶子（%d）" % level.shop_bottle_count)
+	var marker: Node3D = level.get_node_or_null("MishaTestBoard") as Node3D
+	assert_not_null(marker, "任務標記指到測試板")
+	assert_not_null(level.get_node_or_null("TestBoard/Dial/Needle"), "指針")
+	assert_not_null(level.get_node_or_null("TestBoard/Dial/Lamp"), "綠燈")
+	assert_eq(level.board_lamp_light.light_energy, 0.0, "一開始燈是暗的")
+	assert_true(absf(level.board_needle_deg()) < 0.01, "指針在中間")
+	for light_name: String in ["ShopCounterLamp", "ShopShelfGlow", "ShopBenchGlow"]:
+		var l: OmniLight3D = level.get_node_or_null(light_name) as OmniLight3D
+		assert_not_null(l, light_name)
+		if l != null:
+			assert_false(l.shadow_enabled, "店裡的燈不投影（投影的大燈上限照舊）")
+	# 從門外直直走進去：門洞不擋人（真的用物理走，不是瞬移）
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	_stand(level, UndergroundMarket.SHOP_DOOR + Vector3(0.0, 0.0, -0.8))
+	for i: int in 240:
+		if player.global_position.z > UndergroundMarket.SHOP_INNER_Z + 1.0:
+			break
+		player.velocity = Vector3(0.0, player.velocity.y, 3.0)
+		player.move_and_slide()
+		await tree.physics_frame
+	assert_true(player.global_position.z > UndergroundMarket.SHOP_INNER_Z + 1.0, "走得進店裡（停在 %s）" % player.global_position)
+	assert_true(absf(player.global_position.y) < 0.2, "地板是平的（y＝%.2f）" % player.global_position.y)
+	# 門的兩邊還是牆
+	_stand(level, UndergroundMarket.SHOP_DOOR + Vector3(2.4, 0.0, -0.8))
+	for i: int in 90:
+		player.velocity = Vector3(0.0, player.velocity.y, 3.0)
+		player.move_and_slide()
+		await tree.physics_frame
+	assert_true(player.global_position.z < UndergroundMarket.SHOP_INNER_Z, "門旁邊的牆擋得住（%s）" % player.global_position)
+	# 店的最裡面（洞的岩盤以外）也有地板
+	_stand(level, Vector3(-3.6, 0.0, UndergroundMarket.SHOP_ROOM_S - 0.6))
+	await _frames(30)
+	assert_true(absf(player.global_position.y) < 0.2, "最裡面不會掉下去（y＝%.2f）" % player.global_position.y)
+	level.queue_free()
+	await tree.process_frame
+

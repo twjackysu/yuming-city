@@ -195,6 +195,7 @@ jobs:
           shot 60-rb2-arrive 30 --level=market --rb-at=arrive --locale=zh_TW
           shot 61-rb2-street 30 --level=market --rb-at=street --locale=zh_TW
           shot 62-rb2-shop 30 --level=market --rb-at=shop --locale=zh_TW
+          shot 63-rb2-board 30 --level=market --rb-at=board --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

@@ -20,7 +20,7 @@
       "id": "test_board",
       "objective": "Q_RB2_OBJ_TEST_BOARD",
       "checkpoint": "rb2_shop",
-      "marker": "node:MishaShopDoor",
+      "marker": "node:MishaTestBoard",
       "done_when": {"flag": "rb2.first_shop_done"}
     }
   ],

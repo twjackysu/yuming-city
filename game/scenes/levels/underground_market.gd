@@ -26,6 +26,28 @@ const LIFT_POS: Vector3 = Vector3(0.0, TERRACE_Y, -9.2)
 ## 藥店的門（任務標記 MishaShopDoor 在這裡）
 const SHOP_DOOR: Vector3 = Vector3(-1.7, 0.0, SHOP_Z - 0.4)
 ## 支撐的木架：第一座的位置、每座的間隔、幾座
+## 店內（D-231）：門面後面的一間房。北牆＝門面的背面；洞的地板只到 CAVE_S，後面那一段是這間房自己的
+const SHOP_INNER_Z: float = SHOP_Z + 0.5
+const SHOP_ROOM_S: float = 42.2
+const SHOP_ROOM_HALF: float = 4.6
+const SHOP_ROOM_H: float = 3.4
+## 門洞（門板往裡面開著）
+const SHOP_DOOR_W: float = 1.3
+const SHOP_DOOR_H: float = 2.25
+## 櫃台：橫在房間中間，彌夏站在後面
+const COUNTER_X: float = -0.2
+const COUNTER_Z: float = 40.1
+const COUNTER_LEN: float = 5.6
+const COUNTER_TOP: float = 1.0
+## 測試板在櫃台上靠客人的那一邊；彌夏在它後面偏西半步（站正後方會被刻度盤擋住上半身）。不放在門的正對面：人站在板子前，鏡頭在他背後，
+## 要離門框與門板遠一點（放在 x＝-1.2 的時候鏡頭整個被門板擋住）
+const BOARD_POS: Vector3 = Vector3(0.7, COUNTER_TOP, COUNTER_Z - 0.14)
+const MISHA_POS: Vector3 = Vector3(0.05, 0.0, COUNTER_Z + 0.8)
+## 測試板的指針（度；正的＝往西擺。鏡頭朝南時西邊在畫面右邊＝「回復」那一側）
+const BOARD_HURT_DEG: float = -48.0
+const BOARD_HEAL_DEG: float = 56.0
+const BOARD_NEEDLE_SPEED: float = 140.0
+const BOARD_LAMP_ENERGY: float = 0.9
 const FRAME_Z0: float = 9.0
 const FRAME_STEP: float = 8.4
 const FRAME_COUNT: int = 4
@@ -130,6 +152,18 @@ var watchers: Array[Puppet] = []
 ## 藥店門面上發綠光的玻璃一共幾平方公尺（測試用）
 var shop_glass_area: float = 0.0
 var shop_light: OmniLight3D
+## 店內（D-231）
+var misha: Puppet
+var test_board: Node3D
+var board_needle: Node3D
+var board_lamp: MeshInstance3D
+var board_lamp_light: OmniLight3D
+## 指針要擺到幾度、綠燈亮不亮（劇情設，_process 慢慢追上去）
+var board_target_deg: float = 0.0
+var board_lamp_on: bool = false
+var shop_bottle_count: int = 0
+var _board_lamp_mat: StandardMaterial3D
+var _board_deg: float = 0.0
 var _vendor_home_yaw: Array[float] = []
 var _paper: Array[Vector4] = []  # xyz＝位置、w＝顏色的編號
 var _cloths: Array[ShaderMaterial] = []
@@ -156,10 +190,12 @@ func _ready() -> void:
 	_build_stalls()
 	_build_ropes()
 	_build_shop()
+	_build_shop_interior()
 	_build_wall_lamps()
 	var market: Node3D = _batch.build(self, "Market")
 	_build_paper_lanterns()
 	_build_probes(market)
+	_build_test_board()
 	Ambience.play(self, MURMUR_SFX, MURMUR_DB)
 
 	var player: PlayerController = $Player as PlayerController
@@ -196,6 +232,7 @@ func _process(delta: float) -> void:
 	# 爐火的光微微跳動
 	if _forge_light != null:
 		_forge_light.light_energy = 2.3 + 0.35 * sin(_time * 9.0) + 0.2 * sin(_time * 23.0)
+	_animate_board(delta)
 	# 顧攤的人：諾恩走近就轉過來看他，走遠了轉回去看街
 	var player: Node3D = get_node_or_null("Player") as Node3D
 	if player == null:
@@ -208,6 +245,14 @@ func _process(delta: float) -> void:
 		if to.length() > 0.4 and to.length() < 5.5:
 			want = atan2(-to.x, -to.z)
 		v.rotation.y = lerp_angle(v.rotation.y, want, minf(delta * 3.0, 1.0))
+	# 彌夏：人進到店裡就看著他（她在櫃台後面面向門，最多轉六十度）
+	if misha != null:
+		var to_m: Vector3 = player.global_position - misha.global_position
+		to_m.y = 0.0
+		var want_m: float = 0.0
+		if to_m.length() > 0.4 and player.global_position.z > SHOP_INNER_Z - 1.0:
+			want_m = clampf(atan2(-to_m.x, -to_m.z), -1.05, 1.05)
+		misha.rotation.y = lerp_angle(misha.rotation.y, want_m, minf(delta * 3.0, 1.0))
 
 
 # ---------------------------------------------------------------- 環境
@@ -862,15 +907,26 @@ static func paper_color(index: float) -> Color:
 func _build_shop() -> void:
 	var face_z: float = SHOP_Z
 	var front: ShaderMaterial = interior.plank("shop_front", Color(0.15, 0.11, 0.08), 0.26, 3.0, {"vertical_planks": true})
-	_batch.add_box_at(Vector3(WALL_X * 2.0, 4.4, 0.5), Vector3(0.0, 2.2, face_z + 0.25), front)
+	# 門面的牆在門洞那裡斷開（D-231：可以走進去）：門的西邊、東邊、門楣以上各一塊
+	var door_w: float = SHOP_DOOR.x - SHOP_DOOR_W * 0.5
+	var door_e: float = SHOP_DOOR.x + SHOP_DOOR_W * 0.5
+	_batch.add_box_at(Vector3(door_w + WALL_X, 4.4, 0.5), Vector3((door_w - WALL_X) * 0.5, 2.2, face_z + 0.25), front)
+	_batch.add_box_at(Vector3(WALL_X - door_e, 4.4, 0.5), Vector3((door_e + WALL_X) * 0.5, 2.2, face_z + 0.25), front)
+	_batch.add_box_at(Vector3(SHOP_DOOR_W, 4.4 - SHOP_DOOR_H, 0.5), Vector3(SHOP_DOOR.x, (4.4 + SHOP_DOOR_H) * 0.5, face_z + 0.25), front)
 	_batch.add_box_at(Vector3(WALL_X * 2.0, CEILING_Y - 4.4, 1.2), Vector3(0.0, 4.4 + (CEILING_Y - 4.4) * 0.5, face_z + 0.6), _rock, false)
 	# 門面上緣一根大橫木、兩側的柱子
 	_batch.add_box_at(Vector3(WALL_X * 2.0, 0.3, 0.62), Vector3(0.0, 4.3, face_z + 0.2), _timber, false)
 	for x: float in [-WALL_X + 0.2, -0.55, 3.65, WALL_X - 0.2]:
 		_batch.add_box_at(Vector3(0.26, 4.2, 0.6), Vector3(x, 2.1, face_z + 0.2), _timber, false)
 	# 門
-	var door_pos := Vector3(SHOP_DOOR.x, 1.1, face_z - 0.02)
-	_batch.add_box_tinted(Vector3(1.15, 2.2, 0.08), door_pos, look.door(), FrostbridgeLook.door_tint(door_pos), false)
+	# 門開著：門板整個推到底、貼在店裡的牆上（兩條鐵件；不立在門邊，鏡頭才不會被它擋住），門框是三根方木
+	var leaf_at := Vector3(door_w - 0.62, 1.1, face_z + 0.5 + 0.05)
+	_batch.add_box_at(Vector3(1.16, 2.16, 0.07), leaf_at, front, false)
+	for strap_y: float in [0.45, 1.75]:
+		_batch.add_box_at(Vector3(1.0, 0.07, 0.09), Vector3(leaf_at.x, strap_y, leaf_at.z), _iron, false)
+	for jamb_x: float in [door_w - 0.05, door_e + 0.05]:
+		_batch.add_box_at(Vector3(0.1, SHOP_DOOR_H, 0.56), Vector3(jamb_x, SHOP_DOOR_H * 0.5, face_z + 0.25), _timber, false)
+	_batch.add_box_at(Vector3(SHOP_DOOR_W + 0.2, 0.1, 0.56), Vector3(SHOP_DOOR.x, SHOP_DOOR_H + 0.05, face_z + 0.25), _timber, false)
 	_batch.add_box_at(Vector3(1.7, 0.16, 0.9), Vector3(SHOP_DOOR.x, 0.08, face_z - 0.45), interior.flagstone("shop_step", Color(0.24, 0.22, 0.2), 0.6), false)
 	# 綠色格子窗（D-230：門面幾乎整片是玻璃，以前只有 4×3 格、從高台看是一個小方塊）：
 	# 主窗 4×4 格（門右邊到柱子）、東邊窄窗 2×4 格、門與西半邊上面一排氣窗 5×2 格（壺形招牌逆著它變成剪影）
@@ -926,6 +982,274 @@ func _build_shop() -> void:
 	door_marker.name = "MishaShopDoor"
 	door_marker.position = SHOP_DOOR + Vector3(0.0, 1.0, 0.0)
 	add_child(door_marker)
+
+
+# ---------------------------------------------------------------- 店內（D-231）：櫃台、藥架、彌夏、測試板
+
+## 位置雜湊（0～1）：店裡的東西都用這個決定大小與顏色，不抽 _rng（多抽一次，街上的攤子全部會變）
+static func _hash01(a: float, b: float) -> float:
+	return fposmod(sin(a * 12.9898 + b * 78.233) * 43758.5453, 1.0)
+
+
+func _build_shop_interior() -> void:
+	var n: float = SHOP_INNER_Z
+	var s: float = SHOP_ROOM_S
+	var half: float = SHOP_ROOM_HALF
+	var mid_z: float = (n + s) * 0.5
+	var depth: float = s - n
+	var floor_mat: ShaderMaterial = interior.plank("shop_floor", Color(0.2, 0.145, 0.1), 0.2, 2.4, {"wear": 0.35})
+	var wall_mat: ShaderMaterial = interior.plank("shop_wall", Color(0.165, 0.12, 0.085), 0.24, 3.0, {"vertical_planks": true})
+	var counter_mat: ShaderMaterial = interior.plank("shop_counter", Color(0.25, 0.165, 0.1), 0.18, 1.6, {"vertical_planks": true})
+	# 地板：看得到的木板不擋人；洞的岩盤只到 CAVE_S，後面補一塊一樣高的碰撞
+	_batch.add_box_at(Vector3(half * 2.0, 0.04, depth), Vector3(0.0, 0.012, mid_z), floor_mat, false)
+	var slab := BoxShape3D.new()
+	slab.size = Vector3(half * 2.0 + 1.0, 1.0, s + 1.0 - CAVE_S)
+	_batch.add_shape(Transform3D(Basis(), Vector3(0.0, -0.5, (s + 1.0 + CAVE_S) * 0.5)), slab)
+	# 東西兩面牆、南牆、天花板與三根樑
+	for side: float in [-1.0, 1.0]:
+		_batch.add_box_at(Vector3(0.3, SHOP_ROOM_H, depth), Vector3(side * (half + 0.15), SHOP_ROOM_H * 0.5, mid_z), wall_mat)
+	_batch.add_box_at(Vector3(half * 2.0 + 0.6, SHOP_ROOM_H, 0.3), Vector3(0.0, SHOP_ROOM_H * 0.5, s + 0.15), wall_mat)
+	_batch.add_box_at(Vector3(half * 2.0 + 0.6, 0.3, depth + 0.3), Vector3(0.0, SHOP_ROOM_H + 0.15, mid_z + 0.15), wall_mat)
+	var beam_zs: Array[float] = [n + 1.0, COUNTER_Z - 0.5, s - 1.0]
+	for bz: float in beam_zs:
+		_batch.add_box_at(Vector3(half * 2.0, 0.22, 0.2), Vector3(0.0, SHOP_ROOM_H - 0.11, bz), _timber, false)
+
+	# 櫃台：直板的正面＋一整塊厚木的檯面
+	_batch.add_box_at(Vector3(COUNTER_LEN, COUNTER_TOP - 0.06, 0.7), Vector3(COUNTER_X, (COUNTER_TOP - 0.06) * 0.5, COUNTER_Z), counter_mat)
+	_batch.add_box_at(Vector3(COUNTER_LEN + 0.16, 0.06, 0.86), Vector3(COUNTER_X, COUNTER_TOP - 0.03, COUNTER_Z), _timber, false)
+	_batch.add_box_at(Vector3(COUNTER_LEN + 0.04, 0.12, 0.05), Vector3(COUNTER_X, 0.06, COUNTER_Z - 0.37), _timber, false)
+
+	# 發光的藥：綠的最多、幾瓶琥珀色；深色的是空瓶或不透光的
+	var green: Material = look.glow(Color(0.24, 0.92, 0.46), 1.7)
+	var amber: Material = look.glow(Color(1.0, 0.6, 0.2), 1.3)
+	var dark_glass: Material = look.mat(Color(0.05, 0.075, 0.06), 0.3)
+	var cork: Material = look.mat(Color(0.42, 0.32, 0.2), 0.9)
+	# 南牆的藥架：三層，每層一排瓶子
+	var shelf_z: float = s - 0.16
+	for row: int in 3:
+		var y: float = 1.12 + float(row) * 0.62
+		_batch.add_box_at(Vector3(half * 2.0 - 0.5, 0.045, 0.3), Vector3(0.0, y, shelf_z), _timber, false)
+		for i: int in 29:
+			var x: float = -4.06 + float(i) * 0.29
+			var h1: float = _hash01(float(row * 31 + i), 3.7)
+			var h2: float = _hash01(float(i * 7 + row), 9.1)
+			if h1 < 0.12:
+				continue  # 空位
+			var mat: Material = green if h2 < 0.56 else (amber if h2 < 0.72 else dark_glass)
+			_bottle(Vector3(x, y + 0.022, shelf_z - 0.02 + (h1 - 0.5) * 0.08), lerpf(0.045, 0.075, h1), lerpf(0.16, 0.3, h2), mat, cork)
+	for post_x: float in [-4.32, -1.45, 1.45, 4.32]:
+		_batch.add_box_at(Vector3(0.07, 2.0, 0.3), Vector3(post_x, 1.72, shelf_z), _timber, false)
+
+	# 西牆的抽屜櫃（藥材）：四排六格，每格一顆銅鈕
+	var brass := StandardMaterial3D.new()
+	brass.albedo_color = Color(0.72, 0.54, 0.24)
+	brass.metallic = 0.9
+	brass.roughness = 0.38
+	var cab_x: float = -half + 0.27
+	var cab_z0: float = COUNTER_Z - 1.3
+	_batch.add_box_at(Vector3(0.54, 2.1, 2.7), Vector3(cab_x, 1.05, cab_z0 + 1.2), counter_mat)
+	_batch.add_box_at(Vector3(0.62, 0.07, 2.8), Vector3(cab_x, 2.13, cab_z0 + 1.2), _timber, false)
+	for row: int in 4:
+		for col: int in 6:
+			var at := Vector3(cab_x + 0.28, 0.36 + float(row) * 0.47, cab_z0 + 0.1 + float(col) * 0.44)
+			var shade: float = lerpf(0.75, 1.1, _hash01(float(row * 6 + col), 5.3))
+			_batch.add_box_at(Vector3(0.03, 0.4, 0.38), at, look.mat(Color(0.2, 0.135, 0.085) * shade, 0.75), false)
+			_batch.add_sphere(0.022, at + Vector3(0.03, 0.0, 0.0), brass)
+
+	# 東牆的工作台：蒸餾用的銅壺、三顆大燒瓶（最亮的一團綠）、一疊木箱與一個桶
+	var bench_x: float = half - 0.42
+	_batch.add_box_at(Vector3(0.78, 0.84, 2.3), Vector3(bench_x, 0.42, n + 1.75), counter_mat)
+	_batch.add_box_at(Vector3(0.86, 0.06, 2.4), Vector3(bench_x, 0.87, n + 1.75), _timber, false)
+	var copper := StandardMaterial3D.new()
+	copper.albedo_color = Color(0.74, 0.4, 0.22)
+	copper.metallic = 0.85
+	copper.roughness = 0.34
+	var still := Vector3(bench_x, 0.9 + 0.24, n + 0.95)
+	_batch.add_sphere(0.24, still, copper)
+	_batch.add_cylinder(0.05, 0.13, 0.26, still + Vector3(0.0, 0.3, 0.0), copper, false, 10)
+	_rod(still + Vector3(0.0, 0.42, 0.0), still + Vector3(-0.05, 0.3, 0.62), 0.018, copper)
+	var flask_r: Array[float] = [0.15, 0.11, 0.17]
+	for i: int in 3:
+		var r: float = flask_r[i]
+		var at := Vector3(bench_x - 0.05 + 0.1 * float(i % 2), 0.9 + r, n + 1.6 + float(i) * 0.46)
+		_batch.add_sphere(r, at, green)
+		_batch.add_cylinder(r * 0.22, r * 0.3, r * 1.1, at + Vector3(0.0, r * 1.35, 0.0), dark_glass, false, 8)
+	var crate: Material = look.door()
+	var crate_size: Array[float] = [0.62, 0.52, 0.44]
+	var crate_y: Array[float] = [0.0, 0.62, 0.0]
+	for i: int in 3:
+		var size: float = crate_size[i]
+		var base_y: float = crate_y[i]
+		var at := Vector3(half - 0.5 - (0.72 if i == 2 else 0.0), base_y + size * 0.5, s - 0.75 + (0.1 if i == 1 else 0.0))
+		_batch.add_box_tinted(Vector3(size, size, size), at, crate, FrostbridgeLook.crate_tint(at), false)
+	_barrel(Vector3(COUNTER_X + COUNTER_LEN * 0.5 + 0.55, 0.0, COUNTER_Z + 0.1))
+
+	# 櫃台上：研缽、帳本、幾瓶要賣的
+	var stone: Material = look.mat(Color(0.34, 0.33, 0.31), 0.7)
+	_batch.add_cylinder(0.1, 0.065, 0.11, Vector3(-0.9, COUNTER_TOP + 0.055, COUNTER_Z + 0.05), stone, false, 12)
+	_rod(Vector3(-0.9, COUNTER_TOP + 0.08, COUNTER_Z + 0.05), Vector3(-0.77, COUNTER_TOP + 0.24, COUNTER_Z - 0.02), 0.016, stone)
+	_batch.add_box_at(Vector3(0.34, 0.035, 0.25), Vector3(-2.35, COUNTER_TOP + 0.018, COUNTER_Z), _paper_tag, false)
+	_batch.add_box_at(Vector3(0.36, 0.012, 0.27), Vector3(-2.35, COUNTER_TOP + 0.004, COUNTER_Z), look.mat(Color(0.3, 0.1, 0.08), 0.8), false)
+	for i: int in 5:
+		var h: float = _hash01(float(i), 2.2)
+		_bottle(Vector3(1.45 + float(i) * 0.21, COUNTER_TOP, COUNTER_Z - 0.12 + h * 0.2), lerpf(0.04, 0.06, h), lerpf(0.15, 0.24, 1.0 - h), amber if i == 3 else green, cork)
+
+	# 樑上掛著曬乾的藥草（倒掛的一束一束）
+	var herbs: Array[Material] = [look.mat(Color(0.19, 0.23, 0.13), 0.95), look.mat(Color(0.27, 0.21, 0.13), 0.95), look.mat(Color(0.24, 0.2, 0.26), 0.95)]
+	for i: int in 16:
+		var bz: float = beam_zs[i % 2]
+		var x: float = -4.0 + float(i) * 0.53
+		var h: float = _hash01(float(i), 6.6)
+		if absf(x - BOARD_POS.x - 0.9) < 0.45 and i % 2 == 1:
+			continue  # 吊燈的位置
+		var bundle: float = lerpf(0.28, 0.46, h)
+		var top := Vector3(x, SHOP_ROOM_H - 0.22, bz + (h - 0.5) * 0.1)
+		_rod(top, top - Vector3(0.0, 0.14, 0.0), 0.006, _rope, 4)
+		_batch.add_cylinder(0.016, lerpf(0.045, 0.075, h), bundle, top - Vector3(0.0, 0.14 + bundle * 0.5, 0.0), herbs[i % herbs.size()], false, 7)
+
+	# 光：櫃台上方一盞暖色吊燈（照亮測試板與彌夏的臉）；藥架的綠光從她背後打過來
+	var lamp_at := Vector3(BOARD_POS.x + 0.9, 2.3, COUNTER_Z - 0.5)
+	_rod(Vector3(lamp_at.x, SHOP_ROOM_H - 0.22, lamp_at.z), lamp_at + Vector3(0.0, 0.14, 0.0), 0.01, _iron, 4)
+	# 燈本身不要太亮（5.0 的時候在畫面上是一塊純白的方塊）
+	_box_lantern(lamp_at, 0.17, LAMP_DEEP, 2.0)
+	_light("ShopCounterLamp", lamp_at - Vector3(0.0, 0.25, 0.1), LAMP, 2.6, 5.0, false, 0.5)
+	_light("ShopShelfGlow", Vector3(0.0, 1.9, s - 0.75), SHOP_GREEN, 1.0, 3.8, false, 0.4)
+	_light("ShopBenchGlow", Vector3(bench_x - 0.5, 1.3, n + 2.0), SHOP_GREEN, 0.7, 2.6, false, 0.3)
+	# 西半邊：抽屜櫃頂上一盞小燈（不然站在櫃台前，畫面右邊三分之一是全黑的）
+	var cab_lamp := Vector3(cab_x + 0.02, 2.3, cab_z0 + 0.45)
+	_box_lantern(cab_lamp, 0.13, LAMP_DEEP, 2.0)
+	_light("ShopCabinetLamp", cab_lamp + Vector3(0.7, -0.1, 0.4), LAMP, 1.5, 4.2, false, 0.3)
+
+	# 彌夏：站在櫃台後面、面向門（深綠的工作服、淺色的圍裙邊）
+	misha = Puppet.new()
+	misha.name = "Misha"
+	misha.coat_color = Color(0.15, 0.27, 0.23)
+	misha.trim_color = Color(0.76, 0.7, 0.56)
+	misha.position = MISHA_POS
+	misha.scale = Vector3.ONE * 0.95
+	add_child(misha)
+	var hammer: Node = misha.hand("R").get_node_or_null("BellHammer") if misha.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
+	var board_marker := Marker3D.new()
+	board_marker.name = "MishaTestBoard"
+	board_marker.position = BOARD_POS + Vector3(0.0, 0.5, 0.0)
+	add_child(board_marker)
+
+
+## 一個藥瓶：瓶身＋瓶頸＋軟木塞。base＝瓶底中心。
+func _bottle(base: Vector3, radius: float, height: float, glass: Material, cork: Material) -> void:
+	_batch.add_cylinder(radius * 0.86, radius, height, base + Vector3(0.0, height * 0.5, 0.0), glass, false, 8)
+	_batch.add_cylinder(radius * 0.3, radius * 0.4, height * 0.34, base + Vector3(0.0, height * 1.17, 0.0), glass, false, 6)
+	_batch.add_cylinder(radius * 0.34, radius * 0.34, 0.025, base + Vector3(0.0, height * 1.34 + 0.012, 0.0), cork, false, 6)
+	shop_bottle_count += 1
+
+
+## 測試板（會動，不進合併的場景）：石板底座、銅的手掌盤、往後斜的刻度盤（東邊紅＝受傷、西邊綠＝回復）、指針、一顆綠燈。
+func _build_test_board() -> void:
+	test_board = Node3D.new()
+	test_board.name = "TestBoard"
+	test_board.position = BOARD_POS
+	add_child(test_board)
+	var brass := StandardMaterial3D.new()
+	brass.albedo_color = Color(0.74, 0.56, 0.25)
+	brass.metallic = 0.9
+	brass.roughness = 0.34
+	_board_part(test_board, _box_mesh(Vector3(0.58, 0.05, 0.38)), Vector3(0.0, 0.025, 0.0), look.mat(Color(0.085, 0.095, 0.105), 0.45))
+	var plate := CylinderMesh.new()
+	plate.top_radius = 0.115
+	plate.bottom_radius = 0.125
+	plate.height = 0.016
+	plate.radial_segments = 20
+	_board_part(test_board, plate, Vector3(0.0, 0.058, -0.06), brass)
+	# 刻度盤：往後斜 20 度，正面朝客人
+	var dial := Node3D.new()
+	dial.name = "Dial"
+	dial.position = Vector3(0.0, 0.05, 0.13)
+	dial.rotation_degrees.x = 20.0
+	test_board.add_child(dial)
+	_board_part(dial, _box_mesh(Vector3(0.46, 0.27, 0.02)), Vector3(0.0, 0.135, 0.0), look.mat(Color(0.8, 0.74, 0.6), 0.85))
+	_board_part(dial, _box_mesh(Vector3(0.5, 0.31, 0.012)), Vector3(0.0, 0.135, 0.012), brass)
+	# 兩邊的色塊與中間的刻度
+	_board_part(dial, _box_mesh(Vector3(0.12, 0.05, 0.004)), Vector3(0.15, 0.2, -0.012), look.mat(Color(0.62, 0.12, 0.08), 0.7))
+	_board_part(dial, _box_mesh(Vector3(0.12, 0.05, 0.004)), Vector3(-0.15, 0.2, -0.012), look.mat(Color(0.14, 0.5, 0.24), 0.7))
+	var ink: Material = look.mat(Color(0.1, 0.08, 0.07), 0.8)
+	for i: int in 7:
+		var a: float = deg_to_rad(-60.0 + float(i) * 20.0)
+		var tick := _board_part(dial, _box_mesh(Vector3(0.006, 0.03 if i != 3 else 0.045, 0.004)), Vector3(-sin(a) * 0.17, 0.03 + cos(a) * 0.17, -0.012), ink)
+		tick.rotation.z = a
+	board_needle = Node3D.new()
+	board_needle.name = "Needle"
+	board_needle.position = Vector3(0.0, 0.03, -0.016)
+	dial.add_child(board_needle)
+	_board_part(board_needle, _box_mesh(Vector3(0.012, 0.175, 0.005)), Vector3(0.0, 0.0875, 0.0), look.mat(Color(0.05, 0.04, 0.04), 0.5))
+	_board_part(board_needle, _box_mesh(Vector3(0.03, 0.03, 0.008)), Vector3.ZERO, brass)
+	# 綠燈：讀到「回復」才亮
+	_board_lamp_mat = StandardMaterial3D.new()
+	_board_lamp_mat.albedo_color = Color(0.1, 0.2, 0.13)
+	_board_lamp_mat.roughness = 0.3
+	_board_lamp_mat.emission_enabled = true
+	_board_lamp_mat.emission = SHOP_GREEN
+	_board_lamp_mat.emission_energy_multiplier = 0.0
+	var bulb := SphereMesh.new()
+	bulb.radius = 0.024
+	bulb.height = 0.048
+	bulb.radial_segments = 12
+	bulb.rings = 6
+	board_lamp = _board_part(dial, bulb, Vector3(-0.19, 0.3, -0.004), _board_lamp_mat)
+	board_lamp.name = "Lamp"
+	board_lamp_light = OmniLight3D.new()
+	board_lamp_light.name = "LampLight"
+	board_lamp_light.light_color = SHOP_GREEN
+	board_lamp_light.light_energy = 0.0
+	board_lamp_light.omni_range = 1.8
+	board_lamp_light.shadow_enabled = false
+	board_lamp_light.position = Vector3(-0.19, 0.3, -0.06)
+	dial.add_child(board_lamp_light)
+
+
+static func _box_mesh(size: Vector3) -> BoxMesh:
+	var m := BoxMesh.new()
+	m.size = size
+	return m
+
+
+func _board_part(parent: Node3D, mesh: Mesh, at: Vector3, mat: Material) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = at
+	parent.add_child(mi)
+	return mi
+
+
+## 手放上去的進度 0～1：指針慢慢往「受傷」那邊偏（板子正在下毒，照理說該往那邊走）
+func set_board_progress(t: float) -> void:
+	board_target_deg = BOARD_HURT_DEG * clampf(t, 0.0, 1.0)
+	board_lamp_on = false
+
+
+## 板子讀到的結果：true＝在回復（指針甩到另一邊、綠燈亮）
+func set_board_healing(on: bool) -> void:
+	board_target_deg = BOARD_HEAL_DEG if on else 0.0
+	board_lamp_on = on
+
+
+## 指針現在擺到幾度（不含抖動）
+func board_needle_deg() -> float:
+	return _board_deg
+
+
+func _animate_board(delta: float) -> void:
+	if board_needle == null:
+		return
+	_board_deg = move_toward(_board_deg, board_target_deg, BOARD_NEEDLE_SPEED * delta)
+	# 到位之後指針還會微微抖（讀數在跳）
+	var settled: bool = is_equal_approx(_board_deg, board_target_deg) and absf(board_target_deg) > 1.0
+	board_needle.rotation_degrees.z = _board_deg + (1.6 * sin(_time * 17.0) if settled else 0.0)
+	var want: float = BOARD_LAMP_ENERGY if board_lamp_on else 0.0
+	board_lamp_light.light_energy = move_toward(board_lamp_light.light_energy, want, delta * 3.0)
+	_board_lamp_mat.emission_energy_multiplier = board_lamp_light.light_energy / BOARD_LAMP_ENERGY * 4.0
 
 
 # ---------------------------------------------------------------- 小工具

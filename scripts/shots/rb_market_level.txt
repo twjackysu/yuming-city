@@ -1,7 +1,9 @@
 # 地下市場（第二段 A，docs/design/10-reboot-underground-market.md）的固定鏡頭組：名稱 幀數 旗標…
 # 名稱跟 CI 盤點截圖（.github/workflows/ci.yml 的 shot）同名：基準可以直接用 screens release 的那張（--fetch-baseline）。
 # 60＝貨梯下來的第一眼（高台上、席菈在斜前方、整條街與街底的綠窗）——招牌鏡頭，先顧這一張；
-# 61＝走下坡道、站在街口（兩側攤子、頭上的燈籠與三角旗）；62＝藥店門口前幾步（綠色格子窗、壺形招牌）
+# 61＝走下坡道、站在街口（兩側攤子、頭上的燈籠與三角旗）；62＝藥店門口前幾步（綠色格子窗、壺形招牌、開著的門）；
+# 63＝店裡的櫃台前（彌夏、測試板、背後的藥架；畫面下方是「按住…把手放到測試板上」的提示，D-231）
 60-rb2-arrive 30 --level=market --rb-at=arrive --locale=zh_TW
 61-rb2-street 30 --level=market --rb-at=street --locale=zh_TW
 62-rb2-shop 30 --level=market --rb-at=shop --locale=zh_TW
+63-rb2-board 30 --level=market --rb-at=board --locale=zh_TW

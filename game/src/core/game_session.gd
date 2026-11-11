@@ -172,7 +172,7 @@ func _on_stage_changed(quest_id: String, from_stage: String, to_stage: String) -
 
 func _on_quest_completed(quest_id: String) -> void:
 	# 主線完成也自動存檔：還沒有下一章的檢查點時，重來、讀檔不會回到結尾之前
-	if quest_id == MAIN_QUEST:
+	if quest_id in MAIN_QUESTS:
 		_autosave_pending = true
 	quest_completed.emit(quest_id)
 

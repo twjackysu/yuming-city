@@ -4,6 +4,7 @@ SPK_ADA,Ada,艾妲
 SPK_SHEILA,Sheila,席菈
 SPK_POK,Pok,波克
 SPK_RED,Red,雷德
+SPK_MISHA,Misha,彌夏
 RB_GAME_SUBTITLE,These Curses Are Far Too Useful to Me,這些詛咒對我太有用了
 Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
 Q_RB_OBJ_ESCAPE,Get Pok to South Street,把波克帶到南街
@@ -86,9 +87,20 @@ RB_MOVE_SPRAY,Poison spray,噴毒
 Q_RB_MARKET_TITLE,The Shop's Least Welcome Customer,藥店最不受歡迎的客人
 Q_RB2_OBJ_ARRIVE,Walk down into the underground market,走進地下市場
 Q_RB2_OBJ_FIND_SHOP,Find the potion seller: the shop with the green window at the end of the street,找賣藥的人：街底那間綠色窗戶的藥店
-Q_RB2_OBJ_TEST_BOARD,Put your hand on the test board,把手放到測試板上
+Q_RB2_OBJ_TEST_BOARD,Go into the shop and put your hand on the test board,走進藥店，把手放到測試板上
 RB_LIFT_NUMBER,The freight lift goes down,貨梯往下
-RB2_END_TITLE,Misha's Potion Shop,彌夏的藥店
+RB2_END2_TITLE,The Black-Market Demo,黑市示範場
+RB2_BOARD_HINT,Hold {key} — put your hand on the test board,按住 {key}　把手放到測試板上
 DLG_RB2_RULES_001,"Nothing down here passed certification. There is one rule: the side effect goes on the tag. Every item, every tag.",這裡賣的東西都沒通過認證。規矩只有一條：副作用要寫在吊牌上。每一件都要。
 DLG_RB2_RULES_002,So the curses are labelled honestly. That is more than I can say for the bottles upstairs.,所以詛咒都老實寫出來了。比上面那些貼著認證的瓶子還誠實。
 DLG_RB2_RULES_003,"Don't say that to Misha. Green window, end of the street. Ask her which poison lasts longest, and try not to sound like you are picking a fight.",這句別對彌夏說。街底綠色窗戶那間。問她哪一種毒撐得最久，口氣別像是來找麻煩的。
+DLG_RB2_MISHA_MEET_001,"Excuse me. Which poison lasts the longest? It is for me to drink.",請問，哪一種毒可以撐久一點？我自己要喝的。
+DLG_RB2_MISHA_MEET_002,"The door is behind you. I don't sell to people who want to die, or to people who want someone else to.",門在你後面。想找死的、想害人的，我都不賣。
+DLG_RB2_MISHA_MEET_003,Neither. Being poisoned heals me. I only just found out.,都不是。我中毒的時候會回血，剛剛才發現的。
+DLG_RB2_MISHA_MEET_004,"I hear that three times a month, and I carried all three of them out. Put your hand on the test board. It gives you a very weak poison. When the needle swings to red, you pay for the antidote and go home.",這句話我一個月聽三次，三個都是我抬出去的。手放到測試板上：它會下一點很弱的毒。指針往紅色那邊跑，你付解藥錢然後回家。
+DLG_RB2_MISHA_MEET_004_PRICK,"I hear that three times a month, and I carried all three of them out. Hold out your hand. You are not hurt at all, so there is nothing to measure. I will prick you first. Then put it on the test board. When the needle swings to red, you pay for the antidote and go home.",這句話我一個月聽三次，三個都是我抬出去的。手伸出來——你一點傷都沒有，測不出東西，我先扎一針。然後手放到測試板上：指針往紅色那邊跑，你付解藥錢然後回家。
+DLG_RB2_MISHA_DEAL_001,"...The needle went to green. The board is not broken. I calibrated it last month.",……指針往綠色那邊跑了。板子沒壞，我上個月才校正過。
+DLG_RB2_MISHA_DEAL_002,So can I buy something now?,所以我可以買了嗎？
+DLG_RB2_MISHA_DEAL_003,"No. My poisons are dosed for people who do not want to be poisoned. Not one of them was made for drinking. What you want has to be mixed from scratch.",不行。我賣的毒是算好劑量、給不想中毒的人防身用的，沒有一瓶是做來喝的。你要的東西得重新調。
+DLG_RB2_MISHA_DEAL_004,That sounds like a yes.,聽起來是願意調的意思。
+DLG_RB2_MISHA_DEAL_005,"It means I want to know what else you can do. Someone at the black-market demo is selling a bracer that paralyzes whoever wears it. He says his medicine fixes the side effect. Go and see whether that is true. Then we talk prices.",是「我要先知道你還會什麼」的意思。黑市示範場今天有人在賣一種戴了會麻痺的護腕，說副作用吃他的藥就會好。你去看看是不是真的，回來我們再談價錢。

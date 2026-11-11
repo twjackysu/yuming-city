@@ -1,0 +1,38 @@
+{
+  "id": "rb2_misha_meet",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB2_MISHA_MEET_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_RB2_MISHA_MEET_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB2_MISHA_MEET_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_MISHA",
+      "text": "DLG_RB2_MISHA_MEET_004",
+      "text_if": [
+        {
+          "if": {
+            "flag": "rb2.full_health"
+          },
+          "text": "DLG_RB2_MISHA_MEET_004_PRICK"
+        }
+      ],
+      "do": {
+        "set": {
+          "rb2.misha_met": true
+        }
+      }
+    }
+  }
+}
