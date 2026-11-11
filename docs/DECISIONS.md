@@ -2,6 +2,27 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-223　2026-11-11　灰巡者留著當「一般的敵人」、木樁刪掉；沒有人播的 12 個音效先刪
+
+- 決策：
+  1. **灰巡者（`Ashwalker`）留著**。它已經沒有任何關卡會生成，但它是目前唯一的「一般敵人」：10 個測試檔拿它驗證鎖定、看弱點、戰鬥 HUD、鏡頭、同伴指令；`story-v2.md` 第 2 章（乾運河「不同敵人」）與後面的「物理攻擊部隊」都需要小兵。到時候改名、換外觀與招式沿用這個骨架，比現在刪掉、把 10 個測試檔改成拿送葬者（480 生命、會噴毒的頭目）當靶再重做一次划算。地下市場 A 沒有戰鬥（`docs/design/10-reboot-underground-market.md`），所以最近幾輪不會碰它。
+  2. **木樁（`TrainingDummy`）刪掉**（下一輪做）：只有 `test_combat.gd` 在用，開發沙盒第 77 輪就刪了。
+  3. **音效分兩批**：這一輪先刪「整個 `game/` 找不到任何地方提到名字」的 12 個——`water_splash`、`child_laugh`、`brace_creak`、`slap`、`deep_rumble`、`cloth_knock`、`chain_creak`、`stair_ambience`（第 1～3 章）、`aftermath_theme`、`after_dinner_theme`、`bell_far`（舊收束與第 2 章）、`heartbeat`（重現的心跳）；`gen_sfx.py` 裡它們專用的產生函式一起刪。**只有測試還提到的 6 個**（`bell`、`bell_ninth`、`daylight_ambience`、`canal_ambience`、`frost_wind_indoor`、`hearth_crackle`）下一輪連同測試裡的例子一起換掉再刪。腳步聲 `step_snow`／`step_stone`／`step_wood`／`step_heavy` 是用字串拼出名字的，在用，不刪。
+- 理由：Jacky 說的是「除非有東西要在新版本沿用」——灰巡者的 AI 骨架與那 10 個測試是會沿用的；木樁與那些音效不是。音效分兩批是因為第一批完全不用動測試，風險最低。
+- 影響：音效 37 → 25 個（每次建置少產生 12 個 wav，安裝檔小一點）。`data/combat/intel.json` 裡灰巡者的說明文字還是舊劇情的口吻，做運河時重寫。
+
+## D-222　2026-11-11　南街的斷拱改成單純的場景物件；「重現」整套與日記資料刪掉
+
+- 決策（接 D-220 第 2 步的後半）：
+  1. **南街的斷拱＝`frostbridge.gd` 的 `_build_south_arch()`**：節點名照舊 `SouthArch`（底下 `Ruin`：`Stump0`／`Stump1` 兩截有碰撞的斷柱＋`Rubble0`～`Rubble6`）。形狀、位置、亂數種子（7）跟原本停用的 `NineBreathSite` 畫出來的廢墟一塊不差，還是 `CSGBox3D`——目的是南街的固定鏡頭一個像素都不變，不是趁機改造型。`StoryLevel.arch_site` 改名 `south_arch`（`Node3D`，沒有腳本）。
+  2. **「重現」整套刪掉**：`NineBreathSite`、`NineBreath`、`RestorePrompt`（HUD 的重現提示）、`RestoreMix`（重現期間的低通與壓低配樂）、`restore_ghost.gdshader`、輸入動作 `nine_breath`（V／手把 Y）與按鍵設定裡那一列、翻譯 `ACT_NINE_BREATH`／`NB_*`、音訊匯流排 `Heart`（只給重現的心跳用）與 `Settings.MIRROR_VOLUME`、`Sfx.HEART_BUS`、`InteractPrompt.avoid`（互動提示讓位給重現提示的邏輯）。
+  3. **日記的資料與類別刪掉**：`Journal`、`data/journal/slice.json`、`Game.journal`。日記畫面第 77 輪就刪了，剩下的唯一使用者是重現的預覽。
+  4. **舊設定檔不用遷移**：玩家的 `settings.cfg` 裡如果還留著 `nine_breath` 的按鍵，`InputSetup.from_saved()` 只看現有的動作，多的那一筆直接略過（有測試）。V 與手把 Y 現在是空的，之後新能力要用可以直接拿。
+  5. **GlyphLine／InteractPrompt 的測試改用新劇情的字串**（`RB_CRATE_HINT`「按 {key}　拿走藥瓶」＋`interact`），不再靠舊劇情的 `NB_HOLD_HINT`、`RESCUE_HOLD_HINT`。
+- **沒有**動、留給之後的：`GameState.memories_paid`／`pay_memory()` 與 `SaveCodec` 的 v0～v2 遷移（動到存檔格式，單獨一步做）；只有測試還提到的六個音效（見 D-223）；石牆 shader 裡給拱石用的 `arch_*` 參數（預設值不作用，跟鎮上的牆共用同一支 shader，改它要重拍全鎮，不值得）；`slice.csv` 裡 `JOURNAL_*` 幾行（第 4 項整個檔一起處理）。
+- 理由：新劇情的能力是「負面狀態反轉」，沒有代價、沒有記憶、沒有日記（`story-v2.md`、`status-reversal.md`）；「重現」留在程式裡只會讓人以為 V 鍵還有用。斷拱本身是南街守衛戰的場景（守衛從拱後面走出來、吊燈掛在它南邊），要留。
+- 影響：`game/` 少約 1,900 行；測試數的變化寫在 PROGRESS 第 78 輪。畫面：南街兩個固定鏡頭（`45-rb-guardian`、`49-rb-potion`）改前改後的差異寫在同一則。
+
 ## D-221　2026-11-11　舊版清理第 2 步的切法：入口只剩一種、霜橋鎮的關卡檔只蓋鎮、過場與成就系統整套刪；開發旗標的存檔另外放
 
 - 決策（接 D-220 的第 2 步，這一輪做了前半）：
