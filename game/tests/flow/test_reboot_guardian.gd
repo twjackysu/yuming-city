@@ -186,6 +186,52 @@ func test_spray_telegraph_leaves_mist_that_heals_noen_and_expires() -> void:
 	await tree.process_frame
 
 
+## 下砸真的砸在南街的路面上（D-218）：牠出一次下砸，諾恩在前兆期間退開——落點留下一組 SlamFx（掛在關卡上、貼著路面），
+## 諾恩沒受傷；砸下去那一下牠的上身是往前壓的（之前前兆一結束就彈回直立）。
+func test_live_slam_scars_the_street_and_misses_noen_who_backed_off() -> void:
+	_session_at_guardian()
+	var level: StoryLevel = await _load()
+	await tree.process_frame
+	_park_sheila(level)
+	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
+	g.global_position = Vector3(0.2, 0.05, 17.0)
+	rb._engage_guardian()
+	g.set_facing(0.0)
+	player.global_position = g.global_position + Vector3(0.0, 0.0, -2.2)
+	player.health.hp = 60.0
+	await _frames(2)
+	g.brain._set_move("slam")
+	g.brain._enter(EnemyBrain.State.TELEGRAPH)
+	await _frames(10)
+	assert_eq(g.slam_fx_count, 0, "前兆期間地上還沒有東西")
+	# 退到範圍外：落點在牠前面 1.9 m、半徑 2 m
+	player.global_position = g.global_position + Vector3(0.0, 0.0, -5.4)
+	var torso: Node3D = g.get_node("Body/Torso") as Node3D
+	var pressed: bool = false
+	for i: int in 120:
+		await tree.physics_frame
+		if g.brain.move_id == "slam" and g.brain.state == EnemyBrain.State.STRIKE:
+			pressed = pressed or (signf(torso.rotation_degrees.x) == signf(EnemyActor.FALL_FORWARD) and absf(torso.rotation_degrees.x) > 15.0)
+		if g.slam_fx_count > 0 and pressed:
+			break
+	assert_eq(g.slam_fx_count, 1, "前兆（1 秒）之後砸下去，一下一組")
+	assert_true(pressed, "砸下去那一下上身往前壓")
+	var fx: Node3D = g.last_slam_fx
+	assert_not_null(fx, "落點的那一組")
+	if fx != null:
+		assert_eq(fx.get_parent(), level, "掛在關卡上")
+		var at: Vector3 = fx.global_position
+		assert_true(absf(at.y - level.ground_y(at)) < 0.15, "貼著路面（y %.2f、路面 %.2f）" % [at.y, level.ground_y(at)])
+		var ahead: float = Vector2(at.x - g.global_position.x, at.z - g.global_position.z).length()
+		assert_true(ahead > 1.5 and ahead < 2.4, "在牠前面（%.2f m），不是腳下" % ahead)
+		assert_true(fx.has_node("Ring") and fx.has_node("Chunks") and fx.has_node("Scar"), "雪塵、碎石、砸痕")
+	assert_eq(player.health.hp, 60.0, "退開了：沒被砸到")
+	level.queue_free()
+	await tree.process_frame
+
+
 func test_guardian_down_then_sheila_asks_name() -> void:
 	var s := _session_at_guardian()
 	var level: StoryLevel = await _load()

@@ -108,6 +108,7 @@ func _on_strike() -> void:
 			var r: float = brain.move_num(id, "radius", 2.0)
 			Sfx.play_at(self, "blunt_weak", center + Vector3.UP * 0.3, 4.0, 0.03, 10.0)
 			_shake_player(0.45)
+			_slam_fx(center, r)
 			var player_hp: float = _player.health.hp if _player != null else 0.0
 			hit_heartbeats(brain.move_num(id, "damage", 40.0), id,
 				func(p: Vector3) -> bool: return Vector2(p.x - center.x, p.z - center.z).length() <= r)
@@ -641,6 +642,172 @@ func _shake_player(amount: float) -> void:
 		_player.shake(amount)
 
 
+# ---------------------------------------------------------------- 下砸落地（D-218）
+## 下砸打在地上的那一刻：貼著地往外推開的一圈雪塵、中間往上湧的一團、彈起來又掉下去的碎石、
+## 地上一塊裂開的砸痕（留幾秒再淡掉）。之前只有一聲悶響與鏡頭震動，畫面上什麼都沒發生。
+const SLAM_SCAR_SHADER: String = "res://src/world/slam_scar.gdshader"
+const SLAM_RING_AMOUNT: int = 84
+const SLAM_PLUME_AMOUNT: int = 32
+const SLAM_CHUNK_AMOUNT: int = 28
+## 雪塵吃場景的光（不是自己發亮的白點）：暖燈下偏暖、暗處是暗的；每一顆很淡、很多顆疊成一片
+const SLAM_DUST_COLOR: Color = Color(0.8, 0.82, 0.86, 0.48)
+## 光從雪塵背後透過來的比例（逆光時邊緣是亮的，不是一團黑煙）
+const SLAM_DUST_BACKLIGHT: float = 0.7
+const SLAM_CHUNK_COLOR: Color = Color(0.17, 0.18, 0.21)
+## 雪塵往外推的力道（m/s²，只在一開始的四分之一）與之後的阻力：一圈推到大約傷害半徑的外緣就停
+const SLAM_RING_PUSH: float = 30.0
+const SLAM_RING_SEC: float = 1.1
+## 砸痕比傷害範圍小：傷害半徑是「被震到」，砸痕是真的砸下去的那一塊
+const SLAM_SCAR_SCALE: float = 0.8
+const SLAM_SCAR_LIFT: float = 0.035
+const SLAM_SCAR_HOLD_SEC: float = 5.0
+const SLAM_SCAR_FADE_SEC: float = 2.0
+
+## 砸過幾次、最後一次的那一組（測試、截圖用）
+var slam_fx_count: int = 0
+var last_slam_fx: Node3D
+## 截圖用：砸痕不淡掉、整組不收
+var debug_hold_slam: bool = false
+## 測試可以調短
+var slam_scar_hold_sec: float = SLAM_SCAR_HOLD_SEC
+var slam_scar_fade_sec: float = SLAM_SCAR_FADE_SEC
+
+
+## 雪塵的材質：柔邊圓點、面向鏡頭，但吃場景的光＋透光（ParticleLook 的是不受光的）。
+static func slam_dust_material() -> StandardMaterial3D:
+	var mat: StandardMaterial3D = ParticleLook.material(SLAM_DUST_COLOR)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	mat.roughness = 1.0
+	mat.metallic_specular = 0.0
+	mat.backlight_enabled = true
+	mat.backlight = Color(SLAM_DUST_BACKLIGHT, SLAM_DUST_BACKLIGHT, SLAM_DUST_BACKLIGHT)
+	return mat
+
+
+## 一組節點 SlamFx（掛在關卡底下：牠走開、倒下都不會帶著走）：Ring、Plume、Chunks、Scar。
+func _slam_fx(center: Vector3, radius: float) -> Node3D:
+	if not is_inside_tree():
+		return null
+	var fx := Node3D.new()
+	fx.name = "SlamFx"
+	# 一圈貼地的雪塵：從落點邊緣往外推（radial_accel 是「離發射點越來越遠」的方向），推一下就靠阻力停住
+	var ring: CPUParticles3D = puff_build(Vector3.ZERO, SLAM_RING_AMOUNT, SLAM_DUST_COLOR)
+	ring.name = "Ring"
+	(ring.mesh as QuadMesh).material = slam_dust_material()
+	ring.explosiveness = 1.0
+	ring.lifetime = SLAM_RING_SEC
+	ring.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	ring.emission_ring_axis = Vector3.UP
+	ring.emission_ring_radius = radius * 0.3
+	ring.emission_ring_inner_radius = radius * 0.14
+	ring.emission_ring_height = 0.06
+	ring.spread = 0.0
+	ring.initial_velocity_min = 0.0
+	ring.initial_velocity_max = 0.0
+	ring.radial_accel_min = SLAM_RING_PUSH * 0.6
+	ring.radial_accel_max = SLAM_RING_PUSH
+	var push := Curve.new()
+	push.add_point(Vector2(0.0, 1.0))
+	push.add_point(Vector2(0.25, 0.0))
+	push.add_point(Vector2(1.0, 0.0))
+	ring.radial_accel_curve = push
+	ring.damping_min = 2.2
+	ring.damping_max = 3.6
+	ring.gravity = Vector3(0, 0.5, 0)
+	ring.scale_amount_min = 2.2
+	ring.scale_amount_max = 4.4
+	var swell := Curve.new()
+	swell.add_point(Vector2(0.0, 0.45))
+	swell.add_point(Vector2(0.35, 0.9))
+	swell.add_point(Vector2(1.0, 1.0))
+	ring.scale_amount_curve = swell
+	fx.add_child(ring)
+	# 中間往上湧的一團
+	var plume: CPUParticles3D = puff_build(Vector3(radius * 0.22, 0.05, radius * 0.22), SLAM_PLUME_AMOUNT, SLAM_DUST_COLOR)
+	plume.name = "Plume"
+	(plume.mesh as QuadMesh).material = slam_dust_material()
+	plume.explosiveness = 1.0
+	plume.spread = 32.0
+	plume.initial_velocity_min = 1.2
+	plume.initial_velocity_max = 3.2
+	plume.gravity = Vector3(0, -2.2, 0)
+	# 很多顆、很大、很淡，疊成一團（少數幾顆實的圓點擋在牠身體前面像泡泡）
+	plume.color = Color(1, 1, 1, 0.5)
+	plume.scale_amount_min = 2.8
+	plume.scale_amount_max = 5.2
+	fx.add_child(plume)
+	# 碎石：有稜角的小石塊（吃場景的光），往上彈、各轉各的、掉回地面以下就看不到了
+	var chunks := CPUParticles3D.new()
+	chunks.name = "Chunks"
+	chunks.emitting = false
+	chunks.one_shot = true
+	chunks.explosiveness = 1.0
+	chunks.amount = SLAM_CHUNK_AMOUNT
+	chunks.lifetime = 0.95
+	chunks.randomness = 0.4
+	chunks.direction = Vector3.UP
+	chunks.spread = 38.0
+	chunks.initial_velocity_min = 3.6
+	chunks.initial_velocity_max = 6.6
+	chunks.gravity = Vector3(0, -12.0, 0)
+	chunks.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	chunks.emission_box_extents = Vector3(radius * 0.3, 0.02, radius * 0.3)
+	chunks.particle_flag_rotate_y = true
+	chunks.angle_min = 0.0
+	chunks.angle_max = 360.0
+	chunks.angular_velocity_min = -420.0
+	chunks.angular_velocity_max = 420.0
+	chunks.scale_amount_min = 0.6
+	chunks.scale_amount_max = 1.8
+	var crumble := Curve.new()
+	crumble.add_point(Vector2(0.0, 1.0))
+	crumble.add_point(Vector2(0.8, 1.0))
+	crumble.add_point(Vector2(1.0, 0.0))
+	chunks.scale_amount_curve = crumble
+	# 五邊、兩圈的「球」＝一顆有稜角的小石頭（方塊放大了像一口飛起來的木箱）；最大的一顆約 16 cm
+	var rock := SphereMesh.new()
+	rock.radius = 0.045
+	rock.height = 0.07
+	rock.radial_segments = 5
+	rock.rings = 2
+	var rock_mat := StandardMaterial3D.new()
+	rock_mat.albedo_color = SLAM_CHUNK_COLOR
+	rock_mat.roughness = 0.85
+	# 粒子的面片都要有貼圖（ParticleLook.untextured 的規則）；這裡不透明，貼圖只當成全白用
+	rock_mat.albedo_texture = ParticleLook.soft_dot()
+	rock.material = rock_mat
+	chunks.mesh = rock
+	fx.add_child(chunks)
+	# 地上的砸痕：一片貼地的方形面片，形狀在 shader 裡畫
+	var scar := MeshInstance3D.new()
+	scar.name = "Scar"
+	var quad := QuadMesh.new()
+	quad.orientation = PlaneMesh.FACE_Y
+	quad.size = Vector2.ONE * radius * 2.0 * SLAM_SCAR_SCALE
+	scar.mesh = quad
+	var scar_mat := ShaderMaterial.new()
+	scar_mat.shader = load(SLAM_SCAR_SHADER) as Shader
+	scar_mat.set_shader_parameter("seed", randf() * 50.0)
+	scar_mat.set_shader_parameter("fade", 1.0)
+	scar.material_override = scar_mat
+	scar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	scar.rotation.y = randf() * TAU
+	fx.add_child(scar)
+	(get_parent() if get_parent() != null else self).add_child(fx, true)
+	fx.global_position = center + Vector3.UP * SLAM_SCAR_LIFT
+	ring.emitting = true
+	plume.emitting = true
+	chunks.emitting = true
+	slam_fx_count += 1
+	last_slam_fx = fx
+	if not debug_hold_slam:
+		var t: Tween = fx.create_tween()
+		t.tween_interval(slam_scar_hold_sec)
+		t.tween_method(func(v: float) -> void: scar_mat.set_shader_parameter("fade", v), 1.0, 0.0, slam_scar_fade_sec)
+		t.tween_callback(fx.queue_free)
+	return fx
+
+
 # ---------------------------------------------------------------- 被斬倒（D-052）
 
 ## 跪下 → 停一下 → 向前倒（背上的鐵架朝天）→ 落地那一刻鐵與身體撞地聲、雪粉、鏡頭小震 →
@@ -753,6 +920,8 @@ func _update_look() -> void:
 	var lean := Vector3.ZERO
 	if brain.state == EnemyBrain.State.TELEGRAPH:
 		lean = telegraph_lean(brain.move_id, p)
+	elif brain.move_id.contains("slam") and brain.state in [EnemyBrain.State.STRIKE, EnemyBrain.State.RECOVER]:
+		lean = slam_follow_lean(brain.state == EnemyBrain.State.RECOVER, brain.time_in_state, brain.recover_sec)
 	if throw_windup > 0.0:
 		# 舉起鐵架：上身後仰，越接近擲出越後仰
 		var k: float = 1.0 - throw_windup / _throw_total
@@ -777,6 +946,18 @@ static func telegraph_lean(move_id: String, p: float) -> Vector3:
 			# 噴毒：挺胸吸氣（微微後仰、往右擰一點），跟舉手的招式分得出來
 			return Vector3(-FALL_FORWARD * 9.0 * p, -8.0 * p, 0)
 	return Vector3.ZERO
+
+
+## 下砸打下去之後的上身（D-218）：出招那一下整個人往前壓，收招時慢慢直起來。
+## 之前前兆一結束上身就瞬間彈回直立，砸下去的那一刻牠反而是站直的。
+const SLAM_FOLLOW_DEG: float = 26.0
+
+
+static func slam_follow_lean(recovering: bool, t: float, recover_sec: float) -> Vector3:
+	var k: float = 1.0
+	if recovering:
+		k = 1.0 - smoothstep(0.0, 1.0, clampf(t / maxf(recover_sec, 0.01), 0.0, 1.0))
+	return Vector3(FALL_FORWARD * SLAM_FOLLOW_DEG * k, 0, 0)
 
 
 func _build_body() -> void:

@@ -82,7 +82,7 @@ const GUARDIAN_ENGAGE_RANGE: float = 8.5
 ## 牠倒下之後隔這麼久，席菈才開口（等牠倒地的那一下）
 const GUARDIAN_DOWN_TALK_SEC: float = 2.2
 ## 截圖旗標 `--rb-at=` 裡屬於守衛戰的四個（hit＝諾恩貼在牠面前、剛打中弱點的那一下：霜屑、火星、閃光，D-217）
-const GUARDIAN_SHOTS: PackedStringArray = ["guardian", "spray", "sprayed", "hit"]
+const GUARDIAN_SHOTS: PackedStringArray = ["guardian", "spray", "sprayed", "hit", "slam"]
 ## 截圖旗標 `--rb-at=` 裡屬於「試用毒劑」的兩個：potion＝站在藥箱前（兩瓶還在）、drank＝拿了、剛喝一口（HUD：生命條、中毒 → 回血、藥 ×1）
 const POTION_SHOTS: PackedStringArray = ["potion", "drank"]
 ## 藥箱（D-209）：牠背上的箱子摔在牠倒下的地方旁邊（往街心那一側 CRATE_SIDE 公尺）；位置記在旗標裡，讀檔照樣在那裡
@@ -160,10 +160,12 @@ var guardian_engaged: bool = false
 var _guardian_down_t: float = -1.0
 ## 測試可以調短
 var guardian_down_talk_sec: float = GUARDIAN_DOWN_TALK_SEC
-## 截圖用（`--rb-at=guardian|spray|sprayed|hit`）："walk"＝站在街上盯著人、"telegraph"＝噴毒前兆停在八成、"jet"＝剛噴出去、
-## "hit"＝每 DEV_HIT_EVERY 個物理幀重打一次（一次性粒子只活半秒，拍的那一幀一定有一把在飛）
+## 截圖用（`--rb-at=guardian|spray|sprayed|hit|slam`）："walk"＝站在街上盯著人、"telegraph"＝噴毒前兆停在八成、"jet"＝剛噴出去、
+## "hit"＝每 DEV_HIT_EVERY 個物理幀重打一次（一次性粒子只活半秒，拍的那一幀一定有一把在飛）、
+## "slam"＝停在下砸打下去的姿勢，每 DEV_SLAM_EVERY 個物理幀重砸一次（雪塵、碎石只活一秒）
 var debug_hold_guardian: String = ""
 const DEV_HIT_EVERY: int = 14
+const DEV_SLAM_EVERY: int = 26
 var _dev_hit_frames: int = 0
 ## 守衛的藥箱（節點名 RbPotionCrate＝任務標記）；牠倒下之後才有
 var crate: PotionCrate
@@ -297,17 +299,19 @@ static func dev_advance(s: GameSession, at: String) -> void:
 func _dev_stage_guardian(at: String) -> void:
 	if guardian == null or player == null:
 		return
-	var holds: Dictionary = {"guardian": "walk", "spray": "telegraph", "sprayed": "jet", "hit": "hit"}
+	var holds: Dictionary = {"guardian": "walk", "spray": "telegraph", "sprayed": "jet", "hit": "hit", "slam": "slam"}
 	debug_hold_guardian = str(holds.get(at, "walk"))
-	var gap: float = 5.2 if at == "guardian" else (1.6 if at == "hit" else 3.6)
+	# slam：諾恩剛退到下砸範圍外（落點在牠前面 1.9 m、半徑 2 m）
+	var gaps: Dictionary = {"guardian": 5.2, "hit": 1.6, "slam": 4.5}
+	var gap: float = float(gaps.get(at, 3.6))
 	var boss_at := Vector3(0.0, 0.0, 18.4)
 	guardian.global_position = Vector3(boss_at.x, level.ground_y(boss_at) + 0.05, boss_at.z)
 	guardian.set_physics_process(false)
 	guardian.set_facing(0.0)
-	var me := Vector3(1.1, 0.0, boss_at.z - gap)
+	var me := Vector3(1.4 if at == "slam" else 1.1, 0.0, boss_at.z - gap)
 	player.global_position = Vector3(me.x, level.ground_y(me) + 0.05, me.z)
-	# hit：面向正南，牠在畫面中間偏右，命中點不被諾恩自己擋住
-	player.rotation.y = deg_to_rad(180.0 if at == "hit" else 168.0)
+	# hit、slam：面向正南，牠在畫面中間偏右，命中點／落點不被諾恩自己擋住
+	player.rotation.y = deg_to_rad(180.0 if at in ["hit", "slam"] else 168.0)
 	player.yaw = player.rotation.y
 	# 逆轉體質已經覺醒（不再跳中間那兩行字）
 	player.reversal.awakened_once = true
@@ -317,6 +321,9 @@ func _dev_stage_guardian(at: String) -> void:
 	if sheila != null:
 		sheila.set_physics_process(false)
 		sheila.global_position = Vector3(-1.7, level.ground_y(me), me.z + 0.6)
+		if at == "slam":
+			# 她站在另一邊（畫面左邊），落點那一側留空
+			sheila.global_position = Vector3(2.5, level.ground_y(me), me.z + 2.2)
 	if at == "sprayed":
 		guardian.debug_hold_jet = true
 		guardian.brain._set_move("spray")
@@ -371,6 +378,16 @@ func _dev_hold_guardian() -> void:
 					guardian.last_hit_fx.queue_free()
 				guardian.debug_hold_hit = true
 				guardian._hit_fx({"source": player, "weak": "frame_joint"})
+		"slam":
+			guardian.brain._set_move("slam")
+			guardian.brain.state = EnemyBrain.State.STRIKE
+			_dev_hit_frames -= 1
+			if _dev_hit_frames <= 0:
+				_dev_hit_frames = DEV_SLAM_EVERY
+				if guardian.last_slam_fx != null and is_instance_valid(guardian.last_slam_fx):
+					guardian.last_slam_fx.queue_free()
+				guardian.debug_hold_slam = true
+				guardian._slam_fx(guardian.slam_center(), guardian.brain.move_num("slam", "radius", 2.0))
 		"jet":
 			guardian.brain.state = EnemyBrain.State.STRIKE
 			if guardian.last_spray != null and is_instance_valid(guardian.last_spray) and guardian.last_spray.zone != null:

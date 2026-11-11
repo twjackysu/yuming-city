@@ -81,15 +81,7 @@ func test_lantern_hangs_on_a_chain_between_the_walls() -> void:
 		assert_true(not hit.is_empty(), "鏈子的高度兩邊都有牆（%s）" % ("西" if side < 0.0 else "東"))
 		if not hit.is_empty():
 			var wall_x: float = absf((hit["position"] as Vector3).x)
-			print("    [lantern] wall %.0f at x=%.2f" % [side, wall_x])
 			assert_true(absf(wall_x - RebootOpening.SOUTH_LANTERN_HALF) < 0.25, "鐵座貼在牆面上（牆 %.2f）" % wall_x)
-	for z: float in [22.0, 23.0, 23.6, 24.0, 25.0]:
-		var line := "    [lantern] roof z=%.1f" % z
-		for x: float in [-4.4, -3.8, 3.8, 4.4]:
-			var q3 := PhysicsRayQueryParameters3D.create(Vector3(x, 30.0, z), Vector3(x, -1.0, z))
-			var hit3: Dictionary = space.intersect_ray(q3)
-			line += "  x=%.1f:%.2f" % [x, (hit3.get("position", Vector3.ZERO) as Vector3).y]
-		print(line)
 	# 燈：暖色、投影子、在霧裡夠亮；燈的底比守衛（連背上的鐵架 3.2 m）高，牠從底下走得過去
 	var light: OmniLight3D = n.get_node_or_null("Glow") as OmniLight3D
 	assert_not_null(light, "燈光")
