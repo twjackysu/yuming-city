@@ -15,8 +15,6 @@ var _saved: Label
 var _died: Label
 var _saved_tween: Tween
 var _objective_tween: Tween
-## 關卡暫時換掉的目標（空＝照任務）
-var _override_key: String = ""
 var _banner: Label
 ## 戰鬥 HUD（生命、體力、指令）
 var combat: CombatHud
@@ -219,19 +217,7 @@ func _show_objective(hold: float, fade_in: bool) -> void:
 
 func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
 	if quest_id == Game.session.main_quest():
-		_override_key = ""
 		_set_objective(Game.session.objective_key(), true)
-
-
-## 關卡暫時換掉目標文字（D-169；現在沒有關卡在用）；空字串＝換回任務本身的目標。
-## 任務換階段時自動換回；重來會重建 HUD，也就換回了。
-func override_objective(key: String) -> void:
-	_override_key = key
-	_set_objective(key if key != "" else Game.session.objective_key(), true)
-
-
-func objective_overridden() -> bool:
-	return _override_key != ""
 
 
 func _on_checkpoint(_checkpoint_id: String) -> void:
