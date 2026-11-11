@@ -2,6 +2,19 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-227　2026-11-11　舊版清理收尾：名字裡的 reboot 拿掉；存檔資料夾、`mode` 的值、`rb_*` 不改；「兩個存檔資料夾」的機制留著
+
+- 決策：
+  1. **識別字與檔名改掉**（64368c5）：`rb_frostbridge.gd`／`RebootOpening` → `frostbridge_opening.gd`／`FrostbridgeOpening`；`GameSession.new_reboot_game()`／`is_reboot()`／`load_reboot_slot()`／`has_reboot_save()`／`reboot_save_dir()`／`REBOOT_SAVE_DIR`／`REBOOT_MAIN_QUEST`／`REBOOT_CHAPTER` → `new_game()`／`in_story()`／`load_story_slot()`／`has_story_save()`／`story_save_dir()`／`STORY_SAVE_DIR`／`MAIN_QUEST`／`FIRST_CHAPTER`；`Game.new_reboot_game()`／`continue_reboot_game()`／`has_reboot_continue()` → `new_game()`／`continue_game()`／`has_continue()`；測試檔 `test_reboot_*` → `test_story_*`。
+  2. **不改的（玩家的存檔與截圖基準裡有）**：存檔資料夾 `user://saves_reboot` 與 `user://saves_dev_reboot`、存檔裡 `mode` 的值 `"reboot"`（程式裡改用常數 `GameState.STORY_MODE`）、任務 `rb_main`、旗標 `rb.*`、檢查點 `rb_*`、節點名 `Rb…`、翻譯 key `RB_*` 與 `i18n/reboot.csv`、`data/reboot/`、截圖旗標 `--rb-at` 與盤點截圖的檔名。改這些要嘛讓 Jacky 試玩的存檔讀不到，要嘛白動幾百行又讓基準圖對不上。
+  3. **「兩個存檔資料夾」的機制不收成一個**（上一輪的 NEXT 寫要收）。`user://saves` 是以前舊劇情的資料夾，玩家可能還有檔案在那裡；現在的規則是「劇情存檔一律寫到另一個資料夾」，有三個測試在驗（新遊戲不寫舊資料夾、舊資料夾的檔案一個字都不變、開發旗標不寫玩家的資料夾）。收成一個要刪掉或改鬆這些斷言，換來的只是少 10 行程式——不划算。`GameState.mode` 同理留著（`in_story()` 看它；預設 `"classic"`＝沒有開劇情的空鎮）。
+  4. **`Undertaker.phase` 拿掉**（永遠是 1，D-225 留下的）。守衛戰的測試原本兩行 `assert_eq(g.phase, 1)`，改成驗行為：開打時下砸前兆是 1 秒、打到殘血之後招式輪替不變、下砸前兆也沒有縮短（2 個斷言變 3 個）。這是這一輪**唯一改到內容的斷言**；其他測試檔只有識別字不同（做法：改之前的測試檔套同一份 sed 對照表，跟改之後 `diff -r`——除了這裡與第 5 點的改名，只差一個參數名）。斷言 2290 行 → 2291 行（多的就是這裡的一行）、測試 307 個不變。64368c5 的 commit 訊息寫「斷言 2290 行前後一樣」是改 `phase` 之前數的，差這一行。
+  5. **順手改名**：`struggle_mode` → `no_charge`（它的意思是「輪替裡沒有衝撞」，追擊的那一隻與守衛都是 true，跟已經刪掉的「掙脫」無關）、`begin_struggle()` → `begin_pursuit()`、`tuning.json` 的 `pattern_struggle`／`struggle_stagger_max` → `pattern_pursuit`／`pursuit_stagger_max`。
+  6. **沒人用的東西刪掉**（8636a03）：`half_timber.gdshader` 的 `arch_*`（拱圈的放射縫，D-132）、`glow_*`（石縫冷光，D-043）、`obj_pos`／`obj_normal`——都是舊劇情「重現的石拱」用的，現在沒有材質會設；`Hud.override_objective()`／`objective_overridden()`（D-169，沒有人呼叫）。
+  7. **設計文件收成三份、檔名不變**：`02-gameplay.md`（操作與戰鬥）、`04-architecture.md`（架構＋原本 `docs/technical-direction.md` 的技術決定，後者刪掉）、`06-terminology.md`（用詞）都重寫成只講現在的劇情；`03-art-audio-direction.md` 只刪掉講「重現」、燃燒劍、日記的行。檔名不變是因為有 24 處程式註解指到它們——改檔名就要再動一次程式檔，沒有好處。
+- 理由：Jacky 11/11：「舊版本的東西可以全部砍掉，包括 code 和 README……現在這樣太亂我有點看不懂」。名字裡的「reboot／新版」暗示還有另一個版本，是最後一個會讓人以為「還有舊版」的地方。
+- 影響：舊版清理（D-220 起的三步）全部做完，NEXT 的「000」節拿掉；`docs/NEXT.md` 66 KB → 41 KB（各輪「做好的」識別字清單收成一張「現在有哪些東西、在哪個檔」的表）。畫面沒有變：動到 shader 的那個 commit，固定鏡頭 `40-rb-start`、`45-rb-guardian`、廣場（`--at=plaza`）改前改後差異都是 0.0%。
+
 ## D-226　2026-11-11　北街的房子併進整個鎮的合併 mesh；藏起來的破屋頂刪掉，樓上亮著的窗因此換了位置
 
 - 決策：

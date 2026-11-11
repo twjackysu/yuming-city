@@ -2,6 +2,38 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-11 21:26–22:10　第 81 輪：舊版清理做完——名字裡的 reboot 拿掉、設計文件收成三份、NEXT 瘦身；下一輪開始做地下市場
+
+**做了什麼**
+
+- 開工：FOR_JACKY 回覆區沒有新的回覆；沒有新的 Issue、art-inbox、Jacky 的 commit。上一輪的兩個 run 都綠。本機 `check.sh` 開工 307 個全綠。照 NEXT「000」第 3 步做（3a 改名字、3b 收文件）。
+- **3a 改名字**（64368c5，D-227）：`rb_frostbridge.gd`／`RebootOpening` → `frostbridge_opening.gd`／`FrostbridgeOpening`；`new_reboot_game()` → `new_game()`、`is_reboot()` → `in_story()`、`REBOOT_SAVE_DIR` → `STORY_SAVE_DIR` 等十幾個識別字；測試檔 `test_reboot_*` → `test_story_*`（7 個檔，`.gd` 與 `.uid` 一起搬）。36 個檔、263 行換 256 行。
+- **順手做的**（同一個 commit）：`Undertaker.phase` 拿掉（永遠是 1）；`struggle_mode`／`begin_struggle()` → `no_charge`／`begin_pursuit()`（它跟已經刪掉的「掙脫」無關）；還在講第二階段／第 3 章／車隊戰的 5 處註解。
+- **沒人用的東西刪掉**（8636a03）：外牆 shader `half_timber.gdshader` 裡舊劇情「重現的石拱」用的拱圈與發光參數（76 行）；HUD 沒人呼叫的「暫時換目標」。
+- **故意不改的**（D-227）：存檔資料夾 `user://saves_reboot`、存檔裡 `mode` 的值 `"reboot"`、任務與旗標 `rb_*`、翻譯 key `RB_*`、截圖旗標與檔名——玩家的存檔與截圖基準裡有。「劇情存檔寫到另一個資料夾、不碰 `user://saves`」的機制也留著（上一輪寫要收成一個，看過之後決定不收：要刪掉三個保護舊存檔的測試，換來的只是少 10 行）。
+- **3b 收文件**：`design/02-gameplay.md`（操作與戰鬥）、`04-architecture.md`（架構＋原本 `technical-direction.md` 的技術決定）、`06-terminology.md`（用詞）重寫成只講現在的劇情，檔名不變（24 處程式註解指到它們）；`03-art-audio-direction.md` 刪掉講「重現」、燃燒劍、日記的 9 行；`design/09`、`10`、README、PLAN 跟著改識別字與說法。`docs/technical-direction.md` 刪掉。
+- **NEXT 瘦身**：66 KB → 42 KB。「000」節拿掉；「00」節各輪「做好的」清單（25 KB 的識別字，改名之後大半過期）收成一張「現在有哪些東西、在哪個檔」的表＋「踩過的坑」＋「畫面驗收」；霜橋鎮的技術備註裡講已經刪掉的東西的 6 條拿掉；地下市場 A 補了先查好的落腳點（關卡表、貨梯的結尾在哪一行、要先改的兩個地方）。
+
+**怎麼驗證**
+
+- `scripts/check.sh` 全綠三次（都是 307 個）：開工、3a 改完、shader 與 HUD 改完。
+- **測試只有識別字不同**：把改之前的 `game/tests` 複製一份、套同一份 sed 對照表與同樣的檔名搬移，跟改之後 `diff -r`：除了下面兩處，只差一個參數名（`_session(reboot)` → `_session(story)`）。測試函式 307 個不變；`assert` 2290 行 → 2291 行。
+- **唯一改到內容的斷言**：`test_story_guardian.gd` 原本兩行 `assert_eq(g.phase, 1)`，改成三行——開打時下砸前兆是 1 秒、打到殘血輪替不變、下砸前兆沒有縮短（驗的是同一件事「只有一個階段」，改成看行為）。另外 `test_undertaker.gd` 一個測試改名＋一句訊息。64368c5 的 commit 訊息寫「斷言 2290 行前後一樣」是改 `phase` 之前數的，實際多一行。
+- **畫面沒有變**（動到 shader 所以拍了）：改之前把 `game`、`scripts` 複製一份，在那一份拍「改前」，工作目錄拍「改後」，同一台機器、軟體 Vulkan、沒有退回 OpenGL。`40-rb-start`、`45-rb-guardian`、廣場（`--at=plaza`）三個鏡頭的差異都是 **0.0%**（亮度 30.0／67.7／32.9，過曝 0.01%～0.02%，死黑 13.1%／0.2%／0.1%）。數字是 0，所以沒有看圖。
+- CI：run 43030746513（64368c5，21:37 push）兩個 job **全綠**：「Import、測試、匯出」21:39，截圖、匯出版 smoke test、打包、更新「latest」21:43，盤點截圖與更新「screens」21:46。run 43032620222（8636a03，21:49 push）：「測試與匯出」job **全綠**（測試 21:51、匯出版 smoke test 與更新「latest」21:55）；**「盤點截圖」job 紅了兩次，都不是程式的問題**——runner 裝 `mesa-vulkan-drivers` 時 `apt-get` 解析不到 `azure.archive.ubuntu.com`（`Temporary failure resolving`），一張圖都還沒拍就結束。我用「重跑失敗的 job」重跑一次（21:56），同一個錯。所以 **`screens` 現在是 64368c5 拍的**（改名那個 commit；8636a03 只刪了 shader 裡沒人設的參數，本機三個鏡頭差異 0.0%，畫面一樣），`latest` 是 8636a03。
+
+**畫面前後對照的結論**
+
+- 這一輪沒有要改畫面；唯一動到畫面程式的是刪 shader 裡沒人設的參數，三個固定鏡頭差異 0.0%。
+
+**遇到的問題**
+
+- **`docs/technical-direction.md` 的刪除跟著程式 commit（8636a03）一起出去了**：我先 `git rm` 了它，後來 commit shader 時只 `git add` 兩個程式檔，但 `git rm` 已經在暫存區。NEXT「0」早就寫過這個坑（要分開提交的東西不要先 `git rm`）。沒有壞處（本來就要刪，內容已經併進 `04-architecture.md`，幾分鐘後的文件 commit 補上），不改寫歷史。
+- **CI 的「盤點截圖」job 因為 runner 的 apt 連不上而紅**（見上面 CI）：這個 job 是 `continue-on-error`，不影響測試與發布，但 `screens` 少更新一次。下一輪的做法寫在 NEXT「0」第一條。
+- 這台機器的 `add_repo` 工具還是找不到；repo 已經在工作目錄，`git checkout main && git pull --rebase` 之後正常。
+- 這一輪機器很快：`check.sh` 約 1 分 50 秒、截圖每張不到 1 分鐘、暖機那一張也沒有逾時；CI 一個 run 兩個 job 約 10 分鐘就全部結束（以前 15～25 分鐘）。
+
+
 ## 2026-11-11 19:26–20:08　第 80 輪：舊版清理第二步做完——送葬者的第二階段／抓取／連續下砸、北街藏起來的破屋頂刪掉
 
 **做了什麼**
