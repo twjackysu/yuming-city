@@ -358,6 +358,15 @@ func _after_move_phase2() -> void:
 	_check_frame_throw()
 
 
+## 命中點（D-217）：牠比人大一圈——胸口的高度、大衣的外緣
+func _hit_radius() -> float:
+	return 0.6
+
+
+func _hit_height() -> float:
+	return 1.45
+
+
 func _on_damaged(amount: float, info: Dictionary) -> void:
 	super._on_damaged(amount, info)
 	# 抓著諾恩時被打中弱點（席菈「打弱點」）就鬆手

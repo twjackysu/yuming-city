@@ -245,10 +245,146 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 	var weak: bool = str(info.get("weak", "")) != ""
 	if weak:
 		_flash_weak()
+	_hit_fx(info)
 	var knelt: bool = brain.add_stagger(float(info.get("stagger", 0.0)))
 	# 成就「看穿」：打中弱點而跪下（D-147）
 	if knelt and weak and intel_id() != "":
 		Game.session.add_stat("stats.%s_weak_kneels" % intel_id())
+
+
+# ---------------------------------------------------------------- 被打中的那一下（D-217）
+## 打中敵人原本只有聲音、頓一下、鏡頭晃——畫面上沒有東西飛出來。現在每次扣到血：
+## 命中點（朝攻擊者那一側、胸口高度）噴一把冷白的霜屑（往攻擊者那邊飛、往下掉），打中弱點（鐵件）再多一把橘色火星；
+## 同一點一盞很短的閃光——暗色的身體在那一下有輪廓。掛在關卡上（敵人倒下沉進雪裡也不會被帶走），自己收掉。
+## 一次性粒子照 D-208：節點先擺到位置，粒子才開始噴。
+const HIT_CHIP_COLOR: Color = Color(0.82, 0.93, 1.0)
+const HIT_SPARK_COLOR: Color = Color(1.0, 0.7, 0.32)
+const HIT_FLASH_SEC: float = 0.14
+const HIT_FLASH_ENERGY: float = 3.2
+const HIT_FLASH_RANGE: float = 3.0
+## 粒子飛多久；整組在這之後收掉
+const HIT_FX_SEC: float = 0.5
+## 命中點那一下的亮斑（一片面向鏡頭的加法圓點，HIT_POP_SEC 秒內放大、淡掉）：小亮點太細，要有一下「啪」
+const HIT_POP_SEC: float = 0.12
+const HIT_POP_SIZE: float = 0.55
+
+## 被打中過幾次、最後一次的那一組（測試、截圖用）
+var hit_fx_count: int = 0
+var last_hit_fx: Node3D
+## 截圖用：閃光不熄、整組不收
+var debug_hold_hit: bool = false
+
+
+## 命中點離身體中心多遠、多高（子類別照體型改）
+func _hit_radius() -> float:
+	return 0.35
+
+
+func _hit_height() -> float:
+	return 1.05
+
+
+## 攻擊者在 from：水平方向（從敵人指向攻擊者；重疊時用敵人的正面）
+func hit_dir(from: Vector3) -> Vector3:
+	var d := Vector3(from.x - global_position.x, 0.0, from.z - global_position.z)
+	return d.normalized() if d.length() > 0.01 else forward()
+
+
+func hit_point(from: Vector3) -> Vector3:
+	return global_position + hit_dir(from) * _hit_radius() + Vector3.UP * _hit_height()
+
+
+func _hit_fx(info: Dictionary) -> Node3D:
+	if not is_inside_tree():
+		return null
+	var src: Node3D = info.get("source") as Node3D
+	var from: Vector3 = src.global_position if src != null and is_instance_valid(src) else global_position + forward()
+	var out: Vector3 = hit_dir(from)
+	var weak: bool = str(info.get("weak", "")) != ""
+	var fx := Node3D.new()
+	fx.name = "HitFx"
+	fx.set_meta("weak", weak)
+	var chips: CPUParticles3D = _hit_particles("Chips", 24 if weak else 16, HIT_CHIP_COLOR, out, 0.09, Vector2(1.8, 4.6))
+	fx.add_child(chips)
+	var sparks: CPUParticles3D = null
+	if weak:
+		sparks = _hit_particles("Sparks", 30, HIT_SPARK_COLOR, out, 0.085, Vector2(3.0, 7.5))
+		fx.add_child(sparks)
+	var flash := OmniLight3D.new()
+	flash.name = "Flash"
+	flash.light_color = Color(1.0, 0.86, 0.62) if weak else HIT_CHIP_COLOR
+	flash.light_energy = HIT_FLASH_ENERGY * (1.5 if weak else 1.0)
+	flash.omni_range = HIT_FLASH_RANGE
+	flash.omni_attenuation = 1.4
+	flash.shadow_enabled = false
+	flash.light_volumetric_fog_energy = 0.4
+	# 往外一點：照在身體朝攻擊者的那一面，不是埋在身體裡
+	flash.position = out * 0.35
+	fx.add_child(flash)
+	var pop := MeshInstance3D.new()
+	pop.name = "Pop"
+	var pop_quad := QuadMesh.new()
+	pop_quad.size = Vector2.ONE * HIT_POP_SIZE * (1.5 if weak else 1.0)
+	pop.mesh = pop_quad
+	var pop_mat: StandardMaterial3D = ParticleLook.material(flash.light_color, true)
+	# 畫在身體前面：命中點貼著大衣，不關深度測試會被大衣切掉一半
+	pop_mat.no_depth_test = true
+	pop.material_override = pop_mat
+	pop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pop.scale = Vector3.ONE * 0.45
+	fx.add_child(pop)
+	# 連打時同名的兄弟節點：要引擎編成 HitFx2、HitFx3（不要 @Node3D@123 那種看不懂的名字）
+	(get_parent() if get_parent() != null else self).add_child(fx, true)
+	fx.global_position = hit_point(from)
+	chips.emitting = true
+	if sparks != null:
+		sparks.emitting = true
+	hit_fx_count += 1
+	last_hit_fx = fx
+	if not debug_hold_hit:
+		var t: Tween = fx.create_tween()
+		t.tween_property(flash, "light_energy", 0.0, HIT_FLASH_SEC).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(pop, "scale", Vector3.ONE, HIT_POP_SEC).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		t.parallel().tween_property(pop_mat, "albedo_color:a", 0.0, HIT_POP_SEC).set_ease(Tween.EASE_IN)
+		t.tween_interval(HIT_FX_SEC)
+		t.tween_callback(fx.queue_free)
+	return fx
+
+
+## 命中噴出來的一把小亮點：加法混色、往 out 那一側的斜上方噴、往下掉、越飛越小。建好但還沒開始噴。
+func _hit_particles(node_name: String, amount: int, color: Color, out: Vector3, size: float, speed: Vector2) -> CPUParticles3D:
+	var ps := CPUParticles3D.new()
+	ps.name = node_name
+	ps.emitting = false
+	ps.one_shot = true
+	ps.explosiveness = 1.0
+	ps.amount = amount
+	ps.lifetime = HIT_FX_SEC
+	ps.randomness = 0.5
+	ps.direction = (out + Vector3.UP * 0.55).normalized()
+	ps.spread = 48.0
+	ps.initial_velocity_min = speed.x
+	ps.initial_velocity_max = speed.y
+	ps.gravity = Vector3(0, -11.0, 0)
+	ps.damping_min = 0.5
+	ps.damping_max = 2.0
+	ps.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	ps.emission_sphere_radius = 0.1
+	ps.scale_amount_min = 0.6
+	ps.scale_amount_max = 1.5
+	var shrink := Curve.new()
+	shrink.add_point(Vector2(0.0, 1.0))
+	shrink.add_point(Vector2(1.0, 0.25))
+	ps.scale_amount_curve = shrink
+	var quad := QuadMesh.new()
+	quad.size = Vector2(size, size)
+	quad.material = ParticleLook.material(color, true)
+	ps.mesh = quad
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	ps.color_ramp = ramp
+	return ps
 
 
 # ---------------------------------------------------------------- 跪地（D-191）
