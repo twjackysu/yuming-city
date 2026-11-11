@@ -2,6 +2,18 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-224　2026-11-11　v3 以前的存檔不再遷移，讀到回「太舊」；燃燒劍、油燈、夾板、木樁與 7 個音效刪掉
+
+- 決策：
+  1. **`SaveCodec` 新增 `Status.TOO_OLD` 與 `MIN_VERSION`＝3**。v0～v2 的存檔（已經刪掉的舊劇情：切片、第 1～3 章）不遷移、不刪檔、不覆寫，讀到就回 `TOO_OLD`，呼叫端跟「沒有存檔」一樣處理（`GameSession.load_slot()` 回傳非 OK、狀態不換）。遷移的骨架（`migrate()`／`_migrate_step()`）留著，下一次改格式（v3 → v4）照舊加一段。
+  2. **`GameState.memories_paid`（記憶代價）與 `guide`（攻略筆記）刪掉，不升存檔版本**。v3 存檔裡這兩個 key 的值一定是空的（新劇情從來沒寫過），`from_dict` 不讀它們、再存一次就沒有了。`StoryLogic` 的 `memory_paid` 條件一起刪：資料裡再出現會被 `validate_condition` 擋下來（不會默默當成不成立）。
+  3. **`GameState.mode` 的預設值 `"classic"` 這一輪不動**：舊劇情留在 `user://saves` 的 v3 存檔靠它跟新劇情分開，標題的「繼續」不認它（`test_title_entry`、`test_reboot_session` 在驗）。第 3 步跟「兩個存檔資料夾」一起收。
+  4. **角色身上只有舊劇情用到的刪掉**：諾恩的油燈（`ch1.lamp_received`）與夾板（`slice.sheila_talked`，連 `Puppet.set_splint()`）、席菈的燃燒劍（`ignite_sword()`／`burn_strike()`／劍上的 `FireLight` 與 `FireSparks`）、`dash_to_point()`、`face_toward()`、`facing_yaw()`；送葬者四個沒人呼叫的函式。木樁照 D-223 刪掉。
+  5. **音效再刪 7 個**：D-223 留下的 6 個（`bell`、`bell_ninth`、`daylight_ambience`、`canal_ambience`、`frost_wind_indoor`、`hearth_crackle`）加上只有燃燒劍在播的 `ignite`。`gen_sfx.py` 的 `bell()` 合成函式留著（標題與「待續」的配樂裡遠遠的鐘在用）。`Ambience.play_at()`（有位置的循環環境音）現在沒有人用，但地下市場的火盆、滴水會用到，留著，測試改拿 `frost_wind` 驗。
+  6. **對話系統的測試不再靠遊戲裡的舊對話**：遊戲資料用 `rb_sheila_meet` 驗；目前劇情還沒用到的功能（選項的 `if`、`text_if`）用測試檔裡的小對話驗——功能留著（之後的章節會用），驗證的強度不變。
+- 理由：Jacky 11/11 說舊版全部砍掉（D-220）。舊存檔對應的章節已經不存在，遷移進來也沒有地方可以繼續玩；留著遷移程式只是讓「存檔格式」看起來比實際複雜。不刪檔是因為那是玩家的檔案，我們只是不讀。
+- 影響：`game/` 與 `scripts/` 這一輪淨少約 820 行（刪 1048、加 225，加的大部分是改寫的測試）；音效 25 → 18 個；測試 317 → 315 個（少的兩個是「付出記憶讓選項消失」併進新的條件測試、燃燒劍的火星）。新劇情的 70 個測試一個字都沒動。畫面：刪掉的節點本來就看不見（火光 `visible = false`、火星 `emitting = false`、夾板與油燈的旗標沒有人設），沒有拍圖。
+
 ## D-223　2026-11-11　灰巡者留著當「一般的敵人」、木樁刪掉；沒有人播的 12 個音效先刪
 
 - 決策：
