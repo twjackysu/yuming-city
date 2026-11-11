@@ -777,8 +777,8 @@ func _build_streets() -> void:
 
 
 ## 一排房子：從 from 排到 to（都在街道邊線上），正面朝 face（指向街道）。
-## 房子之間留窄巷，後面有一道連續的後牆堵住。collapsible=true 時每棟一個節點（北街）。
-func _row(from: Vector3, to: Vector3, face: Vector3, collapsible: bool = false) -> void:
+## 房子之間留窄巷，後面有一道連續的後牆堵住。quiet=true（北街）：煙囪不冒煙、門口不掛招牌。
+func _row(from: Vector3, to: Vector3, face: Vector3, quiet: bool = false) -> void:
 	var dir: Vector3 = (to - from).normalized()
 	var length: float = from.distance_to(to)
 	var t: float = 0.0
@@ -789,7 +789,7 @@ func _row(from: Vector3, to: Vector3, face: Vector3, collapsible: bool = false) 
 		var depth: float = _rng.randf_range(5.0, 6.5)
 		var h: float = _rng.randf_range(4.2, 7.5)
 		var center: Vector3 = from + dir * (t + w * 0.5) - face * (depth * 0.5)
-		_house(center, w, depth, h, dir, face, collapsible)
+		_house(center, w, depth, h, dir, face, quiet)
 		t += w + _rng.randf_range(0.15, 0.4)
 	var back: Vector3 = (from + to) * 0.5 - face * 6.9
 	_batch.add_box_at(_axis_size(dir, face, length + 1.0, 0.6, 4.0), back + Vector3(0, 2.0, 0), look.stone_wall())
@@ -799,46 +799,29 @@ static func _axis_size(dir: Vector3, face: Vector3, along: float, across: float,
 	return Vector3(absf(dir.x) * along + absf(face.x) * across, height, absf(dir.z) * along + absf(face.z) * across)
 
 
-func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, face: Vector3, collapsible: bool) -> void:
+## 每一棟都併進整個鎮的合併 mesh（北街以前每棟一個節點、多蓋一份藏起來的破屋頂，舊劇情的陷落用的，D-226 刪了）。
+func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, face: Vector3, quiet: bool) -> void:
 	var batch: StaticBatch = _batch
 	var holder: Node3D = self
 	var origin: Vector3 = center
-	if collapsible:
-		batch = StaticBatch.new()
-		holder = Node3D.new()
-		holder.name = "NorthHouse%d" % _north_houses.size()
-		holder.position = center
-		holder.set_meta("height", h)
-		add_child(holder)
-		_north_houses.append(holder)
-		origin = Vector3.ZERO
 	var plaster: Color = FrostbridgeLook.PLASTER if _rng.randf() < 0.6 else FrostbridgeLook.PLASTER_WARM
 	batch.add_box_at(_axis_size(dir, face, w, depth, h), origin + Vector3(0, h * 0.5, 0), look.half_timber(plaster))
 	# 屋簷＋三角屋頂（屋脊沿街道方向）＋屋頂積雪
 	batch.add_box_at(_axis_size(dir, face, w + 0.5, depth + 0.7, 0.25), origin + Vector3(0, h + 0.12, 0), look.mat(FrostbridgeLook.ROOF), false)
 	var roof_h: float = _rng.randf_range(1.4, 2.4)
 	var basis := Basis.IDENTITY if absf(dir.z) > 0.5 else Basis(Vector3.UP, PI * 0.5)
-	# 北街的房子：完整屋頂放在自己的 batch（陷落時藏起來），另外先蓋好一份破屋頂（D-091）
-	var roof_batch: StaticBatch = StaticBatch.new() if collapsible else batch
 	# 屋瓦（D-107）：斜面 UV 是公尺，roof_tiles.gdshader 排一排排的瓦；雪的下緣露出最下面幾排
 	var roof: ArrayMesh = RoofMesh.build(depth + 0.7, roof_h, w + 0.5)
-	roof_batch.add_mesh(roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.5, 0)), look.roof_tiles())
+	batch.add_mesh(roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * 0.5, 0)), look.roof_tiles())
 	roof_count += 1
 	var snow_roof := PrismMesh.new()
 	snow_roof.size = Vector3((depth + 0.7) * ROOF_SNOW, roof_h * ROOF_SNOW, w + 0.56)
-	roof_batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * (1.0 - ROOF_SNOW) + roof_h * ROOF_SNOW * 0.5 + 0.06, 0)), look.snow())
-	_roof_snow_lip(roof_batch, basis, origin, center, depth + 0.7, roof_h, w + 0.56, h + 0.25)
-	if collapsible:
-		roof_batch.build(holder, "Roof")
-		var ruin := StaticBatch.new()
-		var info: Dictionary = _roof_ruin(ruin, center, w, depth, h, roof_h, dir, face, basis)
-		var ruin_node: Node3D = ruin.build(holder, "Ruin")
-		ruin_node.visible = false
-		holder.set_meta("ruin", info)
+	batch.add_mesh(snow_roof, Transform3D(basis, origin + Vector3(0, h + 0.25 + roof_h * (1.0 - ROOF_SNOW) + roof_h * ROOF_SNOW * 0.5 + 0.06, 0)), look.snow())
+	_roof_snow_lip(batch, basis, origin, center, depth + 0.7, roof_h, w + 0.56, h + 0.25)
 	if _rng.randf() < 0.35:
 		var c: Vector3 = origin + dir * _rng.randf_range(-w * 0.3, w * 0.3) - face * depth * 0.2
 		batch.add_box_at(Vector3(0.6, 1.6, 0.6), c + Vector3(0, h + roof_h * 0.6, 0), look.stone_wall(), false)
-		_chimney_top(batch, holder, c + Vector3(0, h + roof_h * 0.6 + 0.8, 0), center, collapsible)
+		_chimney_top(batch, holder, c + Vector3(0, h + roof_h * 0.6 + 0.8, 0), center, quiet)
 	# 正面：門＋窗（部分亮燈）
 	var front: Vector3 = origin + face * (depth * 0.5)
 	var door_off: float = _rng.randf_range(-w * 0.25, w * 0.25)
@@ -875,11 +858,9 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 				holder.add_child(l)
 				light_count += 1
 	_upper_windows(batch, front, w, h, dir, face, floors, window_mat)
-	if not collapsible and _house_hash(center, 3.3) < 0.28:
+	if not quiet and _house_hash(center, 3.3) < 0.28:
 		var sign_side: float = 1.0 if door_off < 0.0 else -1.0
 		_shop_sign(batch, front + dir * (door_off - sign_side * 0.95), face)
-	if collapsible:
-		batch.build(holder, "Mesh")
 
 
 ## 樓上的窗（D-096，第三輪盤點第 2 項）：原本兩層樓的房子只在 1.6、4.0 m 各開兩扇窗，
@@ -945,9 +926,9 @@ const MAX_SMOKE: int = 8
 var smoke_count: int = 0
 
 
-func _chimney_top(batch: StaticBatch, holder: Node3D, top: Vector3, house_center: Vector3, collapsible: bool) -> void:
+func _chimney_top(batch: StaticBatch, holder: Node3D, top: Vector3, house_center: Vector3, quiet: bool) -> void:
 	batch.add_box_at(Vector3(0.76, 0.12, 0.76), top + Vector3(0, 0.04, 0), look.stone_wall(), false)
-	var smoky: bool = not collapsible and smoke_count < MAX_SMOKE and _house_hash(house_center, 5.1) < 0.6
+	var smoky: bool = not quiet and smoke_count < MAX_SMOKE and _house_hash(house_center, 5.1) < 0.6
 	if not smoky:
 		batch.add_box_at(Vector3(0.66, 0.07, 0.66), top + Vector3(0, 0.13, 0), look.snow(), false)
 		return
@@ -1024,150 +1005,6 @@ func _roof_snow_lip(batch: StaticBatch, roof_basis: Basis, origin: Vector3, cent
 
 static func _house_hash(p: Vector3, salt: float) -> float:
 	return fposmod(sin(p.x * 12.9898 + p.y * 4.1414 + p.z * 78.233 + salt * 37.719) * 43758.5453, 1.0)
-
-
-## 破屋頂每片上的兩團雪多高：一大塊薄的、偏一邊的一塊（D-127，原本 0.1／0.14）。
-## 原本還有屋簷那端一小團（0.42×0.48×0.1，D-133 拿掉：塌到街邊那片離鏡頭很近，像一塊發亮的白色石膏浮在瓦礫上；
-## 改成一條薄雪也還是一團亮白）
-const RUIN_SNOW_H: Array[float] = [0.065, 0.085]
-
-
-## 陷落後的屋頂（D-091）：完整的三角屋頂陷下去以後是一大片平的淺色斜面（第二輪盤點第 9 項）。
-## 這裡蓋一份「破掉的」版本（房子自己的座標）：朝街的那面斷成 3～4 片——一片整個掉進屋裡
-## （露出斷掉的椽子、屋脊梁和黑洞洞的屋內）、其他片往屋裡塌陷或往下滑開（上緣露出椽子）；
-## 每片上的雪只蓋住一部分，邊緣露出深色屋瓦；背面那面完整、有雪；兩端補上山牆。
-## 亂數一律用位置雜湊（不動 _rng，整個鎮的配置不變）。回傳 {"segments", "holes", "rafters"} 給測試。
-func _roof_ruin(batch: StaticBatch, center: Vector3, w: float, depth: float, h: float, roof_h: float,
-		dir: Vector3, face: Vector3, prism_basis: Basis) -> Dictionary:
-	var roof_mat := look.mat(FrostbridgeLook.ROOF)
-	# 斷開的屋面與掉下來的碎片用跟完整屋頂同一套屋瓦（D-110）：RoofMesh.slab 的頂面 UV 是公尺
-	var tiles := look.roof_tiles()
-	var wood := look.mat(FrostbridgeLook.WOOD)
-	var snow := look.snow()
-	var up := Vector3.UP
-	var y0: float = h + 0.25
-	var s: float = (depth + 0.7) * 0.5
-	var span: float = w + 0.5
-	var t: float = 0.16
-	var ridge: Vector3 = up * (y0 + roof_h)
-	var slope_len: float = sqrt(s * s + roof_h * roof_h)
-	var a: float = atan2(roof_h, s)
-	# 屋內：屋簷板上一層近黑的底（從洞看進去是暗的）
-	batch.add_box_at(_axis_size(dir, face, w - 0.2, depth - 0.2, 0.02), up * (h + 0.255),
-		look.mat(Color(0.018, 0.016, 0.015)), false)
-	# 背面（不朝街）：完整的一片＋雪
-	var back_info: Array = _slope_frame(-face, a)
-	var bu: Vector3 = back_info[0]
-	var bn: Vector3 = back_info[1]
-	var bb := Basis(bu, bn, bu.cross(bn))
-	var back_c: Vector3 = ridge - bu * (slope_len * 0.5) + bn * (t * 0.5)
-	batch.add_mesh(RoofMesh.slab(slope_len, t, span), Transform3D(bb, back_c), tiles)
-	batch.add_box(Vector3(slope_len * 0.78, 0.1, span * 0.97), Transform3D(bb, back_c + bu * (slope_len * 0.08) + bn * (t * 0.5 + 0.05)), snow, false)
-	# 兩端山牆（三角形，深色）＋屋脊梁
-	for side: float in [-1.0, 1.0]:
-		var gable := PrismMesh.new()
-		gable.size = Vector3(s * 2.0 * 0.96, roof_h * 0.96, 0.18)
-		batch.add_mesh(gable, Transform3D(prism_basis, up * (y0 + roof_h * 0.48) + dir * side * (w * 0.5 - 0.09)), roof_mat)
-	batch.add_box_at(_axis_size(dir, face, span, 0.17, 0.17), ridge - up * 0.1, wood, false)
-	# 朝街那面：斷成 k 片
-	var k: int = 3 if span < 5.8 else 4
-	var gap: float = 0.18
-	var seg_w: float = (span - gap * float(k - 1)) / float(k)
-	var hole: int = int(_ruin_hash(center, 0, 1.0) * float(k)) % k
-	var front_info: Array = _slope_frame(face, a)
-	var fu: Vector3 = front_info[0]
-	var fn: Vector3 = front_info[1]
-	var kinds: Array[String] = []
-	var ruin_tiles: int = 1
-	for i: int in k:
-		var along: float = -span * 0.5 + seg_w * (float(i) + 0.5) + gap * float(i)
-		if i == hole:
-			kinds.append("hole")
-			# 洞底（屋內地板上）：掉下來的屋瓦碎片與一團雪
-			for d: int in 4:
-				var dp: Vector3 = up * (h + 0.3) + dir * (along + seg_w * lerpf(-0.4, 0.4, _ruin_hash(center, d, 21.0))) \
-					+ face * (s * lerpf(0.05, 0.75, _ruin_hash(center, d, 22.0)))
-				var db := Basis(up, _ruin_hash(center, d, 23.0) * TAU) * Basis(Vector3.RIGHT, lerpf(-0.3, 0.3, _ruin_hash(center, d, 24.0)))
-				batch.add_mesh(RoofMesh.slab(lerpf(0.3, 0.6, _ruin_hash(center, d, 25.0)), 0.06, lerpf(0.2, 0.4, _ruin_hash(center, d, 26.0))),
-					Transform3D(db, dp), tiles)
-			batch.add_mesh(SnowMound.build(0.75, 0.62, 0.2, _ruin_hash(center, i, 28.0) * 97.0),
-				Transform3D(Basis(up, _ruin_hash(center, i, 27.0) * TAU), up * (h + 0.27) + dir * along + face * (s * 0.4)), snow)
-			continue
-		var sag: bool = _ruin_hash(center, i, 2.0) < 0.5
-		kinds.append("sag" if sag else "slide")
-		var hinge: Vector3 = ridge + dir * along
-		# 塌陷：以屋脊為軸、屋簷那端往屋裡掉；滑開：整片往下滑、稍微翹起（架在椽子上）
-		var tilt: float = deg_to_rad(lerpf(10.0, 24.0, _ruin_hash(center, i, 3.0))) if sag else -deg_to_rad(lerpf(1.0, 3.0, _ruin_hash(center, i, 3.0)))
-		var plen: float = slope_len * (lerpf(0.82, 0.95, _ruin_hash(center, i, 4.0)) if sag else 1.0)
-		if not sag:
-			hinge -= fu * lerpf(0.4, 0.75, _ruin_hash(center, i, 5.0))
-		var fr: Array = _slope_frame(face, a + tilt)
-		var u2: Vector3 = fr[0]
-		var n2: Vector3 = fr[1]
-		var pb := Basis(u2, n2, u2.cross(n2))
-		pb = Basis(u2, deg_to_rad(lerpf(-1.0, 1.0, _ruin_hash(center, i, 6.0)) * (4.0 if sag else 1.5))) * pb
-		var pc: Vector3 = hinge - u2 * (plen * 0.5) + n2 * (t * 0.5)
-		batch.add_mesh(RoofMesh.slab(plen, t, seg_w), Transform3D(pb, pc), tiles)
-		ruin_tiles += 1
-		# 雪只蓋住一部分：上下緣與斷口露出屋瓦。一大塊薄的＋一塊偏一邊的厚一點（屋簷那端的一小團 D-133 拿掉）。
-		# 都是中間厚、邊緣薄到 0 的低面數雪堆（SnowMound，D-102），不再是直邊的雪板。
-		# 斜的屋面上雪留不厚（D-127）：高度是原本的六成多，近看不再是一個個鼓起的白枕頭；
-		# on_tiles：雪面看得到底下一排排屋瓦的橫紋，薄的地方露出屋瓦
-		var snow_len: float = plen * lerpf(0.5, 0.72, _ruin_hash(center, i, 7.0))
-		var shift: float = (plen - snow_len) * 0.5 * (_ruin_hash(center, i, 8.0) * 2.0 - 1.0) * 0.8
-		var top: Vector3 = pc + pb.y * (t * 0.5)
-		batch.add_mesh(SnowMound.build(snow_len, seg_w * lerpf(0.78, 0.95, _ruin_hash(center, i, 9.0)), RUIN_SNOW_H[0], _ruin_hash(center, i, 10.0) * 97.0, Vector2.ZERO, false, true),
-			Transform3D(pb, top + pb.x * shift), snow)
-		var side: float = 1.0 if _ruin_hash(center, i, 15.0) < 0.5 else -1.0
-		var p2_len: float = plen * lerpf(0.25, 0.42, _ruin_hash(center, i, 16.0))
-		var p2_w: float = seg_w * lerpf(0.35, 0.6, _ruin_hash(center, i, 17.0))
-		batch.add_mesh(SnowMound.build(p2_len, p2_w, RUIN_SNOW_H[1], _ruin_hash(center, i, 11.0) * 97.0, Vector2.ZERO, false, true),
-			Transform3D(pb, top + pb.x * (shift - side * snow_len * 0.35) + pb.z * side * (seg_w * 0.5 - p2_w * 0.5 - 0.05)), snow)
-	# 椽子：每 0.75 m 一根。洞裡的斷成兩截（屋脊那截往屋裡垂、屋簷那截翹起來），
-	# 往下滑開的那片底下是完整的（上緣的縫看得到），塌陷的那片底下沒有（已經跟著塌了）。
-	var rafters: int = 0
-	var j: int = 0
-	var along_r: float = -span * 0.5 + 0.35
-	while along_r < span * 0.5 - 0.2:
-		var seg: int = clampi(int((along_r + span * 0.5) / (seg_w + gap)), 0, k - 1)
-		var kind: String = kinds[seg]
-		var line: Vector3 = dir * along_r
-		if kind == "slide":
-			var rb := Basis(fu, fn, fu.cross(fn))
-			batch.add_box(Vector3(slope_len * 0.98, 0.12, 0.09), Transform3D(rb, ridge + line - fu * (slope_len * 0.5) - fn * 0.08), wood, false)
-			rafters += 1
-		elif kind == "hole":
-			# 屋脊那截：往屋裡垂
-			var droop: float = deg_to_rad(lerpf(22.0, 48.0, _ruin_hash(center, j, 11.0)))
-			var l1: float = slope_len * lerpf(0.3, 0.55, _ruin_hash(center, j, 12.0))
-			var f1: Array = _slope_frame(face, a + droop)
-			var u1: Vector3 = f1[0]
-			var n1: Vector3 = f1[1]
-			batch.add_box(Vector3(l1, 0.12, 0.09), Transform3D(Basis(u1, n1, u1.cross(n1)), ridge + line - u1 * (l1 * 0.5) - n1 * 0.06), wood, false)
-			# 屋簷那截：從屋簷往上翹出屋面
-			var lift: float = deg_to_rad(lerpf(8.0, 26.0, _ruin_hash(center, j, 13.0)))
-			var l2: float = slope_len * lerpf(0.22, 0.42, _ruin_hash(center, j, 14.0))
-			var eave: Vector3 = face * s + up * y0 + line
-			var e_dir: Vector3 = -face * cos(a + lift) + up * sin(a + lift)
-			var e_n: Vector3 = face * sin(a + lift) + up * cos(a + lift)
-			batch.add_box(Vector3(l2, 0.12, 0.09), Transform3D(Basis(e_dir, e_n, e_dir.cross(e_n)), eave + e_dir * (l2 * 0.5)), wood, false)
-			rafters += 2
-		j += 1
-		along_r += 0.75
-	return {"segments": k, "holes": kinds.count("hole"), "kinds": kinds, "rafters": rafters, "tiled": ruin_tiles}
-
-
-## 破屋頂用的位置雜湊（0～1）：同一棟房子、同一個 i／salt 永遠同一個值。
-static func _ruin_hash(c: Vector3, i: int, salt: float) -> float:
-	return fposmod(sin(c.x * 12.9898 + c.z * 78.233 + float(i) * 37.719 + salt * 4.123) * 43758.5453, 1.0)
-
-
-## 斜面座標：朝 out 方向往下的屋面，傾角 angle（弧度），回傳 [往屋脊的方向 u, 屋面法線 n]。
-## u 從屋簷指向屋脊；n 朝外朝上。angle 越大越陡（往屋裡塌陷就是加大）。
-static func _slope_frame(out: Vector3, angle: float) -> Array:
-	var u: Vector3 = -out * cos(angle) + Vector3.UP * sin(angle)
-	var n: Vector3 = out * sin(angle) + Vector3.UP * cos(angle)
-	return [u, n]
 
 
 ## 門邊掛燈：木支架從牆伸出、燈罩發光、上面一片小屋頂；燈數還有額度時加一盞暖光。

@@ -4,8 +4,6 @@ extends Node3D
 ## （舊劇情的敲鐘、北街陷落、車隊戰第 77 輪拿掉了，D-220。）
 
 var _rng := RandomNumberGenerator.new()
-## 北街的房子（每棟一個 Node3D，meta "height"）
-var _north_houses: Array[Node3D] = []
 var _bell: Node3D
 var _bell_light: OmniLight3D
 ## 南街的斷拱（單純的場景物件，霜橋鎮的 `_build_south_arch()`）

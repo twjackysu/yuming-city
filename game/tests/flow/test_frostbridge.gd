@@ -139,7 +139,7 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true(wet >= 2, "街道與廣場是濕石板路（%d 個合併 mesh）" % wet)
 	assert_true(timber >= 3, "房子是半木構外牆、後牆與城牆是石牆（%d 個合併 mesh）" % timber)
 	assert_true((town.get_node("Collision") as StaticBody3D).get_child_count() > 60, "房子都有碰撞")
-	assert_true(level._north_houses.size() >= 4, "北街至少四棟可以陷落的房子")
+	assert_eq(level.find_children("NorthHouse*", "Node3D", true, false).size(), 0, "北街的房子也併在整個鎮的合併 mesh 裡，不是每棟一個節點（D-226）")
 	assert_true(int(level.get("light_count")) <= 40, "燈的數量有上限（%d）" % int(level.get("light_count")))
 	# 石階兩側的矮石燈柱（D-062）：底下一對、台地邊一對，都在街道兩側、不擋中間的路
 	var lanterns: Array = level.get("step_lanterns")
@@ -456,7 +456,7 @@ func test_chimney_smoke() -> void:
 		var p: CPUParticles3D = n as CPUParticles3D
 		assert_true(p.global_position.y > 5.0, "煙從屋頂上冒出來（y=%.1f）" % p.global_position.y)
 		assert_true(p.amount <= 16, "每根煙的粒子數很少（%d）" % p.amount)
-		assert_false(String(p.get_path()).contains("NorthHouse"), "北街（會陷落）的煙囪不冒煙")
+		assert_true(p.global_position.z > float(level.get("NORTH_START")) - 0.3, "北街的煙囪不冒煙（z=%.1f）" % p.global_position.z)
 	assert_eq(ParticleLook.untextured(level).size(), 0, "煙也是柔邊圓點，不是方塊")
 	await _free(level)
 
