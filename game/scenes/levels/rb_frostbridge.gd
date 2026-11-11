@@ -179,6 +179,11 @@ var ada: Puppet
 var ending: bool = false
 ## 「待續」播完之後做什麼；空的＝回標題。測試換成自己的（不要真的換場景）
 var end_done: Callable = Callable()
+## 「待續」的配樂（D-219）：卡出來時慢慢進來，回標題時跟著關卡一起收掉
+const END_MUSIC: String = "part_end_theme"
+const END_MUSIC_DB: float = -14.0
+const END_MUSIC_FADE: float = 2.5
+var end_music: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -703,6 +708,7 @@ func play_end_card() -> ChapterCard:
 	ending = true
 	if player != null:
 		player.process_mode = Node.PROCESS_MODE_DISABLED
+	end_music = Ambience.music(level, END_MUSIC, END_MUSIC_DB, END_MUSIC_FADE, "RbEndMusic")
 	return ChapterCard.play(level, "RB_END_NUMBER", "RB_END_TITLE", _on_end_card_done)
 
 

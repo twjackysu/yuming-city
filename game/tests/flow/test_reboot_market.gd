@@ -118,6 +118,7 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	await _frames(6)
 	assert_false(bool(s.state.get_flag("rb.market_reached", false)), "要先拿到工錢、聽她說貨梯")
 	assert_false(level.has_node("ChapterCard"))
+	assert_false(level.has_node("RbEndMusic"), "配樂等卡出來才進")
 	# 走近梨攤：艾妲開口
 	_stand(level, RebootOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
 	await _frames(6)
@@ -146,6 +147,22 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
 	assert_eq(rb.play_end_card(), card, "不會疊第二張")
+	# 「待續」不是無聲的（D-219）：卡出來時配樂從無聲慢慢進來，走音樂匯流排、會循環，只有一個
+	var music: AudioStreamPlayer = level.get_node_or_null("RbEndMusic") as AudioStreamPlayer
+	assert_not_null(music, "待續的配樂")
+	assert_eq(music, rb.end_music)
+	assert_eq(Ambience.sfx_of(music), RebootOpening.END_MUSIC)
+	if music != null:
+		assert_eq(music.bus, &"Music", "跟著「音樂」音量")
+		assert_true(music.playing, "在播")
+		assert_true(music.volume_db < RebootOpening.END_MUSIC_DB, "從小聲慢慢進來，不是突然響起")
+		var stream: AudioStreamWAV = music.stream as AudioStreamWAV
+		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "卡停多久都不會斷")
+	var players: int = 0
+	for c: Node in level.get_children():
+		if str(c.name).begins_with("RbEndMusic"):
+			players += 1
+	assert_eq(players, 1, "按兩次也只有一個配樂")
 	card.finish()
 	assert_eq(done[0], 1, "播完（或跳過）→ 回標題")
 	level.queue_free()
