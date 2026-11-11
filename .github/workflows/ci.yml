@@ -51,12 +51,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
           scripts/screenshot.sh build/title.png 30
-          scripts/screenshot.sh build/town.png 120 --level=frostbridge --perf || true
-          scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --dialogue=slice_pear_seller --dialogue-steps=2 --locale=zh_TW || true
-          scripts/screenshot.sh build/bell.png 120 --level=frostbridge --cutscene=slice_bell_nine --cutscene-steps=3 --locale=zh_TW || true
-          scripts/screenshot.sh build/combat.png 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW || true
-          scripts/screenshot.sh build/ninebreath.png 24 --level=frostbridge --convoy --throw=arch --throw-t=0.8 --pos=2.6,10.5 --face=arch --face-off=14 --locale=zh_TW || true
-          scripts/screenshot.sh build/street.png 40 --level=frostbridge --at=main --quality=2 --nohud --locale=zh_TW || true
+          scripts/screenshot.sh build/town.png 120 --level=frostbridge --rb-at=market --at=plaza --perf || true
+          scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --rb-at=market --at=plaza --dialogue=rb_ada_wages --dialogue-steps=2 --locale=zh_TW || true
+          scripts/screenshot.sh build/street.png 40 --level=frostbridge --rb-at=market --at=main --quality=2 --nohud --locale=zh_TW || true
 
       # Steam 膠囊圖替代版（D-064）：主街夜景＋標題字，正式主視覺做好前先給商店頁用
       - name: Steam 膠囊圖替代版
@@ -77,11 +74,6 @@ jobs:
         run: |
           SHORT_SHA="${GITHUB_SHA::7}"
           echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
-          # Windows 實機拍 Steam 商店截圖的腳本與清單一起放進 zip（D-145）；runner 有 pwsh 就先檢查語法
-          cp scripts/store-shots.ps1 scripts/store_shots.txt build/windows/
-          if command -v pwsh > /dev/null; then
-            pwsh -NoProfile -Command '$e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile("build/windows/store-shots.ps1", [ref]$null, [ref]$e); if ($e.Count -gt 0) { $e | ForEach-Object { Write-Error $_.Message }; exit 1 }; Write-Host "store-shots.ps1 語法 OK"'
-          fi
           cd build
           python3 -c "import shutil; shutil.make_archive('YumingCity-windows-x64-$SHORT_SHA', 'zip', 'windows')"
           python3 -c "import shutil; shutil.make_archive('YumingCity-linux-x64-$SHORT_SHA', 'zip', 'linux')"
@@ -96,9 +88,6 @@ jobs:
             build/title.png
             build/town.png
             build/dialogue.png
-            build/bell.png
-            build/combat.png
-            build/ninebreath.png
             build/street.png
             build/steam/*.png
             build/steam/achievements/achievement-icons.zip
@@ -117,9 +106,6 @@ jobs:
           [[ -s build/title.png ]] && FILES+=(build/title.png)
           [[ -s build/town.png ]] && FILES+=(build/town.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
-          [[ -s build/bell.png ]] && FILES+=(build/bell.png)
-          [[ -s build/combat.png ]] && FILES+=(build/combat.png)
-          [[ -s build/ninebreath.png ]] && FILES+=(build/ninebreath.png)
           [[ -s build/steam/header_capsule.png ]] && FILES+=(build/steam/header_capsule.png)
           [[ -s build/steam/achievements/achievement-icons.zip ]] && FILES+=(build/steam/achievements/achievement-icons.zip)
           [[ -s build/steam/achievements/achievements_sheet.png ]] && FILES+=(build/steam/achievements/achievements_sheet.png)
@@ -191,16 +177,10 @@ jobs:
             scripts/screenshot.sh "build/screens/$name.png" "$frames" "$@" > /dev/null 2>&1 || echo "截圖 $name 失敗"
           }
           shot 01-settings 30 --open=settings --locale=zh_TW
-          shot 02-pause 40 --level=frostbridge --open=pause --locale=zh_TW
-          shot 03-plaza 40 --level=frostbridge --at=plaza --locale=zh_TW
-          shot 04-stall 40 --level=frostbridge --pos=3.0,3.2 --locale=zh_TW
-          shot 05-steps 40 --level=frostbridge --at=steps --locale=zh_TW
-          shot 06-rescue 40 --level=frostbridge --rescue --locale=zh_TW
-          shot 07-convoy-fight 40 --level=frostbridge --convoy --phase2 --face=undertaker --locale=zh_TW
-          shot 08-arch-preview 40 --level=frostbridge --convoy --arch=preview --locale=zh_TW
-          shot 09-journal 40 --level=frostbridge --open=journal --locale=zh_TW
-          shot 10-plaza-en 40 --level=frostbridge --at=plaza --locale=en
-          shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW
+          shot 02-pause 40 --level=frostbridge --rb-at=market --open=pause --locale=zh_TW
+          shot 03-plaza 40 --level=frostbridge --rb-at=market --at=plaza --locale=zh_TW
+          shot 05-steps 40 --level=frostbridge --rb-at=market --at=steps --locale=zh_TW
+          shot 10-plaza-en 40 --level=frostbridge --rb-at=market --at=plaza --locale=en
           shot 40-rb-start 30 --level=frostbridge --rb-at=start --locale=zh_TW
           shot 41-rb-mist 30 --level=frostbridge --rb-at=mist --locale=zh_TW
           shot 42-rb-pursuer 40 --level=frostbridge --rb-at=pursuer --locale=zh_TW

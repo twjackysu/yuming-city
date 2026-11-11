@@ -1,6 +1,6 @@
 extends TestCase
-## 霜橋鎮白盒（M1.3）：關卡結構、合併後的 draw call 規模、檢查點出生位置、
-## 護送階段走進南街 → 送葬者戰 → 車隊通過 → 任務推進到收束。
+## 霜橋鎮（只有鎮本身，不開新遊戲、不掛劇情）：關卡結構、合併後的 draw call 規模、街道與廣場的擺設、開發用旗標。
+## 劇情（開場到貨梯）的測試在 test_reboot_*.gd。
 
 const PATH: String = "res://scenes/levels/frostbridge.tscn"
 
@@ -15,27 +15,27 @@ func before_each() -> void:
 
 func after_each() -> void:
 	tree.root.get_node("Game").set("session", _original)
-	if DirAccess.dir_exists_absolute(_dir):
-		for f: String in DirAccess.get_files_at(_dir):
-			DirAccess.remove_absolute(_dir.path_join(f))
-		DirAccess.remove_absolute(_dir)
+	tree.root.get_node("Game").set("dialogue", null)
+	for d: String in [_dir, _dir + "_reboot"]:
+		if DirAccess.dir_exists_absolute(d):
+			for f: String in DirAccess.get_files_at(d):
+				DirAccess.remove_absolute(d.path_join(f))
+			DirAccess.remove_absolute(d)
 
 
 func _session() -> GameSession:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", s)
-	s.new_game()
 	return s
 
 
-## 任務推到護送車隊（送葬者戰之前）。
-func _to_convoy(s: GameSession) -> void:
-	s.set_flag("slice.met_pear_seller", true)
-	for i: int in 9:
-		s.add_flag("slice.bell_rings")
-	s.set_flag("slice.rescue_done", true)
-	s.set_flag("slice.sheila_talked", true)
-	s.set_flag("slice.ashwalker_defeated", true)
+## 有劇情的 session，推到 at 那一段（"market"＝守衛打完、藥拿了，席菈跟在諾恩旁邊）。
+func _story_session(at: String) -> GameSession:
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", s)
+	s.new_reboot_game()
+	RebootOpening.dev_advance(s, at)
+	return s
 
 
 func _load() -> StoryLevel:
@@ -51,18 +51,14 @@ func _free(level: Node) -> void:
 	await tree.process_frame
 
 
-func test_checkpoints_map_to_frostbridge() -> void:
-	var game: Node = tree.root.get_node("Game")
-	for cp: String in ["start", "bell_tower", "rescue", "sheila_meet", "undertaker", "aftermath"]:
-		assert_eq(game.call("level_for_checkpoint", cp), "frostbridge", "檢查點 %s 在霜橋鎮" % cp)
-
-
 func test_layout_nodes_and_batching() -> void:
 	_session()
 	var level: StoryLevel = await _load()
-	for n: String in ["Player", "Hud", "PauseMenu", "DialogueBox", "Town", "SouthArch", "Bell",
-			"PearSellerTrigger", "BellTowerTrigger", "ConvoyTrigger", "BellCamWide", "BellCamRope", "NorthStreetCam"]:
+	for n: String in ["Player", "Hud", "PauseMenu", "DialogueBox", "Town", "SouthArch", "Bell"]:
 		assert_true(level.has_node(n), "有 %s" % n)
+	assert_false(level.has_node("RebootOpening"), "沒有開新遊戲：只有鎮，不掛劇情")
+	for old: String in ["BellTowerTrigger", "ConvoyTrigger", "ArchMemoryTrigger", "BellCamWide", "JournalView"]:
+		assert_false(level.has_node(old), "舊劇情的 %s 已經拿掉（D-220）" % old)
 	var town: Node = level.get_node("Town")
 	var meshes: int = 0
 	for c: Node in town.get_children():
@@ -169,8 +165,8 @@ func test_layout_nodes_and_batching() -> void:
 	assert_true(loop_top > yoke_bottom, "環穿進鐘架（環頂 %.2f、鐘架底 %.2f）" % [loop_top, yoke_bottom])
 	assert_true(loop.position.y - (loop.mesh as TorusMesh).outer_radius < -drop + 0.1, "環的底部埋在鐘冠裡")
 	assert_eq(int(level.get("belfry_louvres")), 24, "鐘室背面與兩側各 8 片百葉")
-	assert_false(level.has_node("Sheila"), "新遊戲時席菈還沒登場")
-	assert_false(level.has_node("Undertaker"), "送葬者還沒出現")
+	assert_false(level.has_node("Sheila"), "只有鎮：沒有席菈")
+	assert_false(level.has_node("Undertaker"), "只有鎮：沒有送葬者")
 	await _free(level)
 
 
@@ -232,28 +228,30 @@ func _uniform_default(code: String, uniform_name: String) -> float:
 
 
 func test_objective_guide_points_to_current_target() -> void:
-	var s: GameSession = _session()
+	_story_session("market")
 	var level: StoryLevel = await _load()
 	var hud: Hud = level.get_node("Hud") as Hud
+	# 劇情控制器停住：這裡只看指引，不要走近梨攤就開始跟艾妲說話
+	var rb: Node = level.get_node("RebootOpening")
+	rb.set_process(false)
+	rb.set_physics_process(false)
+	var player: Node3D = level.get_node("Player") as Node3D
+	player.global_position = Vector3(0.0, 0.05, 7.0)
 	for i: int in 3:
 		await tree.process_frame
-	var player: Node3D = level.get_node("Player") as Node3D
 	var stall: Vector3 = (level.get_node("PearSellerTrigger") as Node3D).global_position
 	var expect: float = Vector2(stall.x - player.global_position.x, stall.z - player.global_position.z).length()
-	assert_true(hud.guide.shown, "新遊戲時指向梨販")
-	assert_true(absf(hud.guide.distance - expect) < 0.5, "距離是到梨販的水平距離（%.1f／%.1f）" % [hud.guide.distance, expect])
+	assert_true(hud.guide.shown, "守衛打完之後指向梨攤（艾妲）")
+	assert_true(absf(hud.guide.distance - expect) < 0.5, "距離是到梨攤的水平距離（%.1f／%.1f）" % [hud.guide.distance, expect])
 	var settings: Node = tree.root.get_node("Settings")
 	settings.set("objective_marker", false)
 	await tree.process_frame
 	assert_false(hud.guide.shown, "設定關掉就不顯示")
 	settings.set("objective_marker", true)
-	# 敲鐘階段改指鐘樓
-	s.set_flag("slice.met_pear_seller", true)
 	await tree.process_frame
-	var tower: Vector3 = (level.get_node("BellTowerTrigger") as Node3D).global_position
-	assert_true(absf(hud.guide.distance - Vector2(tower.x - player.global_position.x, tower.z - player.global_position.z).length()) < 0.5, "敲鐘階段指向鐘樓")
+	assert_true(hud.guide.shown, "設定開回來又有了")
 	# 走到目標旁邊就不顯示
-	player.global_position = Vector3(tower.x, level.ground_y(tower) + 0.05, tower.z + 1.0)
+	player.global_position = Vector3(stall.x, level.ground_y(stall) + 0.05, stall.z + 1.0)
 	await tree.process_frame
 	assert_false(hud.guide.shown, "到了目標旁邊就不顯示")
 	await _free(level)
@@ -283,169 +281,7 @@ func test_player_walks_on_plaza_and_is_boxed_in() -> void:
 	await _free(level)
 
 
-func test_north_street_collapses() -> void:
-	_session()
-	var level: StoryLevel = await _load()
-	var house: Node3D = level._north_houses[0]
-	var y0: float = house.position.y
-	level.collapse_north_street(false)
-	assert_true(level.is_north_collapsed())
-	assert_true(house.position.y < y0 - 2.0, "房子沉下去（%.2f → %.2f）" % [y0, house.position.y])
-	await _free(level)
-
-
-## D-091：北街的房子陷落前是完整屋頂、陷落後換成破屋頂（朝街那面斷成幾片、一片掉光露出斷椽）。
-func test_collapsed_houses_show_broken_roofs() -> void:
-	_session()
-	var level: StoryLevel = await _load()
-	for house: Node3D in level._north_houses:
-		var roof: Node3D = house.get_node_or_null("Roof") as Node3D
-		var ruin: Node3D = house.get_node_or_null("Ruin") as Node3D
-		assert_true(roof != null and ruin != null, "%s 有完整與破掉兩份屋頂" % house.name)
-		assert_true(roof.visible and not ruin.visible, "陷落前看到完整屋頂")
-		var info: Dictionary = house.get_meta("ruin", {})
-		assert_true(int(info.get("segments", 0)) >= 3, "朝街那面斷成至少三片（%d）" % int(info.get("segments", 0)))
-		assert_eq(int(info.get("holes", 0)), 1, "其中一片整個掉進屋裡")
-		assert_true(int(info.get("rafters", 0)) >= 2, "洞裡露出斷掉的椽子（%d）" % int(info.get("rafters", 0)))
-		var snow_meshes: int = 0
-		var tiled_meshes: int = 0
-		var meshes: int = 0
-		for c: Node in ruin.get_children():
-			var mi: MeshInstance3D = c as MeshInstance3D
-			if mi == null:
-				continue
-			meshes += 1
-			var sm: ShaderMaterial = mi.material_override as ShaderMaterial
-			if sm != null and sm.shader.resource_path == FrostbridgeLook.SNOW_SHADER:
-				snow_meshes += 1
-			if sm != null and sm.shader.resource_path == FrostbridgeLook.ROOF_TILES_SHADER:
-				tiled_meshes += 1
-		assert_eq(snow_meshes, 1, "破屋頂上的雪用積雪 shader")
-		# D-110：斷開的屋面跟完整屋頂一樣有瓦（背面一片＋朝街那面沒掉光的幾片）
-		assert_eq(tiled_meshes, 1, "破屋頂的屋面用屋瓦 shader")
-		assert_eq(int(info.get("tiled", 0)), int(info.get("segments", 0)), "背面＋朝街那面沒掉進屋裡的每一片都有瓦（%d）" % int(info.get("tiled", 0)))
-		assert_true(meshes <= 5, "破屋頂合併成少數幾個 mesh（%d）" % meshes)
-	level.collapse_north_street(false)
-	for house: Node3D in level._north_houses:
-		assert_false((house.get_node("Roof") as Node3D).visible, "%s 陷落後完整屋頂藏起來" % house.name)
-		assert_true((house.get_node("Ruin") as Node3D).visible, "%s 陷落後看到破屋頂" % house.name)
-	await _free(level)
-
-
-## 截圖旗標 `--convoy` 把主線推進到送葬者戰：HUD 目標是護送車隊（之前停在「到廣場找梨販」）。
-func test_dev_advance_to_convoy() -> void:
-	var s := _session()
-	assert_true(StoryLevel.dev_advance_to_convoy(s), "新遊戲 → 推進到送葬者戰")
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "escort_convoy")
-	assert_eq(s.objective_key(), "Q_SLICE_OBJ_CONVOY", "HUD 目標是護送車隊")
-	assert_true(bool(s.state.get_flag("slice.north_street_collapsed", false)), "北街照正式流程陷落")
-	assert_false(StoryLevel.dev_advance_to_convoy(s), "已經在送葬者戰：不動")
-	s.set_flag("slice.convoy_through", true)
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath")
-	assert_false(StoryLevel.dev_advance_to_convoy(s), "之後的段落：不倒退")
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath")
-
-
-func test_convoy_checkpoint_spawn_and_fight() -> void:
-	var s := _session()
-	_to_convoy(s)
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "escort_convoy")
-	var level: StoryLevel = await _load()
-	var player: PlayerController = level.get_node("Player") as PlayerController
-	assert_true(player.global_position.distance_to(Vector3(0, 0.05, 6)) < 0.5, "送葬者檢查點在廣場南邊出生")
-	assert_true(level.has_node("Sheila"), "護送階段席菈已經在身邊")
-	assert_false(level.has_node("Undertaker"), "還沒走進南街")
-	# 走進南街口 → 開打
-	player.global_position = (level.get_node("ConvoyTrigger") as Node3D).global_position * Vector3(1, 0, 1) + Vector3(0, 0.05, 0)
-	for i: int in 4:
-		await tree.physics_frame
-	assert_not_null(level.encounter, "送葬者戰開始")
-	var boss: Undertaker = level.get_node("Undertaker") as Undertaker
-	boss.set_physics_process(false)  # 別讓諾恩真的倒下（狀態會漏到之後的測試）
-	var caravan: Caravan = level.get_node("Caravan") as Caravan
-	var route: PackedVector3Array = caravan.route
-	assert_true(route[0].z < 10.0 and route[route.size() - 1].z > 34.0, "車隊從廣場出發、到路口")
-	var through_arch: bool = false
-	for p: Vector3 in route:
-		if absf(p.z - level.arch_site.global_position.z) < 0.1:
-			through_arch = true
-	assert_true(through_arch, "車隊路線穿過南街石拱")
-	var enc: ConvoyEncounter = level.encounter
-	# 再走進去一次不會重複開打
-	player.global_position = Vector3(0.0, 0.05, 6.0)
-	for i: int in 2:
-		await tree.physics_frame
-	player.global_position = Vector3(0.0, 0.05, 12.0)
-	for i: int in 3:
-		await tree.physics_frame
-	assert_true(level.encounter == enc, "只開打一次")
-	assert_eq(level.get_children().filter(func(c: Node) -> bool: return c is Undertaker).size(), 1)
-	# 車隊推到路口 → 戰鬥結束 → 任務推進到收束
-	caravan.runner.traveled = caravan.runner.length() - 0.05
-	for i: int in 20:
-		await tree.physics_frame
-		if enc.done:
-			break
-	assert_true(enc.done, "車隊通過路口")
-	assert_eq(s.state.get_flag("slice.convoy_through"), true)
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "aftermath", "任務推進到收束")
-	await _free(level)
-
-
-func test_convoy_trigger_ignored_before_escort() -> void:
-	_session()
-	var level: StoryLevel = await _load()
-	var player: PlayerController = level.get_node("Player") as PlayerController
-	player.global_position = Vector3(0.0, 0.05, 12.0)
-	for i: int in 4:
-		await tree.physics_frame
-	assert_true(level.encounter == null, "還沒到護送階段：南街不會開打")
-	await _free(level)
-
-
-## 段落 1「看見南街石拱」：走進南街 → 諾恩想起父親 → 日記解鎖；護送時沒逛過也會解鎖（重現的代價要存在）。
-func test_arch_memory_unlocks_journal() -> void:
-	var s := _session()
-	var game: Node = tree.root.get_node("Game")
-	var journal: Journal = game.get("journal") as Journal
-	assert_eq(journal.visible_ids(s.state).size(), 0, "新遊戲：日記是空的")
-	var level: StoryLevel = await _load()
-	var player: PlayerController = level.get_node("Player") as PlayerController
-	var trig: Vector3 = (level.get_node("ArchMemoryTrigger") as Node3D).global_position
-	player.global_position = Vector3(trig.x, 0.05, trig.z)
-	for i: int in 3:
-		await tree.physics_frame
-	assert_true(game.call("is_in_dialogue"), "走進南街 → 諾恩的獨白")
-	var box: DialogueBox = level.get_node("DialogueBox") as DialogueBox
-	for i: int in 10:
-		if not bool(game.call("is_in_dialogue")):
-			break
-		box.press_continue()
-		await tree.process_frame
-	assert_eq(s.state.get_flag("slice.saw_south_arch"), true)
-	assert_true(journal.visible_ids(s.state).has("arch_father_last_talk"), "日記解鎖父親那段")
-	# 再走進去不會重複
-	player.global_position = Vector3(0.0, 0.05, 2.0)
-	for i: int in 2:
-		await tree.physics_frame
-	player.global_position = Vector3(trig.x, 0.05, trig.z)
-	for i: int in 3:
-		await tree.physics_frame
-	assert_false(game.call("is_in_dialogue"), "只說一次")
-	await _free(level)
-
-
-func test_convoy_unlocks_arch_memory_without_visit() -> void:
-	var s := _session()
-	_to_convoy(s)
-	var level: StoryLevel = await _load()
-	(level as Node).call("start_convoy")
-	assert_eq(s.state.get_flag("slice.saw_south_arch"), true, "護送開打時補上石拱的記憶")
-	await _free(level)
-
-
-
-## 概念圖：主街往鐘樓爬坡——北段四級石階上到台地，北街、鐘樓、受困者都在台地上。
+## 主街往鐘樓爬坡——北段四級石階上到台地，北街、鐘樓都在台地上。
 func test_player_climbs_steps_to_north_street() -> void:
 	_session()
 	var level: StoryLevel = await _load()
@@ -466,24 +302,18 @@ func test_player_climbs_steps_to_north_street() -> void:
 	Input.action_release("move_forward")
 	assert_true(player.global_position.z < -31.0, "走上石階到北街（停在 %s）" % player.global_position)
 	assert_true(absf(player.global_position.y - rise) < 0.25, "站在台地上（y=%.2f）" % player.global_position.y)
-	var tower: Node3D = level.get_node("BellTowerTrigger") as Node3D
-	assert_true(tower.global_position.y > rise, "鐘樓觸發區跟著台地抬高")
-	level.collapse_north_street(false)
-	for c: Node in level.get_children():
-		if c is RescueSite:
-			assert_true(absf((c as RescueSite).global_position.y - rise) < 0.01, "%s 在台地上" % c.name)
 	await _free(level)
 
 
-## 截圖旗標 `--face=sheila`：每幀把諾恩與鏡頭轉向席菈（燃燒劍斬鐵架在諾恩背後，平常拍不到）。
+## 截圖旗標 `--face=sheila`：每幀把諾恩與鏡頭轉向席菈。
 func test_dev_face_turns_player_to_target() -> void:
-	var s := _session()
-	_to_convoy(s)
+	_story_session("market")
 	var level: StoryLevel = await _load()
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var sheila: Node3D = level.get_node("Sheila") as Node3D
 	assert_true(level.call("dev_face_target", "nobody") == null, "不認得的名字沒有目標")
-	assert_true(level.call("dev_face_target", "frame") == null, "還沒擲鐵架")
+	assert_true(level.call("dev_face_target", "undertaker") == null, "守衛已經倒下：沒有送葬者可以看")
+	assert_eq(level.call("dev_face_target", "ada"), level.get_node("Ada"), "ada 是梨攤前的艾妲")
 	assert_eq(level.call("dev_face_target", "sheila"), sheila)
 	sheila.set_physics_process(false)
 	sheila.global_position = player.global_position + Vector3(3.0, 0.0, 2.0)  # 在諾恩右後方
@@ -499,8 +329,7 @@ func test_dev_face_turns_player_to_target() -> void:
 
 ## 截圖旗標 `--face-off`：轉向目標後再往左轉，目標落在畫面右側（不被諾恩的背影擋住，盤點第 5 項）。
 func test_dev_face_offset_puts_target_right() -> void:
-	var s := _session()
-	_to_convoy(s)
+	_story_session("market")
 	var level: StoryLevel = await _load()
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var sheila: Node3D = level.get_node("Sheila") as Node3D
@@ -519,8 +348,7 @@ func test_dev_face_offset_puts_target_right() -> void:
 
 ## 截圖旗標 `--pos=x,z`（高度照地面）與 `--hide=noen`（藏起諾恩的模型）。
 func test_dev_place_and_hide_player() -> void:
-	var s := _session()
-	_to_convoy(s)
+	_session()
 	var level: StoryLevel = await _load()
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	assert_true(bool(level.call("dev_place_player", "2.6,6.5")), "x,z 格式移動")
@@ -539,22 +367,12 @@ func test_dev_place_and_hide_player() -> void:
 	await _free(level)
 
 
-## 截圖用 `--face=arch` 與 `--convoy --arch=preview`：送葬者停在諾恩背後、不追不出招（第二輪盤點第 8 項，
-## 原本他生在石拱前，鐵架擋住預覽的石拱）。
-func test_dev_face_arch_and_park_boss() -> void:
-	var s := _session()
-	_to_convoy(s)
+## 截圖用 `--face=arch`（南街的斷拱）與 `--face=undertaker`（南街的守衛）。
+func test_dev_face_arch_and_guardian() -> void:
+	_story_session("guardian")
 	var level: StoryLevel = await _load()
-	assert_eq(level.call("dev_face_target", "arch"), level.get_node("SouthArch"), "arch 是南街石拱")
-	assert_true(not bool(level.call("dev_park_boss", Vector3(2.0, 0.0, 9.0))), "還沒開打，沒有送葬者")
-	level.call("start_convoy")
-	var boss: Undertaker = level.get_node("Undertaker") as Undertaker
-	assert_true(bool(level.call("dev_park_boss", Vector3(2.0, 0.0, 9.0))), "開打後可以停住送葬者")
-	for i: int in 10:
-		await tree.physics_frame
-	var at := Vector2(boss.global_position.x, boss.global_position.z)
-	assert_true(at.distance_to(Vector2(2.0, 9.0)) < 0.01, "送葬者停在 (2, 9) 不動：%s" % boss.global_position)
-	assert_true(absf(boss.global_position.y - (level.ground_y(boss.global_position) + 0.05)) < 0.01, "高度照地面")
+	assert_eq(level.call("dev_face_target", "arch"), level.get_node("SouthArch"), "arch 是南街的斷拱")
+	assert_eq(level.call("dev_face_target", "undertaker"), level.get_node("RbGuardian"), "undertaker 是南街的守衛")
 	await _free(level)
 
 
@@ -868,23 +686,6 @@ func _polyline_dist(pts: PackedVector2Array, p: Vector2) -> float:
 		var h: float = clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
 		best = minf(best, p.distance_to(a + ab * h))
 	return best
-
-
-## 截圖用 `--insight`（第二輪盤點第 2 項）：送葬者戰一開始就按住看穿，諾恩的看穿狀態打開。
-func test_dev_hold_insight() -> void:
-	var s := _session()
-	_to_convoy(s)
-	var level: StoryLevel = await _load()
-	level.call("dev_hold_insight")
-	await tree.physics_frame
-	await tree.physics_frame
-	var player: PlayerController = level.get_node("Player") as PlayerController
-	assert_true(Input.is_action_pressed("insight"), "看穿鍵按著")
-	assert_true(player.insight_active, "諾恩在看穿")
-	Input.action_release("insight")
-	await tree.physics_frame
-	assert_false(player.insight_active, "放開後不再看穿")
-	await _free(level)
 
 
 ## 廣場石盤的鐘剪影（D-130）：平躺、正面朝上（從上面看得到）、放得進半徑 1 m 的石盤。

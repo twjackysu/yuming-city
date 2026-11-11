@@ -2,14 +2,12 @@ extends Node
 ## 遊戲流程外殼：持有 GameSession，負責新遊戲／繼續／切換關卡。
 ## 邏輯都在 GameSession（res://src/core/game_session.gd），這裡只做場景切換。
 ##
-## 開發用：`godot --path game -- --level=sandbox` 直接進入關卡（截圖驗證用）；
+## 開發用：`godot --path game -- --level=frostbridge [--rb-at=…]` 直接進入關卡（截圖驗證用）；
 ## `-- --benchmark` 跑效能測試後結束（結果在 user://benchmark/）。
 
 signal level_loaded(level_id: String)
 signal dialogue_started(runner: DialogueRunner)
 signal dialogue_ended(dialogue_id: String)
-signal cutscene_started(runner: CutsceneRunner)
-signal cutscene_ended(cutscene_id: String, skipped: bool)
 signal player_died
 
 ## 倒下到自動重試的時間（真實時間）
@@ -17,10 +15,9 @@ const RETRY_DELAY_SEC: float = 2.2
 ## 遊戲時間一幀最多加幾秒（D-179）
 const PLAYTIME_MAX_STEP: float = 0.25
 
-## 關卡 id -> 場景。切片的檢查點都在霜橋鎮；沙盒留給開發測試（`++ --level=sandbox`）。
+## 關卡 id -> 場景。前十分鐘的檢查點都在霜橋鎮。
 const LEVELS: Dictionary = {
 	"frostbridge": "res://scenes/levels/frostbridge.tscn",
-	"sandbox": "res://scenes/dev/sandbox.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
@@ -34,6 +31,8 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"rb_market": "frostbridge",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
+## `--level=…` 開發旗標用的存檔資料夾（實際寫到 user://saves_dev_reboot）
+const DEV_SAVE_DIR: String = "user://saves_dev"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 
 var session: GameSession
@@ -42,8 +41,6 @@ var dialogues: DialogueDB
 var journal: Journal
 ## 進行中的對話（沒有則為 null）
 var dialogue: DialogueRunner
-## 進行中的過場（沒有則為 null）；時間由這裡推進，暫停時跟著停
-var cutscene: CutsceneRunner
 ## 成就（帳號層級，D-147）；開發旗標與測試用只在記憶體的，不寫玩家的檔案
 var achievements: AchievementTracker
 ## 成就解鎖小卡（有 Steam 時不用）
@@ -72,7 +69,7 @@ func _ready() -> void:
 	add_child(restore_mix)
 	# 開發旗標（截圖、benchmark、直接進關卡）會跳著設旗標：成就只放在記憶體，不寫進玩家的檔案
 	var dev_run: bool = args.has("level") or args.has("benchmark") or args.has("screenshot") \
-		or args.has("dialogue") or args.has("cutscene")
+		or args.has("dialogue")
 	use_achievements(AchievementTracker.create("" if dev_run else AchievementTracker.DEFAULT_STORE_PATH))
 	SteamBridge.sync(achievements.unlocked_ids())
 	# 截圖用：`-- --level=frostbridge --achievement=ACH_NINE_SECONDS` 一開始就出現那張解鎖小卡（不會真的解鎖）
@@ -82,13 +79,12 @@ func _ready() -> void:
 	if args.has("benchmark"):
 		level = "benchmark"
 	if level != "":
-		# 截圖用：`-- --level=frostbridge --rb-at=start|mist` 新版（劇情重寫）的新遊戲，推到那一段（D-204）
-		if args.has("rb-at"):
-			_dev_reboot_start.call_deferred(str(args["rb-at"]))
-		else:
-			session.new_game.call_deferred()
+		# 開發用：`-- --level=frostbridge` 直接開新遊戲；`--rb-at=start|mist|guardian|market…` 推到那一段（D-204）
+		# benchmark 不開新遊戲（只飛過空的霜橋鎮，也不會寫到玩家的存檔）
+		if not args.has("benchmark"):
+			_dev_reboot_start.call_deferred(str(args.get("rb-at", "")))
 		go_to_level.call_deferred(level)
-	# 截圖用：`-- --level=sandbox --dialogue=slice_pear_seller --dialogue-steps=2`
+	# 截圖用：`-- --level=frostbridge --rb-at=market --dialogue=rb_ada_wages --dialogue-steps=2`
 	if args.has("dialogue"):
 		var dlg: String = str(args["dialogue"])
 		var steps: int = int(args.get("dialogue-steps", 0))
@@ -96,21 +92,11 @@ func _ready() -> void:
 			start_dialogue(dlg)
 			for i: int in steps:
 				dialogue.advance())
-	# 截圖用：`-- --level=sandbox --cutscene=slice_bell_nine --cutscene-steps=3`（跳過開場鏡頭後敲 N 下）
-	if args.has("cutscene"):
-		var cs_id: String = str(args["cutscene"])
-		var presses: int = int(args.get("cutscene-steps", 0))
-		get_tree().create_timer(0.5).timeout.connect(func() -> void:
-			if not play_cutscene(cs_id):
-				return
-			cutscene.update(100.0)
-			for i: int in presses:
-				cutscene.press(cutscene.awaited_action())
-			if not cutscene.is_waiting():
-				cutscene.update(0.0))
 
 
+## 開發旗標開的遊戲存在另一個資料夾（DEV_SAVE_DIR），不會蓋掉玩家真正的進度。
 func _dev_reboot_start(at: String) -> void:
+	session.save_dir = DEV_SAVE_DIR
 	session.new_reboot_game()
 	RebootOpening.dev_advance(session, at)
 
@@ -132,29 +118,7 @@ func _on_achievement_unlocked(achievement_id: String) -> void:
 	achievement_toast.enqueue(achievement_id)
 
 
-## 標題畫面「舊版」選項裡的「繼續」：舊版的存檔（新版有自己的資料夾，D-202）
-func has_continue() -> bool:
-	session.use_reboot_saves = false
-	return session.has_save(GameSession.AUTO_SLOT)
-
-
-## 舊版的新遊戲（標題畫面「舊版」選項，D-211）。load_level=false 給測試用（只重設狀態、不換場景）。
-func new_game(load_level: bool = true) -> void:
-	session.new_game()
-	if load_level:
-		go_to_level(level_for_checkpoint(session.state.checkpoint))
-
-
-func continue_game(load_level: bool = true) -> bool:
-	session.use_reboot_saves = false
-	if session.load_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
-		return false
-	if load_level:
-		go_to_level(level_for_checkpoint(session.state.checkpoint))
-	return true
-
-
-## 標題畫面的「新遊戲／繼續」＝新版《這些詛咒對我太有用了》（D-211）；存檔在新版自己的資料夾，不碰舊版的。
+## 標題畫面的「新遊戲／繼續」（D-211）；存檔在 GameSession.REBOOT_SAVE_DIR。load_level=false 給測試用（只改狀態、不換場景）。
 func has_reboot_continue() -> bool:
 	return session.has_reboot_save(GameSession.AUTO_SLOT)
 
@@ -208,26 +172,6 @@ func is_in_dialogue() -> bool:
 	return dialogue != null and dialogue.is_running()
 
 
-## 開始一段過場；已有過場或對話進行中時回傳 false。
-func play_cutscene(cutscene_id: String) -> bool:
-	if is_in_cutscene() or is_in_dialogue():
-		return false
-	var r := CutsceneRunner.new(session.state)
-	r.state_changed.connect(_on_dialogue_state_changed)
-	r.finished.connect(_on_cutscene_finished)
-	cutscene = r
-	cutscene_started.emit(r)
-	if not r.start(cutscene_id):
-		cutscene = null
-		cutscene_ended.emit(cutscene_id, true)
-		return false
-	return true
-
-
-func is_in_cutscene() -> bool:
-	return cutscene != null and cutscene.is_running()
-
-
 var _hit_stop_token: int = 0
 var _player_dead: bool = false
 
@@ -259,13 +203,9 @@ func retry(reload_level: bool = true) -> void:
 	_player_dead = false
 	Engine.time_scale = 1.0
 	dialogue = null
-	cutscene = null
 	var played: float = session.state.playtime_sec
 	if session.retry_from_checkpoint() != SaveCodec.Status.OK:
-		if session.is_reboot():
-			session.new_reboot_game()
-		else:
-			session.new_game()
+		session.new_reboot_game()
 	session.state.playtime_sec = maxf(session.state.playtime_sec, played)
 	if reload_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))
@@ -287,25 +227,18 @@ func is_hit_stopped() -> bool:
 	return Engine.time_scale < 1.0
 
 
-## 玩家角色不能移動（對話或過場中）。
+## 玩家角色不能移動（對話中、倒下）。
 func is_player_locked() -> bool:
-	return is_in_dialogue() or is_in_cutscene() or _player_dead
+	return is_in_dialogue() or _player_dead
 
 
 func _process(delta: float) -> void:
-	if cutscene != null and cutscene.is_running():
-		cutscene.update(delta)
 	if session != null and get_tree().current_scene is StoryLevel:
 		session.state.playtime_sec += playtime_step(delta, Engine.time_scale)
 	_achievement_poll -= delta
 	if _achievement_poll <= 0.0:
 		_achievement_poll = ACHIEVEMENT_POLL_SEC
 		session.check_achievements()
-
-
-func _on_cutscene_finished(cutscene_id: String, skipped: bool) -> void:
-	cutscene = null
-	cutscene_ended.emit(cutscene_id, skipped)
 
 
 func _on_dialogue_state_changed() -> void:
@@ -321,5 +254,4 @@ func back_to_title() -> void:
 	Engine.time_scale = 1.0
 	_player_dead = false
 	dialogue = null
-	cutscene = null
 	get_tree().change_scene_to_file(TITLE_SCENE)

@@ -124,11 +124,18 @@ func test_memory_tracker_writes_nothing() -> void:
 	assert_eq(DirAccess.get_files_at(_dir).size(), 0, "store_path 空字串不寫檔")
 
 
+## 成就的條件還是舊劇情的旗標；舊劇情已經沒有入口（D-220），這裡直接開那條任務。
+## （成就系統跟舊任務資料下一步一起刪，NEXT「000」第 2 步剩下的。）
+func _start_old_quest(s: GameSession) -> void:
+	s.quests.start("slice_main")
+	s.advance()
+
+
 func test_session_unlocks_and_old_save_does_not() -> void:
 	var path: String = _dir.path_join("achievements.json")
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	s.attach_achievements(AchievementTracker.new(AchievementTracker.load_defs(), path))
-	s.new_game()
+	_start_old_quest(s)
 	s.set_flag("slice.met_pear_seller", true)
 	s.set_flag("slice.bell_rings", 9)
 	assert_true(s.achievements.is_unlocked("ACH_NINTH_BELL"), "set_flag 推進時就解鎖")
@@ -143,10 +150,9 @@ func test_session_unlocks_and_old_save_does_not() -> void:
 	other.add_flag("slice.rescued_count", 3)
 	assert_true(other.achievements.is_unlocked("ACH_NO_ONE_LEFT"), "讀檔之後做到的照常解鎖")
 	# 原本這台：讀回更早的狀態也不會取消
-	s.new_game()
+	s.new_reboot_game()
 	assert_true(s.achievements.is_unlocked("ACH_NINTH_BELL"), "新遊戲不取消")
 	var no_tracker := GameSession.new(QuestDB.load_default(), _dir)
-	no_tracker.new_game()
 	no_tracker.set_flag("slice.bell_rings", 9)
 	assert_eq(no_tracker.check_achievements().size(), 0, "沒接成就的 session 什麼都不做")
 
@@ -156,7 +162,7 @@ func test_ashwalker_weak_kneel_counts() -> void:
 	var original: GameSession = game.get("session") as GameSession
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	s.attach_achievements(_mem())
-	s.new_game()
+	_start_old_quest(s)
 	game.set("session", s)
 	var walker := Ashwalker.new()
 	walker.position = Vector3(0.0, 0.0, -40.0)
@@ -170,7 +176,7 @@ func test_ashwalker_weak_kneel_counts() -> void:
 	walker.health.apply_damage(1.0, {"stagger": 999.0, "weak": "left_knee"})
 	assert_eq(int(s.state.get_flag("stats.ashwalker_weak_kneels", 0)), 1, "打中弱點而跪下 +1")
 	assert_true(s.achievements.is_unlocked("ACH_SEEN_THROUGH"), "解鎖「看穿」")
-	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "explore_town", "統計不推進任務")
+	assert_eq(s.quests.stage_of("slice_main"), "explore_town", "統計不推進任務")
 	game.set("session", original)
 	walker.queue_free()
 	await tree.process_frame

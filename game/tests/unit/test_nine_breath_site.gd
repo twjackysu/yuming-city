@@ -165,28 +165,6 @@ func test_push_out_and_reload() -> void:
 	await tree.process_frame
 
 
-func test_frame_throw_outcomes() -> void:
-	var st := GameState.new()
-	var e := FrameThrowEvent.new()
-	var got: Array[String] = []
-	e.resolved.connect(func(o: String) -> void: got.append(o))
-	e.tick(3.0, false, st)
-	assert_false(e.is_resolved(), "舉起鐵架中")
-	e.tick(1.1, true, st)
-	assert_eq(e.outcome, "arch", "落下時石拱是實體：擋下")
-	assert_eq(st.get_flag("slice.frame_throw_outcome"), "arch")
-	assert_eq(st.get_flag("sheila.kindling_used_early", false), false, "席菈不用燒劍")
-	e.tick(5.0, false, st)
-	assert_eq(got, ["arch"] as Array[String], "只結算一次")
-	var st2 := GameState.new()
-	var e2 := FrameThrowEvent.new()
-	e2.tick(4.5, false, st2)
-	assert_eq(e2.outcome, "kindling", "拒絕九息：薪火劍")
-	assert_eq(st2.get_flag("sheila.kindling_used_early"), true)
-	assert_eq(st2.get_flag("sheila.hand_injury"), 1, "提前燒劍：手傷 +1")
-	assert_eq(st.get_flag("sheila.hand_injury", 0), 0, "石拱擋下：手傷不變")
-
-
 ## 重現的石拱（D-043）：跟石牆同一個 shader、石縫發冷光；心跳時亮一下再退回。房子外牆不發光。
 func test_restored_arch_is_glowing_stone() -> void:
 	var st := GameState.new()

@@ -39,7 +39,7 @@ func test_validation_catches_mistakes() -> void:
 func test_pear_seller_buy_route_advances_quest() -> void:
 	var state := GameState.new()
 	var quests := QuestRunner.new(QuestDB.load_default(), state)
-	quests.start(GameSession.MAIN_QUEST)
+	quests.start("slice_main")
 	var r := DialogueRunner.new(_db(), state)
 	r.state_changed.connect(quests.evaluate)
 	var lines: Array[String] = []
@@ -50,10 +50,10 @@ func test_pear_seller_buy_route_advances_quest() -> void:
 	assert_eq(r.visible_choices.size(), 3, "三個選項")
 	assert_true(r.choose(0), "買梨")
 	assert_eq(state.get_flag("slice.bought_pears"), true, "選項效果")
-	assert_eq(quests.stage_of(GameSession.MAIN_QUEST), "explore_town", "還沒說完不推進")
+	assert_eq(quests.stage_of("slice_main"), "explore_town", "還沒說完不推進")
 	r.advance()
 	assert_eq(r.current().get("text"), "DLG_PEAR_007")
-	assert_eq(quests.stage_of(GameSession.MAIN_QUEST), "ring_bell", "道別節點設旗標 → 任務推進")
+	assert_eq(quests.stage_of("slice_main"), "ring_bell", "道別節點設旗標 → 任務推進")
 	var done: Array[bool] = [false]
 	r.finished.connect(func(_id: String) -> void: done[0] = true)
 	assert_false(r.advance(), "最後一句之後結束")

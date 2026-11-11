@@ -15,10 +15,11 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_game.set("session", _original)
-	if DirAccess.dir_exists_absolute(_dir):
-		for f: String in DirAccess.get_files_at(_dir):
-			DirAccess.remove_absolute(_dir.path_join(f))
-		DirAccess.remove_absolute(_dir)
+	for d: String in [_dir, _dir + "_reboot"]:
+		if DirAccess.dir_exists_absolute(d):
+			for f: String in DirAccess.get_files_at(d):
+				DirAccess.remove_absolute(d.path_join(f))
+			DirAccess.remove_absolute(d)
 
 
 func test_step_uses_real_time_and_caps() -> void:
@@ -33,7 +34,7 @@ func test_step_uses_real_time_and_caps() -> void:
 
 func test_accumulates_only_in_a_level() -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
-	s.new_game()
+	s.new_reboot_game()
 	_game.set("session", s)
 	# 測試時的 current_scene 是測試執行器（不是關卡）：不算
 	assert_false(tree.current_scene is StoryLevel)
@@ -44,7 +45,7 @@ func test_accumulates_only_in_a_level() -> void:
 
 func test_retry_keeps_playtime() -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
-	s.new_game()
+	s.new_reboot_game()
 	_game.set("session", s)
 	s.state.playtime_sec = 100.0
 	assert_eq(s.save(GameSession.AUTO_SLOT), OK, "自動存檔（檢查點）")

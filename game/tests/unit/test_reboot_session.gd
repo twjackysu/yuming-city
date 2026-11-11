@@ -51,16 +51,19 @@ func test_new_reboot_game_uses_its_own_folder() -> void:
 
 func test_reboot_does_not_overwrite_classic_save() -> void:
 	var s := _session()
-	s.new_game()
-	assert_true(s.quests.is_active("slice_main"))
+	# 以前舊劇情留在舊資料夾的存檔（遊戲已經不會寫這種檔了，D-220：直接造一份）
+	var old_state := GameState.new()
+	old_state.set_flag("slice.met_pear_seller", true)
+	DirAccess.make_dir_recursive_absolute(_dir)
+	assert_eq(SaveCodec.write_file(_dir.path_join("auto.json"), old_state), OK)
 	var classic_text: String = FileAccess.get_file_as_string(_dir.path_join("auto.json"))
 	s.new_reboot_game()
 	s.set_flag("rb.barrels_broken", true)
 	assert_eq(FileAccess.get_file_as_string(_dir.path_join("auto.json")), classic_text, "舊版存檔一個字都沒變")
 	var old := _session()
-	assert_eq(old.load_slot(GameSession.AUTO_SLOT), SaveCodec.Status.OK, "舊版照舊讀得到")
+	assert_eq(old.load_slot(GameSession.AUTO_SLOT), SaveCodec.Status.OK, "舊資料夾那一份還讀得出來（沒被動過）")
 	assert_eq(old.state.mode, "classic")
-	assert_true(old.quests.is_active("slice_main"))
+	assert_true(bool(old.state.get_flag("slice.met_pear_seller", false)))
 	var again := _session()
 	assert_eq(again.load_reboot_slot(), SaveCodec.Status.OK)
 	assert_eq(again.quests.stage_of("rb_main"), "poison_discovery")

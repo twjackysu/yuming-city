@@ -99,7 +99,7 @@ func test_sitting() -> void:
 	p.free()
 
 
-func test_wounded_and_trapped_use_puppets() -> void:
+func test_wounded_use_puppets() -> void:
 	var c := Caravan.new()
 	c.route = PackedVector3Array([Vector3.ZERO, Vector3(0, 0, 5)])
 	tree.root.add_child(c)
@@ -109,8 +109,3 @@ func test_wounded_and_trapped_use_puppets() -> void:
 			lying += 1
 	assert_eq(lying, 2, "車上兩名傷者仰躺")
 	c.free()
-	var r := RescueSite.new()
-	r.site_id = "test_trapped"
-	tree.root.add_child(r)
-	assert_not_null(r.find_child("Puppet", true, false), "受困者是程序人偶")
-	r.free()

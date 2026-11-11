@@ -41,24 +41,6 @@ func test_sheila_fire_sparks_are_round() -> void:
 	await tree.process_frame
 
 
-## 鐵架撞上石拱的石粉、被燃燒劍斬開的火星。
-func test_thrown_frame_bursts_are_round() -> void:
-	for outcome: String in ["arch", "kindling"]:
-		var f := ThrownFrame.create(Vector3(0, 3, 0), Vector3(0, 3, 6), outcome)
-		tree.root.add_child(f)
-		f.set_physics_process(false)
-		f.advance(ThrownFrame.FLIGHT_SEC * 1.1)
-		assert_true(f.has_impacted, "%s：撞上了" % outcome)
-		var burst: CPUParticles3D = f.find_child("Burst", true, false) as CPUParticles3D
-		assert_not_null(burst, "%s：有粒子" % outcome)
-		assert_eq(ParticleLook.untextured(f), [] as Array[String], "%s：粒子都有圓形貼圖" % outcome)
-		var mat: StandardMaterial3D = burst.mesh.surface_get_material(0) as StandardMaterial3D
-		var want: BaseMaterial3D.BlendMode = BaseMaterial3D.BLEND_MODE_ADD if outcome == "kindling" else BaseMaterial3D.BLEND_MODE_MIX
-		assert_eq(mat.blend_mode, want, "%s：火星加法混色、石粉一般透明" % outcome)
-		f.queue_free()
-	await tree.process_frame
-
-
 ## 重現石拱化灰的灰燼。
 func test_arch_ash_is_round() -> void:
 	var site := NineBreathSite.new()

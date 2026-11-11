@@ -23,7 +23,7 @@ func _tiny_db() -> QuestDB:
 func test_default_data_is_valid() -> void:
 	var db := QuestDB.load_default()
 	assert_eq(db.errors, PackedStringArray(), "res://data/quests 全部通過驗證")
-	assert_true(db.has_quest(GameSession.MAIN_QUEST), "有切片主線")
+	assert_true(db.has_quest(GameSession.REBOOT_MAIN_QUEST), "有主線")
 
 
 func test_validation_catches_mistakes() -> void:

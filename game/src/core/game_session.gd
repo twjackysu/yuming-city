@@ -11,9 +11,6 @@ signal quest_completed(quest_id: String)
 ## 要寫存檔之前（新版：玩家把生命、狀態、反轉欄位寫回 state，D-202）
 signal saving(state: GameState)
 
-const MAIN_QUEST: String = "slice_main"
-## 舊流程的主線任務（第 1～3 章第 76 輪刪了，D-220；剩下的舊切片下一步刪）
-const MAIN_QUESTS: PackedStringArray = ["slice_main"]
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
 const DEFAULT_SAVE_DIR: String = "user://saves"
@@ -43,14 +40,7 @@ func _init(p_db: QuestDB, p_save_dir: String = DEFAULT_SAVE_DIR) -> void:
 	_bind(GameState.new())
 
 
-func new_game() -> void:
-	use_reboot_saves = false
-	_bind(GameState.new())
-	quests.start(MAIN_QUEST)
-	advance()
-
-
-## 新版（劇情重寫）的新遊戲：mode="reboot"、主線 rb_main、存檔寫到新版資料夾，不碰舊版存檔（D-202）。
+## 新遊戲：mode="reboot"、主線 rb_main、存檔寫到 reboot_save_dir()（D-202；舊劇情的入口第 77 輪刪了，D-220）。
 func new_reboot_game() -> void:
 	use_reboot_saves = true
 	var s := GameState.new()
@@ -166,19 +156,9 @@ func objective_key() -> String:
 	return quests.objective_key(main_quest())
 
 
-## 目前的主線任務：MAIN_QUESTS 裡最後一個已經開始（或完成）的。
+## 目前的主線任務（只有一條；之後有第二章再擴充）
 func main_quest() -> String:
-	if is_reboot():
-		return REBOOT_MAIN_QUEST
-	var current: String = MAIN_QUEST
-	for qid: String in MAIN_QUESTS:
-		if state.quests.has(qid):
-			current = qid
-	return current
-
-
-func is_slice_complete() -> bool:
-	return quests.is_done(MAIN_QUEST)
+	return REBOOT_MAIN_QUEST
 
 
 func _bind(new_state: GameState) -> void:
@@ -203,8 +183,8 @@ func _on_stage_changed(quest_id: String, from_stage: String, to_stage: String) -
 
 
 func _on_quest_completed(quest_id: String) -> void:
-	# 一章（主線）完成也自動存檔：最後一章還沒有下一章的檢查點時（第 2 章結尾，D-161），重來、讀檔不會回到結尾之前
-	if quest_id in MAIN_QUESTS or quest_id == REBOOT_MAIN_QUEST:
+	# 主線完成也自動存檔：還沒有下一章的檢查點時，重來、讀檔不會回到結尾之前
+	if quest_id == REBOOT_MAIN_QUEST:
 		_autosave_pending = true
 	quest_completed.emit(quest_id)
 

@@ -19,7 +19,7 @@ run() {
   # `++` 之後是遊戲自己的參數（匯出版與 Windows PowerShell 都用這個分隔）
   timeout 120 xvfb-run -a -s "-screen 0 1920x1080x24" \
     "$BIN" --resolution 1280x720 "$@" \
-    ++ --screenshot="$OUT" --frames=40 --level=frostbridge --at=main > "$LOG" 2>&1
+    ++ --screenshot="$OUT" --frames=40 --level=frostbridge --rb-at=market --at=main > "$LOG" 2>&1
 }
 
 rm -f "$OUT"

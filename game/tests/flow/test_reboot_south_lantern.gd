@@ -29,8 +29,6 @@ func _session(reboot: bool) -> GameSession:
 	if reboot:
 		s.new_reboot_game()
 		RebootOpening.dev_advance(s, "guardian")
-	else:
-		s.new_game()
 	return s
 
 
@@ -106,9 +104,10 @@ func test_lantern_hangs_on_a_chain_between_the_walls() -> void:
 	await tree.process_frame
 
 
-func test_classic_version_has_no_south_lantern() -> void:
+## 吊燈是劇情控制器掛的：沒有開新遊戲的 session（只有鎮）不會有
+func test_town_without_a_story_has_no_south_lantern() -> void:
 	_session(false)
 	var level: StoryLevel = await _load()
-	assert_false(level.has_node("RbSouthLantern"), "舊版的南街照舊（沒有吊燈）")
+	assert_false(level.has_node("RbSouthLantern"), "只有鎮的時候南街沒有吊燈")
 	level.queue_free()
 	await tree.process_frame

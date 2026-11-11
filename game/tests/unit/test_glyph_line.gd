@@ -142,26 +142,19 @@ func test_restore_prompt_hint_glyph() -> void:
 	root.free()
 
 
-func test_dialogue_and_cutscene_hints_follow_device() -> void:
+func test_dialogue_hint_follows_device() -> void:
 	App.set_device(InputGlyphs.Device.KBM)
 	var box := DialogueBox.new()
 	tree.root.add_child(box)
-	var view := CutsceneView.new()
-	tree.root.add_child(view)
 	assert_false(box.hint_line().uses_glyph())
 	assert_true(box.hint_text().contains("[F]"))
 	App.set_device(InputGlyphs.Device.PAD)
 	assert_true(box.hint_line().uses_glyph(), "對話框提示切到手把有圖示（聽 device_changed）")
 	assert_eq(box.hint_line().visible_glyphs().size(), 2)
 	assert_true(box.hint_text().contains("[A]"), box.hint_text())
-	assert_true(view.skip_line().uses_glyph(), "過場「按住 A 跳過」有圖示")
-	assert_eq(view.skip_line().parts(), PackedStringArray(["按住", "跳過"]))
 	App.set_device(InputGlyphs.Device.KBM)
 	assert_false(box.hint_line().uses_glyph())
-	assert_false(view.skip_line().uses_glyph())
-	assert_true(view.skip_text().contains("[F]"), view.skip_text())
 	box.free()
-	view.free()
 
 
 ## 互動提示（InteractPrompt，D-065）：讀 interact_prompts 群組的 interact_hint()，下方中央、按住進度條、手把圖示、疊在重現提示上方。

@@ -311,13 +311,13 @@ func test_retry_returns_before_mist_without_full_heal() -> void:
 	await tree.process_frame
 
 
-func test_classic_frostbridge_has_no_reboot_controller() -> void:
+## 沒有開新遊戲的 session（benchmark、只看鎮的測試）：只有鎮，不掛劇情控制器（舊劇情第 77 輪刪了，D-220）
+func test_town_without_a_story_session_has_no_reboot_controller() -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	_game().set("session", s)
-	s.new_game()
 	var level: StoryLevel = await _load()
-	assert_false(level.has_node("RebootOpening"), "舊版不掛新版控制器")
-	assert_true(level.has_node("PearSellerTrigger"), "舊版的觸發點照舊")
-	assert_false(level.has_node("RbGate"), "舊版沒有鐵門")
+	assert_false(level.has_node("RebootOpening"), "沒開新遊戲：不掛劇情控制器")
+	assert_false(level.has_node("RbGate"), "也沒有鐵門")
+	assert_false(level.has_node("ConvoyTrigger"), "舊劇情的觸發點已經拿掉")
 	level.queue_free()
 	await tree.process_frame

@@ -223,7 +223,7 @@ func _show_objective(hold: float, fade_in: bool) -> void:
 
 
 func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
-	if GameSession.MAIN_QUESTS.has(quest_id) and quest_id == Game.session.main_quest():
+	if quest_id == Game.session.main_quest():
 		_override_key = ""
 		_set_objective(Game.session.objective_key(), true)
 

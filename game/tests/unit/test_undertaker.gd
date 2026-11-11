@@ -512,16 +512,6 @@ func test_silhouette_reads_in_fog() -> void:
 		# 硬直時身體往下沉，陰影不動
 		boss._body.position.y = -0.5
 		assert_true(shadow.global_position.y > 0.0, "身體下沉時陰影仍在地面上")
-	# 擲出去的鐵架用同一個材質
-	var thrown := ThrownFrame.new()
-	thrown.from = Vector3(0, 2, -4)
-	thrown.to = Vector3(0, 0, 0)
-	root.add_child(thrown)
-	var bar: MeshInstance3D = thrown.get_node("Frame").get_child(0) as MeshInstance3D
-	assert_not_null(bar, "擲出去的鐵架有鐵件")
-	if bar != null:
-		var tm: ShaderMaterial = (bar.mesh as BoxMesh).material as ShaderMaterial
-		assert_true(tm != null and tm.shader.resource_path == Undertaker.FRAME_IRON_SHADER, "擲出去的鐵架用同一個鐵架材質")
 	root.queue_free()
 	await tree.process_frame
 

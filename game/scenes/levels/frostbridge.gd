@@ -1,26 +1,22 @@
 extends StoryLevel
-## 霜橋鎮白盒（M1.3）：切片《霜橋鎮的第九聲鐘》的正式關卡（docs/design/05-vertical-slice-plan.md）。
+## 霜橋鎮：只負責把鎮蓋出來（地面、廣場、街道與房子、鐘樓、路燈、梨攤、南街的斷拱）。
+## 劇情（開場到貨梯）在 RebootOpening（rb_frostbridge.gd），有開新遊戲的 session 才掛上去。
 ##
 ## 版面（-Z 是北，單位公尺）：
-##   廣場  z∈[-10,10]、x∈[-11,11]：出生點、梨販攤、井、四盞路燈
-##   主街  z∈[-30,-10]、寬 8；北段 z∈[-29.2,-25.2] 四級石階往上（概念圖：街道往鐘樓爬坡）
-##   北街 z∈[-46,-30]（第九聲後陷落）；鐘樓 z=-50；北城牆 z=-55——都在高 RISE 的台地上
-##   南街  z∈[10,34]、寬 7：石拱 z=20（九息）、送葬者戰
-##   路口  z∈[34,42]、x∈[-20,20]：傷者車隊的終點
-## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；會動的（北街房子、鐘）各自一個節點。
+##   廣場  z∈[-10,10]、x∈[-11,11]：梨攤、井、四盞路燈
+##   主街  z∈[-30,-10]、寬 8；北段 z∈[-29.2,-25.2] 四級石階往上（街道往鐘樓爬坡）
+##   北街 z∈[-46,-30]；鐘樓 z=-50；北城牆 z=-55——都在高 RISE 的台地上
+##   南街  z∈[10,34]、寬 7：斷拱 z=20
+##   路口  z∈[34,42]、x∈[-20,20]
+## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；北街的房子、鐘各自一個節點。
 ##
-## 開發用旗標（`++ --level=frostbridge ...`）：`--rescue` 跳到救援段落、`--convoy` 直接開打送葬者戰、`--phase2`、
-## `--arch=preview|restored|spent`（諾恩站在南街石拱前）、`--at=plaza|main|steps|north|south|cross`（出生位置）、
-## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）、`--hide=noen`（藏起諾恩）、`--pos=x,z`（最後把諾恩移到這裡）、`--face=...` `--face-off=度`。
+## 開發用旗標（`++ --level=frostbridge ...`）：`--rb-at=…`（劇情推到哪一段，見 RebootOpening.dev_advance）、
+## `--at=plaza|main|steps|north|south|cross`（出生位置）、`--pos=x,z`（最後把諾恩移到這裡）、
+## `--face=sheila|undertaker|arch|ada` `--face-off=度`、`--hide=noen`（藏起諾恩）。
 
 const PLAZA_HALF: float = 11.0
 ## 冬夜的風雪（D-180）：整片鋪著、不分位置
 const WIND_DB_NIGHT: float = -13.0
-## 收束的配樂（D-185）：車隊過去之後、回到梨販攤的路上（Music 匯流排，慢慢淡入）
-const AFTERMATH_MUSIC: String = "aftermath_theme"
-const AFTERMATH_MUSIC_DB: float = -16.0
-const AFTERMATH_MUSIC_FADE: float = 8.0
-var aftermath_music: AudioStreamPlayer
 const MAIN_HALF: float = 4.0
 const SOUTH_HALF: float = 3.5
 const PLAZA_N: float = -10.0
@@ -39,11 +35,6 @@ const STEPS_S: float = -25.2
 const STEPS_N: float = -29.2
 const STEP_COUNT: int = 5
 
-## 檢查點 -> 出生位置（沒列到的用廣場）
-const CHECKPOINT_SPAWNS: Dictionary = {
-	"rescue": Vector3(0.0, 0.05, -24.0),
-	"undertaker": Vector3(0.0, 0.05, 6.0),
-}
 ## `--at=` 開發用出生位置
 const DEV_SPAWNS: Dictionary = {
 	"plaza": Vector3(0.0, 0.05, 7.0),
@@ -52,8 +43,6 @@ const DEV_SPAWNS: Dictionary = {
 	"north": Vector3(0.0, RISE + 0.05, -32.0),
 	"south": Vector3(0.0, 0.05, 12.0),
 	"cross": Vector3(0.0, 0.05, 36.0),
-	# 白天：死者名單前（D-170）
-	"list": Vector3(2.6, 0.05, -5.3),
 }
 
 var look := FrostbridgeLook.new()
@@ -92,123 +81,42 @@ func _ready() -> void:
 	_build_bell_tower(Vector3(0.0, RISE, TOWER_Z))
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
-	# 新版的地窖口是打開的井口（RebootOpening._build_shaft_mouth，D-214）：不蓋這塊木板
-	if not Game.session.is_reboot():
-		_build_cellar_hatch()
 	_build_reflection_probes(_batch.build(self, "Town"))
+	# 南街的石拱：現在只是一座斷拱（停用；舊劇情的「重現」第 77 輪拿掉了，D-220）
 	arch_site = NineBreathSite.new()
 	arch_site.name = "SouthArch"
 	arch_site.position = Vector3(0.0, 0.0, ARCH_Z)
-	arch_site.rotation.y = PI  # 正面朝北（車隊和玩家從廣場過來）
+	arch_site.rotation.y = PI  # 正面朝北（從廣場過來）
 	add_child(arch_site)
-	# 新版（劇情重寫，D-204）：不跑切片的觸發點（梨販、石拱回憶、車隊…），石拱停用；流程交給 RebootOpening
-	var reboot: bool = Game.session.is_reboot()
-	if reboot:
-		arch_site.set_dormant(true)
-	else:
-		_build_story_triggers()
-	_build_cutscene_cameras()
-	_init_story()
+	arch_site.set_dormant(true)
 	wind_sound = Ambience.play(self, "frost_wind", WIND_DB_NIGHT)
 
-	# 截圖用：`--convoy` 先把任務推進到送葬者戰（在連接 stage_changed 之前，不會觸發席菈登場段落）
-	if dev_args.has("convoy") and StoryLevel.dev_advance_to_convoy(Game.session) and not _north_collapsed:
-		collapse_north_street(false)
-	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	var player: PlayerController = $Player as PlayerController
 	var spawn: Marker3D = $Spawn
 	player.global_transform = spawn.global_transform
-	var cp: String = Game.session.state.checkpoint
-	if CHECKPOINT_SPAWNS.has(cp):
-		player.global_position = CHECKPOINT_SPAWNS[cp] as Vector3
+	player.snap_camera()
+	# 劇情（開場到貨梯）交給 RebootOpening；沒有開新遊戲的 session（測試、benchmark）就只有空的鎮
+	if Game.session.is_reboot():
+		reboot_opening = RebootOpening.new()
+		reboot_opening.name = "RebootOpening"
+		add_child(reboot_opening)
+	# 以下是截圖用的旗標，都在劇情擺好場面之後才動諾恩
+	# `--at=plaza|main|steps|north|south|cross`：出生位置
 	if dev_args.has("at") and DEV_SPAWNS.has(str(dev_args["at"])):
 		player.global_position = DEV_SPAWNS[str(dev_args["at"])] as Vector3
-	# 席菈：「席菈」段落在主街北段等諾恩（救出三人後出現）；之後的檢查點一進場就在身邊
-	if stage == "meet_sheila":
-		_begin_sheila_meet()
-	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
-		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
-	Game.session.stage_changed.connect(_on_stage_changed)
-	Game.dialogue_ended.connect(_on_dialogue_ended)
-	if stage == "aftermath":
-		_start_aftermath_music()
-	# 截圖用：`--rescue` 直接跳到敲完九下、北街陷落的救援段落，諾恩站在第一個受困者旁
-	if dev_args.has("rescue"):
-		Game.session.set_flag("slice.met_pear_seller", true)
-		Game.session.set_flag("slice.bell_rings", 9)
-		collapse_north_street(false)
-		player.global_position = Vector3(-2.0, RISE + 0.05, -31.3)  # 離第一個受困者（north_a）約 1.8 m，提示會出現
-	if dev_args.has("convoy"):
-		player.global_position = Vector3(0.0, 0.05, 10.0)
-		player.rotation.y = PI  # 面向南街
-		player.yaw = player.rotation.y
-		start_convoy()
-		if dev_args.has("phase2") and has_node("Undertaker"):
-			($Undertaker as Undertaker).enter_phase_two.call_deferred()
-		if dev_args.has("throw"):
-			_debug_throw.call_deferred(str(dev_args["throw"]), float(str(dev_args.get("throw-t", "0.3"))))
-		if dev_args.has("felled"):
-			_debug_felled.call_deferred()
-	# 截圖用：`--insight` 一開始就按住看穿（README 的戰鬥圖改拍霜橋鎮送葬者戰，第二輪盤點第 2 項）
-	if dev_args.has("insight"):
-		dev_hold_insight()
-	if dev_args.has("arch"):
-		Game.session.state.set_flag("slice.saw_south_arch", true)  # 截圖要看提示，不要先播石拱回憶
-		player.global_position = Vector3(0.6, 0.05, ARCH_Z - 4.6)
-		player.rotation.y = PI + deg_to_rad(8.0)
-		# 跟 `--convoy` 一起用（重現中／化灰）：送葬者站在石拱前（_boss_spawn），諾恩退到他北邊，
-		# 鏡頭裡是「送葬者擋在亮起的石拱前」，而不是站進送葬者身體裡（預覽要走近才有提示，維持原位）
-		if dev_args.has("convoy") and str(dev_args["arch"]) != "preview":
-			player.global_position = Vector3(1.2, 0.05, _boss_spawn().z - 6.5)
-			player.rotation.y = PI + deg_to_rad(4.0)
-		elif dev_args.has("convoy"):
-			# 預覽要站在石拱 5 m 內，送葬者卻就生在石拱前，鐵架會擋住預覽的石拱（第二輪盤點第 8 項）：
-			# 截圖時把他停在諾恩背後、鏡頭後面，畫面裡是石拱預覽＋代價卡，車隊戰的 HUD 照舊
-			dev_park_boss(player.global_position + Vector3(1.8, 0.0, -5.5))
-		player.yaw = player.rotation.y
-		match str(dev_args["arch"]):
-			"preview":
-				arch_site.debug_preview = true
-			"restored":
-				arch_site.activate.call_deferred()
-			"spent":
-				arch_site.activate()
-				arch_site.nb.tick(9.5, Game.session.state)
-	# 截圖用：`--face=sheila|undertaker|frame|arch`：每幀把諾恩（和鏡頭）轉向那個角色（arch＝南街石拱）。
-	# 燃燒劍斬鐵架的火星在諾恩背後，平常的鏡頭拍不到（NEXT 第 2 項、Steam 截圖 6）
+	# `--face=sheila|undertaker|arch|ada`：每幀把諾恩（和鏡頭）轉向那個角色
 	if dev_args.has("face"):
 		_dev_face = str(dev_args["face"])
-	# 截圖用：`--pos=x,z` 最後再把諾恩移到這裡（其他旗標排好場面之後換個拍攝位置；高度照地面）。
-	# 例：燃燒劍斬鐵架時送葬者站在諾恩正後方，鏡頭會卡進他身體裡 → `--pos=2.6,6.5 --face=sheila --face-off=16` 從側面拍
+	# `--pos=x,z`：最後再把諾恩移到這裡（高度照地面）
 	if dev_args.has("pos"):
 		dev_place_player(str(dev_args["pos"]))
 	# `--face-off=度`：轉向目標之後再往左轉幾度，目標落在畫面右側、不被諾恩的背影擋住
 	if dev_args.has("face-off"):
 		_dev_face_off = float(str(dev_args["face-off"]))
-	# 截圖用：`--hide=noen` 藏起諾恩（商店截圖：石拱預覽、燃燒劍，盤點第 5 項）
+	# `--hide=noen`：藏起諾恩
 	if str(dev_args.get("hide", "")) == "noen":
 		dev_hide_player.call_deferred()
 	player.snap_camera()
-	if reboot:
-		reboot_opening = RebootOpening.new()
-		reboot_opening.name = "RebootOpening"
-		add_child(reboot_opening)
-
-
-## 截圖用：按住看穿（跟沙盒的 `--insight` 一樣，直接按下輸入動作；放開要呼叫 Input.action_release）。
-func dev_hold_insight() -> void:
-	Input.action_press("insight")
-
-
-## 截圖用：送葬者移到 at（高度照地面）並停住不動（不追、不出招）。沒有送葬者回傳 false。
-func dev_park_boss(at: Vector3) -> bool:
-	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
-	if boss == null:
-		return false
-	boss.global_position = Vector3(at.x, ground_y(at) + 0.05, at.z)
-	boss.velocity = Vector3.ZERO
-	boss.set_physics_process(false)
-	return true
 
 
 ## 截圖用：把諾恩移到 "x,z"（高度照地面）。格式不對就不動，回傳有沒有移動。
@@ -229,19 +137,13 @@ func dev_face_target(who: String) -> Node3D:
 		"sheila":
 			return get_node_or_null("Sheila") as Node3D
 		"undertaker":
-			return get_node_or_null("Undertaker") as Node3D
-		"frame":
-			return encounter.thrown_frame if encounter != null and is_instance_valid(encounter.thrown_frame) else null
+			for boss_name: String in ["RbGuardian", "RbPursuer", "Undertaker"]:
+				if has_node(boss_name):
+					return get_node(boss_name) as Node3D
 		"arch":
 			return arch_site
 		"ada":
 			return get_node_or_null("Ada") as Node3D
-		"list":
-			return get_node_or_null("DeadList") as Node3D
-		"shroud":
-			for n: Node in get_children():
-				if n is RescueSite and (n as RescueSite).is_covered():
-					return n as Node3D
 	return null
 
 
@@ -260,43 +162,7 @@ func _update_dev_face() -> void:
 	player.snap_camera()
 
 
-## 截圖用：鐵架立刻擲出（arch：石拱先重現），飛行／碎片停在擲出後第 t 秒；燃燒劍不熄。
-func _debug_throw(how: String, t: float) -> void:
-	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
-	if boss == null or encounter == null:
-		return
-	boss.enter_phase_two()
-	boss.trigger_frame_throw()
-	if how == "arch":
-		arch_site.activate()
-	if encounter.frame_throw == null:
-		return
-	encounter.frame_throw.resolve(how, Game.session.state)
-	var ally: Sheila = get_node_or_null("Sheila") as Sheila
-	if ally != null and how == "kindling":
-		ally.ignite_sword(999.0)
-	var f: ThrownFrame = encounter.thrown_frame
-	if f == null:
-		return
-	f.set_physics_process(false)
-	var left: float = t
-	while left > 0.0:
-		f.advance(minf(left, 1.0 / 60.0))
-		left -= 1.0 / 60.0
-
-
-## 截圖用：送葬者被斬倒，停在倒地那一刻（`--convoy --felled`）。
-func _debug_felled() -> void:
-	var boss: Undertaker = get_node_or_null("Undertaker") as Undertaker
-	if boss == null:
-		return
-	boss.debug_hold_fallen = true
-	boss.health.apply_damage(boss.health.hp, {"kind": "kindling", "stagger": 0.0})
-	# 截圖時藏起諾恩（鏡頭在他正後方，會擋住倒在前面的送葬者）
-	dev_hide_player()
-
-
-## 截圖用：藏起諾恩的模型（提燈的光留著）。`--felled` 與 `--hide=noen` 用。
+## 截圖用：藏起諾恩的模型（提燈的光留著）。`--hide=noen` 用。
 func dev_hide_player() -> void:
 	var p: Node = get_node_or_null("Player")
 	if p == null:
@@ -305,225 +171,18 @@ func dev_hide_player() -> void:
 		(v as GeometryInstance3D).visible = false
 
 
-# ---------------------------------------------------------------- 救援（段落 3）
-
-## 北街陷落後才有受困者；讀檔時已陷落也會在這裡生成。
-const RESCUE_SPOTS: Dictionary = {
-	"north_a": Vector3(-3.0, RISE, -33.0),
-	"north_b": Vector3(3.0, RISE, -37.5),
-	"north_c": Vector3(-2.8, RISE, -42.0),
-	"north_d": Vector3(3.1, RISE, -45.0),
-}
-
-
-func collapse_north_street(animate: bool) -> void:
-	super(animate)
-	for id: String in RESCUE_SPOTS:
-		if has_node("Rescue_" + id):
-			continue
-		var site := RescueSite.new()
-		site.name = "Rescue_" + id
-		site.site_id = id
-		site.position = RESCUE_SPOTS[id] as Vector3
-		site.rescued.connect(func(_id: String) -> void: _banner("RESCUE_SAVED", 2.5))
-		add_child(site)
-
-
-# ---------------------------------------------------------------- 席菈（段落 4）
-
-const SHEILA_WAIT_POS: Vector3 = Vector3(1.6, 0.0, -21.0)
-const ASHWALKER_POS: Vector3 = Vector3(0.0, RISE, -34.0)
-const SHEILA_TALK_RANGE: float = 2.6
-
-var ashwalker: Ashwalker
 ## 截圖旗標 `--face` 的目標（""＝不轉）
 var _dev_face: String = ""
 ## `--face-off`：轉向目標後再往左轉的角度（度；正＝往左轉，目標落到畫面右側）
 var _dev_face_off: float = 0.0
-
-
-func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
-	if quest_id == GameSession.MAIN_QUEST and to_stage == "meet_sheila":
-		_begin_sheila_meet()
-	if quest_id == GameSession.MAIN_QUEST and to_stage == "aftermath":
-		_start_aftermath_music()
-
-
-## 收束的配樂（D-185）：一整段切片只有這裡有音樂——打完之後，安靜下來的時候。
-func _start_aftermath_music() -> void:
-	if aftermath_music != null:
-		return
-	aftermath_music = Ambience.music(self, AFTERMATH_MUSIC, AFTERMATH_MUSIC_DB, AFTERMATH_MUSIC_FADE, "AftermathMusic")
-
-
-## 席菈出現；已經談過（讀檔）就直接放灰巡者。
-func _begin_sheila_meet() -> void:
-	_spawn_sheila(SHEILA_WAIT_POS)
-	if Game.session.state.get_flag("slice.sheila_talked", false):
-		_spawn_ashwalker()
+## 梨攤旁的地窖口（貨梯的井口蓋在這裡：RebootOpening._build_shaft_mouth，D-214）
+const CELLAR_POS: Vector3 = Vector3(7.6, 0.0, -4.2)
 
 
 func _physics_process(_delta: float) -> void:
 	if _dev_face != "":
 		_update_dev_face()
-	if reboot_opening != null:
-		return
-	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
-	if stage == "aftermath":
-		_update_aftermath()
-		return
-	# 席菈段落：走到她身邊 → 夾板、「你敲了幾下」
-	if stage != "meet_sheila":
-		return
-	if Game.session.state.get_flag("slice.sheila_talked", false) or Game.is_player_locked():
-		return
-	var sheila: Node3D = get_node_or_null("Sheila") as Node3D
-	var player: Node3D = get_node_or_null("Player") as Node3D
-	if sheila != null and player != null and sheila.global_position.distance_to(player.global_position) <= SHEILA_TALK_RANGE:
-		Game.start_dialogue("slice_sheila_meet")
 
-
-func _on_dialogue_ended(dialogue_id: String) -> void:
-	if dialogue_id == "slice_sheila_meet" and Game.session.state.get_flag("slice.sheila_talked", false):
-		_spawn_ashwalker()
-
-
-## 協作教學戰：北街裂縫爬出一隻灰巡者；倒下 → slice.ashwalker_defeated。
-func _spawn_ashwalker() -> void:
-	if ashwalker != null or Game.session.state.get_flag("slice.ashwalker_defeated", false):
-		return
-	ashwalker = Ashwalker.new()
-	ashwalker.name = "Ashwalker"
-	ashwalker.position = ASHWALKER_POS
-	add_child(ashwalker)
-	ashwalker.health.died.connect(_on_ashwalker_died)
-	_banner("SHEILA_MEET_ASHWALKER", 3.0)
-	# 協作教學：第一次遇到灰巡者時提示看穿與打弱點（每個存檔只一次）
-	if not Game.session.state.get_flag("tutorial.insight_shown", false):
-		Game.session.set_flag("tutorial.insight_shown", true)
-		get_tree().create_timer(3.4).timeout.connect(_show_insight_tutorial)
-
-
-func _show_insight_tutorial() -> void:
-	if not is_inside_tree():
-		return
-	var text: String = TranslationServer.translate("TUTORIAL_INSIGHT").format({
-		"insight": InputGlyphs.label_for_action("insight", App.last_device),
-		"cmd": InputGlyphs.label_for_action("command_weakpoint", App.last_device)})
-	_banner(text, 6.0)
-
-
-func _on_ashwalker_died() -> void:
-	Game.session.set_flag("slice.ashwalker_defeated", true)
-
-
-# ---------------------------------------------------------------- 收束（段落 6）
-
-const CELLAR_POS: Vector3 = Vector3(7.6, 0.0, -4.2)
-const ADA_TALK_RANGE: float = 3.0
-
-
-## 收束：回到梨販攤 → 艾妲（死者名單、梨與秤）→ 梨販家的地窖。
-func _update_aftermath() -> void:
-	if Game.session.state.get_flag("slice.ada_talked_aftermath", false) or Game.is_player_locked():
-		return
-	var player: Node3D = get_node_or_null("Player") as Node3D
-	if player != null and player.global_position.distance_to(STALL_POS) <= ADA_TALK_RANGE:
-		Game.start_dialogue("slice_ada_aftermath")
-
-
-func _on_cellar() -> void:
-	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "aftermath":
-		return
-	if not Game.session.state.get_flag("slice.ada_talked_aftermath", false):
-		return
-	Game.session.set_flag("slice.cellar_entered", true)
-	_banner("SLICE_COMPLETE", 8.0)
-
-
-func _build_cellar_hatch() -> void:
-	var wood := look.mat(FrostbridgeLook.WOOD)
-	_batch.add_box_at(Vector3(1.6, 0.08, 1.2), CELLAR_POS + Vector3(0, 0.04, 0), wood, false)
-	for i: int in 3:
-		_batch.add_box_at(Vector3(1.6, 0.04, 0.06), CELLAR_POS + Vector3(0, 0.1, -0.4 + i * 0.4), look.mat(FrostbridgeLook.ROOF), false)
-	_batch.add_box_at(Vector3(0.2, 0.06, 0.12), CELLAR_POS + Vector3(0.5, 0.12, 0.0), look.mat(Color(0.4, 0.36, 0.3), 0.4), false)
-
-
-# ---------------------------------------------------------------- 送葬者戰
-
-func _caravan_route() -> PackedVector3Array:
-	return PackedVector3Array([Vector3(-1.2, 0, 2.0), Vector3(-0.6, 0, 12.0), Vector3(0.0, 0, ARCH_Z),
-		Vector3(0.4, 0, 29.0), Vector3(0.0, 0, 38.0)])
-
-
-func _sheila_spawn() -> Vector3:
-	return Vector3(-1.6, 0.0, 8.0)
-
-
-func _boss_spawn() -> Vector3:
-	return Vector3(0.5, 0.0, 15.0)
-
-
-func _spawn_sheila(pos: Vector3) -> void:
-	if has_node("Sheila"):
-		return
-	var ally := Sheila.new()
-	ally.name = "Sheila"
-	ally.position = pos
-	add_child(ally)
-
-
-# ---------------------------------------------------------------- 看見南街石拱（段落 1）
-
-## 第一次走進南街看到石拱：諾恩想起父親躲在柱子後 → 日記解鎖那段記憶（之後的重現代價就是它）。
-func _on_arch_memory() -> void:
-	if Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
-		return
-	Game.start_dialogue("slice_arch_memory")
-
-
-## 護送階段走進南街口 → 送葬者戰開始（只觸發一次）。
-func _on_south_street() -> void:
-	if encounter != null:
-		return
-	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "escort_convoy":
-		return
-	start_convoy()
-
-
-func start_convoy() -> ConvoyEncounter:
-	if encounter != null:
-		return encounter
-	# 沒先逛過南街也要有這段記憶：重現石拱的代價就是它
-	if not Game.session.state.get_flag("slice.saw_south_arch", false):
-		Game.session.set_flag("slice.saw_south_arch", true)
-	spawn_convoy_fight(true)
-	encounter.finished.connect(_on_convoy_finished)
-	_banner("CONVOY_START", 3.5)
-	return encounter
-
-
-func _on_convoy_finished(_injured: int) -> void:
-	# 任務層面：車隊通過路口 → 收束（ConvoyEncounter 只寫戰鬥結果旗標）
-	Game.session.set_flag("slice.convoy_through", true)
-
-
-# ---------------------------------------------------------------- 觸發區與鏡頭
-
-func _build_story_triggers() -> void:
-	_trigger("PearSellerTrigger", STALL_POS + Vector3(-0.8, 1.0, 0.0), Vector3(3.0, 2.0, 3.0), _on_pear_seller)
-	_trigger("BellTowerTrigger", Vector3(0.0, RISE + 1.0, TOWER_Z + 3.7), Vector3(4.0, 2.0, 2.0), _on_bell_tower)
-	_trigger("CellarTrigger", CELLAR_POS + Vector3(0.0, 1.0, 0.0), Vector3(1.8, 2.0, 1.6), _on_cellar)
-	_trigger("ConvoyTrigger", Vector3(0.0, 1.0, PLAZA_S + 2.0), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_south_street)
-	_trigger("ArchMemoryTrigger", Vector3(0.0, 1.0, ARCH_Z - 5.5), Vector3(SOUTH_HALF * 2.0, 2.0, 2.0), _on_arch_memory)
-
-
-## 過場鏡頭（CutsceneView 依名字找；slice_bell_nine.json 用到這三個）。
-func _build_cutscene_cameras() -> void:
-	var t := Vector3(0.0, RISE, TOWER_Z)
-	_camera_marker("BellCamWide", t + Vector3(2.6, 1.7, 19.0), t + Vector3(0.0, 14.5, 0.0))
-	_camera_marker("BellCamRope", t + Vector3(2.4, 15.6, 6.2), t + Vector3(0.0, 16.3, 0.0))
-	_camera_marker("NorthStreetCam", Vector3(-1.5, 10.0, NORTH_START + 8.0), Vector3(0.0, RISE + 1.0, NORTH_END + 4.0))
 
 
 # ---------------------------------------------------------------- 場景
@@ -1855,12 +1514,7 @@ func _build_pear_stall(pos: Vector3) -> void:
 	var pear := look.mat(Color(0.78, 0.66, 0.3), 0.6)
 	for i: int in 6:
 		_batch.add_sphere(0.09, pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15), pear)
-	# 攤子後面的艾妲（剪影）。
-	# 新版（D-210）艾妲是站在攤子前的人偶（RebootOpening._build_ada），不放剪影
-	if not Game.session.is_reboot():
-		var cloak := look.mat(Color(0.12, 0.12, 0.14))
-		_batch.add_cylinder(0.05, 0.32, 1.55, pos + Vector3(0.3, 0.78, -0.75), cloak, false, 12)
-		_batch.add_sphere(0.15, pos + Vector3(0.3, 1.62, -0.75), cloak)
+	# 艾妲是站在攤子前的人偶（RebootOpening._build_ada，D-210）
 	var l := OmniLight3D.new()
 	l.light_color = FrostbridgeLook.LAMP
 	l.light_energy = 1.4

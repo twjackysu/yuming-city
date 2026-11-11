@@ -59,7 +59,7 @@ func test_new_game_starts_the_new_story() -> void:
 	assert_eq(s.quests.stage_of(GameSession.REBOOT_MAIN_QUEST), "escape")
 	assert_eq(s.state.checkpoint, "rb_start")
 	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "frostbridge")
-	assert_false(s.state.quests.has(GameSession.MAIN_QUEST), "不會順便開舊版的主線")
+	assert_false(s.state.quests.has("slice_main"), "不會開舊劇情的主線")
 	boot.queue_free()
 	await tree.process_frame
 
@@ -67,9 +67,11 @@ func test_new_game_starts_the_new_story() -> void:
 func test_continue_reads_only_the_new_story_save() -> void:
 	var s := _session()
 	# 資料夾裡只有以前舊劇情留下的存檔：標題的「繼續」不能按（不會把舊存檔當成這個劇情的進度）
-	s.new_game()
-	s.set_flag("slice.met_pear_seller", true)
-	assert_eq(s.save(GameSession.AUTO_SLOT), OK)
+	# （遊戲已經不會寫這種檔了，D-220：直接在舊資料夾造一份）
+	var old_state := GameState.new()
+	old_state.set_flag("slice.met_pear_seller", true)
+	DirAccess.make_dir_recursive_absolute(_dir)
+	assert_eq(SaveCodec.write_file(_dir.path_join("auto.json"), old_state), OK)
 	var boot: Control = await _boot()
 	assert_true(_button(boot, "Continue").disabled, "新版沒有存檔")
 	boot.queue_free()
@@ -101,3 +103,28 @@ func test_title_menu_has_only_the_four_entries() -> void:
 	assert_eq(names, ["NewGame", "Continue", "Settings", "Quit"] as Array[String])
 	boot.queue_free()
 	await tree.process_frame
+
+
+## 開發旗標（`--level=frostbridge [--rb-at=…]`）開的遊戲存在另一個資料夾：不會蓋掉玩家真正的進度（D-221）
+func test_dev_flags_never_write_the_players_save() -> void:
+	var s := _session()
+	# 玩家真正的進度（測試裡是 _dir + "_reboot"）：玩到毒霧前
+	s.new_reboot_game()
+	s.set_flag("rb.opening_done", true)
+	s.set_flag("rb.barrels_broken", true)
+	assert_eq(s.state.checkpoint, "rb_before_mist")
+	var real_path: String = s.reboot_save_dir().path_join("auto.json")
+	var real_text: String = FileAccess.get_file_as_string(real_path)
+	assert_true(real_text != "", "前提：玩家有一份自動存檔")
+	# 用開發旗標跳到梨攤那一段
+	var dev_dir: String = str(_game().get("DEV_SAVE_DIR")) + "_reboot"
+	_game().call("_dev_reboot_start", "market")
+	assert_true(s.is_reboot(), "開的是同一個劇情")
+	assert_eq(s.quests.stage_of(GameSession.REBOOT_MAIN_QUEST), "market_lead", "推到梨攤那一段")
+	assert_eq(s.reboot_save_dir(), dev_dir, "存檔改寫到開發用的資料夾")
+	assert_true(FileAccess.file_exists(dev_dir.path_join("auto.json")), "開發用的資料夾有存檔")
+	assert_eq(FileAccess.get_file_as_string(real_path), real_text, "玩家那一份一個字都沒變")
+	assert_true(dev_dir != GameSession.REBOOT_SAVE_DIR, "不是正式的存檔資料夾")
+	for f: String in DirAccess.get_files_at(dev_dir):
+		DirAccess.remove_absolute(dev_dir.path_join(f))
+	DirAccess.remove_absolute(dev_dir)
