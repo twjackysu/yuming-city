@@ -1,6 +1,7 @@
 extends TestCase
 ## 新版前十分鐘的最後一段（D-210）：藥的事講完 → 走近梨攤，艾妲給一半工錢、說貨梯（只給一次）→ 站上貨梯 →
-## 任務完成、「待續」→ 回標題。還沒跟艾妲講話就站上貨梯不會結束；死亡重試回到檢查點，工錢不會多拿。
+## 任務完成、黑一下「貨梯往下／地下市場」→ 換到地下市場（「待續」與配樂搬到地下市場：test_story_market_level.gd）。
+## 還沒跟艾妲講話就站上貨梯不會結束；死亡重試回到檢查點，工錢不會多拿。
 
 const PATH: String = "res://scenes/levels/frostbridge.tscn"
 
@@ -101,7 +102,7 @@ func test_stall_and_lift_sit_where_the_town_built_them() -> void:
 	await tree.process_frame
 
 
-func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void:
+func test_ada_pays_half_wages_once_then_lift_goes_down_to_the_market() -> void:
 	var s := _session_at("market")
 	var level: StoryLevel = await _load()
 	await tree.process_frame
@@ -134,37 +135,28 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	# 站在攤子前不會再講一次
 	await _frames(6)
 	assert_false(bool(_game().call("is_in_dialogue")))
-	# 站上貨梯：任務完成、「待續」
+	# 站上貨梯：前十分鐘做完、地下市場的任務開始（檢查點換到地下市場）、黑一下「貨梯往下／地下市場」
 	_stand(level, FrostbridgeOpening.LIFT_POS + Vector3(-0.3, 0.0, 0.4))
 	await _frames(6)
 	assert_true(bool(s.state.get_flag("rb.market_reached", false)))
 	assert_true(s.quests.is_done("rb_main"), "前十分鐘走完了")
 	assert_true(bool(s.state.get_flag("rb.first_ten_done", false)))
+	assert_eq(s.quests.stage_of("rb_market"), "arrive", "地下市場的任務接著開始")
+	assert_eq(s.main_quest(), "rb_market", "HUD 的目標換成下一條主線")
+	assert_eq(s.objective_key(), "Q_RB2_OBJ_ARRIVE")
+	assert_eq(s.state.checkpoint, "rb2_arrive")
+	assert_eq(str(_game().call("level_for_checkpoint", "rb2_arrive")), "market", "重來、繼續都直接到地下市場")
+	assert_true(s.has_story_save(), "下去之前存了檔")
 	assert_true(rb.ending)
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
-	assert_not_null(card, "待續的卡")
-	assert_eq(card.title_text(), tr("RB_END_TITLE"))
+	assert_not_null(card, "貨梯往下的卡")
+	assert_eq(card.title_text(), tr("RB_END_TITLE"), "卡上寫「地下市場」")
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
-	assert_eq(rb.play_end_card(), card, "不會疊第二張")
-	# 「待續」不是無聲的（D-219）：卡出來時配樂從無聲慢慢進來，走音樂匯流排、會循環，只有一個
-	var music: AudioStreamPlayer = level.get_node_or_null("RbEndMusic") as AudioStreamPlayer
-	assert_not_null(music, "待續的配樂")
-	assert_eq(music, rb.end_music)
-	assert_eq(Ambience.sfx_of(music), FrostbridgeOpening.END_MUSIC)
-	if music != null:
-		assert_eq(music.bus, &"Music", "跟著「音樂」音量")
-		assert_true(music.playing, "在播")
-		assert_true(music.volume_db < FrostbridgeOpening.END_MUSIC_DB, "從小聲慢慢進來，不是突然響起")
-		var stream: AudioStreamWAV = music.stream as AudioStreamWAV
-		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "卡停多久都不會斷")
-	var players: int = 0
-	for c: Node in level.get_children():
-		if str(c.name).begins_with("RbEndMusic"):
-			players += 1
-	assert_eq(players, 1, "按兩次也只有一個配樂")
+	assert_eq(rb.ride_lift(), card, "不會疊第二張")
+	assert_false(level.has_node("RbEndMusic"), "「待續」的配樂不在這裡了（在地下市場）")
 	card.finish()
-	assert_eq(done[0], 1, "播完（或跳過）→ 回標題")
+	assert_eq(done[0], 1, "播完（或跳過）→ 換到地下市場")
 	level.queue_free()
 	await tree.process_frame
 

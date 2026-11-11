@@ -2,12 +2,14 @@ extends TestCase
 ## 新版《這些詛咒對我太有用了》前十分鐘一條龍（D-212）：從標題按「新遊戲」一路走到貨梯的「待續」。
 ## 每一段的細節各有測試（opening／guardian／potion／market）；這裡只驗「接得起來」：
 ## 標題 → 開場對話 → 送葬者追擊、藥桶破 → 毒霧覺醒 → 再踏回去確認 → 推車到南街口 → 席菈接應 →
-## 南街守衛倒下 → 藥箱兩瓶 → 喝一瓶回血 → 艾妲的一半工錢 → 貨梯 → 待續卡 → 回標題。
+## 南街守衛倒下 → 藥箱兩瓶 → 喝一瓶回血 → 艾妲的一半工錢 → 貨梯 → 地下市場（另一個關卡）→ 走下坡道、席菈說規矩 →
+## 走到街底的藥店門口 → 待續卡 → 回標題。
 ## 中間倒下重來兩次：第一次進霧前（生命不補滿）、拿了藥之後（藥不重複領）——重來之後直接從檢查點接著走完。
 ## 另一個測試只用手把事件走一小段：左搖桿走到藥箱 → A 拿藥、A 讀完對話 → 十字鍵左喝藥。
 
 const BOOT: String = "res://scenes/boot/boot.tscn"
 const PATH: String = "res://scenes/levels/frostbridge.tscn"
+const MARKET_PATH: String = "res://scenes/levels/underground_market.tscn"
 const PAD: int = 0
 
 var _dir: String = ""
@@ -303,7 +305,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_eq(s.quests.stage_of("rb_main"), "market_lead", "→ 去地下市場的貨梯")
 	assert_eq(s.state.checkpoint, "rb_market")
 
-	# --- 艾妲：一半工錢 → 貨梯 → 待續 → 回標題
+	# --- 艾妲：一半工錢 → 貨梯 → 換到地下市場
 	var done: Array[int] = [0]
 	rb.end_done = func() -> void: done[0] += 1
 	_stand(level, FrostbridgeOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
@@ -318,16 +320,56 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_true(s.quests.is_done("rb_main"), "前十分鐘走完了")
 	assert_true(bool(s.state.get_flag("rb.first_ten_done", false)))
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
-	assert_not_null(card, "待續的卡")
+	assert_not_null(card, "貨梯往下的卡")
 	if card != null:
 		assert_eq(card.title_text(), tr("RB_END_TITLE"))
 		card.finish()
-	assert_eq(done[0], 1, "卡播完 → 回標題")
+	assert_eq(done[0], 1, "卡播完 → 換關卡")
+	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "market", "下一個關卡是地下市場")
+	var hp_before: float = player.health.hp
+	level.queue_free()
+	await tree.process_frame
+
+	# --- 地下市場：高台 → 坡道 → 街上（席菈說規矩）→ 藥店門口 → 待續 → 回標題
+	var market: UndergroundMarket = (load(MARKET_PATH) as PackedScene).instantiate() as UndergroundMarket
+	tree.root.add_child(market)
+	await tree.physics_frame
+	await tree.process_frame
+	_park_sheila(market)
+	var story: UndergroundMarketStory = market.get_node_or_null("UndergroundMarketStory") as UndergroundMarketStory
+	assert_not_null(story, "地下市場的劇情掛上了")
+	var p2: PlayerController = market.get_node("Player") as PlayerController
+	assert_true(absf(p2.global_position.y - UndergroundMarket.TERRACE_Y) < 0.3, "從貨梯的高台開始（%s）" % p2.global_position)
+	# 存檔在站上貨梯的那一刻；卡播完之前身上的毒還在跳，所以差一兩點
+	assert_true(absf(p2.health.hp - hp_before) < 3.0, "生命照帶過來（%.1f → %.1f）" % [hp_before, p2.health.hp])
+	assert_true(p2.health.hp < p2.health.max_hp - 10.0, "換關卡不補滿（%.1f／%.1f）" % [p2.health.hp, p2.health.max_hp])
+	assert_eq(_potions(s), 1, "藥照帶過來")
+	assert_eq(s.objective_key(), "Q_RB2_OBJ_ARRIVE")
+	var ended: Array[int] = [0]
+	story.end_done = func() -> void: ended[0] += 1
+	_stand(market, Vector3(0.0, 0.0, UndergroundMarket.RAMP_S + 1.4))
+	await _frames(6)
+	assert_eq(s.quests.stage_of("rb_market"), "find_shop", "走到街上")
+	assert_eq(s.state.checkpoint, "rb2_street")
+	assert_true(_talking(), "席菈說這裡的規矩")
+	await _run_dialogue(market)
+	await _frames(2)
+	assert_false(market.has_node("ChapterCard"), "還沒到藥店")
+	_stand(market, UndergroundMarket.SHOP_DOOR + Vector3(0.3, 0.0, -1.2))
+	await _frames(6)
+	assert_eq(s.quests.stage_of("rb_market"), "test_board", "到藥店門口")
+	assert_eq(s.state.checkpoint, "rb2_shop")
+	var end_card: ChapterCard = market.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(end_card, "待續的卡")
+	if end_card != null:
+		assert_eq(end_card.title_text(), tr("RB2_END_TITLE"))
+		end_card.finish()
+	assert_eq(ended[0], 1, "卡播完 → 回標題")
 	# 一路走完：狀態不會留一堆、藥還剩一瓶、工錢只有一份
-	assert_true(player.status_effects.to_array().size() <= 1, "身上最多只有一個中毒（不疊加）")
+	assert_true(p2.status_effects.to_array().size() <= 1, "身上最多只有一個中毒（不疊加）")
 	assert_eq(_potions(s), 1)
 	assert_eq(_coins(s), FrostbridgeOpening.WAGES)
-	level.queue_free()
+	market.queue_free()
 	await tree.process_frame
 
 

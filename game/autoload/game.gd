@@ -3,6 +3,7 @@ extends Node
 ## 邏輯都在 GameSession（res://src/core/game_session.gd），這裡只做場景切換。
 ##
 ## 開發用：`godot --path game -- --level=frostbridge [--rb-at=…]` 直接進入關卡（截圖驗證用）；
+## `--level=market --rb-at=arrive|street|shop` 是地下市場；
 ## `-- --benchmark` 跑效能測試後結束（結果在 user://benchmark/）。
 
 signal level_loaded(level_id: String)
@@ -15,9 +16,10 @@ const RETRY_DELAY_SEC: float = 2.2
 ## 遊戲時間一幀最多加幾秒（D-179）
 const PLAYTIME_MAX_STEP: float = 0.25
 
-## 關卡 id -> 場景。前十分鐘的檢查點都在霜橋鎮。
+## 關卡 id -> 場景。前十分鐘的檢查點都在霜橋鎮；貨梯下去之後是地下市場（market）。
 const LEVELS: Dictionary = {
 	"frostbridge": "res://scenes/levels/frostbridge.tscn",
+	"market": "res://scenes/levels/underground_market.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
@@ -29,6 +31,10 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"rb_guardian": "frostbridge",
 	"rb_portable": "frostbridge",
 	"rb_market": "frostbridge",
+	# 地下市場（第二段 A，任務 rb_market）
+	"rb2_arrive": "market",
+	"rb2_street": "market",
+	"rb2_shop": "market",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 ## `--level=…` 開發旗標用的存檔資料夾（實際寫到 user://saves_dev_reboot）
@@ -54,7 +60,7 @@ func _ready() -> void:
 		# 開發用：`-- --level=frostbridge` 直接開新遊戲；`--rb-at=start|mist|guardian|market…` 推到那一段（D-204）
 		# benchmark 不開新遊戲（只飛過空的霜橋鎮，也不會寫到玩家的存檔）
 		if not args.has("benchmark"):
-			_dev_story_start.call_deferred(str(args.get("rb-at", "")))
+			_dev_story_start.call_deferred(str(args.get("rb-at", "")), level)
 		go_to_level.call_deferred(level)
 	# 截圖用：`-- --level=frostbridge --rb-at=market --dialogue=rb_ada_wages --dialogue-steps=2`
 	if args.has("dialogue"):
@@ -67,10 +73,13 @@ func _ready() -> void:
 
 
 ## 開發旗標開的遊戲存在另一個資料夾（DEV_SAVE_DIR），不會蓋掉玩家真正的進度。
-func _dev_story_start(at: String) -> void:
+func _dev_story_start(at: String, level: String = DEFAULT_LEVEL) -> void:
 	session.save_dir = DEV_SAVE_DIR
 	session.new_game()
-	FrostbridgeOpening.dev_advance(session, at)
+	if level == "market":
+		UndergroundMarketStory.dev_advance(session, at)
+	else:
+		FrostbridgeOpening.dev_advance(session, at)
 
 
 ## 標題畫面的「新遊戲／繼續」（D-211）；存檔在 GameSession.STORY_SAVE_DIR。load_level=false 給測試用（只改狀態、不換場景）。

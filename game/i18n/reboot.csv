@@ -83,3 +83,12 @@ DLG_RB_ADA_013,Partners? You find evidence. I find my pay.,合作嗎？妳找證
 DLG_RB_ADA_014,Deal. Bring your own drinks. Nothing goes in my canteen.,可以。飲料自己帶，不准放進我的水壺。
 RB_GUARDIAN_START,"Its poison heals you. Its claws and slams still hurt.",牠噴的毒會讓你回血。爪子和下砸照樣會痛
 RB_MOVE_SPRAY,Poison spray,噴毒
+Q_RB_MARKET_TITLE,The Shop's Least Welcome Customer,藥店最不受歡迎的客人
+Q_RB2_OBJ_ARRIVE,Walk down into the underground market,走進地下市場
+Q_RB2_OBJ_FIND_SHOP,Find the potion seller: the shop with the green window at the end of the street,找賣藥的人：街底那間綠色窗戶的藥店
+Q_RB2_OBJ_TEST_BOARD,Put your hand on the test board,把手放到測試板上
+RB_LIFT_NUMBER,The freight lift goes down,貨梯往下
+RB2_END_TITLE,Misha's Potion Shop,彌夏的藥店
+DLG_RB2_RULES_001,"Nothing down here passed certification. There is one rule: the side effect goes on the tag. Every item, every tag.",這裡賣的東西都沒通過認證。規矩只有一條：副作用要寫在吊牌上。每一件都要。
+DLG_RB2_RULES_002,So the curses are labelled honestly. That is more than I can say for the bottles upstairs.,所以詛咒都老實寫出來了。比上面那些貼著認證的瓶子還誠實。
+DLG_RB2_RULES_003,"Don't say that to Misha. Green window, end of the street. Ask her which poison lasts longest, and try not to sound like you are picking a fight.",這句別對彌夏說。街底綠色窗戶那間。問她哪一種毒撐得最久，口氣別像是來找麻煩的。

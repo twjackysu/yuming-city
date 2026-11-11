@@ -54,5 +54,5 @@
       "done_when": {"flag": "rb.market_reached"}
     }
   ],
-  "on_complete": {"set": {"rb.first_ten_done": true}}
+  "on_complete": {"set": {"rb.first_ten_done": true}, "start_quest": ["rb_market"]}
 }

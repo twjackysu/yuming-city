@@ -175,15 +175,10 @@ var _potion_talk_t: float = -1.0
 var potion_talk_sec: float = POTION_TALK_SEC
 ## 梨攤的艾妲（節點名 Ada）
 var ada: Puppet
-## 「待續」那張卡出來了（之後不再觸發任何東西）
+## 站上貨梯、「貨梯往下」那張卡出來了（之後不再觸發任何東西）
 var ending: bool = false
-## 「待續」播完之後做什麼；空的＝回標題。測試換成自己的（不要真的換場景）
+## 卡播完之後做什麼；空的＝換到地下市場。測試換成自己的（不要真的換場景）
 var end_done: Callable = Callable()
-## 「待續」的配樂（D-219）：卡出來時慢慢進來，回標題時跟著關卡一起收掉
-const END_MUSIC: String = "part_end_theme"
-const END_MUSIC_DB: float = -14.0
-const END_MUSIC_FADE: float = 2.5
-var end_music: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -675,7 +670,8 @@ static func flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
-## 去地下市場：走近梨攤 → 艾妲給一半工錢、說貨梯（rb_ada_wages）→ 站上貨梯 → rb.market_reached →「待續」→ 回標題。
+## 去地下市場：走近梨攤 → 艾妲給一半工錢、說貨梯（rb_ada_wages）→ 站上貨梯 → rb.market_reached →
+## rb_main 做完、rb_market 開始（檢查點 rb2_arrive，自動存檔）→ 黑一下「貨梯往下／地下市場」→ 換到地下市場。
 ## 每幀量距離、不用 Area3D：上一段對話結束時諾恩可能已經站在攤子前（body_entered 不會再響一次）。
 func _update_market(st: GameState) -> void:
 	if ending or Game.is_player_locked():
@@ -686,7 +682,7 @@ func _update_market(st: GameState) -> void:
 		return
 	if flat_distance(player.global_position, LIFT_POS) <= LIFT_RANGE:
 		Game.session.set_flag("rb.market_reached", true)
-		play_end_card()
+		ride_lift()
 
 
 ## 雷德寄存的一半工錢：只給一次（讀檔、死亡重試回到檢查點時跟著退回，再聽一次也只拿一次）。回傳這次有沒有給。
@@ -701,22 +697,22 @@ func pay_wages() -> bool:
 	return true
 
 
-## 前十分鐘的結尾：畫面淡成黑 →「待續／地下市場」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
-func play_end_card() -> ChapterCard:
+## 站上貨梯：畫面淡成黑 →「貨梯往下／地下市場」→ 換到地下市場（關卡 market）。諾恩停住（黑幕底下不會被按鍵推著走）。
+## 「待續」那張卡與配樂搬到地下市場目前做到的地方（UndergroundMarketStory.play_end_card）。
+func ride_lift() -> ChapterCard:
 	if ending:
 		return level.get_node_or_null("ChapterCard") as ChapterCard
 	ending = true
 	if player != null:
 		player.process_mode = Node.PROCESS_MODE_DISABLED
-	end_music = Ambience.music(level, END_MUSIC, END_MUSIC_DB, END_MUSIC_FADE, "RbEndMusic")
-	return ChapterCard.play(level, "RB_END_NUMBER", "RB_END_TITLE", _on_end_card_done)
+	return ChapterCard.play(level, "RB_LIFT_NUMBER", "RB_END_TITLE", _on_lift_card_done)
 
 
-func _on_end_card_done() -> void:
+func _on_lift_card_done() -> void:
 	if end_done.is_valid():
 		end_done.call()
 	else:
-		Game.back_to_title()
+		Game.go_to_level(Game.level_for_checkpoint(Game.session.state.checkpoint))
 
 
 ## 艾妲在攤子前等人：諾恩走近了才抬頭轉過來

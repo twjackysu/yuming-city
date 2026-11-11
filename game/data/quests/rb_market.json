@@ -1,0 +1,28 @@
+{
+  "id": "rb_market",
+  "title": "Q_RB_MARKET_TITLE",
+  "stages": [
+    {
+      "id": "arrive",
+      "objective": "Q_RB2_OBJ_ARRIVE",
+      "checkpoint": "rb2_arrive",
+      "marker": "node:MarketStreetTop",
+      "done_when": {"flag": "rb2.street_reached"}
+    },
+    {
+      "id": "find_shop",
+      "objective": "Q_RB2_OBJ_FIND_SHOP",
+      "checkpoint": "rb2_street",
+      "marker": "node:MishaShopDoor",
+      "done_when": {"flag": "rb2.shop_reached"}
+    },
+    {
+      "id": "test_board",
+      "objective": "Q_RB2_OBJ_TEST_BOARD",
+      "checkpoint": "rb2_shop",
+      "marker": "node:MishaShopDoor",
+      "done_when": {"flag": "rb2.first_shop_done"}
+    }
+  ],
+  "on_complete": {"set": {"rb2.market_a_done": true}}
+}
