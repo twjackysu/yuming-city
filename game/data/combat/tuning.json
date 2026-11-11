@@ -38,7 +38,6 @@
     }
   },
   "caravan": {"speed": 1.1, "stop_sec": 2.0},
-  "dummy": {"max_hp": 60, "reset_after": 3.0},
   "feel": {
     "hit_stop": 0.06,
     "hit_stop_kill": 0.12,

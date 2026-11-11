@@ -99,81 +99,6 @@ var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
 
-func _on_dialogue_ended_splint(_dialogue_id: String) -> void:
-	_update_splint()
-	_update_lamp()
-
-
-## 艾妲給的油燈（第 1 章段落 4，D-151）：拿到之後取代提燈——圓肚的銅油燈，火小、更暖。
-const OIL_LAMP_FLAG: String = "ch1.lamp_received"
-const OIL_LAMP_COLOR: Color = Color(1.0, 0.6, 0.3)
-var _oil_lamp: bool = false
-
-
-func has_oil_lamp() -> bool:
-	return _oil_lamp
-
-
-func _update_lamp() -> void:
-	if _oil_lamp or Game.session == null or not is_instance_valid(_lantern):
-		return
-	if not bool(Game.session.state.get_flag(OIL_LAMP_FLAG, false)):
-		return
-	_oil_lamp = true
-	var brass := StandardMaterial3D.new()
-	brass.albedo_color = Color(0.6, 0.43, 0.2)
-	brass.metallic = 0.8
-	brass.roughness = 0.38
-	var belly := SphereMesh.new()
-	belly.radius = 0.075
-	belly.height = 0.09
-	belly.radial_segments = 16
-	belly.rings = 8
-	belly.material = brass
-	(_lantern as MeshInstance3D).mesh = belly
-	# 燈罩：一小截發光的玻璃
-	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color(1.0, 0.78, 0.5)
-	glass.emission_enabled = true
-	glass.emission = OIL_LAMP_COLOR
-	glass.emission_energy_multiplier = 2.2
-	var chimney_mesh := CylinderMesh.new()
-	chimney_mesh.top_radius = 0.018
-	chimney_mesh.bottom_radius = 0.028
-	chimney_mesh.height = 0.07
-	chimney_mesh.radial_segments = 10
-	chimney_mesh.material = glass
-	var chimney := MeshInstance3D.new()
-	chimney.name = "OilLampChimney"
-	chimney.mesh = chimney_mesh
-	chimney.position = Vector3(0, 0.075, 0)
-	_lantern.add_child(chimney)
-	# 提把
-	var ring := TorusMesh.new()
-	ring.inner_radius = 0.045
-	ring.outer_radius = 0.055
-	ring.rings = 12
-	ring.ring_segments = 6
-	ring.material = brass
-	var handle := MeshInstance3D.new()
-	handle.name = "OilLampHandle"
-	handle.mesh = ring
-	handle.rotation_degrees = Vector3(0, 0, 90)
-	handle.position = Vector3(0.0, 0.07, 0.0)
-	_lantern.add_child(handle)
-	_mark_self_layer(_lantern)
-	var light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
-	light.light_color = OIL_LAMP_COLOR
-	light.light_energy = 0.8
-	light.omni_range = 3.8
-	light.position = Vector3(0, 0.08, 0)
-
-
-func _update_splint() -> void:
-	if Game.session != null and is_instance_valid(_puppet):
-		_puppet.set_splint(bool(Game.session.state.get_flag("slice.sheila_talked", false)))
-
-
 func _ready() -> void:
 	_rig.top_level = true
 	add_to_group("player")
@@ -183,10 +108,6 @@ func _ready() -> void:
 	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
 	ContactShadow.attach(self, 0.55, 0.5)  # D-108
-	# 席菈幫他上了夾板之後（slice.sheila_talked），右前臂一直綁著
-	_update_splint()
-	# 用方法連線：玩家被釋放時自動斷開（lambda 會留在 autoload 的訊號上）
-	Game.dialogue_ended.connect(_on_dialogue_ended_splint)
 	# 提燈掛在左手
 	_lantern.reparent(_puppet.hand("L"), false)
 	_lantern.position = Vector3(0, -0.12, 0)
@@ -194,7 +115,6 @@ func _ready() -> void:
 	_mark_self_layer(_body)
 	var lantern_light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
 	lantern_light.shadow_caster_mask = LANTERN_SHADOW_CASTERS
-	_update_lamp()
 	_arm.add_excluded_object(get_rid())
 	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則（D-085）。
 	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開

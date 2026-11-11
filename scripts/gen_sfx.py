@@ -2,17 +2,13 @@
 """程序生成音效（不進 git），輸出到 game/assets/generated/sfx/*.wav。
 
 只用標準函式庫（wave、math、random），固定亂數種子，每次產生的檔案相同。
-- bell / bell_ninth：鐘聲。非諧波泛音（鐘的典型比例），各自指數衰減；第九聲更低、更長、帶一點拍頻。
+- （bell() 沒有自己的音檔了：鐘聲的合成只給 title_theme／part_end_theme 裡遠遠的鐘用。非諧波泛音、各自指數衰減。）
 - blunt / blunt_weak：鐘錘鈍擊。低頻下滑正弦＋短噪音；打中弱點多一層高頻「喀」。
 - claw：爪擊。高通噪音快掃。
 - slash：席菈斷劍。帶通噪音＋金屬泛音。
 - whoosh：閃避風聲。慢起慢落的低通噪音。
 - ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
-- daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
-- canal_ambience：乾運河的環境音（第 3 章，可循環 10 秒）。地底空空的低風聲（很低的低通噪音、慢慢起伏）＋遠處幾滴水（帶石牆的回音）＋吊樑很輕的一聲木頭嘎吱；頭尾交叉淡化，循環時沒有接縫。
 - frost_wind：霜橋鎮冬夜的風雪（可循環 12 秒，D-180）。低低的風（低通噪音）＋一道慢慢滑動的帶通「呼——」（中心 260～720 Hz）＋細細的雪粒沙沙聲（高通噪音），三層都跟著陣風的包絡起伏；頭尾交叉淡化。
-- frost_wind_indoor：同一段風從屋裡聽（酒館、柯德家）：再低通兩次、去掉雪粒，只剩牆外悶悶的呼呼聲。
-- hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
 - part_end_theme：第一部前半的收尾配樂（可循環 28 秒，D-188；結尾卡＋感謝試玩頁，走 Music 匯流排）。回答標題的鐘聲：標題是往下走（D4、C4、A3，第二次落到 F3），這裡從 F3 往上走（F3、A3、C4），第二次 A3、C4 停在 D4＝標題開頭那個音。底下是 F2＋C3 的長音（比收束的小三度暖一點）＋很小聲的 A3，14 秒一次漲落；鐘聲帶三個越來越悶的回音。
@@ -161,25 +157,6 @@ def clang(seconds=1.1, seed=11):
     return out
 
 
-def ignite(seconds=0.9, seed=13):
-    """燃燒劍點火：低頻「轟」一聲往上衝，接著火星的劈啪聲。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    roar = onepole_lp(hp(noise(n, rng), 90), 1400)
-    out = []
-    for i in range(n):
-        t = i / RATE
-        env = min(t / 0.06, 1.0) * math.exp(-max(t - 0.1, 0.0) * 4.5)
-        out.append(roar[i] * env * 1.3)
-    for k in range(14):
-        start = int(rng.uniform(0.04, seconds - 0.05) * RATE)
-        amp = rng.uniform(0.2, 0.55)
-        for j in range(int(0.006 * RATE)):
-            if start + j < n:
-                out[start + j] += amp * rng.uniform(-1, 1) * math.exp(-j / RATE * 900)
-    return out
-
-
 def ui_tick(seconds=0.14, seed=17):
     """選單切換值：很小的一聲高音鐘「叮」＋極短的木頭「喀」，跟遊戲的鐘同一個語彙、不搶戲。"""
     rng = random.Random(seed)
@@ -193,88 +170,6 @@ def ui_tick(seconds=0.14, seed=17):
         c = click[i] * 0.5 if i < len(click) else 0.0
         out.append(ping * attack + c)
     return out
-
-
-def daylight_ambience(seconds=8.0, seed=29):
-    """白晝城：很慢的鐘擺聲＋遠處的水聲（07「鐘走得很慢的滴答＋遠處的水聲」）。頭尾交叉淡化成可循環。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(0.6 * RATE)
-    total = n + fade
-    # 遠處的水：低通噪音，慢慢起伏
-    bed = onepole_lp(onepole_lp(hp(noise(total, rng), 60), 700), 900)
-    out = []
-    for i in range(total):
-        t = i / RATE
-        swell = 0.55 + 0.25 * math.sin(2 * math.pi * 0.23 * t) + 0.12 * math.sin(2 * math.pi * 0.61 * t + 1.3)
-        out.append(bed[i] * swell * 0.9)
-    # 鐘擺：每 2 秒一下，一下「喀」一下「答」（第二下低一點），木頭共鳴約 1.1 kHz
-    for k in range(int(seconds / 1.0)):
-        start = int((0.25 + k * 1.0) * RATE)
-        f = 1150.0 if k % 2 == 0 else 930.0
-        amp = 0.55 if k % 2 == 0 else 0.4
-        for j in range(int(0.09 * RATE)):
-            if start + j >= total:
-                break
-            tt = j / RATE
-            click = rng.uniform(-1, 1) * math.exp(-tt * 900) * 0.6
-            ring = math.sin(2 * math.pi * f * tt) * math.exp(-tt * 55)
-            out[start + j] += amp * (ring + click)
-    # 幾滴水（很遠）
-    for _ in range(4):
-        start = int(rng.uniform(0.3, seconds - 0.2) * RATE)
-        f = rng.uniform(1300, 1900)
-        for j in range(int(0.06 * RATE)):
-            tt = j / RATE
-            out[start + j] += 0.12 * math.sin(2 * math.pi * (f + 1800 * tt) * tt) * math.exp(-tt * 60)
-    # 頭尾交叉淡化：最後 fade 個樣本疊回開頭
-    looped = out[:n]
-    for i in range(fade):
-        w = i / fade
-        looped[i] = out[i] * w + out[n + i] * (1.0 - w)
-    return looped
-
-
-def canal_ambience(seconds=10.0, seed=53):
-    """乾運河：空洞的低風＋有回音的滴水＋吊樑一聲嘎吱。頭尾交叉淡化成可循環。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(0.8 * RATE)
-    total = n + fade
-    wind = onepole_lp(onepole_lp(hp(noise(total, rng), 40), 260), 320)
-    out = []
-    for i in range(total):
-        t = i / RATE
-        swell = 0.6 + 0.3 * math.sin(2 * math.pi * 0.11 * t) + 0.15 * math.sin(2 * math.pi * 0.37 * t + 2.1)
-        out.append(wind[i] * swell * 2.2)
-    # 滴水：三個回音（石牆），越後面越小越悶
-    for at in (1.3, 4.6, 7.9):
-        f = rng.uniform(1100, 1500)
-        for echo, (delay, amp) in enumerate([(0.0, 0.2), (0.19, 0.08), (0.41, 0.04)]):
-            start = int((at + delay) * RATE)
-            for j in range(int(0.07 * RATE)):
-                if start + j >= total:
-                    break
-                tt = j / RATE
-                out[start + j] += amp * math.sin(2 * math.pi * (f - echo * 150 + 1500 * tt) * tt) * math.exp(-tt * 55)
-    # 吊樑：很輕的一聲木頭嘎吱（低頻摩擦，慢慢滑上去）
-    start = int(5.8 * RATE)
-    m = int(0.9 * RATE)
-    grain = onepole_lp(noise(m, rng), 2500)
-    phase = 0.0
-    for j in range(m):
-        tt = j / RATE
-        f = 210 + 120 * (tt / 0.9)
-        phase += 2 * math.pi * f / RATE
-        env = math.sin(math.pi * tt / 0.9) ** 2
-        saw = (phase / math.pi) % 2.0 - 1.0
-        out[start + j] += 0.07 * env * (0.6 * saw + 0.4 * grain[j]) * (0.7 + 0.3 * math.sin(2 * math.pi * 17 * tt))
-    looped = out[:n]
-    for i in range(fade):
-        w = i / fade
-        looped[i] = out[i] * w + out[n + i] * (1.0 - w)
-    peak = max(abs(v) for v in looped) or 1.0
-    return [v / peak * 0.6 for v in looped]
 
 
 def svf_band(xs, freq_at, damping):
@@ -305,8 +200,8 @@ def _gust(t):
     return max(0.25, min(1.0, g))
 
 
-def frost_wind(seconds=12.0, seed=59, indoor=False):
-    """霜橋鎮的風雪：低風底＋滑動的帶通呼嘯＋雪粒沙沙，跟著陣風起伏。indoor＝隔著牆聽。"""
+def frost_wind(seconds=12.0, seed=59):
+    """霜橋鎮的風雪：低風底＋滑動的帶通呼嘯＋雪粒沙沙，跟著陣風起伏。"""
     rng = random.Random(seed)
     n = int(seconds * RATE)
     fade = int(1.2 * RATE)
@@ -320,46 +215,7 @@ def frost_wind(seconds=12.0, seed=59, indoor=False):
     out = []
     for i in range(total):
         g = _gust(i / RATE)
-        v = bed[i] * (0.5 + 0.7 * g) * 1.6 + howl[i] * (g ** 2) * 0.55
-        if not indoor:
-            v += hiss[i] * (g ** 3) * 0.05
-        out.append(v)
-    if indoor:
-        out = onepole_lp(onepole_lp(out, 300), 380)
-    looped = _loop_crossfade(out, n, fade)
-    peak = max(abs(v) for v in looped) or 1.0
-    return [v / peak * 0.7 for v in looped]
-
-
-def hearth_crackle(seconds=7.0, seed=61):
-    """壁爐的柴火：低低的火焰呼嚕＋隨機的細小劈啪＋幾聲比較大的爆裂。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(0.5 * RATE)
-    total = n + fade
-    roar_src = onepole_lp(onepole_lp(hp(noise(total, rng), 40), 180), 240)
-    flicker = onepole_lp([rng.uniform(0.3, 1.0) for _ in range(total)], 6)
-    out = [roar_src[i] * (0.6 + 1.4 * flicker[i]) * 2.4 for i in range(total)]
-    # 細小劈啪：每秒約 9 下，強度大多很小、偶爾大一點
-    t = rng.uniform(0.0, 0.1)
-    while t < seconds + 0.4:
-        start = int(t * RATE)
-        amp = min(1.0, rng.expovariate(4.0)) * 0.5 + 0.04
-        f = rng.uniform(1500, 5000)
-        m = int(rng.uniform(0.004, 0.014) * RATE)
-        burst = svf_band(noise(m, rng), lambda _i: f, 0.5)
-        for j in range(m):
-            if start + j >= total:
-                break
-            out[start + j] += amp * burst[j] * math.exp(-j / RATE * rng.uniform(300, 700))
-        t += rng.expovariate(9.0)
-    # 幾聲比較大的爆裂：高頻「啪」＋低頻「啵」
-    for at in (1.1, 3.7, 5.6):
-        start = int(at * RATE)
-        for j in range(int(0.08 * RATE)):
-            tt = j / RATE
-            pop = rng.uniform(-1, 1) * math.exp(-tt * 260) * 0.9 + math.sin(2 * math.pi * (180 - 600 * tt) * tt) * math.exp(-tt * 45) * 0.5
-            out[start + j] += pop
+        out.append(bed[i] * (0.5 + 0.7 * g) * 1.6 + howl[i] * (g ** 2) * 0.55 + hiss[i] * (g ** 3) * 0.05)
     looped = _loop_crossfade(out, n, fade)
     peak = max(abs(v) for v in looped) or 1.0
     return [v / peak * 0.7 for v in looped]
@@ -595,8 +451,6 @@ def glass_clink(seconds=0.42, seed=113):
 
 def main():
     made = [
-        write("bell", bell(196.0, 3.0)),
-        write("bell_ninth", bell(146.8, 6.0, beat=1.3)),
         write("blunt", thump(0.3, 140, 55, seed=2)),
         write("blunt_weak", thump(0.38, 170, 50, crack=0.8, seed=3)),
         write("claw", swish(0.22, 1800, 9000, seed=4, rise=0.2)),
@@ -604,13 +458,8 @@ def main():
         write("whoosh", swish(0.35, 200, 1600, seed=6, rise=0.45)),
         write("rubble_scrape", scrape()),
         write("iron_clang", clang()),
-        write("ignite", ignite()),
         write("ui_tick", ui_tick()),
-        write("daylight_ambience", daylight_ambience()),
-        write("canal_ambience", canal_ambience()),
         write("frost_wind", frost_wind()),
-        write("frost_wind_indoor", frost_wind(indoor=True)),
-        write("hearth_crackle", hearth_crackle()),
         write("title_theme", title_theme()),
         write("part_end_theme", part_end_theme()),
         write("step_snow", step_snow()),

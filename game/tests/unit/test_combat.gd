@@ -1,5 +1,5 @@
 extends TestCase
-## 戰鬥起步：數值檔與覆寫、生命值、命中扇形、木樁、打擊停頓、鏡頭震動。
+## 戰鬥起步：數值檔與覆寫、生命值、命中扇形、揮擊命中、打擊停頓、鏡頭震動。
 
 
 func after_each() -> void:
@@ -56,30 +56,43 @@ func test_strike_arc() -> void:
 	assert_false(PlayerController.in_strike_arc(Vector3.ZERO, fwd, Vector3(1.5, 0, -0.2), 1.9, 110.0), "側邊超出扇形")
 
 
-func test_player_swing_hits_dummy_with_hit_stop_and_shake() -> void:
+## 最小的靶：在 damageable 群組、底下有一個叫 Health 的節點（玩家的 strike() 就靠這兩件事找目標）。
+func _target(parent: Node3D, at: Vector3, hits: Array[int]) -> Health:
+	var body := Node3D.new()
+	body.add_to_group("damageable")
+	var h := Health.new(60.0)
+	h.name = "Health"
+	body.add_child(h)
+	h.damaged.connect(func(_amount: float, _info: Dictionary) -> void: hits[0] += 1)
+	parent.add_child(body)
+	body.global_position = at
+	return h
+
+
+func test_player_swing_hits_target_with_hit_stop_and_shake() -> void:
 	var root := Node3D.new()
 	tree.root.add_child(root)
 	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
 	root.add_child(player)
-	var dummy := TrainingDummy.new()
-	root.add_child(dummy)
-	dummy.global_position = player.global_position + (-player.get_node("Body").global_basis.z as Vector3) * 1.2
-	var behind := TrainingDummy.new()
-	root.add_child(behind)
-	behind.global_position = player.global_position + (player.get_node("Body").global_basis.z as Vector3) * 1.2
+	var forward: Vector3 = -player.get_node("Body").global_basis.z as Vector3
+	var front_hits: Array[int] = [0]
+	var behind_hits: Array[int] = [0]
+	var front: Health = _target(root, player.global_position + forward * 1.2, front_hits)
+	var behind: Health = _target(root, player.global_position - forward * 1.2, behind_hits)
 	await tree.physics_frame
 	player.start_attack()
 	for i: int in 60:
 		await tree.physics_frame
-		if dummy.hits_taken > 0:
+		if front_hits[0] > 0:
 			break
-	assert_eq(dummy.hits_taken, 1, "前方木樁被打中一次")
-	assert_eq(behind.hits_taken, 0, "背後的不會中")
-	assert_eq(dummy.health.hp, 60.0 - 6.0, "鈍擊 6")
+	assert_eq(front_hits[0], 1, "前方的靶被打中一次")
+	assert_eq(behind_hits[0], 0, "背後的不會中")
+	assert_eq(behind.hp, 60.0, "背後的沒有扣血")
+	assert_eq(front.hp, 60.0 - 6.0, "鈍擊 6")
 	assert_true(player.shake_amount() > 0.0, "命中有鏡頭震動")
 	for i: int in 30:
 		await tree.physics_frame
-	assert_eq(dummy.hits_taken, 1, "一次揮擊只判定一次")
+	assert_eq(front_hits[0], 1, "一次揮擊只判定一次")
 	assert_eq(Engine.time_scale, 1.0, "打擊停頓結束後恢復")
 	# 閃避無敵
 	player.invulnerable = true

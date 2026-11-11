@@ -239,26 +239,6 @@ func begin_throw_windup(seconds: float) -> void:
 	Sfx.play_at(self, "whoosh", global_position + Vector3.UP * 3.0, 2.0, 0.0, 10.0)
 
 
-## 鐵架擲出去了（被石拱擋下或被燃燒劍斬斷）：背上的鐵架藏起來，之後是空手；飛出去的那一副由 ThrownFrame 演。
-func end_throw(_outcome: String) -> void:
-	throw_windup = 0.0
-	brain.force_kneel(1.2)
-	var frame: Node3D = _frame_node()
-	if frame != null:
-		frame.visible = false
-
-
-## 背上的鐵架還在不在（擲出去之後就不在了）。
-func has_frame() -> bool:
-	var frame: Node3D = _frame_node()
-	return frame != null and frame.visible
-
-
-## 鐵架擲出的位置（背上鐵架的中心，世界座標）。
-func frame_launch_point() -> Vector3:
-	return global_position + Vector3.UP * 3.1
-
-
 func _frame_node() -> Node3D:
 	return _body.get_node_or_null("Torso/Frame") as Node3D if _body != null else null
 
@@ -817,10 +797,6 @@ const FALL_HOLD_SEC: float = 0.5
 const FALL_DROP_SEC: float = 0.55
 const FALL_LIE_SEC: float = 2.5
 const FALL_SINK_SEC: float = 1.4
-
-
-func fall_total_sec() -> float:
-	return FALL_KNEEL_SEC + FALL_HOLD_SEC + FALL_DROP_SEC + FALL_LIE_SEC + FALL_SINK_SEC
 
 
 func _on_died() -> void:

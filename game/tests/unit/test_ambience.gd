@@ -3,7 +3,7 @@ extends TestCase
 
 
 func test_looped_copy_does_not_touch_shared_stream() -> void:
-	for n: String in ["frost_wind", "frost_wind_indoor", "hearth_crackle", "daylight_ambience", "canal_ambience"]:
+	for n: String in ["frost_wind", "title_theme", "part_end_theme"]:
 		var s: AudioStreamWAV = Ambience.looped(n)
 		assert_not_null(s, "有 %s" % n)
 		if s == null:
@@ -28,13 +28,13 @@ func test_play_flat_and_positional() -> void:
 		assert_eq(flat.volume_db, -13.0)
 		assert_eq(Ambience.sfx_of(flat), "frost_wind")
 		assert_true(flat.playing, "一放進場景就開始播")
-	var fire: AudioStreamPlayer3D = Ambience.play_at(root, "hearth_crackle", Vector3(1, 0.4, -2), -6.0, 3.0, "HearthCrackle")
+	var fire: AudioStreamPlayer3D = Ambience.play_at(root, "frost_wind", Vector3(1, 0.4, -2), -6.0, 3.0, "WindGap")
 	assert_not_null(fire)
 	if fire != null:
 		assert_eq(fire.bus, &"SFX")
-		assert_eq(fire.global_position, Vector3(1, 0.4, -2), "從壁爐的位置發出來")
+		assert_eq(fire.global_position, Vector3(1, 0.4, -2), "從指定的位置發出來")
 		assert_eq(fire.unit_size, 3.0)
-		assert_eq(Ambience.sfx_of(fire), "hearth_crackle")
+		assert_eq(Ambience.sfx_of(fire), "frost_wind")
 	assert_eq(Ambience.play(root, "no_such_sound", 0.0), null, "缺檔不建播放器")
 	assert_eq(Ambience.sfx_of(null), "")
 	assert_eq(Ambience.sfx_of(root), "", "不是 Ambience 建的節點")

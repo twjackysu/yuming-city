@@ -27,15 +27,3 @@ func test_material_additive_for_sparks() -> void:
 	assert_eq(spark.albedo_texture, ParticleLook.hot_dot())
 	var ash: StandardMaterial3D = ParticleLook.material(Color.GRAY, false, BaseMaterial3D.BILLBOARD_PARTICLES)
 	assert_eq(ash.billboard_mode, BaseMaterial3D.BILLBOARD_PARTICLES)
-
-
-## 席菈燃燒劍的火星。
-func test_sheila_fire_sparks_are_round() -> void:
-	var sheila := Sheila.new()
-	tree.root.add_child(sheila)
-	# 沒有諾恩可以跟：不跑移動（劍與火星在 _ready 就建好了）
-	sheila.set_physics_process(false)
-	assert_true(sheila.find_child("FireSparks", true, false) != null, "有劍上的火星")
-	assert_eq(ParticleLook.untextured(sheila), [] as Array[String], "席菈身上的粒子都有圓形貼圖")
-	sheila.queue_free()
-	await tree.process_frame

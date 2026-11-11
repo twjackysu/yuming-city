@@ -95,49 +95,6 @@ func current_state() -> String:
 	return "idle"
 
 
-## 右前臂的木板夾傷（原作：鐘樓上敲斷了手，席菈幫他上夾板）。只在程序人偶上畫；正式模型的夾板由模型負責。
-func set_splint(on: bool) -> void:
-	var elbow: Node3D = joint("elbow_R")
-	if elbow == null:
-		return
-	var old: Node = elbow.get_node_or_null("Splint")
-	if not on:
-		if old != null:
-			old.queue_free()
-		return
-	if old != null:
-		return
-	var splint := Node3D.new()
-	splint.name = "Splint"
-	elbow.add_child(splint)
-	var wood: StandardMaterial3D = _mat(Color(0.42, 0.32, 0.21), 0.8)
-	var cloth: StandardMaterial3D = _mat(Color(0.7, 0.66, 0.58), 0.95)
-	for x: float in [-1.0, 1.0]:
-		var slat := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.025, FOREARM_LEN * 0.95, 0.05)
-		bm.material = wood
-		slat.mesh = bm
-		slat.position = Vector3(x * 0.068, -FOREARM_LEN * 0.5, 0)
-		splint.add_child(slat)
-	for y: float in [0.3, 0.7]:
-		var wrap := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.085
-		cm.bottom_radius = 0.085
-		cm.height = 0.035
-		cm.radial_segments = 10
-		cm.material = cloth
-		wrap.mesh = cm
-		wrap.position = Vector3(0, -FOREARM_LEN * y, 0)
-		splint.add_child(wrap)
-
-
-func has_splint() -> bool:
-	var elbow: Node3D = joint("elbow_R")
-	return elbow != null and elbow.has_node("Splint")
-
-
 func hand(side: String) -> Node3D:
 	return joints.get("hand_" + side) as Node3D
 
