@@ -3,6 +3,8 @@
 45-rb-guardian 40 --level=frostbridge --rb-at=guardian --locale=zh_TW
 46-rb-spray 40 --level=frostbridge --rb-at=spray --locale=zh_TW
 47-rb-sprayed 40 --level=frostbridge --rb-at=sprayed --locale=zh_TW
+# 54＝諾恩貼在牠面前、剛打中弱點（霜屑、火星、閃光，D-217）；粒子每次不一樣，差異不會是 0
+54-rb-hit 40 --level=frostbridge --rb-at=hit --locale=zh_TW
 # 牠倒下之後的藥箱（D-209）：49＝站在藥箱前（兩瓶還在、互動提示）；50＝拿了、剛喝一口（生命條、中毒 → 回血、藥 ×1）
 49-rb-potion 40 --level=frostbridge --rb-at=potion --locale=zh_TW
 50-rb-drank 40 --level=frostbridge --rb-at=drank --locale=zh_TW

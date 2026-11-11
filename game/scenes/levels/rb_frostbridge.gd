@@ -81,8 +81,8 @@ const GUARDIAN_WALK_SPEED: float = 2.0
 const GUARDIAN_ENGAGE_RANGE: float = 8.5
 ## 牠倒下之後隔這麼久，席菈才開口（等牠倒地的那一下）
 const GUARDIAN_DOWN_TALK_SEC: float = 2.2
-## 截圖旗標 `--rb-at=` 裡屬於守衛戰的三個
-const GUARDIAN_SHOTS: PackedStringArray = ["guardian", "spray", "sprayed"]
+## 截圖旗標 `--rb-at=` 裡屬於守衛戰的四個（hit＝諾恩貼在牠面前、剛打中弱點的那一下：霜屑、火星、閃光，D-217）
+const GUARDIAN_SHOTS: PackedStringArray = ["guardian", "spray", "sprayed", "hit"]
 ## 截圖旗標 `--rb-at=` 裡屬於「試用毒劑」的兩個：potion＝站在藥箱前（兩瓶還在）、drank＝拿了、剛喝一口（HUD：生命條、中毒 → 回血、藥 ×1）
 const POTION_SHOTS: PackedStringArray = ["potion", "drank"]
 ## 藥箱（D-209）：牠背上的箱子摔在牠倒下的地方旁邊（往街心那一側 CRATE_SIDE 公尺）；位置記在旗標裡，讀檔照樣在那裡
@@ -160,8 +160,11 @@ var guardian_engaged: bool = false
 var _guardian_down_t: float = -1.0
 ## 測試可以調短
 var guardian_down_talk_sec: float = GUARDIAN_DOWN_TALK_SEC
-## 截圖用（`--rb-at=guardian|spray|sprayed`）："walk"＝站在街上盯著人、"telegraph"＝噴毒前兆停在八成、"jet"＝剛噴出去
+## 截圖用（`--rb-at=guardian|spray|sprayed|hit`）："walk"＝站在街上盯著人、"telegraph"＝噴毒前兆停在八成、"jet"＝剛噴出去、
+## "hit"＝每 DEV_HIT_EVERY 個物理幀重打一次（一次性粒子只活半秒，拍的那一幀一定有一把在飛）
 var debug_hold_guardian: String = ""
+const DEV_HIT_EVERY: int = 14
+var _dev_hit_frames: int = 0
 ## 守衛的藥箱（節點名 RbPotionCrate＝任務標記）；牠倒下之後才有
 var crate: PotionCrate
 ## >0＝喝過或選了先收著，倒數到 0 就播 rb_potion_tried／rb_potion_kept
@@ -182,6 +185,7 @@ func _ready() -> void:
 	_build_markers()
 	_build_gate()
 	_build_bakery_lantern()
+	_build_south_lantern()
 	_build_ada()
 	_build_lift()
 	_build_barrels()
@@ -293,16 +297,17 @@ static func dev_advance(s: GameSession, at: String) -> void:
 func _dev_stage_guardian(at: String) -> void:
 	if guardian == null or player == null:
 		return
-	var holds: Dictionary = {"guardian": "walk", "spray": "telegraph", "sprayed": "jet"}
+	var holds: Dictionary = {"guardian": "walk", "spray": "telegraph", "sprayed": "jet", "hit": "hit"}
 	debug_hold_guardian = str(holds.get(at, "walk"))
-	var gap: float = 5.2 if at == "guardian" else 3.6
+	var gap: float = 5.2 if at == "guardian" else (1.6 if at == "hit" else 3.6)
 	var boss_at := Vector3(0.0, 0.0, 18.4)
 	guardian.global_position = Vector3(boss_at.x, level.ground_y(boss_at) + 0.05, boss_at.z)
 	guardian.set_physics_process(false)
 	guardian.set_facing(0.0)
 	var me := Vector3(1.1, 0.0, boss_at.z - gap)
 	player.global_position = Vector3(me.x, level.ground_y(me) + 0.05, me.z)
-	player.rotation.y = deg_to_rad(168.0)
+	# hit：面向正南，牠在畫面中間偏右，命中點不被諾恩自己擋住
+	player.rotation.y = deg_to_rad(180.0 if at == "hit" else 168.0)
 	player.yaw = player.rotation.y
 	# 逆轉體質已經覺醒（不再跳中間那兩行字）
 	player.reversal.awakened_once = true
@@ -358,6 +363,14 @@ func _dev_hold_guardian() -> void:
 			guardian.brain._set_move("spray")
 			guardian.brain.state = EnemyBrain.State.TELEGRAPH
 			guardian.brain.time_in_state = guardian.brain.telegraph_sec * 0.85
+		"hit":
+			_dev_hit_frames -= 1
+			if _dev_hit_frames <= 0:
+				_dev_hit_frames = DEV_HIT_EVERY
+				if guardian.last_hit_fx != null and is_instance_valid(guardian.last_hit_fx):
+					guardian.last_hit_fx.queue_free()
+				guardian.debug_hold_hit = true
+				guardian._hit_fx({"source": player, "weak": "frame_joint"})
 		"jet":
 			guardian.brain.state = EnemyBrain.State.STRIKE
 			if guardian.last_spray != null and is_instance_valid(guardian.last_spray) and guardian.last_spray.zone != null:
@@ -1280,6 +1293,134 @@ func _build_bakery_lantern() -> void:
 	light.position = Vector3(0.45, 0.0, 0.0)
 	n.add_child(light)
 	level.add_child(n)
+
+
+## 南街的吊燈（D-216）：守衛從南端走過來、站在街上的那一段，牠背後原本只有藍霧——牠跟霧同一個明度，輪廓不見
+## （第 73 輪看 `45-rb-guardian` 的結論）。一條鐵鏈橫過街（兩邊牆上各一塊鐵座），中間垂下來吊一盞大燈：
+## 照亮牠背後的石板與霧，牠變成亮背景前的黑剪影，影子往北（諾恩這邊）拉長。
+## 鏈子的下垂用 SOUTH_LANTERN_SPANS 段直鏈接起來（拋物線）。這一盞投影子：守衛戰的主光，影子是畫面的一部分。
+const SOUTH_LANTERN_Z: float = 23.6
+const SOUTH_LANTERN_HALF: float = 3.46
+## 兩邊的房子在這一段高 6.1 m／7.4 m：鐵座釘在二樓的牆上
+const SOUTH_LANTERN_ANCHOR_Y: float = 5.4
+const SOUTH_LANTERN_SAG: float = 0.42
+## 燈從鏈子最低點再往下吊多少
+const SOUTH_LANTERN_DROP: float = 0.26
+const SOUTH_LANTERN_SPANS: int = 8
+const SOUTH_LANTERN_LINK: Vector3 = Vector3(0.14, 0.085, 0.014)
+const SOUTH_LANTERN_ENERGY: float = 5.0
+const SOUTH_LANTERN_RANGE: float = 13.5
+## 在體積霧裡的亮度：要亮到變成一團暖霧（牠的剪影靠這個）
+const SOUTH_LANTERN_FOG: float = 3.2
+## 燈底下、牠背後那一段多一團比較濃的霧（橢球，邊緣淡出）：背景更亮，牠跟鏡頭之間的霧不變 → 剪影更黑
+const SOUTH_HAZE_SIZE: Vector3 = Vector3(7.5, 6.5, 9.0)
+const SOUTH_HAZE_OFFSET: Vector3 = Vector3(0.0, 2.6, 1.8)
+const SOUTH_HAZE_DENSITY: float = 0.05
+
+
+## 鏈子上第 i 個節點的位置（i＝0～SOUTH_LANTERN_SPANS；吊燈節點的座標）
+static func south_chain_point(i: int) -> Vector3:
+	var t: float = float(i) / float(SOUTH_LANTERN_SPANS)
+	var k: float = 2.0 * t - 1.0
+	return Vector3(lerpf(-SOUTH_LANTERN_HALF, SOUTH_LANTERN_HALF, t), SOUTH_LANTERN_ANCHOR_Y - SOUTH_LANTERN_SAG * (1.0 - k * k), 0.0)
+
+
+func _build_south_lantern() -> void:
+	var n := Node3D.new()
+	n.name = "RbSouthLantern"
+	n.position = Vector3(0.0, 0.0, SOUTH_LANTERN_Z)
+	var iron := StandardMaterial3D.new()
+	iron.albedo_color = Color(0.07, 0.07, 0.08)
+	iron.metallic = 0.55
+	iron.roughness = 0.5
+	# 兩邊牆上的鐵座＋橫過街的鏈子
+	for side: float in [-1.0, 1.0]:
+		_box_part(n, Vector3(0.08, 0.26, 0.2), Vector3(side * (SOUTH_LANTERN_HALF + 0.02), SOUTH_LANTERN_ANCHOR_Y, 0.0), iron)
+	for i: int in SOUTH_LANTERN_SPANS:
+		var a: Vector3 = south_chain_point(i)
+		var b: Vector3 = south_chain_point(i + 1)
+		var span := MeshInstance3D.new()
+		span.name = "Chain%d" % i
+		span.mesh = ChainMesh.build(a.distance_to(b), SOUTH_LANTERN_LINK.x, SOUTH_LANTERN_LINK.y, SOUTH_LANTERN_LINK.z)
+		span.material_override = iron
+		span.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		span.position = a
+		# ChainMesh 從原點往 -Y 垂：把 -Y 轉到這一段的方向
+		span.basis = Basis(Quaternion(Vector3.DOWN, (b - a).normalized()))
+		n.add_child(span)
+	# 中間垂下來的一小段鏈子＋燈
+	var low: Vector3 = Vector3(0.0, SOUTH_LANTERN_ANCHOR_Y - SOUTH_LANTERN_SAG, 0.0)
+	var drop := MeshInstance3D.new()
+	drop.name = "Drop"
+	drop.mesh = ChainMesh.build(SOUTH_LANTERN_DROP, 0.1, 0.06, 0.011)
+	drop.material_override = iron
+	drop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	drop.position = low
+	n.add_child(drop)
+	var lamp := Node3D.new()
+	lamp.name = "Lamp"
+	lamp.position = low + Vector3(0.0, -SOUTH_LANTERN_DROP, 0.0)
+	n.add_child(lamp)
+	# 八角尖頂（上面一小片雪）、發光的玻璃、四角鐵條、底板
+	_cone_part(lamp, 0.03, 0.27, 0.2, Vector3(0.0, -0.1, 0.0), iron)
+	var snow := StandardMaterial3D.new()
+	snow.albedo_color = FrostbridgeLook.SNOW
+	snow.roughness = 0.9
+	_cone_part(lamp, 0.065, 0.155, 0.07, Vector3(0.0, -0.055, 0.0), snow)
+	_box_part(lamp, Vector3(0.36, 0.04, 0.36), Vector3(0.0, -0.22, 0.0), iron)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.35, 0.25, 0.14)
+	glass.roughness = 0.3
+	glass.emission_enabled = true
+	glass.emission = FrostbridgeLook.LAMP
+	glass.emission_energy_multiplier = 7.0
+	_box_part(lamp, Vector3(0.27, 0.4, 0.27), Vector3(0.0, -0.44, 0.0), glass)
+	for cx: float in [-1.0, 1.0]:
+		for cz: float in [-1.0, 1.0]:
+			_box_part(lamp, Vector3(0.028, 0.42, 0.028), Vector3(cx * 0.145, -0.44, cz * 0.145), iron)
+	_box_part(lamp, Vector3(0.34, 0.04, 0.34), Vector3(0.0, -0.66, 0.0), iron)
+	for part: Node in lamp.get_children():
+		(part as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.name = "Glow"
+	light.light_color = FrostbridgeLook.LAMP
+	light.light_energy = SOUTH_LANTERN_ENERGY
+	light.omni_range = SOUTH_LANTERN_RANGE
+	light.omni_attenuation = 1.1
+	light.light_specular = 0.35
+	light.shadow_enabled = true
+	light.shadow_bias = 0.06
+	light.light_volumetric_fog_energy = SOUTH_LANTERN_FOG
+	# 光源在玻璃正中間（燈本身不投影，不會擋到自己的光）
+	light.position = lamp.position + Vector3(0.0, -0.44, 0.0)
+	n.add_child(light)
+	var haze := FogVolume.new()
+	haze.name = "Haze"
+	haze.shape = RenderingServer.FOG_VOLUME_SHAPE_ELLIPSOID
+	haze.size = SOUTH_HAZE_SIZE
+	var fog := FogMaterial.new()
+	fog.density = SOUTH_HAZE_DENSITY
+	fog.albedo = Color(0.9, 0.86, 0.8)
+	fog.edge_fade = 0.5
+	haze.material = fog
+	haze.position = SOUTH_HAZE_OFFSET
+	n.add_child(haze)
+	level.add_child(n)
+
+
+## 圓錐台（燈的尖頂、雪帽）：八邊
+func _cone_part(parent: Node3D, top_r: float, bottom_r: float, height: float, pos: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = top_r
+	cm.bottom_radius = bottom_r
+	cm.height = height
+	cm.radial_segments = 8
+	cm.rings = 0
+	mi.mesh = cm
+	mi.material_override = mat
+	mi.position = pos
+	parent.add_child(mi)
 
 
 ## 北街北端的鐵門（灰盒：鐵條＋兩道橫槓，擋人）；雷德在門後
