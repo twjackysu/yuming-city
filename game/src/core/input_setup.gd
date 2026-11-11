@@ -21,7 +21,6 @@ const BINDINGS: Dictionary = {
 	"command_evade": [Vector2i(0, KEY_E), Vector2i(2, JOY_BUTTON_DPAD_RIGHT)],
 	"command_guard": [Vector2i(0, KEY_R), Vector2i(2, JOY_BUTTON_DPAD_DOWN)],
 	"interact": [Vector2i(0, KEY_F), Vector2i(2, JOY_BUTTON_A)],
-	"nine_breath": [Vector2i(0, KEY_V), Vector2i(2, JOY_BUTTON_Y)],
 	"journal": [Vector2i(0, KEY_TAB), Vector2i(2, JOY_BUTTON_BACK)],
 	## 新版（D-202）：可攜藥劑快捷鍵
 	"use_item": [Vector2i(0, KEY_1), Vector2i(2, JOY_BUTTON_DPAD_LEFT)],
@@ -49,7 +48,6 @@ const ACTION_KEYS: Dictionary = {
 	"command_evade": "ACT_COMMAND_EVADE",
 	"command_guard": "ACT_COMMAND_GUARD",
 	"interact": "ACT_INTERACT",
-	"nine_breath": "ACT_NINE_BREATH",
 	"journal": "ACT_JOURNAL",
 	"use_item": "ACT_USE_ITEM",
 	"pause": "ACT_PAUSE",

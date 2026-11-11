@@ -39,15 +39,3 @@ func test_sheila_fire_sparks_are_round() -> void:
 	assert_eq(ParticleLook.untextured(sheila), [] as Array[String], "席菈身上的粒子都有圓形貼圖")
 	sheila.queue_free()
 	await tree.process_frame
-
-
-## 重現石拱化灰的灰燼。
-func test_arch_ash_is_round() -> void:
-	var site := NineBreathSite.new()
-	site.state = GameState.new()
-	tree.root.add_child(site)
-	await tree.process_frame
-	assert_true(site.find_child("Ash", true, false) != null, "有化灰的灰燼")
-	assert_eq(ParticleLook.untextured(site), [] as Array[String], "石拱的粒子都有圓形貼圖")
-	site.queue_free()
-	await tree.process_frame

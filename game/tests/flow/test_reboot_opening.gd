@@ -71,7 +71,8 @@ func test_opening_sets_up_gate_cart_and_hurt_noen() -> void:
 	assert_false(level.get_node_or_null("CellarTrigger") is Area3D, "也不跑切片的地窖觸發點")
 	assert_false(bool(Game.session.state.get_flag("slice.met_pear_seller", false)), "切片的梨販對話沒有被觸發")
 	assert_false(level.has_node("ArchMemoryTrigger"), "新版不跑石拱回憶")
-	assert_true(level.arch_site.dormant, "石拱停用（新版沒有重現）")
+	assert_true(level.south_arch != null and level.south_arch.get_script() == null, "南街的斷拱只是場景，沒有行為（沒有重現）")
+	assert_false(InputMap.has_action("nine_breath"), "也沒有「重現」這個按鍵")
 	assert_true(level.has_node("RbGate") and level.has_node("Red") and level.has_node("RbCart"), "鐵門、門後的雷德、推車")
 	assert_eq(level.get_node("RbBarrel0").get_node("Toxic").get("text"), "RB_BARREL_TOXIC", "藥桶上寫著有毒")
 	var player: PlayerController = level.get_node("Player") as PlayerController

@@ -1,6 +1,6 @@
 extends TestCase
-## HUD 操作提示的手把圖示（GlyphLine，D-063）：翻譯字串裡的 {key} 在鍵鼠模式是「[V]」文字、手把模式換成 PadGlyph；
-## 戰鬥 HUD 三個指令、掙扎提示、重現提示、對話框與過場的提示列切到手把都有圖示、切回鍵鼠變回文字，plain_text 永遠是文字版。
+## HUD 操作提示的手把圖示（GlyphLine，D-063）：翻譯字串裡的 {key} 在鍵鼠模式是「[F]」文字、手把模式換成 PadGlyph；
+## 戰鬥 HUD 三個指令、掙扎提示、互動提示、對話框的提示列切到手把都有圖示、切回鍵鼠變回文字，plain_text 永遠是文字版。
 
 var _locale: String = ""
 var _device: int = 0
@@ -15,7 +15,6 @@ func before_each() -> void:
 func after_each() -> void:
 	TranslationServer.set_locale(_locale)
 	App.set_device(_device)
-	Input.action_release("nine_breath")
 
 
 func _line() -> GlyphLine:
@@ -26,29 +25,29 @@ func _line() -> GlyphLine:
 
 func test_kbm_text_and_pad_glyph() -> void:
 	var line: GlyphLine = _line()
-	line.set_line(tr("NB_HOLD_HINT"), "nine_breath", InputGlyphs.Device.KBM)
-	assert_eq(line.plain_text(), "按住 [V]　重現 9 秒")
+	line.set_line(tr("RB_CRATE_HINT"), "interact", InputGlyphs.Device.KBM)
+	assert_eq(line.plain_text(), "按 [F]　拿走藥瓶")
 	assert_false(line.uses_glyph(), "鍵鼠用文字")
 	assert_eq(line.visible_glyphs().size(), 0)
-	assert_eq(line.parts(), PackedStringArray(["按住 [V]　重現 9 秒"]))
-	line.set_line(tr("NB_HOLD_HINT"), "nine_breath", InputGlyphs.Device.PAD)
-	assert_eq(line.plain_text(), "按住 [Y]　重現 9 秒", "文字版照樣有鍵名（測試與讀屏）")
+	assert_eq(line.parts(), PackedStringArray(["按 [F]　拿走藥瓶"]))
+	line.set_line(tr("RB_CRATE_HINT"), "interact", InputGlyphs.Device.PAD)
+	assert_eq(line.plain_text(), "按 [A]　拿走藥瓶", "文字版照樣有鍵名（測試與讀屏）")
 	assert_true(line.uses_glyph(), "手把用圖示")
 	var glyphs: Array[PadGlyph] = line.visible_glyphs()
 	assert_eq(glyphs.size(), 1)
-	assert_eq(glyphs[0].spec, Vector2i(2, JOY_BUTTON_Y))
+	assert_eq(glyphs[0].spec, Vector2i(2, JOY_BUTTON_A))
 	assert_eq(PadGlyph.shape_of(glyphs[0].spec), PadGlyph.Shape.FACE)
-	assert_eq(glyphs[0].letter(), "Y")
-	assert_eq(line.parts(), PackedStringArray(["按住", "　重現 9 秒"]), "圖示兩側的字")
+	assert_eq(glyphs[0].letter(), "A")
+	assert_eq(line.parts(), PackedStringArray(["按", "　拿走藥瓶"]), "圖示兩側的字")
 	for p: String in line.parts():
 		assert_false(p.contains("{key}") or p.contains("["), "字段裡沒有鍵名或佔位符：" + p)
 	await tree.process_frame
 	assert_true(line.size.x > 100.0 and line.size.y >= glyphs[0].glyph_h, "大小照內容：%s" % line.size)
-	assert_true(glyphs[0].position.x > 0.0, "圖示在「按住」後面")
-	line.set_line(tr("NB_HOLD_HINT"), "nine_breath", InputGlyphs.Device.KBM)
+	assert_true(glyphs[0].position.x > 0.0, "圖示在「按」後面")
+	line.set_line(tr("RB_CRATE_HINT"), "interact", InputGlyphs.Device.KBM)
 	assert_false(line.uses_glyph(), "切回鍵鼠")
 	assert_eq(line.visible_glyphs().size(), 0)
-	assert_eq(line.parts(), PackedStringArray(["按住 [V]　重現 9 秒"]))
+	assert_eq(line.parts(), PackedStringArray(["按 [F]　拿走藥瓶"]))
 	line.free()
 
 
@@ -59,7 +58,7 @@ func test_two_keys_and_unbound_fallback() -> void:
 	assert_eq(line.parts(), PackedStringArray(["繼續・按住", "跳過"]))
 	assert_eq(line.plain_text(), "[A] 繼續・按住 [A] 跳過")
 	# 改了別的字串：圖示減少時多的藏起來
-	line.set_line(tr("NB_HOLD_HINT"), "nine_breath", InputGlyphs.Device.PAD)
+	line.set_line(tr("RB_CRATE_HINT"), "interact", InputGlyphs.Device.PAD)
 	assert_eq(line.visible_glyphs().size(), 1)
 	# 沒有手把綁定的動作：退回文字
 	line.set_line("{key} ?", "no_such_action", InputGlyphs.Device.PAD)
@@ -104,44 +103,6 @@ func test_struggle_line_uses_glyph() -> void:
 	line.free()
 
 
-func test_restore_prompt_hint_glyph() -> void:
-	var root := Node3D.new()
-	tree.root.add_child(root)
-	var floor_body := CSGBox3D.new()
-	floor_body.size = Vector3(40, 1, 40)
-	floor_body.position = Vector3(0, -0.5, 0)
-	floor_body.use_collision = true
-	root.add_child(floor_body)
-	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
-	player.position = Vector3(0, 0, 3)
-	root.add_child(player)
-	var site := NineBreathSite.new()
-	site.state = GameState.new()
-	root.add_child(site)
-	var layer := CanvasLayer.new()
-	root.add_child(layer)
-	var prompt := RestorePrompt.new()
-	layer.add_child(prompt)
-	await tree.physics_frame
-	await tree.physics_frame
-	App.set_device(InputGlyphs.Device.PAD)
-	prompt.refresh(0.0)
-	assert_eq(prompt.mode, "prompt")
-	assert_true(prompt.hint_line().uses_glyph(), "手把：按住後面是 Y 圖示")
-	assert_eq(prompt.hint_line().parts()[0], "按住")
-	assert_true(prompt.text().contains("[Y]"), "text() 是文字版：" + prompt.text())
-	assert_eq(prompt.text().split("\n")[2], site.prompt_lines()[2], "跟場景的文字一致")
-	await tree.process_frame
-	prompt.refresh(0.0)
-	var r: Rect2 = prompt.panel_rect()
-	assert_true(absf(r.get_center().x - prompt.size.x * 0.5) < 2.0, "面板還是水平置中")
-	App.set_device(InputGlyphs.Device.KBM)
-	prompt.refresh(0.0)
-	assert_false(prompt.hint_line().uses_glyph(), "切回鍵鼠")
-	assert_true(prompt.text().contains("[V]"))
-	root.free()
-
-
 func test_dialogue_hint_follows_device() -> void:
 	App.set_device(InputGlyphs.Device.KBM)
 	var box := DialogueBox.new()
@@ -157,7 +118,7 @@ func test_dialogue_hint_follows_device() -> void:
 	box.free()
 
 
-## 互動提示（InteractPrompt，D-065）：讀 interact_prompts 群組的 interact_hint()，下方中央、按住進度條、手把圖示、疊在重現提示上方。
+## 互動提示（InteractPrompt，D-065）：讀 interact_prompts 群組的 interact_hint()，下方中央、按住進度條、手把圖示。
 func test_interact_prompt_reads_sources() -> void:
 	var src_script := GDScript.new()
 	src_script.source_code = "extends Node\nvar hint: Dictionary = {}\nfunc interact_hint() -> Dictionary:\n\treturn hint\n"
@@ -168,19 +129,16 @@ func test_interact_prompt_reads_sources() -> void:
 	tree.root.add_child(src)
 	var layer := CanvasLayer.new()
 	tree.root.add_child(layer)
-	var restore := RestorePrompt.new()
-	layer.add_child(restore)
 	var prompt := InteractPrompt.new()
 	layer.add_child(prompt)
-	prompt.avoid = restore
 	App.set_device(InputGlyphs.Device.KBM)
 	prompt.refresh(0.0)
 	assert_false(prompt.is_shown(), "沒有來源要顯示")
 	assert_false(prompt.visible)
-	src.set("hint", {"fmt": tr("RESCUE_HOLD_HINT"), "action": "interact", "progress": 0.5})
+	src.set("hint", {"fmt": tr("RB_CRATE_HINT"), "action": "interact", "progress": 0.5})
 	prompt.refresh(0.0)
 	assert_true(prompt.is_shown())
-	assert_eq(prompt.text(), "按住 [F]　搬開瓦礫")
+	assert_eq(prompt.text(), "按 [F]　拿走藥瓶")
 	assert_true(absf(prompt.progress - 0.5) < 0.001, "按住進度")
 	var r: Rect2 = prompt.panel_rect()
 	assert_true(r.position.y > prompt.size.y * 0.6, "在畫面下方：%s／%s" % [r, prompt.size])
@@ -188,12 +146,7 @@ func test_interact_prompt_reads_sources() -> void:
 	App.set_device(InputGlyphs.Device.PAD)
 	prompt.refresh(0.0)
 	assert_true(prompt.line().uses_glyph(), "手把：A 圖示")
-	assert_eq(prompt.line().parts(), PackedStringArray(["按住", "　搬開瓦礫"]))
-	# 重現提示也在：疊在它上面
-	restore.visible = true
-	restore.mode = "prompt"
-	prompt.refresh(0.0)
-	assert_true(prompt.panel_rect().end.y <= restore.panel_rect().position.y - InteractPrompt.STACK_GAP + 0.5, "疊在重現提示上方")
+	assert_eq(prompt.line().parts(), PackedStringArray(["按", "　拿走藥瓶"]))
 	src.set("hint", {})
 	prompt.refresh(0.0)
 	assert_false(prompt.is_shown(), "來源收起來就消失")

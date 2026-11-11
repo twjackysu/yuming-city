@@ -7,12 +7,9 @@ signal changed
 const SETTINGS_PATH: String = "user://settings.cfg"
 const SUPPORTED_LOCALES: PackedStringArray = ["en", "zh_TW"]
 const DEFAULT_LOCALE: String = "en"
-## 音訊匯流排：Music／SFX／Voice 接 Master；UI 接 SFX（跟著音效音量）；
-## Heart（重現的心跳，D-183）直接接 Master，才不會被重現期間 SFX 的低通一起悶住。
-const BUSES: PackedStringArray = ["Music", "SFX", "Voice", "UI", "Heart"]
-const BUS_SEND: Dictionary = {"Music": "Master", "SFX": "Master", "Voice": "Master", "UI": "SFX", "Heart": "Master"}
-## 沒有自己的滑桿、音量跟著另一條走的匯流排（Heart 跟著「音效」）
-const MIRROR_VOLUME: Dictionary = {"Heart": "SFX"}
+## 音訊匯流排：Music／SFX／Voice 接 Master；UI 接 SFX（跟著音效音量）。
+const BUSES: PackedStringArray = ["Music", "SFX", "Voice", "UI"]
+const BUS_SEND: Dictionary = {"Music": "Master", "SFX": "Master", "Voice": "Master", "UI": "SFX"}
 ## 有音量滑桿的匯流排（設定檔的 key 為 <bus 小寫>_volume）
 const VOLUME_BUSES: PackedStringArray = ["Master", "Music", "SFX", "Voice"]
 ## 難度（02-gameplay：只調敵人傷害、前兆長度、指令時機窗，不改代價與流程）；數值在 tuning.json 的 difficulty.*
@@ -72,7 +69,6 @@ static func ensure_buses() -> void:
 		AudioServer.set_bus_name(idx, bus_name)
 	for bus_name: String in BUSES:
 		AudioServer.set_bus_send(AudioServer.get_bus_index(bus_name), StringName(str(BUS_SEND[bus_name])))
-	RestoreMix.ensure_effects()
 
 
 ## 依 OS 語系選預設語言：繁中（台灣／香港／Hant）用 zh_TW，其餘一律英文（Steam 預設英文）。
@@ -194,12 +190,6 @@ func _apply_audio() -> void:
 			var v: float = volume(bus_name)
 			AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(v, 0.0001)))
 			AudioServer.set_bus_mute(bus, v <= 0.001)
-	for bus_name: String in MIRROR_VOLUME:
-		var mirror: int = AudioServer.get_bus_index(bus_name)
-		if mirror >= 0:
-			var mv: float = volume(str(MIRROR_VOLUME[bus_name]))
-			AudioServer.set_bus_volume_db(mirror, linear_to_db(maxf(mv, 0.0001)))
-			AudioServer.set_bus_mute(mirror, mv <= 0.001)
 
 
 func _apply_video() -> void:

@@ -25,6 +25,12 @@ const NORTH_START: float = -30.0
 const NORTH_END: float = -46.0
 const TOWER_Z: float = -50.0
 const ARCH_Z: float = 20.0
+## 斷拱的石頭顏色、兩截斷柱（x 位置, 高度）、柱寬、牆厚、散落的石塊數
+const ARCH_STONE: Color = Color(0.34, 0.33, 0.33)
+const ARCH_STUMPS: Array[Vector2] = [Vector2(-2.05, 1.5), Vector2(2.05, 0.9)]
+const ARCH_STUMP_W: float = 0.9
+const ARCH_DEPTH: float = 1.2
+const ARCH_RUBBLE: int = 7
 const CROSS_N: float = 34.0
 const CROSS_S: float = 42.0
 const CROSS_HALF: float = 20.0
@@ -82,13 +88,7 @@ func _ready() -> void:
 	_build_lamps()
 	_build_pear_stall(STALL_POS)
 	_build_reflection_probes(_batch.build(self, "Town"))
-	# 南街的石拱：現在只是一座斷拱（停用；舊劇情的「重現」第 77 輪拿掉了，D-220）
-	arch_site = NineBreathSite.new()
-	arch_site.name = "SouthArch"
-	arch_site.position = Vector3(0.0, 0.0, ARCH_Z)
-	arch_site.rotation.y = PI  # 正面朝北（從廣場過來）
-	add_child(arch_site)
-	arch_site.set_dormant(true)
+	south_arch = _build_south_arch()
 	wind_sound = Ambience.play(self, "frost_wind", WIND_DB_NIGHT)
 
 	var player: PlayerController = $Player as PlayerController
@@ -119,6 +119,45 @@ func _ready() -> void:
 	player.snap_camera()
 
 
+## 南街的斷拱（節點 `SouthArch`，底下 `Ruin`）：兩截斷柱（有碰撞）＋七塊散落的石頭。
+## 單純的場景物件，沒有任何行為（D-222）。形狀、位置、亂數種子都固定：南街的固定鏡頭靠它不變。
+func _build_south_arch() -> Node3D:
+	var arch := Node3D.new()
+	arch.name = "SouthArch"
+	arch.position = Vector3(0.0, 0.0, ARCH_Z)
+	arch.rotation.y = PI  # 正面朝北（從廣場過來）
+	add_child(arch)
+	var ruin := Node3D.new()
+	ruin.name = "Ruin"
+	arch.add_child(ruin)
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = ARCH_STONE
+	stone.roughness = 0.95
+	for i: int in ARCH_STUMPS.size():
+		var stump := CSGBox3D.new()
+		stump.name = "Stump%d" % i
+		stump.size = Vector3(ARCH_STUMP_W, ARCH_STUMPS[i].y, ARCH_DEPTH)
+		stump.position = Vector3(ARCH_STUMPS[i].x, ARCH_STUMPS[i].y * 0.5, 0.0)
+		stump.material = stone
+		stump.use_collision = true
+		ruin.add_child(stump)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	for i: int in ARCH_RUBBLE:
+		var b := CSGBox3D.new()
+		b.name = "Rubble%d" % i
+		b.size = Vector3(rng.randf_range(0.4, 0.9), rng.randf_range(0.25, 0.5), rng.randf_range(0.4, 0.8))
+		var x: float = rng.randf_range(-3.2, 3.2)
+		# 中間留一條路（車與人從兩截斷柱之間過）
+		if absf(x) < 1.3:
+			x = signf(x) * 1.3 + x * 0.3 if x != 0.0 else 1.4
+		b.position = Vector3(x, b.size.y * 0.5, rng.randf_range(-1.6, 1.6))
+		b.rotation_degrees = Vector3(rng.randf_range(-12, 12), rng.randf_range(0, 90), rng.randf_range(-12, 12))
+		b.material = stone
+		ruin.add_child(b)
+	return arch
+
+
 ## 截圖用：把諾恩移到 "x,z"（高度照地面）。格式不對就不動，回傳有沒有移動。
 func dev_place_player(spec: String) -> bool:
 	var player: PlayerController = get_node_or_null("Player") as PlayerController
@@ -141,7 +180,7 @@ func dev_face_target(who: String) -> Node3D:
 				if has_node(boss_name):
 					return get_node(boss_name) as Node3D
 		"arch":
-			return arch_site
+			return south_arch
 		"ada":
 			return get_node_or_null("Ada") as Node3D
 	return null

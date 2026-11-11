@@ -8,8 +8,8 @@ var _rng := RandomNumberGenerator.new()
 var _north_houses: Array[Node3D] = []
 var _bell: Node3D
 var _bell_light: OmniLight3D
-## 南街的斷拱（停用的 NineBreathSite；下一步換成單純的場景物件）
-var arch_site: NineBreathSite
+## 南街的斷拱（單純的場景物件，霜橋鎮的 `_build_south_arch()`）
+var south_arch: Node3D
 
 
 ## 地面高度（平地關卡是 0；霜橋鎮覆寫：北街台地與石階）。

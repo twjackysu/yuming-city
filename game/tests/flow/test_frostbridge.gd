@@ -367,6 +367,36 @@ func test_dev_place_and_hide_player() -> void:
 	await _free(level)
 
 
+## 南街的斷拱（D-222）：單純的場景物件——沒有腳本、兩截斷柱擋得住人、散落的石塊讓出中間的路（推車與守衛都從這裡過）。
+func test_south_arch_is_a_plain_ruin_with_a_clear_middle() -> void:
+	_session()
+	var level: StoryLevel = await _load()
+	var arch: Node3D = level.get_node("SouthArch") as Node3D
+	assert_eq(level.south_arch, arch, "關卡記得它")
+	assert_true(arch.get_script() == null, "沒有行為：只是一個 Node3D")
+	assert_true(absf(arch.global_position.z - 20.0) < 0.01 and absf(arch.global_position.x) < 0.01, "在南街口：%s" % arch.global_position)
+	var ruin: Node3D = arch.get_node("Ruin") as Node3D
+	var stumps: int = 0
+	var rubble: int = 0
+	for c: Node in ruin.get_children():
+		var b: CSGBox3D = c as CSGBox3D
+		assert_not_null(b, "廢墟都是石塊：%s" % c.name)
+		if b.use_collision:
+			stumps += 1
+			assert_true(absf(b.position.x) - b.size.x * 0.5 >= 1.5, "斷柱在兩邊，中間至少 3 m 寬：%s" % b.position)
+			assert_true(b.size.y >= 0.9 - 0.001, "斷柱夠高，擋得住人：%s" % b.size.y)
+		else:
+			rubble += 1
+			assert_true(absf(b.position.x) >= 1.3 - 0.001, "石塊不擺在路中間：%s" % b.position)
+			assert_true(absf(b.position.y - b.size.y * 0.5) < 0.001, "石塊貼地")
+	assert_eq(stumps, 2, "兩截斷柱")
+	assert_eq(rubble, 7, "七塊散落的石頭")
+	for gone: String in ["Arch", "BellRing", "Ash"]:
+		assert_false(arch.has_node(gone), "「重現」的 %s 已經拿掉" % gone)
+	assert_false(level.get_node("Hud").has_node("RestorePrompt"), "HUD 沒有重現提示")
+	await _free(level)
+
+
 ## 截圖用 `--face=arch`（南街的斷拱）與 `--face=undertaker`（南街的守衛）。
 func test_dev_face_arch_and_guardian() -> void:
 	_story_session("guardian")

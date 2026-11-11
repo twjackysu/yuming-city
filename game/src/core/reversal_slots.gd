@@ -2,7 +2,7 @@ class_name ReversalSlots
 extends RefCounted
 ## 反轉欄位（新版「逆轉體質」，D-202）：只有裝進欄位的負面狀態會反轉。
 ## 開場兩格；第一次中毒自動覺醒並裝進第一格（只發生一次，存檔記得）。其他狀態要研究、安全測試才解鎖。
-## 反轉不扣記憶、不改日記、不影響選項（舊流程的 NineBreath 才會）。
+## 反轉沒有代價：不扣記憶、不影響選項。
 
 signal awakened(status_id: String)
 

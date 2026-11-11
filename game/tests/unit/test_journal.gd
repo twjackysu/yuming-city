@@ -72,24 +72,3 @@ func test_paid_memory_is_always_visible() -> void:
 	assert_eq(st.get_flag("slice.saw_south_arch", false), false, "解鎖旗標沒設")
 	assert_true(j.visible_ids(st).has(ARCH), "付出了 → 日記裡看得到")
 	assert_true(j.view(ARCH, st)["cut"], "而且是剪掉的樣子")
-
-
-func test_arch_preview_highlights_memory() -> void:
-	var journal: Journal = tree.root.get_node("Game").get("journal") as Journal
-	var site := NineBreathSite.new()
-	tree.root.add_child(site)
-	await tree.process_frame
-	site.set_physics_process(false)
-	site.update_hold(0.3, true)
-	assert_eq(journal.highlighted, ARCH, "按住預覽 → 日記標亮那段記憶")
-	assert_true(journal.view(ARCH, _session.state)["highlighted"])
-	site.update_hold(0.1, false)
-	assert_eq(journal.highlighted, "", "放開 → 取消標亮")
-	site.update_hold(0.5, true)
-	site.update_hold(0.6, true)
-	assert_true(site.is_solid(), "按滿發動")
-	assert_eq(journal.highlighted, "", "發動後不再標亮")
-	assert_true(journal.view(ARCH, _session.state)["cut"], "發動 → 記憶被剪掉")
-	site.queue_free()
-	await tree.process_frame
-	await tree.process_frame

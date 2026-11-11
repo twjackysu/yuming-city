@@ -98,14 +98,31 @@ func _key(code: Key) -> InputEventKey:
 
 func test_rebind_swaps_on_conflict() -> void:
 	var b: Dictionary = InputSetup.defaults()
-	# interact = F、nine_breath = V：把 interact 改成 V，nine_breath 應該拿到 F
-	var out: Dictionary = InputSetup.rebind(b, "interact", InputSetup.SLOT_KBM, Vector2i(0, KEY_V))
-	assert_eq(InputSetup.slot_of(out, "interact", 0), Vector2i(0, KEY_V), "interact 改成 V")
-	assert_eq(InputSetup.slot_of(out, "nine_breath", 0), Vector2i(0, KEY_F), "nine_breath 交換成 F")
+	# interact = F、use_item = 1：把 interact 改成 1，use_item 應該拿到 F
+	var out: Dictionary = InputSetup.rebind(b, "interact", InputSetup.SLOT_KBM, Vector2i(0, KEY_1))
+	assert_eq(InputSetup.slot_of(out, "interact", 0), Vector2i(0, KEY_1), "interact 改成 1")
+	assert_eq(InputSetup.slot_of(out, "use_item", 0), Vector2i(0, KEY_F), "use_item 交換成 F")
 	assert_eq(InputSetup.slot_of(b, "interact", 0), Vector2i(0, KEY_F), "原表不被修改")
 	# 手把欄
 	out = InputSetup.rebind(out, "dodge", InputSetup.SLOT_PAD, Vector2i(2, JOY_BUTTON_A))
 	assert_eq(InputSetup.slot_of(out, "interact", 1), Vector2i(2, JOY_BUTTON_B), "手把 A／B 交換")
+
+
+## 舊設定檔裡還留著已經刪掉的動作（「重現」nine_breath，D-222）：略過、不出錯，其他鍵照設定檔。
+func test_saved_bindings_ignore_removed_actions() -> void:
+	assert_false(InputSetup.BINDINGS.has("nine_breath"), "沒有「重現」這個動作了")
+	assert_false(InputSetup.ACTION_KEYS.has("nine_breath"), "按鍵設定頁也不列")
+	var saved: Dictionary = {
+		"nine_breath": [Vector2i(0, KEY_G), Vector2i(2, JOY_BUTTON_Y)],
+		"interact": [Vector2i(0, KEY_G), Vector2i(2, JOY_BUTTON_A)],
+	}
+	var out: Dictionary = InputSetup.from_saved(saved)
+	assert_false(out.has("nine_breath"), "刪掉的動作不會從舊設定檔回來")
+	assert_eq(InputSetup.slot_of(out, "interact", InputSetup.SLOT_KBM), Vector2i(0, KEY_G), "其他鍵照設定檔")
+	assert_eq(out.size(), InputSetup.BINDINGS.size(), "動作數跟預設一樣")
+	InputSetup.apply_bindings(out)
+	assert_false(InputMap.has_action("nine_breath"), "InputMap 裡也沒有")
+	InputSetup.apply_bindings(InputSetup.defaults())
 
 
 func test_rebind_rejects_fixed_and_wrong_slot() -> void:

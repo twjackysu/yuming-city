@@ -22,9 +22,7 @@ var _banner: Label
 var combat: CombatHud
 ## 目標指引（指向目前目標的小菱形＋距離）
 var guide: ObjectiveGuide
-## 重現提示（下方中央，D-059）
-var restore: RestorePrompt
-## 互動提示（救援、拉起席菈；疊在重現提示上方，D-065）
+## 互動提示（下方中央：拿藥瓶、拉起席菈，D-065）
 var interact: InteractPrompt
 ## 新版的狀態圖示（左下、諾恩生命條上方，D-202）；舊版沒有狀態，永遠是空的
 var status: StatusHud
@@ -148,11 +146,8 @@ func _build() -> void:
 	add_child(combat)
 	guide = ObjectiveGuide.new()
 	add_child(guide)
-	restore = RestorePrompt.new()
-	add_child(restore)
 	interact = InteractPrompt.new()
 	add_child(interact)
-	interact.avoid = restore
 	status = StatusHud.new()
 	add_child(status)
 	potion = PotionHud.new()

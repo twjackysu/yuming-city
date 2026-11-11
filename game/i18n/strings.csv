@@ -60,7 +60,6 @@ ACT_COMMAND_WEAKPOINT,Command: Strike Weak Point,指令：打弱點
 ACT_COMMAND_EVADE,Command: Evade,指令：閃開
 ACT_COMMAND_GUARD,Command: Hold,指令：守住
 ACT_INTERACT,Interact,互動
-ACT_NINE_BREATH,Restore,重現
 ACT_JOURNAL,Show objective,看目前的目標
 ACT_USE_ITEM,Use item,使用道具
 ACT_PAUSE,Pause,暫停
@@ -131,10 +130,6 @@ MOVE_SLAM,Frame slam,鐵架下砸
 MOVE_CHARGE,Charge (follows heartbeats),衝撞（追著心跳）
 MOVE_DOUBLE_SLAM,Double slam,連續下砸
 MOVE_GRAB,Grab,抓取
-NB_SITE_SOUTH_ARCH,"Can be restored: the South Street arch, as it stood before it fell",可以重現：南街石拱（倒塌前的樣子）
-NB_COST_ARCH_FATHER,Cost: you will forever forget your last talk with Dad beneath the arch,代價：永遠忘掉和父親在石拱下的最後一次對話
-NB_HOLD_HINT,Hold {key} — restore it for 9 seconds,按住 {key}　重現 9 秒
-NB_BREATHS_LEFT,Restored — {0}s left,重現中　還剩 {0} 秒
 FRAME_THROW_WARN,The Undertaker raises the iron frame — toward the cart!,送葬者舉起了鐵架——對準車隊！
 FRAME_THROW_ARCH,The arch takes the frame. It holds.,鐵架砸在石拱上。石拱撐住了。
 FRAME_THROW_KINDLING,Sheila's sword catches fire — she cuts the frame in two.,席菈的劍燒了起來——她把鐵架斬成兩截。

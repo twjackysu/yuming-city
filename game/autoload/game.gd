@@ -41,8 +41,6 @@ var dialogues: DialogueDB
 var journal: Journal
 ## 進行中的對話（沒有則為 null）
 var dialogue: DialogueRunner
-## 重現期間的混音（D-183）：輪詢 RestoreMix.GROUP，SFX 低通＋Music 壓低
-var restore_mix: RestoreMix
 
 
 func _ready() -> void:
@@ -54,9 +52,6 @@ func _ready() -> void:
 	for e: String in journal.validate():
 		push_error("Game: 日記資料錯誤 " + e)
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
-	restore_mix = RestoreMix.new()
-	restore_mix.name = "RestoreMix"
-	add_child(restore_mix)
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
 		level = "benchmark"

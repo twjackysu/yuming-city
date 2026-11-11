@@ -39,11 +39,7 @@ static func play_at(parent: Node, sfx_name: String, pos: Vector3, volume_db: flo
 	return p
 
 
-## 重現的心跳走這條（D-183：不經過 SFX 的低通，音量跟著「音效」）。
-const HEART_BUS: StringName = &"Heart"
-
-
-## 不分位置（過場中的鐘聲等）。bus 只有重現的心跳會換成 HEART_BUS。
+## 不分位置（介面、配樂性質的聲音）。
 static func play_flat(parent: Node, sfx_name: String, volume_db: float = 0.0, bus: StringName = &"SFX") -> AudioStreamPlayer:
 	var s: AudioStream = stream(sfx_name)
 	if s == null or parent == null or not parent.is_inside_tree():

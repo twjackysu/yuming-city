@@ -4,18 +4,15 @@ extends Control
 ## 從場景裡的 Label3D 搬到畫面下方中央，鍵名用 GlyphLine（手把模式是按鈕圖示，D-063）。
 ## 來源：`interact_prompts` 群組裡的節點，實作 `interact_hint() -> Dictionary`：
 ##   {} ＝不顯示；{"fmt": 已翻譯、保留 {key} 的字串, "action": InputMap 動作, "progress": 0..1 按住進度（-1＝沒有進度條）}
-## 跟重現提示（RestorePrompt）同時出現時疊在它上面，不重疊。純顯示：每幀讀，不改任何東西。
+## 純顯示：每幀讀，不改任何東西。
 
 const FADE_SPEED: float = 8.0
 const BOTTOM_GAP: float = 150.0
-const STACK_GAP: float = 12.0
 const INK: Color = Color(0.95, 0.92, 0.86)
 const FILL: Color = Color(0.98, 0.82, 0.55)
 const BAR_W: float = 140.0
 const BAR_H: float = 4.0
 
-## 疊在它上面避開的提示（Hud 設定；null＝不避）
-var avoid: RestorePrompt
 var progress: float = -1.0
 
 var _panel: PanelContainer
@@ -111,8 +108,6 @@ func _place() -> void:
 	var sz: Vector2 = _panel.get_combined_minimum_size()
 	_panel.size = sz
 	var bottom: float = size.y - BOTTOM_GAP
-	if avoid != null and avoid.visible and avoid.mode != "":
-		bottom = avoid.panel_rect().position.y - STACK_GAP
 	_panel.position = Vector2((size.x - sz.x) * 0.5, bottom - sz.y)
 
 
