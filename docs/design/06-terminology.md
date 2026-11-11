@@ -33,6 +33,10 @@
 | 彌夏 | `Misha`（`SPK_MISHA`） | 彌夏 | Misha | 地下市場街底藥店的老闆，調藥與研究裝備；人名 |
 | 黑市示範場 | — | 黑市示範場 | the black-market demo | 地下市場裡商人當眾示範商品的地方（下一段的場景）；不寫「競技場」「展演廳」 |
 | 解藥 | — | 解藥 | antidote | 一般人中毒之後吃的藥；彌夏的台詞裡出現 |
+| 示範台 | `DemoStage`（`UndergroundMarket.DEMO_POS`） | 示範台；目標寫「街中段搭著台子的地方」 | the stage / the demo stage | 黑市示範場裡商人站的台子（街中段西側）；不寫「舞台」「擂台」 |
+| 高速護腕 | `Bracer`（還不是物品） | 高速護腕；口語「護腕」 | the speed bracer | 戴上去出手變快、戴久了手會麻痺的詛咒物；商人靠賣它的解藥賺錢 |
+| 護腕商人 | `demo_seller`（`SPK_DEMO_SELLER`） | 護腕商人 | Bracer Seller | 示範場上叫賣的人；還沒有名字 |
+| 麻痺 | —（狀態還沒做，C 才有） | 麻痺；口語「手會麻、會動不了」 | paralysis / goes numb | 護腕的副作用；不寫「麻痹」「定身」 |
 | 工錢 | `coins`（`RB_WAGES_PAID`） | 工錢 | pay | 雷德欠的那份（艾妲只代付一半）；不寫「欠薪」「薪資」 |
 | 看穿 | `insight` | 看穿 | Insight | 按住顯示已知的弱點與招式 |
 | 灰巡者、送葬者 | `Ashwalker`、`Undertaker` | 灰巡者、送葬者 | Ashwalker、Undertaker | 怪物名字 |
