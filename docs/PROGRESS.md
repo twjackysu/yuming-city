@@ -7,7 +7,7 @@
 **做了什麼**
 
 - 開工：FOR_JACKY 回覆區沒有新的回覆；沒有新的 Issue、art-inbox、Jacky 的 commit。上一輪的 run 是綠的。本機 `check.sh` 開工 307 個全綠。照 NEXT「00」第 1 項做地下市場 A。
-- **新關卡 `market`**（914cd56，D-228）：`scenes/levels/underground_market.gd`（只蓋場景，約 600 行）＋`underground_market_story.gd`（劇情）＋`.tscn`。場景從北到南：貨梯的高台（高 2.4 m，井口一束冷光）→ 坡道口的門架 → 木坡道 → 28 m 的攤販街（兩側各 8 格、各空 1 格＝14 個攤子，6 個顧攤的人會轉頭看諾恩）→ 街底彌夏藥店（綠色格子窗、窗裡瓶子的剪影、壺形招牌）。
+- **新關卡 `market`**（914cd56，D-228）：`scenes/levels/underground_market.gd`（只蓋場景，約 880 行）＋`underground_market_story.gd`（劇情）＋`.tscn`。場景從北到南：貨梯的高台（高 2.4 m，井口一束冷光）→ 坡道口的門架 → 木坡道 → 28 m 的攤販街（兩側各 8 格、各空 1 格＝14 個攤子，6 個顧攤的人會轉頭看諾恩）→ 街底彌夏藥店（綠色格子窗、窗裡瓶子的剪影、壺形招牌）。
 - **兩個新 shader**：`awning_cloth.gdshader`（條紋布：布棚、三角旗、樑下的長布；會透光——燈在布底下，從上面看布是亮的）、`paper_lantern.gdshader`（紙燈籠：中間亮、上下木圈、橫向竹篾；全部一個 MultiMesh）。
 - **任務 `rb_market`**（三個階段、檢查點 `rb2_arrive`／`rb2_street`／`rb2_shop`）：貨梯下來 → 走下坡道，席菈說這裡的規矩（對話 `rb2_sheila_rules`，3 句）→ 走到藥店門口 →「待續／彌夏的藥店」→ 回標題。第三個階段（彌夏、測試板）資料寫了、還沒有內容。
 - **貨梯**：不再是「待續」，黑一下「貨梯往下／地下市場」→ 換關卡。`GameSession.main_quest()` 改成「第一條還沒做完的主線」。
