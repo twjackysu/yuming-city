@@ -201,34 +201,6 @@ jobs:
           shot 09-journal 40 --level=frostbridge --open=journal --locale=zh_TW
           shot 10-plaza-en 40 --level=frostbridge --at=plaza --locale=en
           shot 11-convoy-insight 24 --level=frostbridge --convoy --insight --pos=2.2,9.5 --face=undertaker --face-off=18 --locale=zh_TW
-          shot 12-ch1-tavern 30 --level=tavern --ch1-stage=dinner --locale=zh_TW
-          shot 13-ch1-day-north 30 --level=frostbridge --day --at=north --locale=zh_TW
-          shot 14-ch1-stairs 30 --level=stairs --stairs-at=trap --locale=zh_TW
-          shot 15-ch1-daylight 30 --level=daylight --daylight-at=stele --locale=zh_TW
-          shot 16-ch1-dinner 30 --level=daylight --daylight-at=dinner --locale=zh_TW
-          shot 17-ch1-bell-yard-road 30 --level=daylight --daylight-at=yard --locale=zh_TW
-          shot 18-ch2-table 30 --level=bell_hall --hall-at=table --locale=zh_TW
-          shot 19-ch2-hall 30 --level=bell_hall --locale=zh_TW
-          shot 20-ch2-isa-insight 30 --level=bell_hall --hall-at=seated --hall-insight=1.6 --locale=zh_TW
-          shot 21-ch2-inner 30 --level=bell_hall --hall-at=inner --locale=zh_TW
-          shot 22-ch2-inner-after 30 --level=bell_hall --hall-at=leo --locale=zh_TW
-          shot 23-ch2-carvings 30 --level=bell_hall --hall-at=carved --locale=zh_TW
-          shot 24-ch2-eye 22 --level=bell_hall --hall-at=eye --hall-shot=3 --locale=zh_TW
-          shot 25-ch2-eye-after 30 --level=bell_hall --hall-at=eye-after --locale=zh_TW
-          shot 26-ch3-canal 30 --level=canal --canal-at=edge --locale=zh_TW
-          shot 27-ch3-bank 30 --level=canal --canal-at=bank --locale=zh_TW
-          shot 28-ch3-drain 40 --level=canal --canal-at=turn --locale=zh_TW
-          shot 29-ch3-heart 34 --level=canal --canal-at=heart --locale=zh_TW
-          shot 30-ch3-pinned 34 --level=canal --canal-at=pinned --locale=zh_TW
-          shot 31-ch3-hang 34 --level=canal --canal-at=hang --locale=zh_TW
-          shot 32-ch3-mud 40 --level=canal --canal-at=mud --locale=zh_TW
-          shot 33-ch3-map 34 --level=canal --canal-at=map --locale=zh_TW
-          shot 34-ch3-corner 34 --level=canal --canal-at=corner --locale=zh_TW
-          shot 35-part1-end 20 --level=canal --canal-at=end --locale=zh_TW
-          shot 36-ch3-struggle 30 --level=canal --canal-at=struggle --locale=zh_TW
-          shot 37-ch1-dead-list 30 --level=frostbridge --day=ada_lamp --at=list --face=list --locale=zh_TW
-          shot 38-ch1-tavern-table 30 --level=tavern --ch1-stage=draw_map --pos=1.4,-0.6 --face=DinnerTable --face-off=12 --nohud --locale=zh_TW
-          shot 39-part1-thanks 20 --level=canal --canal-at=thanks --locale=zh_TW
           shot 40-rb-start 30 --level=frostbridge --rb-at=start --locale=zh_TW
           shot 41-rb-mist 30 --level=frostbridge --rb-at=mist --locale=zh_TW
           shot 42-rb-pursuer 40 --level=frostbridge --rb-at=pursuer --locale=zh_TW

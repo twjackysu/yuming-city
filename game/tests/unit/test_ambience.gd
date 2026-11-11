@@ -282,18 +282,3 @@ func test_enemy_kneel_thud() -> void:
 	root.queue_free()
 	await tree.process_frame
 	await tree.process_frame
-
-
-## 鐘院飯廳、柯德家是木板地（D-184）；鐘院內室、白晝城的街是石板。
-func test_wood_floors_in_bell_hall_and_kord_house() -> void:
-	var hall_script: GDScript = load("res://scenes/levels/bell_hall.gd") as GDScript
-	var city_script: GDScript = load("res://scenes/levels/daylight.gd") as GDScript
-	var hall: Node = hall_script.new() as Node
-	var city: Node = city_script.new() as Node
-	assert_eq(str(hall.call("footstep_surface", Vector3(0.6, 0, 3.0))), "wood", "飯廳（出生點）")
-	assert_eq(str(hall.call("footstep_surface", Vector3(0, 0, -9.0))), "stone", "內室")
-	var house: Vector3 = city_script.get("HOUSE_ORIGIN") as Vector3
-	assert_eq(str(city.call("footstep_surface", house + Vector3(1.0, 0, 0.5))), "wood", "柯德家")
-	assert_eq(str(city.call("footstep_surface", Vector3(0, 0, -10.0))), "stone", "街上")
-	hall.free()
-	city.free()

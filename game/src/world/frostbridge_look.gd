@@ -18,10 +18,7 @@ var _mats: Dictionary = {}
 
 
 ## WorldEnvironment＋月光，加到 parent 底下。回傳 Environment（測試／截圖用）。
-## day＝第 1 章段落 4「白天的霜橋鎮」（D-151）：陰天的冷白光、沒有月光與路燈，霧薄、雪地反光。
-static func build_environment(parent: Node3D, day: bool = false) -> Environment:
-	if day:
-		return _build_day_environment(parent)
+static func build_environment(parent: Node3D) -> Environment:
 	var env := Environment.new()
 	# 冬夜天空（D-117）：雲、月光、遠山稜線。霧只蓋掉天空的一部分，不然整片又是霧色。
 	env.background_mode = Environment.BG_SKY
@@ -65,72 +62,6 @@ static func build_environment(parent: Node3D, day: bool = false) -> Environment:
 	return env
 
 
-## 白天（陰天）的天光：雪地反上來的冷白，陰影軟、不會全黑
-const DAY_SUN: Color = Color(0.9, 0.93, 1.0)
-const DAY_AMBIENT: Color = Color(0.64, 0.69, 0.78)
-
-
-static func _build_day_environment(parent: Node3D) -> Environment:
-	var env := Environment.new()
-	env.background_mode = Environment.BG_SKY
-	env.sky = day_sky()
-	env.volumetric_fog_sky_affect = SKY_FOG_AFFECT
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = DAY_AMBIENT
-	env.ambient_light_energy = 0.8
-	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.0
-	env.glow_enabled = true
-	env.glow_intensity = 0.4
-	env.glow_bloom = 0.04
-	env.glow_hdr_threshold = 1.4
-	env.ssao_enabled = true
-	env.ssao_intensity = 1.8
-	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.012
-	env.volumetric_fog_albedo = Color(0.86, 0.88, 0.92)
-	env.volumetric_fog_emission = Color(0.1, 0.11, 0.13)
-	env.volumetric_fog_anisotropy = 0.3
-	env.volumetric_fog_length = 90.0
-	env.adjustment_enabled = true
-	env.adjustment_saturation = 0.78
-	env.adjustment_contrast = 1.05
-	var we := WorldEnvironment.new()
-	we.name = "WorldEnvironment"
-	we.environment = env
-	parent.add_child(we)
-	# 陰天的太陽：高、偏冷、影子很軟（雲層把光打散）
-	var sun := DirectionalLight3D.new()
-	sun.name = "Sun"
-	sun.light_color = DAY_SUN
-	sun.light_energy = 1.25
-	sun.light_angular_distance = 4.0
-	sun.light_volumetric_fog_energy = 0.5
-	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.75
-	sun.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY  # 雲層後面，天空上不畫太陽盤
-	sun.directional_shadow_max_distance = 60.0
-	sun.rotation_degrees = Vector3(-52.0, 40.0, 0.0)
-	parent.add_child(sun)
-	return env
-
-
-## 陰天的天空：上面灰藍、地平線發白，沒有太陽盤（雲層後面）。
-static func day_sky() -> Sky:
-	var m := ProceduralSkyMaterial.new()
-	m.sky_top_color = Color(0.5, 0.56, 0.65)
-	m.sky_horizon_color = Color(0.8, 0.82, 0.86)
-	m.sky_curve = 0.12
-	m.ground_horizon_color = Color(0.74, 0.77, 0.82)
-	m.ground_bottom_color = Color(0.42, 0.45, 0.5)
-	m.sky_energy_multiplier = 1.1
-	var sky := Sky.new()
-	sky.sky_material = m
-	sky.radiance_size = Sky.RADIANCE_SIZE_128
-	sky.process_mode = Sky.PROCESS_MODE_QUALITY
-	return sky
-
-
 const NIGHT_SKY_SHADER: String = "res://src/world/night_sky.gdshader"
 ## 霧對天空的影響（體積霧與低畫質的一般霧共用）：1.0 會把天空整片蓋成霧色
 const SKY_FOG_AFFECT: float = 0.4
@@ -159,19 +90,6 @@ func mat(color: Color, roughness: float = 0.9) -> StandardMaterial3D:
 
 
 ## 發光材質（窗、燈泡）。
-## 白天熄燈（D-151）：這個顏色的發光材質全部不發光、玻璃變暗（材質是共用的，合併後的 mesh 跟著變）。回傳改了幾個。
-func unlight(color: Color) -> int:
-	var n: int = 0
-	var prefix: String = "glow/%s/" % color.to_html()
-	for key: String in _mats:
-		if key.begins_with(prefix):
-			var m: StandardMaterial3D = _mats[key] as StandardMaterial3D
-			m.emission_enabled = false
-			m.albedo_color = color.darkened(0.55)
-			n += 1
-	return n
-
-
 func glow(color: Color, energy: float) -> StandardMaterial3D:
 	var key: String = "glow/%s/%.2f" % [color.to_html(), energy]
 	if _mats.has(key):

@@ -23,7 +23,7 @@ var _title: Label
 var _tween: Tween
 
 
-## 建立一張章節卡加到 parent 底下並開始播放。number_key 例如 CH1_CARD_NUMBER（「第一章」）。
+## 建立一張章節卡加到 parent 底下並開始播放。number_key、title_key 是翻譯 key（例如「待續」那張卡）。
 static func play(parent: Node, number_key: String, title_key: String, done: Callable, time_scale: float = 1.0) -> ChapterCard:
 	var card := ChapterCard.new()
 	card.on_done = done

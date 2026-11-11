@@ -8,20 +8,12 @@ extends RefCounted
 signal checkpoint_reached(checkpoint_id: String)
 signal stage_changed(quest_id: String, from_stage: String, to_stage: String)
 signal quest_completed(quest_id: String)
-## 攻略筆記有條目被推翻或證實：[{id, result, was_unsure}]（D-148）
-signal guide_changed(changes: Array[Dictionary])
 ## 要寫存檔之前（新版：玩家把生命、狀態、反轉欄位寫回 state，D-202）
 signal saving(state: GameState)
 
 const MAIN_QUEST: String = "slice_main"
-## 主線任務依章節順序；HUD 目標、目標指引跟著最後一個已開始的走（D-149）
-const MAIN_QUESTS: PackedStringArray = ["slice_main", "ch1_main", "ch2_main", "ch3_main"]
-## 章節銜接：前一章的主線完成後要開始的主線與章節 id（舊存檔讀進來時補開，D-149）
-const CHAPTER_CHAIN: Array[Dictionary] = [
-	{"after": "slice_main", "start": "ch1_main", "chapter": "ch1"},
-	{"after": "ch1_main", "start": "ch2_main", "chapter": "ch2"},
-	{"after": "ch2_main", "start": "ch3_main", "chapter": "ch3"},
-]
+## 舊流程的主線任務（第 1～3 章第 76 輪刪了，D-220；剩下的舊切片下一步刪）
+const MAIN_QUESTS: PackedStringArray = ["slice_main"]
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
 const DEFAULT_SAVE_DIR: String = "user://saves"
@@ -32,8 +24,6 @@ const REBOOT_MAIN_QUEST: String = "rb_main"
 const REBOOT_CHAPTER: String = "rb_ch1"
 
 var db: QuestDB
-## 攻略筆記的條目定義（共用一份）
-var guide: GuideNotes = GuideNotes.load_default()
 ## 舊版的存檔資料夾；新版用 reboot_save_dir()（另一個資料夾）
 var save_dir: String
 ## true＝存讀檔走新版的資料夾（new_reboot_game／load_reboot_slot 設定）
@@ -119,13 +109,7 @@ func add_stat(key: String, amount: int = 1) -> void:
 
 ## 重新檢查任務條件；有進入新檢查點就自動存檔。
 func advance() -> Array[Dictionary]:
-	# 攻略筆記先推翻：任務與對話可以用 {"guide": id, "is": "wrong"} 判斷
-	var guide_changes: Array[Dictionary] = guide.evaluate(state)
 	var changes: Array[Dictionary] = quests.evaluate()
-	# 任務效果可能剛寫下條目（guide_write），而推翻條件早就成立
-	guide_changes.append_array(guide.evaluate(state))
-	if not guide_changes.is_empty():
-		guide_changed.emit(guide_changes)
 	check_achievements()
 	if _autosave_pending:
 		_flush_autosave()
@@ -169,7 +153,6 @@ func load_slot(slot: String) -> SaveCodec.Status:
 	_bind(r["state"] as GameState)
 	# 讀檔不重新觸發自動存檔；若存檔後資料改版、條件已成立，照常推進。
 	quests.evaluate()
-	upgrade_chapters()
 	_autosave_pending = false
 	return status
 
@@ -192,20 +175,6 @@ func main_quest() -> String:
 		if state.quests.has(qid):
 			current = qid
 	return current
-
-
-## 舊存檔（D-149 之前）：前一章完成了、下一章卻沒開始 → 補開，並換章節。回傳補開了幾個。
-func upgrade_chapters() -> int:
-	var started: int = 0
-	for link: Dictionary in CHAPTER_CHAIN:
-		var next_id: String = str(link["start"])
-		if quests.is_done(str(link["after"])) and not state.quests.has(next_id) and db.has_quest(next_id):
-			state.chapter = str(link["chapter"])
-			quests.start(next_id)
-			started += 1
-	if started > 0:
-		quests.evaluate()
-	return started
 
 
 func is_slice_complete() -> bool:

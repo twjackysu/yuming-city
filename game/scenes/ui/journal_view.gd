@@ -37,22 +37,10 @@ func _ready() -> void:
 	_build()
 	_root.hide()
 	_peek.hide()
-	# 截圖用：`--open=journal`（可配 `--arch=spent` 看被剪掉的樣子；`--guide-demo` 寫下攻略筆記、推翻兩條）
+	# 截圖用：`--open=journal`（可配 `--arch=spent` 看被剪掉的樣子）
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
-	if args.has("guide-demo"):
-		guide_demo(Game.session)
 	if str(args.get("open", "")) == "journal":
 		open.call_deferred()
-
-
-## 截圖與測試用：寫下全部攻略筆記，標兩條「我不確定」，推翻其中一條標了的、一條沒標的。
-static func guide_demo(s: GameSession) -> void:
-	GuideNotes.write(s.state, s.guide.remembered_ids())
-	GuideNotes.set_unsure(s.state, "stair_arrows", true)
-	GuideNotes.set_unsure(s.state, "purifier", true)
-	s.state.set_flag("ch1.stair_trap_sprung", true)
-	s.state.set_flag("ch1.met_kord", true)
-	s.guide.evaluate(s.state)
 
 
 func is_open() -> bool:
@@ -63,17 +51,9 @@ func is_peeking() -> bool:
 	return _peek.visible
 
 
-## 目前日記裡顯示的記憶條目數（測試用；不含攻略筆記）。
+## 目前日記裡顯示的記憶條目數（測試用）。
 func shown_entry_count() -> int:
-	var n: int = 0
-	for c: Node in _list.get_children():
-		if not str(c.name).begins_with("Guide"):
-			n += 1
-	return n
-
-
-## 攻略筆記那一段顯示的條目：[{id, status}]（測試用）。
-var guide_rows_shown: Array[Dictionary] = []
+	return _list.get_child_count()
 
 
 func open() -> void:
@@ -140,99 +120,8 @@ func _refresh() -> void:
 		return
 	for id: String in j.visible_ids(Game.session.state):
 		_list.add_child(_card(j.view(id, Game.session.state), true))
-	_add_guide_section(Game.session.state, Game.session.guide)
 	_empty.visible = _list.get_child_count() == 0
 	_hint.text = TranslationServer.translate("JOURNAL_HINT_CLOSE").format({"key": InputGlyphs.label_for_action("journal", App.last_device)})
-
-
-## 攻略筆記（D-148）：記憶卡下面一段「攻略筆記」，每條一列——可信度小標＋攻略寫的那句；
-## 被推翻的那句整句劃掉（一條墨線），下面是現實裡看到的事。還沒寫下任何條目時整段不出現（切片）。
-func _add_guide_section(state: GameState, guide: GuideNotes) -> void:
-	guide_rows_shown.clear()
-	if guide == null:
-		return
-	var rows: Array[Dictionary] = []
-	for id: String in guide.ids():
-		var st: String = GuideNotes.status(state, id)
-		if st != GuideNotes.UNWRITTEN:
-			rows.append({"id": id, "status": st})
-	if rows.is_empty():
-		return
-	guide_rows_shown = rows
-	var head := Label.new()
-	head.name = "GuideHead"
-	head.text = "JOURNAL_TAB_GUIDE"
-	head.add_theme_font_size_override("font_size", 24)
-	head.add_theme_color_override("font_color", PAPER_WARM)
-	_list.add_child(head)
-	for r: Dictionary in rows:
-		_list.add_child(_guide_row(str(r["id"]), str(r["status"]), guide.is_blank_entry(str(r["id"]))))
-
-
-## blank_entry：攻略沒有寫的條目（D-163）——證實之後下面多一行自己觀察到的事。
-func _guide_row(id: String, status: String, blank_entry: bool = false) -> VBoxContainer:
-	var box := VBoxContainer.new()
-	box.name = "Guide_" + id
-	box.add_theme_constant_override("separation", 2)
-	var tag := Label.new()
-	tag.name = "Status"
-	tag.text = "GUIDE_STATUS_" + status.to_upper()
-	tag.add_theme_font_size_override("font_size", 14)
-	var tag_col: Color = PAPER_INK_DIM
-	if status == GuideNotes.WRONG:
-		tag_col = PAPER_WARM
-	elif status == GuideNotes.CONFIRMED:
-		tag_col = Color(0.2, 0.32, 0.22)
-	tag.add_theme_color_override("font_color", tag_col)
-	box.add_child(tag)
-	var line := Label.new()
-	line.name = "Text"
-	line.text = GuideNotes.text_key(id)
-	line.add_theme_font_size_override("font_size", 19)
-	line.add_theme_color_override("font_color", PAPER_INK_DIM if status == GuideNotes.WRONG else PAPER_INK)
-	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	line.custom_minimum_size = Vector2(620, 0)
-	box.add_child(line)
-	if status == GuideNotes.UNSURE or status == GuideNotes.BLANK:
-		line.add_theme_color_override("font_color", PAPER_INK_DIM)
-	if status == GuideNotes.CONFIRMED and blank_entry:
-		var seen := Label.new()
-		seen.name = "Real"
-		seen.text = GuideNotes.confirmed_key(id)
-		seen.add_theme_font_size_override("font_size", 19)
-		seen.add_theme_color_override("font_color", PAPER_INK)
-		seen.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		seen.custom_minimum_size = Vector2(620, 0)
-		box.add_child(seen)
-	if status == GuideNotes.WRONG:
-		# 一條稍微斜的墨線劃過整句（跟著字的實際寬度）
-		var strike := ColorRect.new()
-		strike.name = "Strike"
-		strike.color = Color(PAPER_WARM, 0.85)
-		strike.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		line.add_child(strike)
-		line.resized.connect(_fit_strike.bind(line, strike))
-		_fit_strike.call_deferred(line, strike)
-		var real := Label.new()
-		real.name = "Real"
-		real.text = GuideNotes.wrong_key(id)
-		real.add_theme_font_size_override("font_size", 19)
-		real.add_theme_color_override("font_color", PAPER_INK)
-		real.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		real.custom_minimum_size = Vector2(620, 0)
-		box.add_child(real)
-	return box
-
-
-func _fit_strike(line: Label, strike: ColorRect) -> void:
-	if not is_instance_valid(line) or not is_instance_valid(strike):
-		return
-	var font: Font = line.get_theme_font("font")
-	var fs: int = line.get_theme_font_size("font_size")
-	var w: float = minf(font.get_string_size(line.text if line.auto_translate_mode == Node.AUTO_TRANSLATE_MODE_DISABLED else tr(line.text), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x, line.size.x)
-	strike.size = Vector2(w + 8.0, 2.0)
-	strike.position = Vector2(-4.0, line.size.y * 0.55)
-	strike.rotation = -0.012
 
 
 ## 一張記憶卡：標題、前後文、內文（或被剪掉的空白＋殘留）。

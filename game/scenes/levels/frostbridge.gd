@@ -14,9 +14,8 @@ extends StoryLevel
 ## `--convoy --throw=arch|kindling [--throw-t=秒]`（直接擲出鐵架，畫面停在擲出後第幾秒）、`--hide=noen`（藏起諾恩）、`--pos=x,z`（最後把諾恩移到這裡）、`--face=...` `--face-off=度`。
 
 const PLAZA_HALF: float = 11.0
-## 冬夜的風雪（D-180）：整片鋪著、不分位置；白天（第 1 章）風小一點。
+## 冬夜的風雪（D-180）：整片鋪著、不分位置
 const WIND_DB_NIGHT: float = -13.0
-const WIND_DB_DAY: float = -17.0
 ## 收束的配樂（D-185）：車隊過去之後、回到梨販攤的路上（Music 匯流排，慢慢淡入）
 const AFTERMATH_MUSIC: String = "aftermath_theme"
 const AFTERMATH_MUSIC_DB: float = -16.0
@@ -44,9 +43,6 @@ const STEP_COUNT: int = 5
 const CHECKPOINT_SPAWNS: Dictionary = {
 	"rescue": Vector3(0.0, 0.05, -24.0),
 	"undertaker": Vector3(0.0, 0.05, 6.0),
-	# 第 1 章段落 4（D-151）：從廣場西邊的酒館出來；拿到油燈後在地窖門口
-	"ch1_day_town": Vector3(-8.6, 0.05, 2.0),
-	"ch1_lamp": Vector3(5.0, 0.05, -1.2),
 }
 ## `--at=` 開發用出生位置
 const DEV_SPAWNS: Dictionary = {
@@ -82,10 +78,6 @@ var roof_snow_lips: int = 0
 const ROOF_SNOW: float = 0.7
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
-## 白天的霜橋鎮（D-170）：晚上亮著的窗只留這個比例（屋裡有人點燈；其他人起床熄燈或出門了）
-const DAY_LIT_KEEP: float = 0.3
-## 白天熄掉的窗數（測試用）
-var day_unlit_windows: int = 0
 ## 新版（劇情重寫）的流程控制器；舊版是 null（D-204）
 var reboot_opening: RebootOpening = null
 
@@ -93,12 +85,7 @@ var reboot_opening: RebootOpening = null
 func _ready() -> void:
 	_rng.seed = 19  # 固定種子：截圖前後可對照
 	var dev_args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
-	# 截圖用：`--day` 照正式流程把切片與酒館走完，停在白天的霜橋鎮（`--day=ada|stairs` 再往後推）
-	if dev_args.has("day") and not is_day_chapter(Game.session):
-		var day_stage: String = str(dev_args["day"])
-		dev_start_day(Game.session, day_stage if day_stage in ["ada_lamp", "stairs"] else "day_north")
-	day = is_day_chapter(Game.session)
-	FrostbridgeLook.build_environment(self, day)
+	FrostbridgeLook.build_environment(self)
 	_build_ground()
 	_build_plaza()
 	_build_streets()
@@ -122,9 +109,7 @@ func _ready() -> void:
 		_build_story_triggers()
 	_build_cutscene_cameras()
 	_init_story()
-	if day:
-		_build_day()
-	wind_sound = Ambience.play(self, "frost_wind", WIND_DB_DAY if day else WIND_DB_NIGHT)
+	wind_sound = Ambience.play(self, "frost_wind", WIND_DB_NIGHT)
 
 	# 截圖用：`--convoy` 先把任務推進到送葬者戰（在連接 stage_changed 之前，不會觸發席菈登場段落）
 	if dev_args.has("convoy") and StoryLevel.dev_advance_to_convoy(Game.session) and not _north_collapsed:
@@ -141,11 +126,11 @@ func _ready() -> void:
 	# 席菈：「席菈」段落在主街北段等諾恩（救出三人後出現）；之後的檢查點一進場就在身邊
 	if stage == "meet_sheila":
 		_begin_sheila_meet()
-	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy") or day:
+	elif stage in ["escort_convoy", "aftermath"] or dev_args.has("convoy"):
 		_spawn_sheila(player.global_position + Vector3(-1.4, 0.0, 1.2))
 	Game.session.stage_changed.connect(_on_stage_changed)
 	Game.dialogue_ended.connect(_on_dialogue_ended)
-	if stage == "aftermath" and not day:
+	if stage == "aftermath":
 		_start_aftermath_music()
 	# 截圖用：`--rescue` 直接跳到敲完九下、北街陷落的救援段落，諾恩站在第一個受困者旁
 	if dev_args.has("rescue"):
@@ -360,7 +345,7 @@ var _dev_face_off: float = 0.0
 func _on_stage_changed(quest_id: String, _from: String, to_stage: String) -> void:
 	if quest_id == GameSession.MAIN_QUEST and to_stage == "meet_sheila":
 		_begin_sheila_meet()
-	if quest_id == GameSession.MAIN_QUEST and to_stage == "aftermath" and not day:
+	if quest_id == GameSession.MAIN_QUEST and to_stage == "aftermath":
 		_start_aftermath_music()
 
 
@@ -382,9 +367,6 @@ func _physics_process(_delta: float) -> void:
 	if _dev_face != "":
 		_update_dev_face()
 	if reboot_opening != null:
-		return
-	if day:
-		_update_day()
 		return
 	var stage: String = Game.session.quests.stage_of(GameSession.MAIN_QUEST)
 	if stage == "aftermath":
@@ -451,21 +433,12 @@ func _update_aftermath() -> void:
 
 
 func _on_cellar() -> void:
-	if day:
-		_on_day_cellar()
-		return
 	if Game.session.quests.stage_of(GameSession.MAIN_QUEST) != "aftermath":
 		return
 	if not Game.session.state.get_flag("slice.ada_talked_aftermath", false):
 		return
 	Game.session.set_flag("slice.cellar_entered", true)
-	# 切片完成 → 第 1 章開始（D-149）：章節卡之後換到酒館；第 1 章關卡不存在時照舊顯示切片結束
-	var next_level: String = Game.level_for_checkpoint(Game.session.state.checkpoint)
-	if next_level != "frostbridge" and Game.LEVELS.has(next_level):
-		if not has_node("ChapterCard"):
-			ChapterCard.play(self, "CH1_CARD_NUMBER", "CH1_CARD_TITLE", Game.go_to_level.bind(next_level))
-	else:
-		_banner("SLICE_COMPLETE", 8.0)
+	_banner("SLICE_COMPLETE", 8.0)
 
 
 func _build_cellar_hatch() -> void:
@@ -474,104 +447,6 @@ func _build_cellar_hatch() -> void:
 	for i: int in 3:
 		_batch.add_box_at(Vector3(1.6, 0.04, 0.06), CELLAR_POS + Vector3(0, 0.1, -0.4 + i * 0.4), look.mat(FrostbridgeLook.ROOF), false)
 	_batch.add_box_at(Vector3(0.2, 0.06, 0.12), CELLAR_POS + Vector3(0.5, 0.12, 0.0), look.mat(Color(0.4, 0.36, 0.3), 0.4), false)
-
-
-# ---------------------------------------------------------------- 第 1 章段落 4：白天的霜橋鎮（D-151）
-
-const CH1_QUEST: String = "ch1_main"
-## 北街：諾恩走上台地（z 小於這個）就開「白天看昨晚的現場」的對話
-const NORTH_DAY_Z: float = -30.6
-const NORTH_DAY_SPOT: Vector3 = Vector3(0.0, RISE, -33.0)
-## 艾妲站在地窖門旁（地窖口的南邊，面向廣場）
-const ADA_POS: Vector3 = Vector3(6.6, 0.0, -2.9)
-## 死者名單（D-170）：梨販攤西北邊的木板（廣場中央石圈外），正面朝北偏西（從北街走回廣場時迎面看到）
-const DEAD_LIST_POS: Vector3 = Vector3(3.1, 0.0, -3.6)
-const DEAD_LIST_YAW_DEG: float = 197.0
-
-## 第 1 章的白天版本（不生切片的敵人、車隊與觸發；路燈不點）
-var day: bool = false
-
-
-static func is_day_chapter(s: GameSession) -> bool:
-	return s.state.chapter == "ch1" and s.quests.stage_of(CH1_QUEST) in ["day_north", "ada_lamp", "stairs"]
-
-
-## 開發用：照正式流程把切片與酒館走完，推到第 1 章的 stage（day_north／ada_lamp／stairs）。
-static func dev_start_day(s: GameSession, stage: String) -> void:
-	var ach: AchievementTracker = s.achievements
-	s.achievements = null
-	if s.quests.stage_of(CH1_QUEST) in ["", "tavern_noon", "dinner", "draw_map"]:
-		load("res://scenes/levels/tavern.gd").call("dev_start_chapter", s, "to_cellar")
-	s.set_flag("ch1.left_tavern", true)
-	if stage in ["ada_lamp", "stairs"]:
-		s.set_flag("ch1.saw_north_day", true)
-	if stage == "stairs":
-		s.set_flag("ch1.lamp_received", true)
-	s.attach_achievements(ach)
-
-
-func _build_day() -> void:
-	# 路燈、攤子的燈都不點（只留諾恩的燈）；南街的石拱昨晚已經用過或塌了，白天不能重現
-	var player: Node = get_node_or_null("Player")
-	for n: Node in find_children("*", "OmniLight3D", true, false):
-		if player != null and player.is_ancestor_of(n):
-			continue
-		(n as OmniLight3D).visible = false
-	# 路燈與門燈的玻璃也不亮（白天亮著像忘了關）
-	look.unlight(FrostbridgeLook.LAMP)
-	if arch_site != null:
-		arch_site.set_dormant(true)
-	# 目標指引（stairs 階段）：地窖口；一百七十二階裡同名的點在樓梯底
-	var down := Marker3D.new()
-	down.name = "StairsDown"
-	down.position = CELLAR_POS + Vector3(0, 1.0, 0)
-	add_child(down)
-	var spot := Marker3D.new()
-	spot.name = "NorthDaySpot"
-	spot.position = NORTH_DAY_SPOT + Vector3(0, 1.0, 0)
-	add_child(spot)
-	var ada := Puppet.new()
-	ada.name = "Ada"
-	ada.coat_color = Color(0.36, 0.2, 0.17)
-	ada.trim_color = Color(0.62, 0.55, 0.42)
-	ada.position = ADA_POS
-	ada.rotation_degrees.y = 200.0
-	add_child(ada)
-	var hammer: Node = ada.hand("R").get_node_or_null("BellHammer") if ada.hand("R") != null else null
-	if hammer != null:
-		hammer.queue_free()
-	# 死者名單（D-170）＋北街昨晚的現場：沒救出來的人蓋著布
-	var board := DeadListBoard.new()
-	board.name = "DeadList"
-	board.position = DEAD_LIST_POS
-	board.rotation_degrees.y = DEAD_LIST_YAW_DEG
-	add_child(board)
-	for n: Node in get_tree().get_nodes_in_group("rescue_sites"):
-		if is_ancestor_of(n):
-			(n as RescueSite).set_aftermath()
-	# 從入夜的酒館走出來是隔天早上
-	if Game.session.quests.stage_of(CH1_QUEST) == "day_north":
-		_banner.call_deferred("CH1_NEXT_MORNING", 3.5)
-
-
-func _update_day() -> void:
-	var player: Node3D = get_node_or_null("Player") as Node3D
-	if player == null or Game.is_player_locked():
-		return
-	match Game.session.quests.stage_of(CH1_QUEST):
-		"day_north":
-			if player.global_position.z <= NORTH_DAY_Z:
-				Game.start_dialogue("ch1_north_day")
-		"ada_lamp":
-			var ada: Node3D = get_node_or_null("Ada") as Node3D
-			if ada != null and player.global_position.distance_to(ada.global_position) <= ADA_TALK_RANGE:
-				Game.start_dialogue("ch1_ada_lamp")
-
-
-## 拿著油燈走進地窖 → 段落 5：一百七十二階（D-152）。
-func _on_day_cellar() -> void:
-	if Game.session.quests.stage_of(CH1_QUEST) == "stairs":
-		Game.go_to_level.call_deferred("stairs")
 
 
 # ---------------------------------------------------------------- 送葬者戰
@@ -601,9 +476,8 @@ func _spawn_sheila(pos: Vector3) -> void:
 # ---------------------------------------------------------------- 看見南街石拱（段落 1）
 
 ## 第一次走進南街看到石拱：諾恩想起父親躲在柱子後 → 日記解鎖那段記憶（之後的重現代價就是它）。
-## 第 1 章白天回到南街不再播（D-178）：那段記憶可能已經為了重現付掉了，石拱也停用了。
 func _on_arch_memory() -> void:
-	if day or Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
+	if Game.session.state.get_flag("slice.saw_south_arch", false) or encounter != null or Game.is_player_locked():
 		return
 	Game.start_dialogue("slice_arch_memory")
 
@@ -1287,7 +1161,7 @@ func _house(center: Vector3, w: float, depth: float, h: float, dir: Vector3, fac
 			if f == 0 and absf(along - door_off) < 1.2:
 				continue
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4, 0)
-			var lit: bool = _day_window(_rng.randf() < 0.4, pos)
+			var lit: bool = _rng.randf() < 0.4
 			batch.add_box_tinted(_axis_size(dir, face, 0.7, 0.08, 0.9), pos, window_mat,
 				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
 			window_count += 1
@@ -1328,7 +1202,7 @@ func _upper_windows(batch: StaticBatch, front: Vector3, w: float, h: float, dir:
 		var size: Vector2 = Vector2(0.6, 0.75) if small else Vector2(0.7, 0.9)
 		for along: float in spots:
 			var pos: Vector3 = front + dir * along + Vector3(0, 1.6 + f * 2.4 - (0.08 if small else 0.0), 0)
-			var lit: bool = _day_window(_house_hash(pos, 7.7) < 0.32, pos)
+			var lit: bool = _house_hash(pos, 7.7) < 0.32
 			batch.add_box_tinted(_axis_size(dir, face, size.x, 0.08, size.y), pos, window_mat,
 				FrostbridgeLook.window_tint(lit, pos, WINDOW_ENERGY))
 			window_count += 1
@@ -1448,14 +1322,6 @@ func _roof_snow_lip(batch: StaticBatch, roof_basis: Basis, origin: Vector3, cent
 
 
 ## 房子裝飾用的位置雜湊（0～1，不動 _rng）。
-## 白天的窗（D-170）：晚上亮的窗只留 DAY_LIT_KEEP 的比例（位置雜湊，不動 _rng，整個鎮的配置不變）。
-func _day_window(lit_at_night: bool, pos: Vector3) -> bool:
-	if not day or not lit_at_night:
-		return lit_at_night
-	if _house_hash(pos, 5.3) < DAY_LIT_KEEP:
-		return true
-	day_unlit_windows += 1
-	return false
 
 
 static func _house_hash(p: Vector3, salt: float) -> float:
@@ -1804,7 +1670,7 @@ func _build_bell_tower(pos: Vector3) -> void:
 	# 塔門與塔窗的暖光
 	_batch.add_box_at(Vector3(1.4, 2.4, 0.1), pos + Vector3(0, 1.2, 2.52), look.glow(FrostbridgeLook.LAMP, 2.5), false)
 	var tower_window: Vector3 = pos + Vector3(0, 9.5, 2.52)
-	var tower_tint: Color = FrostbridgeLook.window_tint(_day_window(true, tower_window), tower_window, 4.0)
+	var tower_tint: Color = FrostbridgeLook.window_tint(true, tower_window, 4.0)
 	tower_tint.b = 0.0  # 塔窗不拉窗簾
 	_batch.add_box_tinted(Vector3(1.0, 1.6, 0.1), tower_window, look.window(), tower_tint)
 	window_count += 1
@@ -1989,9 +1855,9 @@ func _build_pear_stall(pos: Vector3) -> void:
 	var pear := look.mat(Color(0.78, 0.66, 0.3), 0.6)
 	for i: int in 6:
 		_batch.add_sphere(0.09, pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15), pear)
-	# 攤子後面的艾妲（剪影）；白天她站到地窖門口（Puppet，_build_day），攤子後面空著。
+	# 攤子後面的艾妲（剪影）。
 	# 新版（D-210）艾妲是站在攤子前的人偶（RebootOpening._build_ada），不放剪影
-	if not day and not Game.session.is_reboot():
+	if not Game.session.is_reboot():
 		var cloak := look.mat(Color(0.12, 0.12, 0.14))
 		_batch.add_cylinder(0.05, 0.32, 1.55, pos + Vector3(0.3, 0.78, -0.75), cloak, false, 12)
 		_batch.add_sphere(0.15, pos + Vector3(0.3, 1.62, -0.75), cloak)

@@ -22,39 +22,9 @@ const LEVELS: Dictionary = {
 	"frostbridge": "res://scenes/levels/frostbridge.tscn",
 	"sandbox": "res://scenes/dev/sandbox.tscn",
 	"benchmark": "res://scenes/bench/benchmark.tscn",
-	"tavern": "res://scenes/levels/tavern.tscn",
-	"stairs": "res://scenes/levels/stairs.tscn",
-	"daylight": "res://scenes/levels/daylight.tscn",
-	"bell_hall": "res://scenes/levels/bell_hall.tscn",
-	"canal": "res://scenes/levels/canal.tscn",
 }
 ## 檢查點 -> 關卡 id（沒列的都在霜橋鎮）
 const CHECKPOINT_LEVELS: Dictionary = {
-	"ch1_tavern": "tavern",
-	"ch1_dinner": "tavern",
-	"ch1_map_done": "tavern",
-	# 段落 4：白天的霜橋鎮（D-151）；拿到油燈之後是一百七十二階（D-152）
-	"ch1_day_town": "frostbridge",
-	"ch1_lamp": "stairs",
-	"ch1_stairs_bottom": "stairs",
-	# 段落 7：沒有影子的城（D-154）
-	"ch1_daylight": "daylight",
-	# 段落 8：柯德家的晚餐吃完（D-155，屋內也在 daylight 關卡裡）
-	"ch1_after_dinner": "daylight",
-	# 第 2 章：城主的飯桌（D-157，鐘院另開關卡）
-	"ch2_start": "bell_hall",
-	"ch2_volunteer": "bell_hall",
-	"ch2_inner": "bell_hall",
-	"ch2_carvings": "bell_hall",
-	# 第 3 章：乾運河（D-163）
-	"ch3_start": "canal",
-	"ch3_bank": "canal",
-	"ch3_rhythm": "canal",
-	"ch3_decoy": "canal",
-	"ch3_lured": "canal",
-	"ch3_pinned": "canal",
-	"ch3_clapper": "canal",
-	"ch3_map": "canal",
 	# 新版前十分鐘（劇情重寫，D-204）：都在霜橋鎮
 	"rb_start": "frostbridge",
 	"rb_before_mist": "frostbridge",
@@ -108,12 +78,6 @@ func _ready() -> void:
 	# 截圖用：`-- --level=frostbridge --achievement=ACH_NINE_SECONDS` 一開始就出現那張解鎖小卡（不會真的解鎖）
 	if args.has("achievement"):
 		achievement_toast.enqueue(str(args["achievement"]))
-	# 截圖用：`-- --level=frostbridge --chapter-card` 關卡上蓋第 1 章的章節卡（播完不換關卡）
-	if args.has("chapter-card"):
-		get_tree().create_timer(0.2).timeout.connect(func() -> void:
-			var scene: Node = get_tree().current_scene
-			if scene != null:
-				ChapterCard.play(scene, "CH1_CARD_NUMBER", "CH1_CARD_TITLE", Callable()).hold_still())
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
 		level = "benchmark"
