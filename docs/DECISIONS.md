@@ -2,6 +2,29 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-231　2026-11-12　彌夏的藥店可以走進去：店蓋在門面後面（不換場景、不黑一下）；測試板是「按住互動 2 秒」，回饋做在板子上；這一段做完自動存檔
+
+- 決策：
+  1. **店內蓋在門面後面，門開著、直接走進去**（不做「門口按互動 → 黑一下 → 換到別處的房間」）。門面的牆在門洞那裡斷成三塊（門西、門東、門楣以上），門板整個推到底貼在店裡的牆上。房間 9.2 × 5.2 m、高 3.4 m（`SHOP_INNER_Z`～`SHOP_ROOM_S`、`SHOP_ROOM_HALF`、`SHOP_ROOM_H`），自己的牆、天花板與地板——洞的岩盤只到 `CAVE_S`，後面那一段補一塊一樣高的碰撞；**`CAVE_S` 不動**（動了街面與岩壁的盒子都會變，`60`～`62` 的基準全部要重拍）。
+  2. **店裡的東西全部寫死位置、用位置雜湊決定大小與顏色（`_hash01`），不抽 `_rng`**：櫃台（`COUNTER_*`）、南牆三層藥架（八十瓶上下：綠的發光最多、幾瓶琥珀色、深色的空瓶）、西牆抽屜櫃（4×6 格、銅鈕）、東牆蒸餾台（銅壺＋三顆發光的大燒瓶）、樑上倒掛的藥草、櫃台上的研缽與帳本。
+  3. **店裡的燈都不投影、彩色的還是只有綠**：櫃台上方一盞暖色吊燈、抽屜櫃頂一盞小燈、藥架與蒸餾台各一團綠光（顏色就是 `SHOP_GREEN`，「彩色的燈只有三種」不變；投影的大燈上限不變）。
+  4. **測試板與彌夏不放在門的正對面**（`BOARD_POS` x＝0.7、`MISHA_POS` x＝0.05；門在 x＝-1.7）。
+  5. **測試板＝按住互動鍵 2 秒（`BOARD_HOLD_SEC`），放開或走開就歸零**；累計寫在 `UndergroundMarketStory._tick_test_board()`，提示走現成的 `interact_prompts`（`interact_hint()` 回傳 `progress` 0～1，HUD 本來就會畫進度條）。**回饋做在板子上**：按著的時候指針慢慢往紅色（受傷）偏——板子在下毒，照理說該往那邊走；按滿之後指針甩到綠色（回復）、板上的綠燈亮（`set_board_progress()`／`set_board_healing()`，`_animate_board()` 追上去、到位後微微抖）。
+  6. **測試板的毒是資料表裡的來源 `test_board`（中毒、1／秒、6 秒）**，走 `StatusEffects.apply_source()`：同一來源不疊加、反轉欄位照舊。
+  7. **生命是滿的才扎針（直接傷害 3 點，`NEEDLE_PRICK`），而且彌夏會先說**：開口前記下 `rb2.full_health`，`rb2_misha_meet` 最後一句用 `text_if` 換成有「我先扎一針」的版本，對話結束才真的扣。
+  8. **指針甩過去之後等 3 秒（`BOARD_READ_SEC`）彌夏才開口**（`rb2_misha_deal`）→ `rb2.first_shop_done` → 任務 `rb_market` 做完 →「待續／黑市示範場」（`RB2_END2_TITLE`；`RB2_END_TITLE`「彌夏的藥店」拿掉）。
+  9. **兩條主線任務做完都自動存檔**（`GameSession._on_quest_completed`：`quest_id in MAIN_QUESTS`，以前只有 `rb_main`）。做完之後讀檔：回到藥店前幾步（檢查點還是 `rb2_shop`），不會一讀檔就黑掉；走進店裡到櫃台前才再看到「待續」，彌夏不會從頭再講。
+  10. 任務 `test_board` 階段的標記從門口（`MishaShopDoor`）改成測試板（`MishaTestBoard`）；目標文字改成「走進藥店，把手放到測試板上」。固定鏡頭多一個 `63-rb2-board`（`--rb-at=board`：講過話、站在測試板東邊半步）；`--rb-at=board_read`＝手放過了（本機看燈與指針用，CI 不拍）。
+- 理由：
+  - 1：地下市場是招牌場景，從街上隔著開著的門就看得到店裡一排發光的瓶子，比一扇關著的門有吸引力；直接走進去也不用另外做轉場與鏡頭處理。店只有 5 m 深，鏡頭的彈簧臂會自己縮短，站在櫃台前剛好是過肩看彌夏的距離。
+  - 4：第一版把測試板放在門的正對面（x＝-1.2），人站在板子前、鏡頭在他右後方——剛好卡在門框與往裡開的門板後面，畫面左半邊是黑的、彌夏與板子都看不到（亮度 6.6、死黑 67%）。板子往東移 1.9 m、門板改成貼牆之後亮度 47、死黑 0.1%。
+  - 5：設計稿寫「按住互動 2 秒」。現成沒有「按住」的互動元件，但提示列本來就支援進度條，所以只要自己累計秒數；不為一個互動新做一套 HUD。指針先往紅色偏再甩到綠色，是把彌夏的預期（「指針往紅色那邊跑，你付解藥錢然後回家」）做成看得到的東西。
+  - 7：滿血時中毒回血補不到東西，生命條與身上的綠色光點都不會出現（D-213）。不說一聲就扣 3 點，玩家會以為被攻擊。
+  - 8：馬上開口的話，對話框會蓋住剛開始往上的生命條；3 秒可以回 3 點，看得到綠色段。
+  - 9：以前只有前十分鐘做完會存。這一段談完如果不存，「繼續」會回到進店之前，整段對話與測試板要重做一次。
+- 影響：`underground_market.gd`（`_build_shop()` 門面斷開、`_build_shop_interior()`、`_bottle()`、`_build_test_board()`、`_animate_board()`、`set_board_*()`、`misha`、`test_board`、`shop_bottle_count`）、`underground_market_story.gd`（`_tick_test_board()`、`at_counter()`、`board_ready()`、`interact_hint()`、`dev_advance` 的 `board`／`board_read`、`SPAWNS["dev_board"]`、旗標 `rb2.full_health`／`rb2.misha_met`／`rb2.pricked`／`rb2.board_done`／`rb2.first_shop_done`／`rb2.dev_spawn`）、`game_session.gd`、`data/reboot/statuses.json`、`data/quests/rb_market.json`、`data/dialogue/rb2_misha_meet.json`／`rb2_misha_deal.json`、`i18n/reboot.csv`（`SPK_MISHA`、`RB2_BOARD_HINT`、`RB2_END2_TITLE`、`DLG_RB2_MISHA_*` 十句）、測試（`test_story_market_level.gd` 多一個場景測試、流程與讀檔的測試改寫；`test_story_playthrough.gd` 的結尾延到店內；共 314 個）、`scripts/shots/rb_market_level.txt` 與 `ci.yml`（`63-rb2-board`）、README、`playtest.md`、`design/10`、`06-terminology.md`。
+- **沒有驗證過的**：真人玩的時候席菈跟不跟得進門、會不會擋在門口或鏡頭前（測試裡她是停住的；截圖用的站位是寫死的）；扎針那一下諾恩的受擊反應看起來合不合理；店裡的亮度在一般螢幕上夠不夠（只看過軟體渲染的截圖）。都請 Jacky 看了（FOR_JACKY 第 2 項）。
+
 ## D-230　2026-11-12　地下市場的第一眼補完：高台西半邊有人有燈、藥店門面整片綠玻璃（遠看用顏色變濃補償）、店前的紙燈籠換成綠的；市場有自己的底噪
 
 - 決策：
