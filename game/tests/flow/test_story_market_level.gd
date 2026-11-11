@@ -115,6 +115,36 @@ func test_market_is_built_terrace_ramp_street_and_green_shop() -> void:
 	assert_not_null(level.shop_light, "藥店窗前的綠光")
 	assert_true(level.shop_light.light_color.g > level.shop_light.light_color.r, "是綠的")
 	assert_true(level.shop_light.position.z > UndergroundMarket.SHOP_Z - 3.0, "在街底")
+	# D-229：綠光只照亮窗前幾步（遠看的綠靠窗的發光與霧），站在門口畫面不會整個被染綠
+	assert_true(level.shop_light.light_energy <= 3.0 and level.shop_light.omni_range <= 9.0, "綠光不照亮半條街（%.1f／%.1f m）" % [level.shop_light.light_energy, level.shop_light.omni_range])
+	# D-229：岩壁是不規則的岩面（不是砌的石塊牆）；布棚上面有幾盞掛燈照出岩面，高台門架旁有一盞燈
+	var rock_found: bool = false
+	for mi: Node in level.get_node("Market").find_children("*", "MeshInstance3D", true, false):
+		var m: ShaderMaterial = (mi as MeshInstance3D).material_override as ShaderMaterial
+		if m != null and m.shader != null and m.shader.resource_path.ends_with("cave_rock.gdshader"):
+			rock_found = true
+	assert_true(rock_found, "合併的場景裡有岩面材質")
+	var wall_lamps: int = 0
+	for c: Node in level.get_children():
+		var wl: OmniLight3D = c as OmniLight3D
+		if wl == null or not String(wl.name).begins_with("WallLamp"):
+			continue
+		wall_lamps += 1
+		assert_true(wl.position.y > UndergroundMarket.AWNING_BACK_Y.y + 0.8, "掛燈在布棚上面（%.1f m）" % wl.position.y)
+		assert_true(absf(wl.position.x) > UndergroundMarket.WALL_X - 1.0, "貼著岩壁")
+		assert_false(wl.shadow_enabled, "不投影")
+	assert_eq(wall_lamps, UndergroundMarket.WALL_LAMPS.size(), "岩壁上的掛燈")
+	assert_not_null(level.get_node_or_null("GatePostLamp"), "高台門架旁的燈")
+	# 高台上卸下來的貨不擋路：從貨梯走到坡道口是直的
+	_stand(level, Vector3(0.0, 0.0, -6.0))
+	player.yaw = PI
+	await _frames(10)
+	var from_z: float = player.global_position.z
+	Input.action_press("move_forward")
+	await _frames(90)
+	Input.action_release("move_forward")
+	await _frames(5)
+	assert_true(player.global_position.z > from_z + 2.0, "從貨梯往坡道口走得過去（z %.1f → %.1f）" % [from_z, player.global_position.z])
 	# 任務標記的兩個點
 	assert_not_null(level.get_node_or_null("MarketStreetTop"))
 	var door: Node3D = level.get_node_or_null("MishaShopDoor") as Node3D
@@ -141,6 +171,21 @@ func test_awning_sags_and_hangs_a_scalloped_edge() -> void:
 		lowest = minf(lowest, v.y)
 	assert_true(lowest < 2.3 - 0.25, "前緣有一條垂下來的波浪邊（最低 %.2f）" % lowest)
 	assert_true((mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_TEX_UV) != 0, "有 UV（條紋）")
+
+
+## D-229：布棚在頭頂上、不伸到街上——過肩鏡頭（支點 1.6 m、鏡頭約 2 m 高）走在街上不會被一片布擋住。
+func test_awnings_stay_above_the_camera_and_off_the_street() -> void:
+	assert_true(UndergroundMarket.AWNING_FRONT_OUT.x >= 0.0, "前緣不伸到街上")
+	assert_true(UndergroundMarket.AWNING_FRONT_OUT.y <= 0.3, "前緣還蓋得到攤桌外緣")
+	assert_true(UndergroundMarket.AWNING_BACK_Y.x > UndergroundMarket.AWNING_FRONT_Y.y, "靠牆那邊一定比臨街高")
+	# 最低的情況：前緣最低、垂最多（_stall 裡 sag 最大 0.3）
+	var mesh: ArrayMesh = UndergroundMarket.awning_mesh(1.9, 2.3, UndergroundMarket.AWNING_BACK_Y.x, UndergroundMarket.AWNING_FRONT_Y.x, 0.3)
+	var verts: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array
+	var lowest: float = INF
+	for v: Vector3 in verts:
+		lowest = minf(lowest, v.y)
+	assert_true(lowest > PlayerController.CAMERA_HEIGHT + 0.6, "垂邊最低的地方也在鏡頭上面（%.2f m）" % lowest)
+	assert_true(UndergroundMarket.AWNING_FRONT_Y.x - UndergroundMarket.STALL_LAMP_DROP > PlayerController.CAMERA_HEIGHT + 0.4, "攤子的燈不掛在鏡頭的高度")
 
 
 func test_arrive_street_shop_then_to_be_continued() -> void:

@@ -5,7 +5,8 @@ extends StoryLevel
 ## 這個檔只蓋場景；劇情（任務 rb_market、檢查點 rb2_*、「待續」）在 UndergroundMarketStory，
 ## `Game.session.in_story()` 時才掛上去。座標：+z 往南；高台在北端。
 ## 光的原則：主光是攤子與繩上的暖色燈籠（多、小、不投影），大燈只有四盞投影；彩色只有三處
-## （街底藥店的綠、詛咒物攤的紫、鐵匠攤的橘紅）；攤子之間留暗處，岩壁比街暗。
+## （街底藥店的綠、詛咒物攤的紫、鐵匠攤的橘紅）；攤子之間留暗處，岩壁比街暗——
+## 岩壁（cave_rock.gdshader）只靠布棚上面幾盞掛燈照出一小圈一小圈。
 
 ## 高台（貨梯在上面）的高度與南北範圍
 const TERRACE_Y: float = 2.4
@@ -49,6 +50,25 @@ const EAST_VENDORS: Array[int] = [0, 4, 6]
 const ROPE_COUNT: int = 13
 const ROPE_Z0: float = 0.6
 const ROPE_STEP: float = 2.8
+## 布棚（D-229）：前緣比攤桌外緣（STREET_HALF＋0.2）再出來一點點、不伸到街上；前緣高過過肩鏡頭
+const AWNING_FRONT_OUT: Vector2 = Vector2(0.0, 0.2)
+const AWNING_FRONT_Y: Vector2 = Vector2(2.75, 3.05)
+const AWNING_BACK_Y: Vector2 = Vector2(3.45, 3.9)
+## 棚子前緣的吊牌（寬、高）
+const TAG_SIZE: Vector2 = Vector2(0.085, 0.12)
+## 攤子的燈：吊在棚子前緣底下多少、多亮
+const STALL_LAMP_DROP: float = 0.6
+const STALL_LAMP_ENERGY: float = 1.5
+## 攤子燈的玻璃多亮（5.0 的時候貼近鏡頭是一塊過曝的白）
+const STALL_LAMP_GLOW: float = 2.4
+## 岩壁上的掛燈（D-229）：[左右, z, 高]——在布棚上面，照出一小圈岩面，畫面兩側與上緣不是一片死黑
+const WALL_LAMPS: Array[Vector3] = [Vector3(1.0, 4.6, 5.3), Vector3(-1.0, 8.2, 5.0), Vector3(1.0, 19.4, 5.2), Vector3(-1.0, 25.0, 5.4)]
+## 藥店窗前的綠光（只照亮窗前幾步）
+const SHOP_GLOW_ENERGY: float = 2.4
+const SHOP_GLOW_RANGE: float = 8.0
+## 街面：大塊的石板（寬，公尺）、有點潮（粗糙度低＝燈在地上有一片柔的反光）
+const STREET_SLAB: float = 0.6
+const STREET_ROUGHNESS: float = 0.4
 ## 燈的顏色
 const LAMP: Color = Color(1.0, 0.74, 0.46)
 const LAMP_DEEP: Color = Color(1.0, 0.5, 0.22)
@@ -71,6 +91,7 @@ const CLOTH_STACK_COLORS: Array[Color] = [
 const REFLECT_LAYER: int = 1 << 10
 const AWNING_SHADER: String = "res://src/world/awning_cloth.gdshader"
 const LANTERN_SHADER: String = "res://src/world/paper_lantern.gdshader"
+const ROCK_SHADER: String = "res://src/world/cave_rock.gdshader"
 
 var look := FrostbridgeLook.new()
 var interior := InteriorLook.new()
@@ -110,6 +131,7 @@ func _ready() -> void:
 	_build_stalls()
 	_build_ropes()
 	_build_shop()
+	_build_wall_lamps()
 	var market: Node3D = _batch.build(self, "Market")
 	_build_paper_lanterns()
 	_build_probes(market)
@@ -199,7 +221,10 @@ static func build_environment(parent: Node3D) -> Environment:
 
 
 func _make_materials() -> void:
-	_rock = interior.wall("cave", Color(0.15, 0.145, 0.14), Color(0.15, 0.145, 0.14), 99.0, {"block_scale": 2.6})
+	# 岩面（D-229）：不規則的大塊岩石，不是砌的石塊牆
+	var rock := ShaderMaterial.new()
+	rock.shader = load(ROCK_SHADER) as Shader
+	_rock = rock
 	_timber = interior.timber(Color(0.2, 0.14, 0.095))
 	_plank = interior.plank("ramp", Color(0.27, 0.19, 0.125), 0.24, 2.4, {"along_z": true, "wear": 0.5})
 	_iron = look.mat(Color(0.07, 0.07, 0.08), 0.5)
@@ -221,24 +246,17 @@ func _make_materials() -> void:
 		_cloths.append(m)
 
 
-## 濕石板（沒有雪）
-func _wet_floor() -> ShaderMaterial:
-	var m: ShaderMaterial = look.wet_ground(Color(0.23, 0.21, 0.19), 0.5, 0.5)
-	m.set_shader_parameter("snow_amount", 0.0)
-	m.set_shader_parameter("gap_color", Color(0.05, 0.045, 0.04))
-	m.set_shader_parameter("grime_color", Color(0.2, 0.17, 0.14))
-	return m
-
-
 # ---------------------------------------------------------------- 岩洞、高台、坡道
 
 func _build_cave() -> void:
 	var z_n: float = TERRACE_N - 1.0
 	var length: float = CAVE_S - z_n
 	var mid_z: float = (CAVE_S + z_n) * 0.5
-	# 地面：岩盤＋一層濕石板
+	# 地面：岩盤＋一層石板
 	_batch.add_box_at(Vector3(WALL_X * 2.0 + 2.0, 1.0, length), Vector3(0.0, -0.5, mid_z), _rock)
-	_batch.add_box_at(Vector3(WALL_X * 2.0, 0.02, CAVE_S - TERRACE_S), Vector3(0.0, 0.01, (CAVE_S + TERRACE_S) * 0.5), _wet_floor(), false)
+	# 街面是大塊石板（D-229）：以前是小塊的濕石板，每一塊的邊都在反光、縫很黑，整條街的地板比攤子還搶
+	var street: ShaderMaterial = interior.flagstone("street", Color(0.215, 0.195, 0.175), STREET_SLAB, {"base_roughness": STREET_ROUGHNESS, "seam_dark": 0.5})
+	_batch.add_box_at(Vector3(WALL_X * 2.0, 0.02, CAVE_S - TERRACE_S), Vector3(0.0, 0.01, (CAVE_S + TERRACE_S) * 0.5), street, false)
 	# 兩側岩壁、北牆、洞頂
 	for side: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(1.0, CEILING_Y, length), Vector3(side * (WALL_X + 0.5), CEILING_Y * 0.5, mid_z), _rock)
@@ -267,6 +285,20 @@ func _build_terrace() -> void:
 		_banner(Vector3(side * 1.5, gate_y - 0.13, gate_z + 0.16), 0.6, 1.0, _cloths[0 if side < 0.0 else 2])
 	_batch.add_box_at(Vector3(5.0, 0.3, 0.3), Vector3(0.0, gate_y + 0.02, gate_z), _timber, false)
 	_batch.add_box_at(Vector3(5.5, 0.12, 0.42), Vector3(0.0, gate_y + 0.23, gate_z), _timber, false)
+	# 門架右柱外側掛一盞小燈，底下是剛從貨梯卸下來的貨（D-229：高台右半邊以前是空的、全黑）
+	# 位置都是寫死的，不用 _rng（多抽一次，後面攤子的配置全部會變）
+	var post_lamp := Vector3(2.4, TERRACE_Y + 2.15, gate_z - 0.05)
+	_box_lantern(post_lamp, 0.15, LAMP, 2.4)
+	_light("GatePostLamp", post_lamp + Vector3(0.25, -0.1, -0.2), LAMP, 1.1, 5.5, false, 0.6)
+	var crates: ShaderMaterial = look.door()
+	for spec: Array in [
+		[Vector3(3.05, 0.4, gate_z - 0.5), 0.8], [Vector3(3.85, 0.31, gate_z - 0.62), 0.62],
+		[Vector3(3.1, 1.07, gate_z - 0.55), 0.54], [Vector3(4.55, 0.36, gate_z - 0.45), 0.72],
+	]:
+		var size: float = float(spec[1])
+		var at: Vector3 = (spec[0] as Vector3) + Vector3(0.0, TERRACE_Y, 0.0)
+		_batch.add_box_tinted(Vector3(size, size, size), at, crates, FrostbridgeLook.crate_tint(at), true)
+	_barrel(Vector3(2.55, TERRACE_Y, gate_z - 1.15))
 
 
 ## 木欄杆：a → b（腳的位置，可以一高一低＝沿著坡道）。每 1.1 m 一根柱子、兩道橫木；整段一個碰撞盒。
@@ -464,16 +496,19 @@ func _stall(z: float, side: float, kind: int, cloth: int, vendor: bool) -> void:
 	stall_count += 1
 	var half_len: float = _rng.randf_range(1.5, 1.75)
 	var back_x: float = WALL_X - 0.55
-	var front_x: float = STREET_HALF - _rng.randf_range(0.35, 0.7)  # 棚子前緣伸到街上
-	var back_y: float = _rng.randf_range(2.9, 3.4)
-	var front_y: float = _rng.randf_range(2.15, 2.45)
+	# 棚子前緣停在攤桌外緣上方、高過頭頂（D-229）：伸到街上、只有 2.2 m 高的時候，
+	# 過肩鏡頭（約 2 m 高）走在街上右邊三分之一都是貼著鏡頭的一片布
+	var front_x: float = STREET_HALF + _rng.randf_range(AWNING_FRONT_OUT.x, AWNING_FRONT_OUT.y)
+	var back_y: float = _rng.randf_range(AWNING_BACK_Y.x, AWNING_BACK_Y.y)
+	var front_y: float = _rng.randf_range(AWNING_FRONT_Y.x, AWNING_FRONT_Y.y)
 	# 攤桌（木箱板）＋桌上鋪的一塊布
 	var table := Vector3(side * (STREET_HALF + 0.75), 0.45, z)
 	_batch.add_box_tinted(Vector3(1.1, 0.9, half_len * 2.0 - 0.5), table, crates, FrostbridgeLook.crate_tint(table), true)
 	_batch.add_box_at(Vector3(1.16, 0.03, half_len * 2.0 - 0.9), table + Vector3(0.0, 0.465, 0.0), look.mat(Color(0.3, 0.24, 0.18), 0.95), false)
 	# 後面的板牆
 	var back_wall: ShaderMaterial = interior.plank("stall_back", Color(0.19, 0.135, 0.09), 0.22, 2.2, {"vertical_planks": true})
-	_batch.add_box_at(Vector3(0.08, 2.6, half_len * 2.0), Vector3(side * (back_x + 0.1), 1.3, z), back_wall, false)
+	var back_h: float = back_y - 0.35
+	_batch.add_box_at(Vector3(0.08, back_h, half_len * 2.0), Vector3(side * (back_x + 0.1), back_h * 0.5, z), back_wall, false)
 	# 四根竿子
 	for sz: float in [-1.0, 1.0]:
 		_batch.add_box_at(Vector3(0.08, front_y, 0.08), Vector3(side * (STREET_HALF + 0.12), front_y * 0.5, z + sz * half_len), _timber, false)
@@ -492,16 +527,17 @@ func _stall(z: float, side: float, kind: int, cloth: int, vendor: bool) -> void:
 		var drop: float = _rng.randf_range(0.12, 0.3)
 		_rod(top, top - Vector3(0.0, drop, 0.0), 0.004, _rope, 4)
 		var tag_basis := Basis.from_euler(Vector3(0.0, _rng.randf_range(-0.5, 0.5), _rng.randf_range(-0.12, 0.12)))
-		_batch.add_box(Vector3(0.012, 0.19, 0.13), Transform3D(tag_basis, top - Vector3(0.0, drop + 0.095, 0.0)), _paper_tag, false)
+		_batch.add_box(Vector3(0.008, TAG_SIZE.y, TAG_SIZE.x), Transform3D(tag_basis, top - Vector3(0.0, drop + TAG_SIZE.y * 0.5, 0.0)), _paper_tag, false)
 	# 棚下的燈
 	var lamp_color: Color = LAMP
-	var lamp_energy: float = 1.8
+	var lamp_energy: float = STALL_LAMP_ENERGY
 	if kind == KIND_CURSED:
 		lamp_color = CURSE_PURPLE
 		lamp_energy = 2.2
-	var lamp_at := Vector3(side * (STREET_HALF + 0.35), front_y - 0.42, z + _rng.randf_range(-0.6, 0.6))
-	_rod(lamp_at + Vector3(0.0, 0.42, 0.0), lamp_at + Vector3(0.0, 0.15, 0.0), 0.008, _iron, 4)
-	_box_lantern(lamp_at, 0.17, lamp_color, 5.0)
+	# 燈吊在棚子底下、桌面上方（棚子抬高了，燈不跟著上去：貨要照得到）
+	var lamp_at := Vector3(side * (STREET_HALF + 0.8), front_y - STALL_LAMP_DROP, z + _rng.randf_range(-0.6, 0.6))
+	_rod(lamp_at + Vector3(0.0, STALL_LAMP_DROP - 0.1, 0.0), lamp_at + Vector3(0.0, 0.15, 0.0), 0.008, _iron, 4)
+	_box_lantern(lamp_at, 0.17, lamp_color, STALL_LAMP_GLOW)
 	_light("StallLamp", lamp_at + Vector3(-side * 0.15, -0.2, 0.0), lamp_color, lamp_energy, 5.2, false, 1.0)
 	_goods(kind, table + Vector3(0.0, 0.48, 0.0), half_len - 0.45, side, front_x, front_y)
 	if vendor:
@@ -606,6 +642,18 @@ func _goods(kind: int, top: Vector3, half: float, side: float, front_x: float, f
 				else:
 					var s: float = _rng.randf_range(0.18, 0.3)
 					_batch.add_box_tinted(Vector3(s, s * 0.7, s), p + Vector3(0.0, s * 0.35, 0.0), look.door(), FrostbridgeLook.crate_tint(p), false)
+
+
+## 岩壁上的掛燈：鐵架伸出來、吊一盞小燈；燈光貼著岩面（看得出一塊塊岩石的起伏）。
+func _build_wall_lamps() -> void:
+	for spec: Vector3 in WALL_LAMPS:
+		var side: float = spec.x
+		var root := Vector3(side * WALL_X, spec.z + 0.35, spec.y)
+		var at := Vector3(side * (WALL_X - 0.55), spec.z, spec.y)
+		_rod(root, Vector3(at.x, root.y, at.z), 0.02, _iron)
+		_rod(Vector3(at.x, root.y, at.z), at + Vector3(0.0, 0.14, 0.0), 0.01, _iron, 4)
+		_box_lantern(at, 0.16, LAMP_DEEP, 3.0)
+		_light("WallLamp", at + Vector3(-side * 0.1, -0.05, 0.0), LAMP_DEEP, 1.25, 7.0, false, 0.7)
 
 
 ## 鍋子的蒸氣：常駐、慢慢往上、暖色很淡。
@@ -784,7 +832,8 @@ func _build_shop() -> void:
 	# 門邊一盞暖燈；窗前的綠光（進霧：街底一團綠色的光暈）
 	_box_lantern(Vector3(SHOP_DOOR.x - 0.85, 2.3, face_z - 0.3), 0.18, LAMP, 5.0)
 	_light("ShopDoorLamp", Vector3(SHOP_DOOR.x - 0.7, 2.2, face_z - 0.6), LAMP, 1.3, 5.0, false, 0.8)
-	shop_light = _light("ShopGlow", Vector3(1.75, 2.1, face_z - 1.3), SHOP_GREEN, 4.5, 12.0, false, 3.0)
+	# 遠看的綠靠窗本身的發光與霧裡的光暈；這盞燈只照亮窗前幾步（D-229：以前 4.5／12 m，站在門口整個畫面都是綠的）
+	shop_light = _light("ShopGlow", Vector3(1.75, 2.1, face_z - 1.3), SHOP_GREEN, SHOP_GLOW_ENERGY, SHOP_GLOW_RANGE, false, 4.5)
 	var door_marker := Marker3D.new()
 	door_marker.name = "MishaShopDoor"
 	door_marker.position = SHOP_DOOR + Vector3(0.0, 1.0, 0.0)
@@ -860,7 +909,7 @@ func _beam(a: Vector3, b: Vector3, thick: float, mat: Material) -> void:
 	_batch.add_box(Vector3(thick, d.length(), thick), Transform3D(_basis_y_along(d), (a + b) * 0.5), mat, false)
 
 
-## 濕石板上的倒影：街一個、高台與坡道一個（只拍一次；只拍合併的場景與紙燈籠）。
+## 街面石板上的倒影：街的北半、南半各一個（只拍一次；只拍合併的場景與紙燈籠）。
 func _build_probes(market: Node3D) -> void:
 	for c: Node in market.get_children():
 		var mi: MeshInstance3D = c as MeshInstance3D
