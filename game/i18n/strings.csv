@@ -1,10 +1,7 @@
 keys,en,zh_TW
 GAME_TITLE,Yuming City,餘命城
-GAME_SUBTITLE,The Ninth Bell of Frostbridge,霜橋鎮的第九聲鐘
 MENU_NEW_GAME,New Game,新遊戲
 MENU_CONTINUE,Continue,繼續
-MENU_CLASSIC,Classic version,舊版
-MENU_CLASSIC_NOTE,The earlier story. No longer updated; old saves still load.,之前的劇情。不再更新，舊存檔照樣能讀
 MENU_SETTINGS,Settings,設定
 MENU_QUIT,Quit,離開
 MENU_LANGUAGE,Language,語言

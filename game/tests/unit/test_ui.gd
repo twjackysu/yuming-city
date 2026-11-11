@@ -205,7 +205,7 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	var title_i: int = menu.get_node("Title").get_index()
 	assert_eq(menu.get_child(title_i + 1).name, &"Rule", "標題下面一條細線")
 	assert_eq(menu.get_child(0).name, &"Chapter", "標題上面一行章節名（D-093）")
-	assert_eq((menu.get_child(0) as Label).text, "GAME_SUBTITLE")
+	assert_eq((menu.get_child(0) as Label).text, "RB_GAME_SUBTITLE")
 	assert_true(pause.hint_text().length() > 3 and not pause.hint_text().contains("{key}"), "左下角有按鍵提示（%s）" % pause.hint_text())
 	if Game.session != null and Game.session.objective_key() != "":
 		assert_eq(pause.objective_text(), Game.session.objective_key(), "左下角寫著目前目標")

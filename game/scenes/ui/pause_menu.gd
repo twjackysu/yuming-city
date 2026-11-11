@@ -158,10 +158,10 @@ func _build() -> void:
 	_menu.add_theme_constant_override("separation", 10)
 	_root.add_child(_menu)
 
-	# 標題上方一行小字：章節名（霜橋鎮的第九聲鐘），淡藍灰、字距拉開
+	# 標題上方一行小字：劇情的名字（這些詛咒對我太有用了，D-220），淡藍灰、字距拉開
 	var chapter := Label.new()
 	chapter.name = "Chapter"
-	chapter.text = "GAME_SUBTITLE"
+	chapter.text = "RB_GAME_SUBTITLE"
 	chapter.add_theme_font_size_override("font_size", 18)
 	chapter.add_theme_color_override("font_color", Color(0.62, 0.68, 0.78, 0.85))
 	_menu.add_child(chapter)

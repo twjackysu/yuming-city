@@ -249,8 +249,6 @@ jobs:
           # 前十分鐘的最後一段（D-210）：梨攤前的艾妲（帳本、攤燈）／艾妲講完，站在貨梯前（吊架、貨板、柱上的燈）
           shot 51-rb-market 40 --level=frostbridge --rb-at=market --locale=zh_TW
           shot 52-rb-lift 40 --level=frostbridge --rb-at=lift --locale=zh_TW
-          # 標題畫面「舊版」那一頁（D-211）：舊版的新遊戲／繼續／返回
-          shot 53-title-classic 20 --open=classic --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"
