@@ -1,6 +1,8 @@
 # 10. 第二段：地下市場與彌夏的藥店（草稿）
 
-> 第 73 輪收尾時寫的一頁草稿，還沒有任何程式。動手的那一輪先讀 `docs/story-reboot/story-v2.md`「第二章：藥店最不受歡迎的客人」與 `claude-handoff.md`，數值與站位可以改，改了回來更新這一頁。
+> **第 82 輪做好的（D-228）**：關卡 `market`（`scenes/levels/underground_market.gd`＝場景、`underground_market_story.gd`＝劇情）、任務 `rb_market` 三個階段都寫進資料了，前兩個能玩：貨梯下來（`rb2_arrive`）→ 走下坡道到街上、席菈說規矩（`rb2_street`）→ 走到藥店門口（`rb2_shop`）→ **現在在這裡「待續／彌夏的藥店」**。`test_board`（彌夏、測試板、店內）還沒做：做的時候把 `UndergroundMarketStory._physics_process` 的 `"test_board"` 那一支換成進店的流程，「待續」移到 `rb2.first_shop_done` 之後。
+> **跟下面草稿不一樣的地方**：街長 28 m（不是 40 m：從高台看，街底的綠窗要夠大）；高台到街上是**木坡道**（寬 3.2 m、長 9 m）；最北邊兩排攤子在坡道兩旁、高台底下（從高台往下看的前景）；固定鏡頭 `60`＝出生點那一眼（不另外擺位置），`61` 街口、`62` 藥店門口前，`63` 等店內做了再加；市場的底噪還沒做（現在只有很小聲的風）；吊牌只有掛著的紙片，靠近還不會出字。
+> 動手的那一輪先讀 `docs/story-reboot/story-v2.md`「第二章：藥店最不受歡迎的客人」與 `claude-handoff.md`，數值與站位可以改，改了回來更新這一頁。
 > 前一段（前十分鐘）的規則在 [09](09-reboot-first-ten-minutes.md)：狀態、反轉欄位、藥劑、存檔、UI 都沿用，不重寫。
 
 ## 這一段要做到的事

@@ -1,12 +1,12 @@
 # 餘命城：這些詛咒對我太有用了（暫名）
 
-PC 單機、第三人稱的動作 RPG。主角諾恩的身體會把**負面狀態反過來用**：別人中毒會掉血，他中毒會回血。目前做到「前十分鐘」，可以從標題一路玩到「待續：地下市場」。
+PC 單機、第三人稱的動作 RPG。主角諾恩的身體會把**負面狀態反過來用**：別人中毒會掉血，他中毒會回血。目前做到「前十分鐘」加上地下市場的第一條街，可以從標題一路玩到藥店門口的「待續」。
 
 ## 怎麼開始玩（3 步）
 
 1. 到 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 `YumingCity-windows-x64-*.zip`。
 2. 解壓縮，雙擊 `YumingCity.exe`。
-3. 標題畫面按「**新遊戲**」。約 10 分鐘，玩到畫面出現「待續」就是目前的結尾。
+3. 標題畫面按「**新遊戲**」。約 11 分鐘，玩到畫面出現「待續」就是目前的結尾。
 
 鍵鼠或 Xbox 類手把都可以。不知道往哪走，就跟著畫面上的小菱形＋距離走。
 
@@ -25,7 +25,8 @@ PC 單機、第三人稱的動作 RPG。主角諾恩的身體會把**負面狀�
 | 3 | 南街口 | 霧散了，繼續推車到南街口，席菈從麵包店出來，走到她旁邊 |
 | 4 | 守衛戰 | 和席菈打倒南街的送葬者。牠胸口的管子發綠光＝要噴毒：**毒會讓你回血，爪子和下砸照樣會痛** |
 | 5 | 藥箱 | 牠倒下後背上的箱子摔在旁邊，走近拿兩瓶毒藥，可以隨身帶著喝 |
-| 6 | 梨攤與貨梯 | 回廣場找梨攤前的艾妲 → 站上攤子後面亮著燈的貨梯 → 「待續」 |
+| 6 | 梨攤與貨梯 | 回廣場找梨攤前的艾妲 → 站上攤子後面亮著燈的貨梯 → 下到地下市場 |
+| 7 | 地下市場 | 走下坡道到街上（席菈說這裡的規矩）→ 沿著攤販街走到街底綠色窗戶的藥店 → 「待續」 |
 
 想留感想：寫在 [docs/FOR_JACKY.md](docs/FOR_JACKY.md) 的「回覆」區。更細的試玩說明在 [docs/playtest.md](docs/playtest.md)。
 
@@ -53,7 +54,7 @@ PC 單機、第三人稱的動作 RPG。主角諾恩的身體會把**負面狀�
 | `game/` | Godot 專案（GDScript）。`scenes/` 場景、`src/` 邏輯、`data/` 對話與任務、`i18n/` 翻譯、`tests/` 自動測試 |
 | `docs/story-reboot/` | 劇情：[入口](docs/story-reboot/README.md)、[故事大綱](docs/story-reboot/story-v2.md)、[開場](docs/story-reboot/opening-v2.zh-TW.txt)、[二十種反轉效果](docs/story-reboot/status-reversal.md) |
 | `docs/design/09-reboot-first-ten-minutes.md` | 前十分鐘的規則、數值、進度 |
-| `docs/design/10-reboot-underground-market.md` | 下一段（地下市場）的草稿 |
+| `docs/design/10-reboot-underground-market.md` | 地下市場（第二段）：做好的部分與接下來的規劃 |
 | `docs/design/02-gameplay.md`／`04-architecture.md`／`06-terminology.md` | 操作與戰鬥規則、程式架構與技術規則、用詞 |
 | `docs/NEXT.md`／`docs/PROGRESS.md`／`docs/DECISIONS.md` | 待辦、每一輪做了什麼、決策紀錄 |
 | `docs/FOR_JACKY.md` | 需要 Jacky 看或回覆的事 |

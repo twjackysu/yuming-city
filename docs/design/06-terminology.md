@@ -26,6 +26,10 @@
 | 守衛 | `rb_guardian` | 目標寫「守衛」；名字照舊「送葬者」 | the guardian／Undertaker | 胸口裝噴霧罐的單階段送葬者 |
 | 地下市場 | — | 地下市場 | the underground market | 貨梯下去的市場；不用「地底城」 |
 | 貨梯 | `RbLift` | 貨梯 | the freight lift | 通往地下市場；梨攤後面地窖口上的木吊架 |
+| 吊牌 | — | 吊牌 | the tag | 地下市場每件東西都掛一張，寫著副作用（這裡唯一的規矩）；不寫「標籤」「告示」 |
+| 認證 | — | 認證／沒通過認證 | certification | 地面上的店賣「通過認證」的東西；地下市場賣沒通過的 |
+| 彌夏的藥店 | `MishaShopDoor` | 彌夏的藥店；目標寫「街底那間綠色窗戶的藥店」 | Misha's potion shop | 街底、綠色格子窗、壺形招牌 |
+| 測試板 | — | 測試板 | the test board | 彌夏用來驗證的板子（還沒做）；不寫「檢測儀」「鑑定板」 |
 | 工錢 | `coins`（`RB_WAGES_PAID`） | 工錢 | pay | 雷德欠的那份（艾妲只代付一半）；不寫「欠薪」「薪資」 |
 | 看穿 | `insight` | 看穿 | Insight | 按住顯示已知的弱點與招式 |
 | 灰巡者、送葬者 | `Ashwalker`、`Undertaker` | 灰巡者、送葬者 | Ashwalker、Undertaker | 怪物名字 |
