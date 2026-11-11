@@ -39,7 +39,6 @@ HUD_SAVED,Saved,已存檔
 HUD_DIED,You fell. Returning to the last checkpoint…,你倒下了。回到上一個檢查點……
 HUD_SAVE_FAILED,Save failed,存檔失敗
 HUD_DLG_HINT,{key} Continue · Hold {key} Skip,{key} 繼續・按住 {key} 跳過
-HUD_CUTSCENE_SKIP,Hold {key} to skip,按住 {key} 跳過
 SET_CONTROLS,Controls,按鍵設定
 SET_CONTROLS_OPEN,Customize ›,自訂 ›
 SET_CONTROLS_KBM,Keyboard / Mouse,鍵盤／滑鼠
@@ -110,7 +109,6 @@ SHEILA_ACK_WEAKPOINT,The knee — mine.,膝蓋——交給我。
 SHEILA_ACK_EVADE,Seen it.,看到了。
 SHEILA_ACK_GUARD,I'll hold here.,我守著。
 SHEILA_ACK_UNGUARD,Moving.,我過去。
-SHEILA_HOLD_CONVOY,I've got the wagons.,車隊我守著。
 SHEILA_MISTIMED_WEAKPOINT,Too soon—!,太早了——！
 SHEILA_MISTIMED_EVADE,It hasn't moved yet!,牠還沒出手！
 SHEILA_REFUSE_NO_TARGET,Hit what?,打誰？
@@ -130,9 +128,6 @@ MOVE_SLAM,Frame slam,鐵架下砸
 MOVE_CHARGE,Charge (follows heartbeats),衝撞（追著心跳）
 MOVE_DOUBLE_SLAM,Double slam,連續下砸
 MOVE_GRAB,Grab,抓取
-FRAME_THROW_WARN,The Undertaker raises the iron frame — toward the cart!,送葬者舉起了鐵架——對準車隊！
-FRAME_THROW_ARCH,The arch takes the frame. It holds.,鐵架砸在石拱上。石拱撐住了。
-FRAME_THROW_KINDLING,Sheila's sword catches fire — she cuts the frame in two.,席菈的劍燒了起來——她把鐵架斬成兩截。
 SHEILA_REVIVE_HINT,{key} Pull Sheila up,{key} 拉起席菈
 SHEILA_REVIVED,Still breathing. Thanks.,還有氣。謝了。
 HUD_CMD_WEAKPOINT,Weak point,打弱點
@@ -140,7 +135,4 @@ HUD_CMD_EVADE,Evade,閃開
 HUD_CMD_GUARD,Hold,守住
 HUD_SHEILA_DOWN,Sheila is down — {0}s to pull her up,席菈倒下——{0} 秒內拉起
 HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒下——戰鬥結束後會起來
-CONVOY_START,"The Undertaker blocks South Street. Get the cart through the arch to the crossing.",送葬者擋在南街。護著車隊穿過石拱，送到路口。
-CONVOY_THROUGH,The cart is through the crossing. Sheila's burning blade brings the Undertaker down.,車隊通過了路口。席菈用燃燒的劍把送葬者斬倒。
 HUD_STRUGGLE,Mash {key} to break free ({n}),連按 {key} 掙脫（{n}）
-TUTORIAL_INSIGHT,Hold {insight} to see its weak point · Press {cmd} to have Sheila strike it,按住 {insight} 看穿弱點・按 {cmd} 叫席菈打弱點
