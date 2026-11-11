@@ -134,7 +134,11 @@ void fragment() {
 	vec3 r2 = cross(n, dpx);
 	float det = dot(dpx, r1);
 	vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
-	vec3 wn = normalize(abs(det) * n - grad);
+	// det 剛好是 0（面幾乎側對鏡頭）時 normalize 會算出 NaN：那些像素就用原本的面法線
+	vec3 wn = n;
+	if (abs(det) > 1e-8) {
+		wn = normalize(abs(det) * n - grad);
+	}
 	wn = normalize(wn + (tu * bend.x + tv * bend.y) * 0.5);
 
 	// 顏色：每一塊的深淺 × 顆粒 × 礦物的黃褐；潮濕的地方深、比較亮滑

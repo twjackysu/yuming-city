@@ -14,13 +14,19 @@ uniform float frame_width = 0.085;
 uniform float bar_width = 0.04;
 // 橫的窗櫺在中間偏上（上窗格小、下窗格大）
 uniform float bar_height = 0.42;
+// 遠看的補償（預設都是 0＝不補）：霧很濃的場景裡當視線終點的窗用（地下市場街底的綠窗），一般的窗不要開。
+// 離鏡頭 10 m 以內不變，40 m 以外：發光 ×(1 + far_boost)、顏色變濃（每個分量取 1 + far_saturate 次方）。
+// 只加亮沒有用：暖色的霧加上 tonemap 會把很亮的綠洗成白的，要靠顏色變濃才認得出是綠
+uniform float far_boost = 0.0;
+uniform float far_saturate = 0.0;
 
 void fragment() {
 	vec2 l = fract(UV * vec2(3.0, 2.0));
 	float lit = step(0.5, COLOR.r);
 	float vary = COLOR.g;
 	float curtain = COLOR.b;
-	float energy = COLOR.a * 4.0;
+	float far = smoothstep(10.0, 40.0, length(VERTEX));
+	float energy = COLOR.a * 4.0 * (1.0 + far_boost * far);
 
 	vec2 d = min(l, 1.0 - l);
 	float aa = max(fwidth(l.x), fwidth(l.y)) * 1.2;
@@ -35,6 +41,9 @@ void fragment() {
 	float inner = min(min(d.x, d.y) - frame_width, min(abs(l.x - 0.5), abs(l.y - bar_height)) - bar_width * 0.5);
 	float rim = mix(0.62, 1.0, smoothstep(0.0, 0.07, inner));
 	vec3 warm = mix(glow_color, glow_color * vec3(1.05, 0.84, 0.62), vary);
+	if (far_saturate > 0.0) {
+		warm = pow(warm, vec3(1.0 + far_saturate * far));
+	}
 	vec3 emit = warm * energy * falloff * rim;
 
 	// 窗簾：從左或右拉過來（看 vary），布料透光較暗、偏紅，幾道垂直的褶

@@ -135,6 +135,34 @@ func test_market_is_built_terrace_ramp_street_and_green_shop() -> void:
 		assert_false(wl.shadow_enabled, "不投影")
 	assert_eq(wall_lamps, UndergroundMarket.WALL_LAMPS.size(), "岩壁上的掛燈")
 	assert_not_null(level.get_node_or_null("GatePostLamp"), "高台門架旁的燈")
+	# D-230：高台的西半邊不是空的——欄杆前兩個看街的人（背對貨梯、面向街）、靠牆的行李上一盞提燈、西牆靠高台那一段有掛燈
+	assert_eq(level.watchers.size(), UndergroundMarket.WATCHERS.size(), "高台上看街的人")
+	for w: Puppet in level.watchers:
+		assert_true(w.position.x < -UndergroundMarket.RAMP_HALF - 1.0, "站在西半邊，不擋坡道口（x %.1f）" % w.position.x)
+		assert_true(w.position.z < UndergroundMarket.TERRACE_S - 0.3 and w.position.z > UndergroundMarket.TERRACE_S - 1.5, "站在欄杆後面（z %.1f）" % w.position.z)
+		assert_true(absf(w.position.y - UndergroundMarket.TERRACE_Y) < 0.01, "腳踩在高台上")
+		assert_true(-w.global_transform.basis.z.z > 0.5, "面向街（南）")
+		assert_true(w.hand("R").get_node_or_null("BellHammer") == null, "不拿敲鐘的槌子")
+	var rest_lamp: OmniLight3D = level.get_node_or_null("TerraceRestLamp") as OmniLight3D
+	assert_not_null(rest_lamp, "行李上的提燈")
+	assert_true(rest_lamp.position.x < -3.0 and rest_lamp.position.z < UndergroundMarket.TERRACE_S, "在高台的西半邊")
+	assert_false(rest_lamp.shadow_enabled, "不投影")
+	var west_near: int = 0
+	for spec: Vector3 in UndergroundMarket.WALL_LAMPS:
+		if spec.x < 0.0 and spec.y < 4.0:
+			west_near += 1
+	assert_true(west_near >= 1, "西牆靠高台的那一段有掛燈（從高台看的畫面右邊）")
+	# D-230：藥店的門面幾乎整片是綠色的玻璃（以前 4×3 格約 7.3 平方公尺，從高台看是一個小方塊）
+	assert_true(level.shop_glass_area >= 16.0, "綠窗至少是以前的兩倍大（%.1f 平方公尺）" % level.shop_glass_area)
+	# 藥店前面兩條繩子上的紙燈籠是綠的（其他的照舊是暖色）；綠色不是用燈打的，所以彩色的燈還是只有三種（上面驗過）
+	assert_true(level.shop_paper_count >= 6 and level.shop_paper_count <= 10, "藥店前面的綠燈籠（%d）" % level.shop_paper_count)
+	assert_true(level.shop_paper_count < level.paper_lantern_count / 2, "大部分的紙燈籠還是暖色")
+	# （headless 讀不回 MultiMesh 每一盞的顏色，所以驗「編號 → 顏色」這一步）
+	var shop_paper: Color = UndergroundMarket.paper_color(-1.0)
+	assert_true(shop_paper.g > shop_paper.r and shop_paper.g > shop_paper.b, "藥店前面的是綠的")
+	for i: int in UndergroundMarket.PAPER_COLORS.size():
+		var warm: Color = UndergroundMarket.paper_color(float(i))
+		assert_true(warm.r > warm.g and warm.g > warm.b, "其他的是暖色（%d）" % i)
 	# 高台上卸下來的貨不擋路：從貨梯走到坡道口是直的
 	_stand(level, Vector3(0.0, 0.0, -6.0))
 	player.yaw = PI

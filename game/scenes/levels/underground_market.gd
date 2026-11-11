@@ -62,11 +62,26 @@ const STALL_LAMP_ENERGY: float = 1.5
 ## 攤子燈的玻璃多亮（5.0 的時候貼近鏡頭是一塊過曝的白）
 const STALL_LAMP_GLOW: float = 2.4
 ## 岩壁上的掛燈（D-229）：[左右, z, 高]——在布棚上面，照出一小圈岩面，畫面兩側與上緣不是一片死黑
-const WALL_LAMPS: Array[Vector3] = [Vector3(1.0, 4.6, 5.3), Vector3(-1.0, 8.2, 5.0), Vector3(1.0, 19.4, 5.2), Vector3(-1.0, 25.0, 5.4)]
+const WALL_LAMPS: Array[Vector3] = [Vector3(1.0, 4.6, 5.3), Vector3(-1.0, 1.7, 5.1), Vector3(-1.0, 8.2, 5.0), Vector3(1.0, 19.4, 5.2), Vector3(-1.0, 25.0, 5.4)]
 ## 藥店窗前的綠光（只照亮窗前幾步）
 const SHOP_GLOW_ENERGY: float = 2.4
 const SHOP_GLOW_RANGE: float = 8.0
 ## 街面：大塊的石板（寬，公尺）、有點潮（粗糙度低＝燈在地上有一片柔的反光）
+## 藥店的綠窗（D-230）：門面幾乎整片是玻璃——主窗 4 格寬、東邊窄窗 2 格、門與西半邊上面一排氣窗。
+## 從高台看過去（45 m 外）街底是一整條綠，不是一個小方塊
+const SHOP_PANE_H: float = 0.78
+const SHOP_WINDOW_ROWS: int = 4
+const SHOP_WINDOW_Y0: float = 1.0
+const SHOP_TRANSOM_ROWS: int = 2
+## 高台西側欄杆前看街的兩個人（D-230）：位置、朝向（度；180＝面向南）、身高比例
+const WATCHERS: Array[Array] = [
+	[Vector3(-3.2, 0.0, TERRACE_S - 0.62), 196.0, 1.0],
+	[Vector3(-4.05, 0.0, TERRACE_S - 0.7), 226.0, 0.93],
+]
+## 綠窗遠看的補償（window_glass.gdshader 的 far_boost／far_saturate）：40 m 外發光 ×(1＋BOOST)、顏色變濃；
+## 10 m 以內不變。暖色的蒸氣會把 45 m 外的綠洗成灰黃；從高台看，街底要認得出是那間店
+const SHOP_GLASS_FAR_BOOST: float = 2.0
+const SHOP_GLASS_FAR_SATURATE: float = 2.0
 const STREET_SLAB: float = 0.6
 const STREET_ROUGHNESS: float = 0.4
 ## 燈的顏色
@@ -81,6 +96,9 @@ const FORGE_RED: Color = Color(1.0, 0.36, 0.12)
 const PAPER_COLORS: Array[Color] = [
 	Color(1.0, 0.62, 0.26), Color(1.0, 0.62, 0.26), Color(1.0, 0.44, 0.17), Color(1.0, 0.8, 0.5), Color(0.95, 0.24, 0.13),
 ]
+## 藥店前面的紙燈籠是綠的：離門面這麼近以內的掛燈繩（最後兩條）
+const SHOP_PAPER: Color = Color(0.4, 1.0, 0.55)
+const SHOP_PAPER_REACH: float = 9.0
 ## 地底的穿堂風（很小聲）
 const DRAFT_DB: float = -24.0
 ## 樑下大鐵燈的左右位置（不排成一直線，也不擋住街底的綠窗）
@@ -103,7 +121,13 @@ var shadow_light_count: int = 0
 var stall_count: int = 0
 var awning_count: int = 0
 var paper_lantern_count: int = 0
+## 其中幾盞是藥店前面的綠燈籠
+var shop_paper_count: int = 0
 var vendors: Array[Puppet] = []
+## 高台欄杆前看街的人（不顧攤、不轉頭）
+var watchers: Array[Puppet] = []
+## 藥店門面上發綠光的玻璃一共幾平方公尺（測試用）
+var shop_glass_area: float = 0.0
 var shop_light: OmniLight3D
 var _vendor_home_yaw: Array[float] = []
 var _paper: Array[Vector4] = []  # xyz＝位置、w＝顏色的編號
@@ -299,6 +323,20 @@ func _build_terrace() -> void:
 		var at: Vector3 = (spec[0] as Vector3) + Vector3(0.0, TERRACE_Y, 0.0)
 		_batch.add_box_tinted(Vector3(size, size, size), at, crates, FrostbridgeLook.crate_tint(at), true)
 	_barrel(Vector3(2.55, TERRACE_Y, gate_z - 1.15))
+	# 西半邊（鏡頭朝南時的畫面右邊，D-230：以前整片是黑的）：欄杆前兩個看街的人、靠牆幾箱等貨梯的行李、
+	# 箱子上放一盞提燈。位置一樣寫死，不用 _rng
+	for spec: Array in WATCHERS:
+		_watcher((spec[0] as Vector3) + Vector3(0.0, TERRACE_Y, 0.0), float(spec[1]), float(spec[2]))
+	for spec: Array in [
+		[Vector3(-4.85, 0.36, gate_z - 0.9), 0.72], [Vector3(-4.9, 0.3, gate_z - 1.65), 0.6],
+		[Vector3(-4.15, 0.23, gate_z - 1.4), 0.46],
+	]:
+		var size: float = float(spec[1])
+		var at: Vector3 = (spec[0] as Vector3) + Vector3(0.0, TERRACE_Y, 0.0)
+		_batch.add_box_tinted(Vector3(size, size, size), at, crates, FrostbridgeLook.crate_tint(at), true)
+	var rest_lamp := Vector3(-4.85, TERRACE_Y + 0.83, gate_z - 0.9)
+	_box_lantern(rest_lamp, 0.13, LAMP, 2.6)
+	_light("TerraceRestLamp", rest_lamp + Vector3(0.3, 0.3, 0.1), LAMP, 1.0, 5.0, false, 0.5)
 
 
 ## 木欄杆：a → b（腳的位置，可以一高一低＝沿著坡道）。每 1.1 m 一根柱子、兩道橫木；整段一個碰撞盒。
@@ -709,6 +747,26 @@ func _vendor(at: Vector3, side: float) -> void:
 	_vendor_home_yaw.append(yaw)
 
 
+## 高台欄杆前看街的人：背對貨梯、往下看整條街（不轉頭）。腳邊一個碰撞盒，諾恩不會穿過去。
+func _watcher(at: Vector3, face_deg: float, height: float) -> void:
+	var v := Puppet.new()
+	v.name = "Watcher%d" % watchers.size()
+	var coats: Array[Color] = [Color(0.2, 0.24, 0.3), Color(0.36, 0.2, 0.14)]
+	v.coat_color = coats[watchers.size() % coats.size()]
+	v.trim_color = Color(0.46, 0.4, 0.3)
+	v.position = at
+	v.rotation_degrees.y = face_deg
+	v.scale = Vector3.ONE * height
+	add_child(v)
+	var hammer: Node = v.hand("R").get_node_or_null("BellHammer") if v.hand("R") != null else null
+	if hammer != null:
+		hammer.queue_free()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(0.5, 1.7, 0.5)
+	_batch.add_shape(Transform3D(Basis(), at + Vector3(0.0, 0.85, 0.0)), shape)
+	watchers.append(v)
+
+
 # ---------------------------------------------------------------- 頭上的掛燈繩、街底的藥店
 
 static func rope_point(a: Vector3, b: Vector3, sag: float, t: float) -> Vector3:
@@ -735,7 +793,12 @@ func _build_ropes() -> void:
 				var t: float = (float(k) + _rng.randf_range(0.3, 0.7)) / float(n)
 				var p: Vector3 = rope_point(a, b, sag, t) - Vector3(0.0, 0.26, 0.0)
 				_rod(p + Vector3(0.0, 0.26, 0.0), p + Vector3(0.0, 0.17, 0.0), 0.005, _rope, 4)
-				_paper.append(Vector4(p.x, p.y, p.z, float(_rng.randi_range(0, PAPER_COLORS.size() - 1))))
+				# 顏色照舊先抽（_rng 的順序不變）；藥店前面那幾條繩子上的換成綠的（D-230：從高台看，街底是一串綠燈籠）
+				var paper_index: float = float(_rng.randi_range(0, PAPER_COLORS.size() - 1))
+				if z >= SHOP_Z - SHOP_PAPER_REACH:
+					paper_index = -1.0
+					shop_paper_count += 1
+				_paper.append(Vector4(p.x, p.y, p.z, paper_index))
 			var mid: Vector3 = rope_point(a, b, sag, 0.5) - Vector3(0.0, 0.5, 0.0)
 			_light("RopeGlow%d" % i, mid, LAMP, 0.95, 6.5, false, 1.7)
 		else:
@@ -779,7 +842,7 @@ func _build_paper_lanterns() -> void:
 		var p: Vector4 = _paper[i]
 		var s: float = 0.85 + 0.3 * fposmod(p.x * 7.3 + p.z * 3.1, 1.0)
 		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY.scaled(Vector3(s, s, s)), Vector3(p.x, p.y, p.z)))
-		mm.set_instance_color(i, PAPER_COLORS[int(p.w)])
+		mm.set_instance_color(i, paper_color(p.w))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.name = "PaperLanterns"
 	mmi.multimesh = mm
@@ -787,6 +850,11 @@ func _build_paper_lanterns() -> void:
 	mmi.layers |= REFLECT_LAYER
 	add_child(mmi)
 	paper_lantern_count = _paper.size()
+
+
+## 紙燈籠的顏色：編號 0 以上＝PAPER_COLORS 的那一個；負的＝藥店前面的綠燈籠。
+static func paper_color(index: float) -> Color:
+	return SHOP_PAPER if index < 0.0 else PAPER_COLORS[int(index)]
 
 
 ## 街底：彌夏的藥店。深色木板的門面、左邊一扇門、右邊一大片綠色的格子玻璃窗（整條街的視線終點），門上掛一塊壺形招牌。
@@ -803,26 +871,45 @@ func _build_shop() -> void:
 	var door_pos := Vector3(SHOP_DOOR.x, 1.1, face_z - 0.02)
 	_batch.add_box_tinted(Vector3(1.15, 2.2, 0.08), door_pos, look.door(), FrostbridgeLook.door_tint(door_pos), false)
 	_batch.add_box_at(Vector3(1.7, 0.16, 0.9), Vector3(SHOP_DOOR.x, 0.08, face_z - 0.45), interior.flagstone("shop_step", Color(0.24, 0.22, 0.2), 0.6), false)
-	# 綠色格子窗：4×3 格，每格是一扇有窗櫺的小窗
+	# 綠色格子窗（D-230：門面幾乎整片是玻璃，以前只有 4×3 格、從高台看是一個小方塊）：
+	# 主窗 4×4 格（門右邊到柱子）、東邊窄窗 2×4 格、門與西半邊上面一排氣窗 5×2 格（壺形招牌逆著它變成剪影）
 	var glass: ShaderMaterial = look.window().duplicate() as ShaderMaterial
 	glass.set_shader_parameter("glow_color", SHOP_GREEN)
-	var cols: int = 4
-	var rows: int = 3
-	for cx: int in cols:
-		for ry: int in rows:
-			var pane := Vector3(0.05 + (float(cx) + 0.5) * 0.84, 1.0 + (float(ry) + 0.5) * 0.8, face_z - 0.03)
-			_batch.add_box_tinted(Vector3(0.8, 0.76, 0.08), pane, glass, FrostbridgeLook.window_tint(true, pane, 4.0), false)
-	# 窗裡架上的瓶子（逆著綠光只看得到剪影）
+	glass.set_shader_parameter("far_boost", SHOP_GLASS_FAR_BOOST)
+	glass.set_shader_parameter("far_saturate", SHOP_GLASS_FAR_SATURATE)
+	var transom_y0: float = SHOP_WINDOW_Y0 + float(SHOP_WINDOW_ROWS - SHOP_TRANSOM_ROWS) * SHOP_PANE_H
+	# [左緣 x, 一格多寬, 幾格, 最下面一格的底, 幾列]
+	for bay: Array in [
+		[0.05, 0.84, 4, SHOP_WINDOW_Y0, SHOP_WINDOW_ROWS],
+		[3.8, 0.635, 2, SHOP_WINDOW_Y0, SHOP_WINDOW_ROWS],
+		[-5.05, 0.872, 5, transom_y0, SHOP_TRANSOM_ROWS],
+	]:
+		var pitch: float = float(bay[1])
+		for cx: int in int(bay[2]):
+			for ry: int in int(bay[4]):
+				var pane := Vector3(float(bay[0]) + (float(cx) + 0.5) * pitch, float(bay[3]) + (float(ry) + 0.5) * SHOP_PANE_H, face_z - 0.03)
+				_batch.add_box_tinted(Vector3(pitch - 0.04, SHOP_PANE_H - 0.04, 0.08), pane, glass, FrostbridgeLook.window_tint(true, pane, 4.0), false)
+				shop_glass_area += (pitch - 0.04) * (SHOP_PANE_H - 0.04)
+	# 窗裡架上的瓶子（逆著綠光只看得到剪影）；前兩層用 _rng（跟以前一樣），上面兩層用寫死的雜湊（不多抽 _rng）
 	var dark: Material = look.mat(Color(0.03, 0.035, 0.03), 0.4)
-	for shelf: int in 2:
-		var y: float = 1.34 + float(shelf) * 0.8
+	for shelf: int in SHOP_WINDOW_ROWS:
+		var y: float = SHOP_WINDOW_Y0 + 0.34 + float(shelf) * SHOP_PANE_H
 		_batch.add_box_at(Vector3(3.3, 0.03, 0.05), Vector3(1.73, y - 0.01, face_z - 0.09), dark, false)
 		for i: int in 11:
-			var h: float = _rng.randf_range(0.14, 0.3)
-			var r: float = _rng.randf_range(0.035, 0.065)
+			var h: float
+			var r: float
+			if shelf < 2:
+				h = _rng.randf_range(0.14, 0.3)
+				r = _rng.randf_range(0.035, 0.065)
+			else:
+				h = lerpf(0.14, 0.3, fposmod(sin(float(shelf * 31 + i * 17) * 12.9898) * 43758.5453, 1.0))
+				r = lerpf(0.035, 0.065, fposmod(sin(float(shelf * 13 + i * 29) * 78.233) * 43758.5453, 1.0))
 			_batch.add_cylinder(r * 0.45, r, h, Vector3(0.25 + float(i) * 0.3, y + h * 0.5, face_z - 0.09), dark, false, 8)
+	# 氣窗底下一根橫木（門楣）
+	_batch.add_box_at(Vector3(4.5, 0.14, 0.2), Vector3(-2.87, transom_y0 - 0.07, face_z - 0.06), _timber, false)
 	# 窗台
 	_batch.add_box_at(Vector3(3.6, 0.1, 0.3), Vector3(1.73, 0.95, face_z - 0.12), _timber, false)
+	_batch.add_box_at(Vector3(1.35, 0.1, 0.3), Vector3(4.43, 0.95, face_z - 0.12), _timber, false)
 	# 招牌：壺的剪影（door.gdshader 的店招模式，r＝0.5），伸出來的鐵架上
 	var sign_pos := Vector3(SHOP_DOOR.x, 3.0, face_z - 0.75)
 	_batch.add_box_tinted(Vector3(0.7, 0.56, 0.06), sign_pos, look.door(), Color(0.5, 0.4, 0.3, 0.0), false)
