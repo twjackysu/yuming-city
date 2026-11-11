@@ -30,7 +30,6 @@ REQUIRED = [
     "data/quests/rb_main.json",
     "data/quests/slice_main.json",
     "data/dialogue/slice_ada_aftermath.json",
-    "data/journal/slice.json",
     "data/combat/tuning.json",
     "assets/generated/fonts/ui_sans_tc.otf",
     "assets/generated/fonts/title_serif_tc.otf",

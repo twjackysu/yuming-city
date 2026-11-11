@@ -37,8 +37,6 @@ const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 
 var session: GameSession
 var dialogues: DialogueDB
-## 日記（記憶條目）；付出了沒看 session.state.memories_paid
-var journal: Journal
 ## 進行中的對話（沒有則為 null）
 var dialogue: DialogueRunner
 
@@ -48,9 +46,6 @@ func _ready() -> void:
 	dialogues = DialogueDB.load_default()
 	for e: String in dialogues.errors:
 		push_error("Game: 對話資料錯誤 " + e)
-	journal = Journal.load_default()
-	for e: String in journal.validate():
-		push_error("Game: 日記資料錯誤 " + e)
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
