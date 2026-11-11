@@ -23,7 +23,7 @@
     "max_hp": 900, "stagger_max": 200, "stagger_kneel": 3.0, "attack_range": 3.2, "telegraph": 0.9, "recover": 0.8, "move_speed": 2.3,
     "telegraph_stagger_mult": 0.3, "recover_stagger_mult": 2.0,
     "pattern": ["sweep", "slam", "sweep", "charge"],
-    "pattern_struggle": ["sweep", "slam"], "struggle_stagger_max": 140,
+    "pattern_pursuit": ["sweep", "slam"], "pursuit_stagger_max": 140,
     "pattern_guardian": ["sweep", "spray", "slam", "sweep"], "guardian_hp": 480, "guardian_stagger_max": 140,
     "moves": {
       "sweep": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.2, "arc_deg": 150, "damage": 28},

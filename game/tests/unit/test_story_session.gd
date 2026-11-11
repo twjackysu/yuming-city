@@ -6,7 +6,7 @@ var _dir: String = ""
 
 
 func before_each() -> void:
-	_dir = "user://test_reboot_%d" % Time.get_ticks_usec()
+	_dir = "user://test_story_%d" % Time.get_ticks_usec()
 
 
 func after_each() -> void:
@@ -36,9 +36,9 @@ func test_rb_main_loads_with_markers_and_dialogues_exist() -> void:
 		assert_true(dlg.has_dialogue(did), "對話 %s" % did)
 
 
-func test_new_reboot_game_uses_its_own_folder() -> void:
+func test_new_game_uses_its_own_folder() -> void:
 	var s := _session()
-	s.new_reboot_game()
+	s.new_game()
 	assert_eq(s.state.mode, "reboot")
 	assert_eq(s.main_quest(), "rb_main")
 	assert_eq(s.quests.stage_of("rb_main"), "escape")
@@ -49,7 +49,7 @@ func test_new_reboot_game_uses_its_own_folder() -> void:
 	assert_false(FileAccess.file_exists(_dir.path_join("auto.json")), "舊版資料夾沒被寫到")
 
 
-func test_reboot_does_not_overwrite_classic_save() -> void:
+func test_new_game_does_not_overwrite_classic_save() -> void:
 	var s := _session()
 	# 以前舊劇情留在舊資料夾的存檔（遊戲已經不會寫這種檔了，D-220：直接造一份）
 	var old_state := GameState.new()
@@ -57,7 +57,7 @@ func test_reboot_does_not_overwrite_classic_save() -> void:
 	DirAccess.make_dir_recursive_absolute(_dir)
 	assert_eq(SaveCodec.write_file(_dir.path_join("auto.json"), old_state), OK)
 	var classic_text: String = FileAccess.get_file_as_string(_dir.path_join("auto.json"))
-	s.new_reboot_game()
+	s.new_game()
 	s.set_flag("rb.barrels_broken", true)
 	assert_eq(FileAccess.get_file_as_string(_dir.path_join("auto.json")), classic_text, "舊版存檔一個字都沒變")
 	var old := _session()
@@ -65,13 +65,13 @@ func test_reboot_does_not_overwrite_classic_save() -> void:
 	assert_eq(old.state.mode, "classic")
 	assert_true(bool(old.state.get_flag("slice.met_pear_seller", false)))
 	var again := _session()
-	assert_eq(again.load_reboot_slot(), SaveCodec.Status.OK)
+	assert_eq(again.load_story_slot(), SaveCodec.Status.OK)
 	assert_eq(again.quests.stage_of("rb_main"), "poison_discovery")
 
 
 func test_first_ten_minutes_stage_order_and_objective_hint() -> void:
 	var s := _session()
-	s.new_reboot_game()
+	s.new_game()
 	s.set_flag("rb.barrels_broken", true)
 	assert_eq(s.quests.stage_of("rb_main"), "poison_discovery")
 	assert_eq(s.state.checkpoint, "rb_before_mist", "第一次進霧前有檢查點")
@@ -102,7 +102,7 @@ func test_first_ten_minutes_stage_order_and_objective_hint() -> void:
 
 func test_retry_does_not_duplicate_potion_or_restore_hp() -> void:
 	var s := _session()
-	s.new_reboot_game()
+	s.new_game()
 	# 檢查點存檔前，玩家把生命、狀態、反轉欄位寫回 state
 	var hp: Array[float] = [55.0]
 	s.saving.connect(func(st: GameState) -> void: st.vitals["hp"] = hp[0])

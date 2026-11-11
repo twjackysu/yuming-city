@@ -1,6 +1,6 @@
 extends TestCase
 ## 霜橋鎮（只有鎮本身，不開新遊戲、不掛劇情）：關卡結構、合併後的 draw call 規模、街道與廣場的擺設、開發用旗標。
-## 劇情（開場到貨梯）的測試在 test_reboot_*.gd。
+## 劇情（開場到貨梯）的測試在 test_story_*.gd。
 
 const PATH: String = "res://scenes/levels/frostbridge.tscn"
 
@@ -33,8 +33,8 @@ func _session() -> GameSession:
 func _story_session(at: String) -> GameSession:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", s)
-	s.new_reboot_game()
-	RebootOpening.dev_advance(s, at)
+	s.new_game()
+	FrostbridgeOpening.dev_advance(s, at)
 	return s
 
 
@@ -56,7 +56,7 @@ func test_layout_nodes_and_batching() -> void:
 	var level: StoryLevel = await _load()
 	for n: String in ["Player", "Hud", "PauseMenu", "DialogueBox", "Town", "SouthArch", "Bell"]:
 		assert_true(level.has_node(n), "有 %s" % n)
-	assert_false(level.has_node("RebootOpening"), "沒有開新遊戲：只有鎮，不掛劇情")
+	assert_false(level.has_node("FrostbridgeOpening"), "沒有開新遊戲：只有鎮，不掛劇情")
 	for old: String in ["BellTowerTrigger", "ConvoyTrigger", "ArchMemoryTrigger", "BellCamWide", "JournalView"]:
 		assert_false(level.has_node(old), "舊劇情的 %s 已經拿掉（D-220）" % old)
 	var town: Node = level.get_node("Town")
@@ -232,7 +232,7 @@ func test_objective_guide_points_to_current_target() -> void:
 	var level: StoryLevel = await _load()
 	var hud: Hud = level.get_node("Hud") as Hud
 	# 劇情控制器停住：這裡只看指引，不要走近梨攤就開始跟艾妲說話
-	var rb: Node = level.get_node("RebootOpening")
+	var rb: Node = level.get_node("FrostbridgeOpening")
 	rb.set_process(false)
 	rb.set_physics_process(false)
 	var player: Node3D = level.get_node("Player") as Node3D

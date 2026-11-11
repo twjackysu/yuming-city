@@ -27,8 +27,8 @@ func after_each() -> void:
 func _session_at(at: String) -> GameSession:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", s)
-	s.new_reboot_game()
-	RebootOpening.dev_advance(s, at)
+	s.new_game()
+	FrostbridgeOpening.dev_advance(s, at)
 	return s
 
 
@@ -85,12 +85,12 @@ func _take_from_crate(level: StoryLevel) -> PotionCrate:
 
 func test_crate_spot_stays_in_street_on_the_centre_side() -> void:
 	# 牠倒在街道東側、面向北：箱子落在西邊（靠街心）
-	var a: Vector3 = RebootOpening.crate_spot(Vector3(1.8, 0.0, 18.0), Vector3(0.0, 0.0, -1.0))
+	var a: Vector3 = FrostbridgeOpening.crate_spot(Vector3(1.8, 0.0, 18.0), Vector3(0.0, 0.0, -1.0))
 	assert_true(absf(a.x - 0.3) < 0.01 and absf(a.z - 18.0) < 0.01, "街心那一側 1.5 m（%s）" % a)
 	# 牠倒在牆邊：不會擺到牆裡
-	var b: Vector3 = RebootOpening.crate_spot(Vector3(-4.5, 0.0, 30.0), Vector3(1.0, 0.0, 0.0))
-	assert_true(absf(b.x) <= RebootOpening.CRATE_X_LIMIT + 0.001, "x 夾在街道裡")
-	assert_true(b.z <= RebootOpening.CRATE_Z_MAX + 0.001 and b.z >= RebootOpening.CRATE_Z_MIN - 0.001, "z 夾在南街裡")
+	var b: Vector3 = FrostbridgeOpening.crate_spot(Vector3(-4.5, 0.0, 30.0), Vector3(1.0, 0.0, 0.0))
+	assert_true(absf(b.x) <= FrostbridgeOpening.CRATE_X_LIMIT + 0.001, "x 夾在街道裡")
+	assert_true(b.z <= FrostbridgeOpening.CRATE_Z_MAX + 0.001 and b.z >= FrostbridgeOpening.CRATE_Z_MIN - 0.001, "z 夾在南街裡")
 
 
 func test_crate_drops_beside_fallen_guardian_and_grants_two_once() -> void:
@@ -98,7 +98,7 @@ func test_crate_drops_beside_fallen_guardian_and_grants_two_once() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var hud: Hud = level.get_node("Hud") as Hud
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
@@ -113,10 +113,10 @@ func test_crate_drops_beside_fallen_guardian_and_grants_two_once() -> void:
 	assert_true(crate.dropping and not crate.visible, "先藏著（牠還在往前倒）")
 	assert_false(crate.take(), "落地之前不能拿")
 	var from_body: float = Vector2(crate.global_position.x - 1.2, crate.global_position.z - 17.0).length()
-	assert_true(absf(from_body - RebootOpening.CRATE_SIDE) < 0.05, "落在牠旁邊（%.2f m）" % from_body)
+	assert_true(absf(from_body - FrostbridgeOpening.CRATE_SIDE) < 0.05, "落在牠旁邊（%.2f m）" % from_body)
 	assert_true(absf(crate.global_position.x) < 1.2, "靠街心的那一側")
 	assert_true(absf(float(s.state.get_flag("rb.crate_x", 99.0)) - crate.global_position.x) < 0.001, "位置記在存檔裡")
-	await _frames(int((RebootOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0) + 12)
+	await _frames(int((FrostbridgeOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0) + 12)
 	if bool(_game().call("is_in_dialogue")):
 		await _run_dialogue(level)
 	await _frames(12)
@@ -166,7 +166,7 @@ func test_drinking_heals_without_stacking_then_sheila_reacts() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var hud: Hud = level.get_node("Hud") as Hud
 	assert_false(level.has_node("RbGuardian"), "牠已經倒下")
@@ -208,7 +208,7 @@ func test_full_health_asks_first_and_keeping_completes_the_stage() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var hud: Hud = level.get_node("Hud") as Hud
 	await _take_from_crate(level)
@@ -249,7 +249,7 @@ func test_walking_away_without_drinking_counts_as_keeping() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var crate: PotionCrate = await _take_from_crate(level)
 	rb.potion_talk_sec = 0.2
@@ -257,7 +257,7 @@ func test_walking_away_without_drinking_counts_as_keeping() -> void:
 	await _frames(20)
 	assert_eq(s.state.get_flag("rb.potion_kept", false), false, "還站在藥箱旁：不催")
 	assert_false(bool(_game().call("is_in_dialogue")))
-	player.global_position = crate.global_position + Vector3(0.0, 0.05, -(RebootOpening.POTION_KEEP_RANGE + 1.0))
+	player.global_position = crate.global_position + Vector3(0.0, 0.05, -(FrostbridgeOpening.POTION_KEEP_RANGE + 1.0))
 	await _frames(30)
 	assert_eq(s.state.get_flag("rb.potion_kept"), true, "沒喝就走遠＝先收著")
 	assert_true(bool(_game().call("is_in_dialogue")), "席菈：「你要留著那個？」")
@@ -273,7 +273,7 @@ func test_retry_keeps_crate_in_place_and_never_duplicates_potions() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
 	rb.guardian_down_talk_sec = 0.1
@@ -287,7 +287,7 @@ func test_retry_keeps_crate_in_place_and_never_duplicates_potions() -> void:
 	assert_eq(s.state.checkpoint, "rb_portable", "撿藥之前的檢查點")
 	var crate: PotionCrate = level.get_node("RbPotionCrate") as PotionCrate
 	var crate_at: Vector3 = crate.global_position
-	await _frames(int((RebootOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0))
+	await _frames(int((FrostbridgeOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0))
 	await _take_from_crate(level)
 	assert_eq(_potions(s), 2)
 	player.health.hp = 9.0
@@ -312,7 +312,7 @@ func test_retry_keeps_crate_in_place_and_never_duplicates_potions() -> void:
 	await _take_from_crate(level2)
 	assert_eq(_potions(s), 2, "再拿一次也只有兩瓶（不是四瓶）")
 	# 喝一瓶、聽完席菈的話 → 下一個檢查點；之後重來：藥箱是空的、藥的數量照存檔
-	var rb2: RebootOpening = level2.get_node("RebootOpening") as RebootOpening
+	var rb2: FrostbridgeOpening = level2.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	rb2.potion_talk_sec = 0.1
 	assert_eq(p2.use_potion(), "used")
 	await _frames(20)

@@ -42,8 +42,8 @@ func test_marker_spec_uses_first_matching_alternative() -> void:
 
 func test_every_main_quest_stage_has_a_marker() -> void:
 	var db := QuestDB.load_default()
-	assert_true(db.stages(GameSession.REBOOT_MAIN_QUEST).size() >= 6, "主線有階段")
-	for st: Variant in db.stages(GameSession.REBOOT_MAIN_QUEST):
+	assert_true(db.stages(GameSession.MAIN_QUEST).size() >= 6, "主線有階段")
+	for st: Variant in db.stages(GameSession.MAIN_QUEST):
 		assert_true((st as Dictionary).has("marker"), "階段 %s 有目標指引" % (st as Dictionary)["id"])
 
 

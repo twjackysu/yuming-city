@@ -122,10 +122,10 @@ func _ready() -> void:
 	add_child(health)
 	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
 	heal_fx = HealMotes.attach(self, health)
-	if Game.session.is_reboot():
-		_restore_reboot_vitals(Game.session.state)
+	if Game.session.in_story():
+		_restore_vitals(Game.session.state)
 		# 用方法連線：玩家被釋放時自動斷開
-		Game.session.saving.connect(_write_reboot_vitals)
+		Game.session.saving.connect(_write_vitals)
 	yaw = rotation.y
 	snap_camera()
 	_camera.current = true
@@ -189,7 +189,7 @@ func _physics_process(delta: float) -> void:
 	var sprinting: bool = Input.is_action_pressed("sprint") and input.length() > 0.1
 
 	_dodge_cooldown = maxf(_dodge_cooldown - delta, 0.0)
-	if not talking and Game.session.is_reboot() and Input.is_action_just_pressed("use_item") and not health.is_dead():
+	if not talking and Game.session.in_story() and Input.is_action_just_pressed("use_item") and not health.is_dead():
 		use_potion()
 	if talking:
 		pass
@@ -277,7 +277,7 @@ func use_potion(confirmed: bool = false) -> String:
 
 
 ## 讀檔、死亡重試時從存檔拿回生命、狀態、反轉欄位（不補滿、不清掉負面狀態；生命至少一半）
-func _restore_reboot_vitals(st: GameState) -> void:
+func _restore_vitals(st: GameState) -> void:
 	reversal = ReversalSlots.from_dict(st.reversal)
 	status_effects.reversal = reversal
 	status_effects.load_array(st.statuses)
@@ -290,7 +290,7 @@ static func restored_hp(saved: Variant, max_hp: float) -> float:
 	return clampf(float(saved), max_hp * RESTORE_MIN_HP_RATIO, max_hp)
 
 
-func _write_reboot_vitals(st: GameState) -> void:
+func _write_vitals(st: GameState) -> void:
 	st.vitals["hp"] = health.hp
 	st.statuses = status_effects.to_array()
 	st.reversal = reversal.to_dict()

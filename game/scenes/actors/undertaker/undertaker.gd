@@ -3,7 +3,7 @@ extends EnemyActor
 ## 送葬者（精英）：背負鐵架、追著心跳走。四招：
 ##   鐵架橫掃（扇形霜紋）／鐵架下砸（圓形霜紋，砸地後 0.6 秒破綻）／追心跳衝撞（直線霜紋，撞牆跪地 2 秒）／
 ##   噴毒（只有南街守衛：虛線圈，地上留一團毒霧）。
-## 兩種用法：追擊的那一隻（begin_struggle：橫掃＋下砸）、南街守衛（begin_guardian：再加噴毒、生命另計）；
+## 兩種用法：追擊的那一隻（begin_pursuit：橫掃＋下砸）、南街守衛（begin_guardian：再加噴毒、生命另計）；
 ## 兩個都沒呼叫時是預設輪替（橫掃、下砸、橫掃、衝撞），目前只有測試這樣用。
 ## 弱點：鐵架關節，從背後打得到；跪地時全露。
 
@@ -32,13 +32,11 @@ const SHAPE_FAN: int = 2
 ## 落點標記（噴毒，D-208）：空心的虛線圈＋往外擴的細圈，跟實心的毒霧分得出來
 const SHAPE_RING: int = 3
 
-## 只有一個階段（第二階段連同舊劇情刪了，D-225）；留著是因為守衛戰的測試還在驗它不會變。
-var phase: int = 1
 ## 把東西舉過頭的剩餘秒數（>0 時站著不動）
 var throw_windup: float = 0.0
 var _throw_total: float = 1.0
-## 追擊的那一隻（D-169、D-205）：少一招（不衝撞）、失衡上限比較低。守衛也會設成 true。
-var struggle_mode: bool = false
+## 招式輪替裡沒有衝撞（街道窄）：追擊的那一隻（begin_pursuit）與南街守衛（begin_guardian）都是 true。
+var no_charge: bool = false
 
 var _decals: Dictionary = {}
 var _charge_hit: Array[Node3D] = []
@@ -225,17 +223,17 @@ func _hit_height() -> float:
 	return 1.45
 
 
-## 追擊的那一隻（D-169、D-205）：招式輪替換成 pattern_struggle（沒有衝撞）、失衡上限 struggle_stagger_max。
-func begin_struggle() -> void:
-	struggle_mode = true
-	_apply_struggle_brain()
+## 追擊的那一隻（D-169、D-205）：招式輪替換成 pattern_pursuit（沒有衝撞）、失衡上限 pursuit_stagger_max。
+func begin_pursuit() -> void:
+	no_charge = true
+	_apply_pursuit_brain()
 
 
-func _apply_struggle_brain() -> void:
-	var pat: Variant = CombatTuning.value("undertaker.pattern_struggle", [])
+func _apply_pursuit_brain() -> void:
+	var pat: Variant = CombatTuning.value("undertaker.pattern_pursuit", [])
 	if pat is Array:
 		brain.set_pattern(PackedStringArray(pat as Array))
-	brain.stagger_max = CombatTuning.num("undertaker.struggle_stagger_max", brain.stagger_max)
+	brain.stagger_max = CombatTuning.num("undertaker.pursuit_stagger_max", brain.stagger_max)
 
 
 # ---- 南街守衛（新版前十分鐘，D-207）----
@@ -265,7 +263,7 @@ var debug_hold_jet: bool = false
 
 func begin_guardian() -> void:
 	guardian_mode = true
-	struggle_mode = true
+	no_charge = true
 	_apply_guardian_brain()
 	health.max_hp = CombatTuning.num("undertaker.guardian_hp", health.max_hp)
 	health.hp = health.max_hp
@@ -432,8 +430,8 @@ func _on_settings_changed() -> void:
 	super._on_settings_changed()
 	if guardian_mode:
 		_apply_guardian_brain()
-	elif struggle_mode:
-		_apply_struggle_brain()
+	elif no_charge:
+		_apply_pursuit_brain()
 
 
 ## 跪地（D-191）：比走路的拖步更重的一聲「咚」（音高壓低）＋鐵架晃一下的鐵響，鏡頭小震一下。

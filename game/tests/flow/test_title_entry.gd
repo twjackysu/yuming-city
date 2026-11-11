@@ -55,8 +55,8 @@ func test_new_game_starts_the_new_story() -> void:
 	assert_true(_button(boot, "NewGame").has_focus(), "焦點在「新遊戲」")
 	assert_true(_button(boot, "Continue").disabled, "還沒玩過：繼續不能按")
 	_button(boot, "NewGame").pressed.emit()
-	assert_true(s.is_reboot(), "新遊戲＝新版")
-	assert_eq(s.quests.stage_of(GameSession.REBOOT_MAIN_QUEST), "escape")
+	assert_true(s.in_story(), "新遊戲＝新版")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "escape")
 	assert_eq(s.state.checkpoint, "rb_start")
 	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "frostbridge")
 	assert_false(s.state.quests.has("slice_main"), "不會開舊劇情的主線")
@@ -77,7 +77,7 @@ func test_continue_reads_only_the_new_story_save() -> void:
 	boot.queue_free()
 	await tree.process_frame
 	# 新版玩到一半存了檔
-	s.new_reboot_game()
+	s.new_game()
 	s.set_flag("rb.opening_done", true)
 	assert_eq(s.save(GameSession.AUTO_SLOT), OK)
 	# 重開遊戲（新的 session、同一個存檔資料夾）
@@ -85,7 +85,7 @@ func test_continue_reads_only_the_new_story_save() -> void:
 	var boot2: Control = await _boot()
 	assert_false(_button(boot2, "Continue").disabled, "新版有存檔了")
 	_button(boot2, "Continue").pressed.emit()
-	assert_true(s2.is_reboot(), "繼續＝新版的存檔")
+	assert_true(s2.in_story(), "繼續＝新版的存檔")
 	assert_true(bool(s2.state.get_flag("rb.opening_done", false)))
 	assert_false(bool(s2.state.get_flag("slice.met_pear_seller", false)), "不是舊版那一份")
 	boot2.queue_free()
@@ -109,22 +109,22 @@ func test_title_menu_has_only_the_four_entries() -> void:
 func test_dev_flags_never_write_the_players_save() -> void:
 	var s := _session()
 	# 玩家真正的進度（測試裡是 _dir + "_reboot"）：玩到毒霧前
-	s.new_reboot_game()
+	s.new_game()
 	s.set_flag("rb.opening_done", true)
 	s.set_flag("rb.barrels_broken", true)
 	assert_eq(s.state.checkpoint, "rb_before_mist")
-	var real_path: String = s.reboot_save_dir().path_join("auto.json")
+	var real_path: String = s.story_save_dir().path_join("auto.json")
 	var real_text: String = FileAccess.get_file_as_string(real_path)
 	assert_true(real_text != "", "前提：玩家有一份自動存檔")
 	# 用開發旗標跳到梨攤那一段
 	var dev_dir: String = str(_game().get("DEV_SAVE_DIR")) + "_reboot"
-	_game().call("_dev_reboot_start", "market")
-	assert_true(s.is_reboot(), "開的是同一個劇情")
-	assert_eq(s.quests.stage_of(GameSession.REBOOT_MAIN_QUEST), "market_lead", "推到梨攤那一段")
-	assert_eq(s.reboot_save_dir(), dev_dir, "存檔改寫到開發用的資料夾")
+	_game().call("_dev_story_start", "market")
+	assert_true(s.in_story(), "開的是同一個劇情")
+	assert_eq(s.quests.stage_of(GameSession.MAIN_QUEST), "market_lead", "推到梨攤那一段")
+	assert_eq(s.story_save_dir(), dev_dir, "存檔改寫到開發用的資料夾")
 	assert_true(FileAccess.file_exists(dev_dir.path_join("auto.json")), "開發用的資料夾有存檔")
 	assert_eq(FileAccess.get_file_as_string(real_path), real_text, "玩家那一份一個字都沒變")
-	assert_true(dev_dir != GameSession.REBOOT_SAVE_DIR, "不是正式的存檔資料夾")
+	assert_true(dev_dir != GameSession.STORY_SAVE_DIR, "不是正式的存檔資料夾")
 	for f: String in DirAccess.get_files_at(dev_dir):
 		DirAccess.remove_absolute(dev_dir.path_join(f))
 	DirAccess.remove_absolute(dev_dir)

@@ -26,8 +26,8 @@ func after_each() -> void:
 func _session_at(at: String) -> GameSession:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", s)
-	s.new_reboot_game()
-	RebootOpening.dev_advance(s, at)
+	s.new_game()
+	FrostbridgeOpening.dev_advance(s, at)
 	return s
 
 
@@ -64,7 +64,7 @@ func _park_sheila(level: Node) -> void:
 
 
 func _coins(s: GameSession) -> int:
-	return int(s.state.items.get(RebootOpening.WAGES_ITEM, 0))
+	return int(s.state.items.get(FrostbridgeOpening.WAGES_ITEM, 0))
 
 
 func _stand(level: StoryLevel, at: Vector3) -> void:
@@ -77,13 +77,13 @@ func test_stall_and_lift_sit_where_the_town_built_them() -> void:
 	var s := _session_at("market")
 	var level: StoryLevel = await _load()
 	var consts: Dictionary = (level.get_script() as Script).get_script_constant_map()
-	assert_eq(RebootOpening.STALL_POS, consts["STALL_POS"] as Vector3, "梨攤的位置跟關卡一樣")
-	assert_eq(RebootOpening.LIFT_POS, consts["CELLAR_POS"] as Vector3, "貨梯在地窖口上")
+	assert_eq(FrostbridgeOpening.STALL_POS, consts["STALL_POS"] as Vector3, "梨攤的位置跟關卡一樣")
+	assert_eq(FrostbridgeOpening.LIFT_POS, consts["CELLAR_POS"] as Vector3, "貨梯在地窖口上")
 	assert_eq(s.quests.stage_of("rb_main"), "market_lead")
 	assert_eq(s.objective_key(), "Q_RB_OBJ_MARKET")
 	var ada: Puppet = level.get_node_or_null("Ada") as Puppet
 	assert_not_null(ada, "梨攤的艾妲是人偶（不是剪影）")
-	assert_true(RebootOpening.flat_distance(ada.global_position, RebootOpening.STALL_POS) < 2.0, "站在攤子旁")
+	assert_true(FrostbridgeOpening.flat_distance(ada.global_position, FrostbridgeOpening.STALL_POS) < 2.0, "站在攤子旁")
 	assert_not_null(ada.hand("L").get_node_or_null("Ledger"), "左手的帳本")
 	assert_true(ada.hand("R").get_node_or_null("BellHammer") == null, "不拿敲鐘的槌子")
 	var lift: Node3D = level.get_node_or_null("RbLift") as Node3D
@@ -93,10 +93,10 @@ func test_stall_and_lift_sit_where_the_town_built_them() -> void:
 	# 任務標記：先指艾妲，講完指貨梯
 	var marker: Node3D = level.get_node_or_null("PearSellerTrigger") as Node3D
 	assert_not_null(marker)
-	assert_true(RebootOpening.flat_distance(marker.global_position, ada.global_position) < 0.1, "標記在艾妲身上")
+	assert_true(FrostbridgeOpening.flat_distance(marker.global_position, ada.global_position) < 0.1, "標記在艾妲身上")
 	var down: Node3D = level.get_node_or_null("CellarTrigger") as Node3D
 	assert_not_null(down)
-	assert_true(RebootOpening.flat_distance(down.global_position, RebootOpening.LIFT_POS) < 0.1, "標記在貨梯上")
+	assert_true(FrostbridgeOpening.flat_distance(down.global_position, FrostbridgeOpening.LIFT_POS) < 0.1, "標記在貨梯上")
 	level.queue_free()
 	await tree.process_frame
 
@@ -106,7 +106,7 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var hud: Hud = level.get_node("Hud") as Hud
 	var done: Array[int] = [0]
@@ -114,28 +114,28 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	assert_eq(s.state.checkpoint, "rb_market")
 	assert_eq(_coins(s), 0)
 	# 還沒跟艾妲講話就站上貨梯：不會結束
-	_stand(level, RebootOpening.LIFT_POS)
+	_stand(level, FrostbridgeOpening.LIFT_POS)
 	await _frames(6)
 	assert_false(bool(s.state.get_flag("rb.market_reached", false)), "要先拿到工錢、聽她說貨梯")
 	assert_false(level.has_node("ChapterCard"))
 	assert_false(level.has_node("RbEndMusic"), "配樂等卡出來才進")
 	# 走近梨攤：艾妲開口
-	_stand(level, RebootOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
+	_stand(level, FrostbridgeOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
 	await _frames(6)
 	assert_true(bool(_game().call("is_in_dialogue")), "走近她就開始對話")
 	await _run_dialogue(level)
 	await _frames(2)
 	assert_true(bool(s.state.get_flag("rb.ada_talked", false)))
-	assert_eq(_coins(s), RebootOpening.WAGES, "一半的工錢")
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES, "一半的工錢")
 	assert_eq(hud.banner_text(), "RB_WAGES_PAID", "告訴玩家拿到了")
 	assert_false(rb.pay_wages(), "只給一次")
-	assert_eq(_coins(s), RebootOpening.WAGES)
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES)
 	assert_eq(s.quests.stage_of("rb_main"), "market_lead", "還要走到貨梯")
 	# 站在攤子前不會再講一次
 	await _frames(6)
 	assert_false(bool(_game().call("is_in_dialogue")))
 	# 站上貨梯：任務完成、「待續」
-	_stand(level, RebootOpening.LIFT_POS + Vector3(-0.3, 0.0, 0.4))
+	_stand(level, FrostbridgeOpening.LIFT_POS + Vector3(-0.3, 0.0, 0.4))
 	await _frames(6)
 	assert_true(bool(s.state.get_flag("rb.market_reached", false)))
 	assert_true(s.quests.is_done("rb_main"), "前十分鐘走完了")
@@ -151,11 +151,11 @@ func test_ada_pays_half_wages_once_then_lift_ends_with_to_be_continued() -> void
 	var music: AudioStreamPlayer = level.get_node_or_null("RbEndMusic") as AudioStreamPlayer
 	assert_not_null(music, "待續的配樂")
 	assert_eq(music, rb.end_music)
-	assert_eq(Ambience.sfx_of(music), RebootOpening.END_MUSIC)
+	assert_eq(Ambience.sfx_of(music), FrostbridgeOpening.END_MUSIC)
 	if music != null:
 		assert_eq(music.bus, &"Music", "跟著「音樂」音量")
 		assert_true(music.playing, "在播")
-		assert_true(music.volume_db < RebootOpening.END_MUSIC_DB, "從小聲慢慢進來，不是突然響起")
+		assert_true(music.volume_db < FrostbridgeOpening.END_MUSIC_DB, "從小聲慢慢進來，不是突然響起")
 		var stream: AudioStreamWAV = music.stream as AudioStreamWAV
 		assert_true(stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "卡停多久都不會斷")
 	var players: int = 0
@@ -174,7 +174,7 @@ func test_retry_at_market_never_pays_twice() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	# 拿藥、選先收著 → 檢查點 rb_market
 	rb.potion_talk_sec = 0.05
@@ -188,10 +188,10 @@ func test_retry_at_market_never_pays_twice() -> void:
 	await _run_dialogue(level)
 	assert_eq(s.state.checkpoint, "rb_market", "去貨梯之前的檢查點")
 	# 拿到工錢之後倒下重來
-	_stand(level, RebootOpening.ADA_POS + Vector3(-1.0, 0.0, 1.4))
+	_stand(level, FrostbridgeOpening.ADA_POS + Vector3(-1.0, 0.0, 1.4))
 	await _frames(6)
 	await _run_dialogue(level)
-	assert_eq(_coins(s), RebootOpening.WAGES)
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES)
 	level.queue_free()
 	await tree.process_frame
 	_game().call("retry", false)
@@ -204,10 +204,10 @@ func test_retry_at_market_never_pays_twice() -> void:
 	var p2: PlayerController = level2.get_node("Player") as PlayerController
 	assert_true(p2.global_position.z > 5.0, "回到南街口（%s）" % p2.global_position)
 	assert_not_null(level2.get_node_or_null("Ada"))
-	_stand(level2, RebootOpening.ADA_POS + Vector3(-1.0, 0.0, 1.4))
+	_stand(level2, FrostbridgeOpening.ADA_POS + Vector3(-1.0, 0.0, 1.4))
 	await _frames(6)
 	await _run_dialogue(level2)
-	assert_eq(_coins(s), RebootOpening.WAGES, "再聽一次也只有一份（不是兩份）")
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES, "再聽一次也只有一份（不是兩份）")
 	level2.queue_free()
 	await tree.process_frame
 
@@ -228,7 +228,7 @@ func test_lift_stands_over_an_open_shaft() -> void:
 	var glow: OmniLight3D = lift.get_node_or_null("ShaftGlow") as OmniLight3D
 	assert_not_null(glow, "底下的暖光")
 	assert_true(glow.light_energy > 1.0 and glow.light_color.r > glow.light_color.b * 2.0, "暖色、看得到")
-	assert_true(glow.position.y < RebootOpening.SHAFT_CURB_H, "從洞裡往上照")
+	assert_true(glow.position.y < FrostbridgeOpening.SHAFT_CURB_H, "從洞裡往上照")
 	assert_eq(glow.light_specular, 0.0, "不打高光")
 	assert_false(glow.shadow_enabled)
 	var north: Node3D = lift.get_node_or_null("HatchNorth") as Node3D
@@ -236,12 +236,12 @@ func test_lift_stands_over_an_open_shaft() -> void:
 	assert_true(north != null and south != null, "兩片掀開的木門")
 	if north != null and south != null:
 		# 北邊那片立著（門板的遠端在上面）、南邊那片翻開躺在地上
-		var north_tip: Vector3 = north.to_global(Vector3(0.0, 0.0, -RebootOpening.SHAFT_HALF.y))
-		var south_tip: Vector3 = south.to_global(Vector3(0.0, 0.0, -RebootOpening.SHAFT_HALF.y))
+		var north_tip: Vector3 = north.to_global(Vector3(0.0, 0.0, -FrostbridgeOpening.SHAFT_HALF.y))
+		var south_tip: Vector3 = south.to_global(Vector3(0.0, 0.0, -FrostbridgeOpening.SHAFT_HALF.y))
 		assert_true(north_tip.y > lift.global_position.y + 0.8, "北邊那片立著（%.2f）" % (north_tip.y - lift.global_position.y))
 		assert_true(south_tip.y < lift.global_position.y + 0.3, "南邊那片躺著")
-		assert_true(south_tip.z > lift.global_position.z + RebootOpening.SHAFT_HALF.y + 0.5, "往南翻開")
-		assert_true(north_tip.z < lift.global_position.z - RebootOpening.SHAFT_HALF.y, "不擋在洞口上")
+		assert_true(south_tip.z > lift.global_position.z + FrostbridgeOpening.SHAFT_HALF.y + 0.5, "往南翻開")
+		assert_true(north_tip.z < lift.global_position.z - FrostbridgeOpening.SHAFT_HALF.y, "不擋在洞口上")
 	# 站得上去：洞口的東西都沒有碰撞（結尾照樣走得到）
 	assert_eq(lift.find_children("*", "CollisionObject3D", true, false).size(), 0)
 	level.queue_free()

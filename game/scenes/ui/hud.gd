@@ -172,8 +172,8 @@ func _process(delta: float) -> void:
 
 ## 可攜藥劑（新版）：數量一格在諾恩生命條的右上方；釘住時生命條也跟著亮（看得到現在滿不滿血）。
 func _refresh_potion(pc: PlayerController, view_h: float, delta: float) -> void:
-	var reboot: bool = Game.session != null and Game.session.is_reboot()
-	var count: int = int(Game.session.state.items.get(PlayerController.PORTABLE_ITEM, 0)) if reboot else 0
+	var in_story: bool = Game.session != null and Game.session.in_story()
+	var count: int = int(Game.session.state.items.get(PlayerController.PORTABLE_ITEM, 0)) if in_story else 0
 	combat.force_bars = potion.pinned and count > 0
 	potion.refresh(count, combat.bars_shown, delta)
 	potion.position = Vector2(56.0 + CombatHud.BAR_W - PotionHud.WIDTH, view_h - 150.0 - 34.0)
@@ -192,7 +192,7 @@ func _on_potion_decided(drink: bool) -> void:
 	if drink:
 		if _potion_player != null and is_instance_valid(_potion_player):
 			_potion_player.use_potion(true)
-	elif Game.session != null and Game.session.is_reboot():
+	elif Game.session != null and Game.session.in_story():
 		Game.session.set_flag("rb.potion_kept", true)
 
 
@@ -223,7 +223,7 @@ func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
 		_set_objective(Game.session.objective_key(), true)
 
 
-## 關卡暫時換掉目標文字（第 3 章掙脫戰「跟席菈一起把牠打到跪下」，D-169）；空字串＝換回任務本身的目標。
+## 關卡暫時換掉目標文字（D-169；現在沒有關卡在用）；空字串＝換回任務本身的目標。
 ## 任務換階段時自動換回；重來會重建 HUD，也就換回了。
 func override_objective(key: String) -> void:
 	_override_key = key

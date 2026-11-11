@@ -1,12 +1,12 @@
-class_name RebootOpening
+class_name FrostbridgeOpening
 extends Node
-## 新版前十分鐘（劇情重寫，D-201～D-204，docs/design/09-reboot-first-ten-minutes.md）在霜橋鎮的控制器。
-## frostbridge.gd 在 Game.session.is_reboot() 時掛上這個節點，不跑切片的觸發點、石拱（石拱停用）。
-## 這一版做到：開場（雷德在鐵門後、波克在推車上、生命 55）→ 推車到北街轉角 → 藥桶破了、主街上一片毒霧 →
+## 前十分鐘（D-201～D-204，docs/design/09-reboot-first-ten-minutes.md）在霜橋鎮的劇情控制器。
+## frostbridge.gd 在 Game.session.in_story() 時掛上這個節點（沒有開新遊戲的 session 只有空的鎮）。
+## 流程：開場（雷德在鐵門後、波克在推車上、生命 55）→ 推車到北街轉角 → 藥桶破了、主街上一片毒霧 →
 ## 第一次中毒自動覺醒（畫面中間兩行字）→ 離開、毒效結束 → 再踏回去確認 → 霧散了 → 推車到南街口。
 ## 席菈接應 → 南街守衛戰（D-207：單階段送葬者＋噴毒）→ 倒下、席菈問名字。藥箱、艾妲、貨梯是下一步。
 
-const QUEST: String = GameSession.REBOOT_MAIN_QUEST
+const QUEST: String = GameSession.MAIN_QUEST
 ## 跟 frostbridge.gd 的 RISE 一樣（北街台地高度）
 const RISE: float = 0.9
 ## 開場短演出把諾恩打到這麼多（鐵架擦過背），自由操作開始時生命穩定
@@ -442,7 +442,7 @@ func _red_runs_off() -> void:
 # ---------------------------------------------------------------- 每幀
 
 func _physics_process(delta: float) -> void:
-	if player == null or Game.session == null or not Game.session.is_reboot():
+	if player == null or Game.session == null or not Game.session.in_story():
 		return
 	_update_cart(delta)
 	_update_pursuer()
@@ -541,7 +541,7 @@ func _pok_into_shop() -> void:
 
 
 func _on_cart_arrived() -> void:
-	if Game.session.is_reboot() and stage() == "poison_discovery":
+	if Game.session.in_story() and stage() == "poison_discovery":
 		Game.session.set_flag("rb.reached_south", true)
 
 
@@ -1001,7 +1001,7 @@ func _spawn_pursuer(drop: bool) -> void:
 	pursuer.name = "RbPursuer"
 	pursuer.position = PURSUER_SPAWN + (Vector3(PURSUER_LEAP, PURSUER_DROP, 0.0) if drop else Vector3.ZERO)
 	level.add_child(pursuer)
-	pursuer.begin_struggle()
+	pursuer.begin_pursuit()
 	pursuer.set_facing(deg_to_rad(180.0))
 	pursuer.scripted_walk(PURSUER_SPAWN, PURSUER_LEAP_SPEED if drop else 0.0)
 	pursuer.scripted_look_at(player.global_position if player != null else PURSUER_BLOCK)
@@ -1020,7 +1020,7 @@ func _spawn_pursuer_blocking() -> void:
 	pursuer.name = "RbPursuer"
 	pursuer.position = PURSUER_BLOCK
 	level.add_child(pursuer)
-	pursuer.begin_struggle()
+	pursuer.begin_pursuit()
 	pursuer.set_facing(deg_to_rad(180.0))
 	pursuer.scripted_walk(PURSUER_BLOCK, 0.0)
 	throw_phase = 3

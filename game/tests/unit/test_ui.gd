@@ -229,7 +229,7 @@ func test_pause_menu_pauses_and_resumes() -> void:
 
 func test_hud_follows_objective_and_autosave() -> void:
 	var s: GameSession = _use_temp_session()
-	s.new_reboot_game()
+	s.new_game()
 	var hud: Hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate() as Hud
 	tree.root.add_child(hud)
 	await tree.process_frame
@@ -249,7 +249,7 @@ func test_hud_follows_objective_and_autosave() -> void:
 
 func test_dialogue_box_reveal_and_choices() -> void:
 	var s: GameSession = _use_temp_session()
-	s.new_reboot_game()
+	s.new_game()
 	var box: DialogueBox = (load("res://scenes/ui/dialogue_box.tscn") as PackedScene).instantiate() as DialogueBox
 	tree.root.add_child(box)
 	await tree.process_frame

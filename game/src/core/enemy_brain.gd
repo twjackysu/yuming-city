@@ -56,7 +56,7 @@ func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
 	telegraph_stagger_mult = CombatTuning.num(prefix + ".telegraph_stagger_mult", 0.5)
 	recover_stagger_mult = CombatTuning.num(prefix + ".recover_stagger_mult", 2.0)
 	var mv: Variant = CombatTuning.value(prefix + ".moves", {}) if _has(prefix + ".moves") else {}
-	# 複製一份：第二階段會改招式數值（下砸前兆縮短），不能改到共用的 CombatTuning 資料
+	# 複製一份：個別敵人改自己的招式數值時，不能改到共用的 CombatTuning 資料
 	moves = (mv as Dictionary).duplicate(true) if mv is Dictionary else {}
 	var pat: Variant = CombatTuning.value(prefix + ".pattern", []) if _has(prefix + ".pattern") else []
 	pattern = PackedStringArray(pat as Array) if pat is Array else PackedStringArray()

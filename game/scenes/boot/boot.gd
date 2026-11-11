@@ -22,7 +22,7 @@ func _ready() -> void:
 		(%Title as Label).add_theme_font_override("font", serif)
 		(%Subtitle as Label).add_theme_font_override("font", serif)
 	# 新遊戲／繼續＝《這些詛咒對我太有用了》（唯一的劇情；舊版的入口第 76 輪拿掉了，D-220）
-	_continue.disabled = not Game.has_reboot_continue()
+	_continue.disabled = not Game.has_continue()
 	_new_game.pressed.connect(_on_new_game)
 	_continue.pressed.connect(_on_continue)
 	_settings_button.pressed.connect(_on_settings)
@@ -44,11 +44,11 @@ func _focus_first() -> void:
 
 
 func _on_new_game() -> void:
-	Game.new_reboot_game(load_levels)
+	Game.new_game(load_levels)
 
 
 func _on_continue() -> void:
-	if not Game.continue_reboot_game(load_levels):
+	if not Game.continue_game(load_levels):
 		_continue.disabled = true
 
 

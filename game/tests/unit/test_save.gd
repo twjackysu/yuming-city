@@ -115,7 +115,7 @@ func test_file_write_and_backup_recovery() -> void:
 	assert_eq((r["state"] as GameState).checkpoint, "rb_guardian")
 
 
-func test_v3_reboot_fields_round_trip() -> void:
+func test_v3_story_fields_round_trip() -> void:
 	var s := GameState.new()
 	s.mode = "reboot"
 	s.statuses = [{"id": "poison", "rate": 3.0, "remaining": 12.5, "source": "mist_serpent_poison"}]
@@ -132,6 +132,6 @@ func test_v3_reboot_fields_round_trip() -> void:
 	assert_true(ReversalSlots.from_dict(back.reversal).is_reversed("poison"))
 
 
-func test_reboot_saves_live_in_their_own_folder() -> void:
-	assert_ne(GameSession.REBOOT_SAVE_DIR, GameSession.DEFAULT_SAVE_DIR, "新版存檔不會寫到舊版的資料夾")
-	assert_false(GameSession.REBOOT_SAVE_DIR.begins_with(GameSession.DEFAULT_SAVE_DIR + "/"), "也不在舊版資料夾裡面")
+func test_story_saves_live_in_their_own_folder() -> void:
+	assert_ne(GameSession.STORY_SAVE_DIR, GameSession.DEFAULT_SAVE_DIR, "新版存檔不會寫到舊版的資料夾")
+	assert_false(GameSession.STORY_SAVE_DIR.begins_with(GameSession.DEFAULT_SAVE_DIR + "/"), "也不在舊版資料夾裡面")

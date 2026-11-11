@@ -1,7 +1,7 @@
 class_name Caravan
 extends Node3D
-## 傷者車隊：一輛手推車＋兩名躺著的傷者，沿路線推進（邏輯在 CaravanRunner）。
-## 在 "heartbeat" 群組：送葬者第二階段優先追它、鐵架打到它就停下並多一名傷者。
+## 傷者推車：一輛手推車＋躺著的傷者，沿路線推進（邏輯在 CaravanRunner）。開場諾恩推的那一輛就是它（只留波克一個人）。
+## 在 "heartbeat" 群組：敵人的招式打到它就停下並多一名傷者。
 ## 生命值不會真的掉（Health 只是讓敵人的命中判定通用），受傷記在 runner.injured。
 
 signal hit_taken(injured: int)

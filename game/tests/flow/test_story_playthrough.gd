@@ -93,7 +93,7 @@ func _potions(s: GameSession) -> int:
 
 
 func _coins(s: GameSession) -> int:
-	return int(s.state.items.get(RebootOpening.WAGES_ITEM, 0))
+	return int(s.state.items.get(FrostbridgeOpening.WAGES_ITEM, 0))
 
 
 func _stick(v: Vector2) -> void:
@@ -135,7 +135,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	await tree.process_frame
 	await tree.process_frame
 	(boot.get_node("%NewGame") as Button).pressed.emit()
-	assert_true(s.is_reboot(), "標題的新遊戲＝新版")
+	assert_true(s.in_story(), "標題的新遊戲＝新版")
 	assert_eq(s.state.checkpoint, "rb_start")
 	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "frostbridge", "從霜橋鎮開始")
 	boot.queue_free()
@@ -143,7 +143,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 
 	# --- 開場：鐵門、雷德、推車上的波克
 	var level: StoryLevel = await _load()
-	var rb: RebootOpening = level.get_node_or_null("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node_or_null("FrostbridgeOpening") as FrostbridgeOpening
 	assert_not_null(rb, "新版的霜橋鎮")
 	if rb == null:
 		level.queue_free()
@@ -154,7 +154,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_true(_talking(), "開場對話")
 	await _run_dialogue(level)
 	assert_eq(s.quests.stage_of("rb_main"), "escape")
-	assert_eq(player.health.hp, RebootOpening.OPENING_HP, "開場生命 55")
+	assert_eq(player.health.hp, FrostbridgeOpening.OPENING_HP, "開場生命 55")
 	await _frames(70)
 	assert_true(level.has_node("RbPursuer"), "送葬者從屋頂跳下來追")
 
@@ -172,10 +172,10 @@ func test_new_game_to_lift_in_one_run() -> void:
 	level.queue_free()
 	await tree.process_frame
 	_game().call("retry", false)
-	assert_true(s.is_reboot(), "重來之後還是新版")
+	assert_true(s.in_story(), "重來之後還是新版")
 	assert_eq(s.state.checkpoint, "rb_before_mist")
 	level = await _load()
-	rb = level.get_node("RebootOpening") as RebootOpening
+	rb = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	player = level.get_node("Player") as PlayerController
 	cart = level.get_node("RbCart") as Caravan
 	var hud: Hud = level.get_node("Hud") as Hud
@@ -187,7 +187,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 
 	# --- 走進毒霧：中毒、自動覺醒、生命往上
 	var hp0: float = player.health.hp
-	player.global_position = RebootOpening.MIST_CENTER + Vector3(0.0, 0.05, 0.0)
+	player.global_position = FrostbridgeOpening.MIST_CENTER + Vector3(0.0, 0.05, 0.0)
 	await _frames(40)
 	assert_true(player.reversal.is_reversed("poison"), "第一次中毒：逆轉體質自動裝上")
 	assert_eq(s.state.get_flag("rb.reversal_awakened"), true)
@@ -202,7 +202,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_true(_talking(), "「再踏回去一次」")
 	await _run_dialogue(level)
 	rb.mist_clear_sec = 0.1
-	player.global_position = RebootOpening.MIST_CENTER + Vector3(1.0, 0.05, 2.0)
+	player.global_position = FrostbridgeOpening.MIST_CENTER + Vector3(1.0, 0.05, 2.0)
 	await _frames(3)
 	assert_eq(s.state.get_flag("rb.mist_reentered"), true, "再踏回去確認")
 	await _run_dialogue(level)
@@ -255,7 +255,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_eq(s.state.checkpoint, "rb_portable", "撿藥之前的檢查點")
 
 	# --- 藥箱落地 → 拿走兩瓶
-	await _frames(int((RebootOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0) + 12)
+	await _frames(int((FrostbridgeOpening.CRATE_DROP_DELAY + PotionCrate.DROP_SEC) * 60.0) + 12)
 	var crate: PotionCrate = level.get_node_or_null("RbPotionCrate") as PotionCrate
 	assert_not_null(crate, "牠背上的藥箱摔在旁邊")
 	if crate == null:
@@ -276,7 +276,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_eq(_potions(s), 0, "檢查點之後拿的藥跟著退回")
 	level = await _load()
 	_park_sheila(level)
-	rb = level.get_node("RebootOpening") as RebootOpening
+	rb = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	player = level.get_node("Player") as PlayerController
 	assert_false(level.has_node("RbGuardian"), "牠不會再站起來")
 	crate = level.get_node_or_null("RbPotionCrate") as PotionCrate
@@ -306,13 +306,13 @@ func test_new_game_to_lift_in_one_run() -> void:
 	# --- 艾妲：一半工錢 → 貨梯 → 待續 → 回標題
 	var done: Array[int] = [0]
 	rb.end_done = func() -> void: done[0] += 1
-	_stand(level, RebootOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
+	_stand(level, FrostbridgeOpening.ADA_POS + Vector3(-1.2, 0.0, 1.6))
 	await _frames(6)
 	assert_true(_talking(), "走近梨攤：艾妲開口")
 	await _run_dialogue(level)
 	await _frames(2)
-	assert_eq(_coins(s), RebootOpening.WAGES, "一半的工錢")
-	_stand(level, RebootOpening.LIFT_POS + Vector3(-0.3, 0.0, 0.4))
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES, "一半的工錢")
+	_stand(level, FrostbridgeOpening.LIFT_POS + Vector3(-0.3, 0.0, 0.4))
 	await _frames(6)
 	assert_true(bool(s.state.get_flag("rb.market_reached", false)), "站上貨梯")
 	assert_true(s.quests.is_done("rb_main"), "前十分鐘走完了")
@@ -326,7 +326,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	# 一路走完：狀態不會留一堆、藥還剩一瓶、工錢只有一份
 	assert_true(player.status_effects.to_array().size() <= 1, "身上最多只有一個中毒（不疊加）")
 	assert_eq(_potions(s), 1)
-	assert_eq(_coins(s), RebootOpening.WAGES)
+	assert_eq(_coins(s), FrostbridgeOpening.WAGES)
 	level.queue_free()
 	await tree.process_frame
 
@@ -334,11 +334,11 @@ func test_new_game_to_lift_in_one_run() -> void:
 ## 只用手把事件：左搖桿走到藥箱 → A 拿藥 → A 讀完諾恩那兩句 → 十字鍵左喝一瓶
 func test_gamepad_walks_to_crate_takes_and_drinks() -> void:
 	var s := _session()
-	s.new_reboot_game()
-	RebootOpening.dev_advance(s, "potion")
+	s.new_game()
+	FrostbridgeOpening.dev_advance(s, "potion")
 	var level: StoryLevel = await _load()
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var crate: PotionCrate = level.get_node_or_null("RbPotionCrate") as PotionCrate
 	assert_not_null(crate, "藥箱在南街上")
@@ -362,7 +362,7 @@ func test_gamepad_walks_to_crate_takes_and_drinks() -> void:
 	_stick(Vector2.ZERO)
 	await _frames(3)
 	assert_true(crate.is_near(), "左搖桿走到藥箱旁（停在 %s）" % player.global_position)
-	assert_true(RebootOpening.flat_distance(start, player.global_position) > 2.0, "是自己走過去的")
+	assert_true(FrostbridgeOpening.flat_distance(start, player.global_position) > 2.0, "是自己走過去的")
 	assert_eq(int(App.last_device), int(InputGlyphs.Device.PAD), "動了搖桿 → 畫面提示換成手把")
 
 	# --- A：拿藥；A：讀完對話

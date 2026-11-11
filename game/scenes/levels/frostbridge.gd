@@ -1,6 +1,6 @@
 extends StoryLevel
 ## 霜橋鎮：只負責把鎮蓋出來（地面、廣場、街道與房子、鐘樓、路燈、梨攤、南街的斷拱）。
-## 劇情（開場到貨梯）在 RebootOpening（rb_frostbridge.gd），有開新遊戲的 session 才掛上去。
+## 劇情（開場到貨梯）在 FrostbridgeOpening（frostbridge_opening.gd），有開新遊戲的 session 才掛上去。
 ##
 ## 版面（-Z 是北，單位公尺）：
 ##   廣場  z∈[-10,10]、x∈[-11,11]：梨攤、井、四盞路燈
@@ -10,7 +10,7 @@ extends StoryLevel
 ##   路口  z∈[34,42]、x∈[-20,20]
 ## 靜態幾何全部進 StaticBatch（每種材質一個 draw call）；北街的房子、鐘各自一個節點。
 ##
-## 開發用旗標（`++ --level=frostbridge ...`）：`--rb-at=…`（劇情推到哪一段，見 RebootOpening.dev_advance）、
+## 開發用旗標（`++ --level=frostbridge ...`）：`--rb-at=…`（劇情推到哪一段，見 FrostbridgeOpening.dev_advance）、
 ## `--at=plaza|main|steps|north|south|cross`（出生位置）、`--pos=x,z`（最後把諾恩移到這裡）、
 ## `--face=sheila|undertaker|arch|ada` `--face-off=度`、`--hide=noen`（藏起諾恩）。
 
@@ -74,7 +74,7 @@ const ROOF_SNOW: float = 0.7
 ## 房子亮窗的發光強度（window_glass.gdshader 每扇再乘 0.75～1.2，D-066）
 const WINDOW_ENERGY: float = 1.5
 ## 新版（劇情重寫）的流程控制器；舊版是 null（D-204）
-var reboot_opening: RebootOpening = null
+var opening: FrostbridgeOpening = null
 
 
 func _ready() -> void:
@@ -95,11 +95,11 @@ func _ready() -> void:
 	var spawn: Marker3D = $Spawn
 	player.global_transform = spawn.global_transform
 	player.snap_camera()
-	# 劇情（開場到貨梯）交給 RebootOpening；沒有開新遊戲的 session（測試、benchmark）就只有空的鎮
-	if Game.session.is_reboot():
-		reboot_opening = RebootOpening.new()
-		reboot_opening.name = "RebootOpening"
-		add_child(reboot_opening)
+	# 劇情（開場到貨梯）交給 FrostbridgeOpening；沒有開新遊戲的 session（測試、benchmark）就只有空的鎮
+	if Game.session.in_story():
+		opening = FrostbridgeOpening.new()
+		opening.name = "FrostbridgeOpening"
+		add_child(opening)
 	# 以下是截圖用的旗標，都在劇情擺好場面之後才動諾恩
 	# `--at=plaza|main|steps|north|south|cross`：出生位置
 	if dev_args.has("at") and DEV_SPAWNS.has(str(dev_args["at"])):
@@ -214,7 +214,7 @@ func dev_hide_player() -> void:
 var _dev_face: String = ""
 ## `--face-off`：轉向目標後再往左轉的角度（度；正＝往左轉，目標落到畫面右側）
 var _dev_face_off: float = 0.0
-## 梨攤旁的地窖口（貨梯的井口蓋在這裡：RebootOpening._build_shaft_mouth，D-214）
+## 梨攤旁的地窖口（貨梯的井口蓋在這裡：FrostbridgeOpening._build_shaft_mouth，D-214）
 const CELLAR_POS: Vector3 = Vector3(7.6, 0.0, -4.2)
 
 
@@ -1390,7 +1390,7 @@ func _build_pear_stall(pos: Vector3) -> void:
 	var pear := look.mat(Color(0.78, 0.66, 0.3), 0.6)
 	for i: int in 6:
 		_batch.add_sphere(0.09, pos + Vector3(-0.5 + i * 0.2, 0.99, -0.1 + (i % 2) * 0.15), pear)
-	# 艾妲是站在攤子前的人偶（RebootOpening._build_ada，D-210）
+	# 艾妲是站在攤子前的人偶（FrostbridgeOpening._build_ada，D-210）
 	var l := OmniLight3D.new()
 	l.light_color = FrostbridgeLook.LAMP
 	l.light_energy = 1.4

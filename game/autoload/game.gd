@@ -54,7 +54,7 @@ func _ready() -> void:
 		# 開發用：`-- --level=frostbridge` 直接開新遊戲；`--rb-at=start|mist|guardian|market…` 推到那一段（D-204）
 		# benchmark 不開新遊戲（只飛過空的霜橋鎮，也不會寫到玩家的存檔）
 		if not args.has("benchmark"):
-			_dev_reboot_start.call_deferred(str(args.get("rb-at", "")))
+			_dev_story_start.call_deferred(str(args.get("rb-at", "")))
 		go_to_level.call_deferred(level)
 	# 截圖用：`-- --level=frostbridge --rb-at=market --dialogue=rb_ada_wages --dialogue-steps=2`
 	if args.has("dialogue"):
@@ -67,25 +67,25 @@ func _ready() -> void:
 
 
 ## 開發旗標開的遊戲存在另一個資料夾（DEV_SAVE_DIR），不會蓋掉玩家真正的進度。
-func _dev_reboot_start(at: String) -> void:
+func _dev_story_start(at: String) -> void:
 	session.save_dir = DEV_SAVE_DIR
-	session.new_reboot_game()
-	RebootOpening.dev_advance(session, at)
+	session.new_game()
+	FrostbridgeOpening.dev_advance(session, at)
 
 
-## 標題畫面的「新遊戲／繼續」（D-211）；存檔在 GameSession.REBOOT_SAVE_DIR。load_level=false 給測試用（只改狀態、不換場景）。
-func has_reboot_continue() -> bool:
-	return session.has_reboot_save(GameSession.AUTO_SLOT)
+## 標題畫面的「新遊戲／繼續」（D-211）；存檔在 GameSession.STORY_SAVE_DIR。load_level=false 給測試用（只改狀態、不換場景）。
+func has_continue() -> bool:
+	return session.has_story_save(GameSession.AUTO_SLOT)
 
 
-func new_reboot_game(load_level: bool = true) -> void:
-	session.new_reboot_game()
+func new_game(load_level: bool = true) -> void:
+	session.new_game()
 	if load_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))
 
 
-func continue_reboot_game(load_level: bool = true) -> bool:
-	if session.load_reboot_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
+func continue_game(load_level: bool = true) -> bool:
+	if session.load_story_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
 		return false
 	if load_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))
@@ -160,7 +160,7 @@ func retry(reload_level: bool = true) -> void:
 	dialogue = null
 	var played: float = session.state.playtime_sec
 	if session.retry_from_checkpoint() != SaveCodec.Status.OK:
-		session.new_reboot_game()
+		session.new_game()
 	session.state.playtime_sec = maxf(session.state.playtime_sec, played)
 	if reload_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))

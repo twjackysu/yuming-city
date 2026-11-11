@@ -140,14 +140,14 @@ func test_charge_into_wall_kneels() -> void:
 
 
 ## 追擊的那一隻（D-169、D-205）：少一招（沒有衝撞）、失衡上限比較低，打到殘血輪替也不變；換難度後照樣。
-func test_struggle_mode_drops_charge() -> void:
+func test_pursuit_drops_charge() -> void:
 	var a: Array = _arena()
 	var root: Node3D = a[0]
 	var boss: Undertaker = a[2]
 	boss.global_position = Vector3(0, 0, -30)
 	await tree.physics_frame
-	boss.begin_struggle()
-	assert_false(boss.brain.pattern.has("charge"), "掙脫戰沒有衝撞：%s" % [boss.brain.pattern])
+	boss.begin_pursuit()
+	assert_false(boss.brain.pattern.has("charge"), "追擊的那一隻沒有衝撞：%s" % [boss.brain.pattern])
 	assert_true(boss.brain.pattern.has("sweep") and boss.brain.pattern.has("slam"), "橫掃與下砸都在")
 	assert_true(boss.brain.stagger_max < CombatTuning.num("undertaker.stagger_max", 200.0), "失衡上限比較低")
 	var pattern: PackedStringArray = boss.brain.pattern.duplicate()

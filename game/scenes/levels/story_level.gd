@@ -1,7 +1,6 @@
 class_name StoryLevel
 extends Node3D
 ## 關卡的共用基底：地面高度、腳步聲材質。霜橋鎮（scenes/levels/frostbridge.gd）繼承這個。
-## （舊劇情的敲鐘、北街陷落、車隊戰第 77 輪拿掉了，D-220。）
 
 var _rng := RandomNumberGenerator.new()
 var _bell: Node3D

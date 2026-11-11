@@ -34,7 +34,7 @@ func test_step_uses_real_time_and_caps() -> void:
 
 func test_accumulates_only_in_a_level() -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
-	s.new_reboot_game()
+	s.new_game()
 	_game.set("session", s)
 	# 測試時的 current_scene 是測試執行器（不是關卡）：不算
 	assert_false(tree.current_scene is StoryLevel)
@@ -45,7 +45,7 @@ func test_accumulates_only_in_a_level() -> void:
 
 func test_retry_keeps_playtime() -> void:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
-	s.new_reboot_game()
+	s.new_game()
 	_game.set("session", s)
 	s.state.playtime_sec = 100.0
 	assert_eq(s.save(GameSession.AUTO_SLOT), OK, "自動存檔（檢查點）")

@@ -11,8 +11,12 @@ var flags: Dictionary = {}
 ## quest_id -> 階段 id
 var quests: Dictionary = {}
 
-## "reboot"＝現在的劇情（new_reboot_game 設定，存在 GameSession.REBOOT_SAVE_DIR）；
-## "classic"＝已經刪掉的舊劇情留下的 v3 存檔（標題的「繼續」不認它）。存檔裡舊的 memories_paid／guide 兩個欄位讀到就丟掉。
+## 存檔裡 `mode` 欄位的值：STORY_MODE＝有開新遊戲的劇情（GameSession.new_game 設定，存在 GameSession.STORY_SAVE_DIR）。
+## **字串不要改**：玩家已經有的存檔裡寫的就是 "reboot"，改了那些存檔會被當成沒有劇情（D-227）。
+const STORY_MODE: String = "reboot"
+
+## STORY_MODE＝現在的劇情；"classic"＝沒有開新遊戲（測試、benchmark 的空鎮），或已經刪掉的舊劇情留下的 v3 存檔
+## （標題的「繼續」不認它）。存檔裡舊的 memories_paid／guide 兩個欄位讀到就丟掉。
 var mode: String = "classic"
 ## 身上還在的狀態（StatusEffects.to_array()），檢查點存的照原樣恢復
 var statuses: Array = []

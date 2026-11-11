@@ -28,8 +28,8 @@ func after_each() -> void:
 func _session_at_guardian() -> GameSession:
 	var s := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", s)
-	s.new_reboot_game()
-	RebootOpening.dev_advance(s, "guardian")
+	s.new_game()
+	FrostbridgeOpening.dev_advance(s, "guardian")
 	return s
 
 
@@ -77,7 +77,7 @@ func test_guardian_walks_in_then_fights() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node_or_null("RbGuardian") as Undertaker
 	assert_not_null(g, "南街的守衛（節點名＝任務標記 node:RbGuardian）")
@@ -86,7 +86,7 @@ func test_guardian_walks_in_then_fights() -> void:
 		level.queue_free()
 		await tree.process_frame
 		return
-	assert_true(g.guardian_mode and g.struggle_mode, "單階段：不會進第二階段")
+	assert_true(g.guardian_mode and g.no_charge, "守衛的輪替、沒有衝撞")
 	assert_eq(g.health.max_hp, CombatTuning.num("undertaker.guardian_hp", -1.0), "守衛的生命（比切片的送葬者少）")
 	assert_eq(g.health.hp, g.health.max_hp)
 	assert_true(g.brain.pattern.has("spray") and g.brain.pattern.has("sweep") and g.brain.pattern.has("slam"), "橫掃、下砸、噴毒")
@@ -108,9 +108,11 @@ func test_guardian_walks_in_then_fights() -> void:
 	assert_true(g.health.apply_damage(10.0, {"kind": "blunt", "stagger": 0.0}), "開打之後打得動")
 	await _frames(20)
 	assert_true(g.brain.state != EnemyBrain.State.IDLE, "狀態機在跑")
-	assert_eq(g.phase, 1)
+	var pattern: PackedStringArray = g.brain.pattern.duplicate()
+	assert_true(absf(g.brain.move_num("slam", "telegraph") - 1.0) < 0.001, "下砸前兆 1 秒")
 	g.health.apply_damage(g.health.hp - 50.0, {"kind": "blunt", "stagger": 0.0})
-	assert_eq(g.phase, 1, "打到殘血也不會進第二階段")
+	assert_eq(g.brain.pattern, pattern, "打到殘血輪替不變（只有一個階段）")
+	assert_true(absf(g.brain.move_num("slam", "telegraph") - 1.0) < 0.001, "下砸前兆也不會縮短")
 	level.queue_free()
 	await tree.process_frame
 
@@ -120,7 +122,7 @@ func test_spray_telegraph_leaves_mist_that_heals_noen_and_expires() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
 	# 牠站在街心面向北，諾恩站在牠正前方 2.6 m（噴毒落點）
@@ -193,7 +195,7 @@ func test_live_slam_scars_the_street_and_misses_noen_who_backed_off() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
 	g.global_position = Vector3(0.2, 0.05, 17.0)
@@ -237,7 +239,7 @@ func test_guardian_down_then_sheila_asks_name() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
 	rb.guardian_down_talk_sec = 0.2
@@ -268,17 +270,17 @@ func test_retry_returns_before_fight_with_full_guardian_and_same_hp() -> void:
 	var level: StoryLevel = await _load()
 	await tree.process_frame
 	_park_sheila(level)
-	var rb: RebootOpening = level.get_node("RebootOpening") as RebootOpening
+	var rb: FrostbridgeOpening = level.get_node("FrostbridgeOpening") as FrostbridgeOpening
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var g: Undertaker = level.get_node("RbGuardian") as Undertaker
-	var saved_hp: float = float(s.state.vitals.get("hp", RebootOpening.OPENING_HP))
+	var saved_hp: float = float(s.state.vitals.get("hp", FrostbridgeOpening.OPENING_HP))
 	rb._engage_guardian()
 	g.health.apply_damage(200.0, {"kind": "blunt", "stagger": 0.0})
 	player.health.hp = 12.0
 	level.queue_free()
 	await tree.process_frame
 	_game().call("retry", false)
-	assert_true(s.is_reboot())
+	assert_true(s.in_story())
 	assert_eq(s.state.checkpoint, "rb_guardian", "回到戰前")
 	assert_eq(s.state.get_flag("rb.guardian_down", false), false)
 	var level2: StoryLevel = await _load()
