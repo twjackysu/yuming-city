@@ -53,16 +53,6 @@ jobs:
           scripts/screenshot.sh build/title.png 30
           scripts/screenshot.sh build/town.png 120 --level=frostbridge --rb-at=market --at=plaza --perf || true
           scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --rb-at=market --at=plaza --dialogue=rb_ada_wages --dialogue-steps=2 --locale=zh_TW || true
-          scripts/screenshot.sh build/street.png 40 --level=frostbridge --rb-at=market --at=main --quality=2 --nohud --locale=zh_TW || true
-
-      # Steam 膠囊圖替代版（D-064）：主街夜景＋標題字，正式主視覺做好前先給商店頁用
-      - name: Steam 膠囊圖替代版
-        continue-on-error: true
-        run: |
-          python3 -m pip install --quiet --user --break-system-packages "pillow==11.3.0" || python3 -m pip install --quiet --user "pillow==11.3.0"
-          [[ -s build/street.png ]] && python3 -P scripts/steam_mock.py build/street.png build/steam --title-shot build/title.png
-          # 成就圖示替代版（D-147）：每個成就 256×256 解鎖／未解鎖各一張，打包成 zip 給 Steamworks 批次上傳
-          python3 -P scripts/achievement_icons.py build/steam/achievements
 
       # 匯出版本身（不是編輯器）能開到霜橋鎮、畫出東西、沒有 SCRIPT ERROR（M1.4）
       - name: 匯出版 smoke test
@@ -88,10 +78,6 @@ jobs:
             build/title.png
             build/town.png
             build/dialogue.png
-            build/street.png
-            build/steam/*.png
-            build/steam/achievements/achievement-icons.zip
-            build/steam/achievements/achievements_sheet.png
             build/smoke-export.png
             build/smoke-export.log
           if-no-files-found: warn
@@ -106,9 +92,6 @@ jobs:
           [[ -s build/title.png ]] && FILES+=(build/title.png)
           [[ -s build/town.png ]] && FILES+=(build/town.png)
           [[ -s build/dialogue.png ]] && FILES+=(build/dialogue.png)
-          [[ -s build/steam/header_capsule.png ]] && FILES+=(build/steam/header_capsule.png)
-          [[ -s build/steam/achievements/achievement-icons.zip ]] && FILES+=(build/steam/achievements/achievement-icons.zip)
-          [[ -s build/steam/achievements/achievements_sheet.png ]] && FILES+=(build/steam/achievements/achievements_sheet.png)
           # main 上已經有更新的程式 commit 時跳過（下一個 run 會發布），不刪舊版。
           # 這種情況下用 GITHUB_TOKEN 在舊 commit 建 tag，若 workflow 檔已改過會被 403 擋（run 42398212944、42402903825）。
           git fetch --quiet origin main

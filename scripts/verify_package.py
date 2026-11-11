@@ -29,7 +29,6 @@ REQUIRED = [
     "data/reboot/statuses.json",
     "data/quests/rb_main.json",
     "data/quests/slice_main.json",
-    "data/achievements.json",
     "data/dialogue/slice_ada_aftermath.json",
     "data/journal/slice.json",
     "data/combat/tuning.json",

@@ -41,15 +41,8 @@ var dialogues: DialogueDB
 var journal: Journal
 ## 進行中的對話（沒有則為 null）
 var dialogue: DialogueRunner
-## 成就（帳號層級，D-147）；開發旗標與測試用只在記憶體的，不寫玩家的檔案
-var achievements: AchievementTracker
-## 成就解鎖小卡（有 Steam 時不用）
-var achievement_toast: AchievementToast
 ## 重現期間的混音（D-183）：輪詢 RestoreMix.GROUP，SFX 低通＋Music 壓低
 var restore_mix: RestoreMix
-## 每隔多久再檢查一次成就（有些旗標直接寫進 state、沒經過 advance）
-const ACHIEVEMENT_POLL_SEC: float = 0.5
-var _achievement_poll: float = 0.0
 
 
 func _ready() -> void:
@@ -61,20 +54,9 @@ func _ready() -> void:
 	for e: String in journal.validate():
 		push_error("Game: 日記資料錯誤 " + e)
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
-	achievement_toast = AchievementToast.new()
-	achievement_toast.blocked_check = is_player_locked
-	add_child(achievement_toast)
 	restore_mix = RestoreMix.new()
 	restore_mix.name = "RestoreMix"
 	add_child(restore_mix)
-	# 開發旗標（截圖、benchmark、直接進關卡）會跳著設旗標：成就只放在記憶體，不寫進玩家的檔案
-	var dev_run: bool = args.has("level") or args.has("benchmark") or args.has("screenshot") \
-		or args.has("dialogue")
-	use_achievements(AchievementTracker.create("" if dev_run else AchievementTracker.DEFAULT_STORE_PATH))
-	SteamBridge.sync(achievements.unlocked_ids())
-	# 截圖用：`-- --level=frostbridge --achievement=ACH_NINE_SECONDS` 一開始就出現那張解鎖小卡（不會真的解鎖）
-	if args.has("achievement"):
-		achievement_toast.enqueue(str(args["achievement"]))
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
 		level = "benchmark"
@@ -99,23 +81,6 @@ func _dev_reboot_start(at: String) -> void:
 	session.save_dir = DEV_SAVE_DIR
 	session.new_reboot_game()
 	RebootOpening.dev_advance(session, at)
-
-
-## 換一套成就紀錄（測試用 store_path="" 的，不寫玩家的檔案）。
-func use_achievements(tracker: AchievementTracker) -> void:
-	if achievements != null and achievements.unlocked.is_connected(_on_achievement_unlocked):
-		achievements.unlocked.disconnect(_on_achievement_unlocked)
-	achievements = tracker
-	for e: String in achievements.errors:
-		push_error("Game: 成就資料錯誤 " + e)
-	achievements.unlocked.connect(_on_achievement_unlocked)
-	session.attach_achievements(achievements)
-
-
-func _on_achievement_unlocked(achievement_id: String) -> void:
-	if SteamBridge.set_achievement(achievement_id) and SteamBridge.shows_own_toast():
-		return
-	achievement_toast.enqueue(achievement_id)
 
 
 ## 標題畫面的「新遊戲／繼續」（D-211）；存檔在 GameSession.REBOOT_SAVE_DIR。load_level=false 給測試用（只改狀態、不換場景）。
@@ -235,10 +200,6 @@ func is_player_locked() -> bool:
 func _process(delta: float) -> void:
 	if session != null and get_tree().current_scene is StoryLevel:
 		session.state.playtime_sec += playtime_step(delta, Engine.time_scale)
-	_achievement_poll -= delta
-	if _achievement_poll <= 0.0:
-		_achievement_poll = ACHIEVEMENT_POLL_SEC
-		session.check_achievements()
 
 
 func _on_dialogue_state_changed() -> void:

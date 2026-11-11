@@ -246,10 +246,7 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 	if weak:
 		_flash_weak()
 	_hit_fx(info)
-	var knelt: bool = brain.add_stagger(float(info.get("stagger", 0.0)))
-	# 成就「看穿」：打中弱點而跪下（D-147）
-	if knelt and weak and intel_id() != "":
-		Game.session.add_stat("stats.%s_weak_kneels" % intel_id())
+	brain.add_stagger(float(info.get("stagger", 0.0)))
 
 
 # ---------------------------------------------------------------- 被打中的那一下（D-217）

@@ -16,11 +16,6 @@ func _initialize() -> void:
 func _run() -> void:
 	var problems: PackedStringArray = []
 	var passed: int = 0
-	# 成就只放在記憶體：跑測試不會寫到這台電腦真的 user://achievements.json（D-147）
-	var game: Node = root.get_node_or_null("Game")
-	if game != null:
-		game.call("use_achievements", AchievementTracker.new(AchievementTracker.load_defs(), ""))
-
 	# 1) 腳本載入檢查
 	var scripts: PackedStringArray = []
 	_collect("res://", ".gd", scripts)
