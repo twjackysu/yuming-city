@@ -51,8 +51,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null
           scripts/screenshot.sh build/title.png 30
-          # 40 幀：120 幀在軟體 Vulkan 上常常超過 screenshot.sh 的 120 秒逾時，town.png 就不見了（第 77、78 輪各一次）
-          scripts/screenshot.sh build/town.png 40 --level=frostbridge --rb-at=market --at=plaza --perf || true
+          # 這一張是這個 job 第一次開關卡：軟體 Vulkan 要先編 shader，常常超過 screenshot.sh 的 120 秒逾時。
+          # 不要用減少幀數來「修」：第 79 輪改成 40 幀，結果 Vulkan 照樣逾時、退回 OpenGL 拍出一張沒有體積霧的圖發布出去。
+          scripts/screenshot.sh build/town.png 120 --level=frostbridge --rb-at=market --at=plaza --perf || true
           scripts/screenshot.sh build/dialogue.png 150 --level=frostbridge --rb-at=market --at=plaza --dialogue=rb_ada_wages --dialogue-steps=2 --locale=zh_TW || true
 
       # 匯出版本身（不是編輯器）能開到霜橋鎮、畫出東西、沒有 SCRIPT ERROR（M1.4）
