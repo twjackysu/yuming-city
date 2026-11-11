@@ -2,6 +2,41 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-11 13:27–14:14　第 77 輪：舊版清理第二步的大半——程式裡沒有「舊劇情的新遊戲」了、霜橋鎮的關卡檔只蓋鎮、過場與成就整套刪
+
+**做了什麼**
+
+- 開工：FOR_JACKY 回覆區沒有新的回覆（最新一則還是 11/11「舊版全部砍掉」，第 76 輪處理了第一步）；沒有 Issue、art-inbox 與 Jacky 的 commit 沒有新的。上一輪 96b26bc run 42954535806 最後全綠。照 NEXT「000」做第 2 步。
+- **入口只剩一種**（75953eb）：`GameSession.new_game()`（舊劇情）、`MAIN_QUEST(S)`、`is_slice_complete()`、`Game.new_game()`／`continue_game()`／`has_continue()` 刪掉；主線固定是 `rb_main`；倒下重來沒有存檔時一律重開這個劇情。
+- **`frostbridge.gd` 只蓋鎮**（1,886 → 1,540 行）：梨販、敲鐘、北街陷落與救援、席菈會合、灰巡者、車隊戰、石拱回憶、收束、地窖木板、攤子後面的剪影，以及 `--convoy`／`--rescue`／`--arch`／`--throw`／`--felled`／`--phase2`／`--insight` 全部拿掉。`StoryLevel` 從 199 行剩 22 行（地面高度、腳步聲材質、四個欄位）。**沒有開新遊戲的 session＝只有鎮**（benchmark 與鎮本身的測試用）；有開才掛 `RebootOpening`。
+- **整套刪掉的**：過場系統（`CutsceneRunner`、`CutsceneView`、`RingTally`、`data/cutscenes/`、`Game.play_cutscene()`…）、開發沙盒 `scenes/dev/`、`RescueSite`、`CoalPile`、`ConvoyEncounter`、`ThrownFrame`、`FrameThrowEvent`、`JournalView`、Steam 商店截圖腳本（`store-shots.*`、`store_shots.txt`、`check_store_shots.py`）。
+- **成就系統與 Steam 素材腳本**（b706013）：`AchievementTracker`、`AchievementToast`、`SteamBridge`、`data/achievements.json`、`ACH_*` 翻譯 17 行、`achievement_icons.py`、`steam_mock.py`、CI 的「Steam 膠囊圖替代版」步驟。八個成就的條件全是舊劇情的旗標，新劇情一個都解不到。
+- **順便修的兩件事**（都是入口統一之後才看得出來的）：①開發旗標（`--level=frostbridge [--rb-at=…]`）開的遊戲以前直接寫進玩家真正的存檔資料夾——現在寫到 `user://saves_dev_reboot`；`--benchmark` 不開新遊戲、不寫存檔。②`--at`／`--pos`／`--face`／`--hide` 以前在劇情擺場面之前就套用（會被開場的出生點蓋掉），改成之後才套用。
+- 按鍵設定裡 Tab 的名字從「日記」改成「看目前的目標」（日記畫面刪了，那顆鍵本來就還有這個功能）。
+- CI：截圖拿掉 `bell.png`、`combat.png`、`ninebreath.png`、`street.png` 與盤點的 `04`、`06`～`09`、`11`；`town.png`、`dialogue.png`、`02`、`03`、`05`、`10` 改拍新劇情裡的鎮（`--rb-at=market --at=…`）；匯出版 smoke test 改用 `--rb-at=market --at=main`。
+- 決策 D-221（這一輪的切法、哪些留到下一輪、開發旗標的存檔）。NEXT「000」改寫成「第 2 步後半」的七項清單，每項寫了誰還在用、要不要拍圖。
+
+**怎麼驗證**
+
+- `scripts/check.sh` 全綠三次：只動入口與關卡檔之後 353 個；加一個新測試 354 個；刪成就之後 344 個。import 沒有 ERROR。
+- **新劇情的測試一個沒少**：動手前後各列一次 `test_reboot_*`、`test_title_entry`、`test_reboot_session`、回血／狀態／毒霧／命中／下砸的 `func test_` 清單來 diff——69 個都在。其中 2 個原本是「舊版沒有劇情控制器／沒有吊燈」，改成「沒有開新遊戲的 session 沒有…」（舊版不存在了，同一個保證換個說法）；2 個原本靠「先開一局舊劇情」造舊存檔的（標題的「繼續」不認舊存檔、開新遊戲不會動到舊資料夾的檔），改成直接在舊資料夾造一份存檔，斷言沒有變鬆。守衛戰、藥箱、貨梯、一條龍（標題 → 待續，中間倒下重來兩次）、回血、狀態、毒霧、命中、下砸的測試檔一行都沒改。
+- 新增 `test_title_entry.gd::test_dev_flags_never_write_the_players_save`：玩家玩到毒霧前 → 用開發旗標跳到梨攤 → 玩家那份存檔一個字都沒變、開發用的存檔在另一個資料夾。
+- `test_frostbridge.gd`：鎮本身的 18 個測試改成不開新遊戲（只有鎮）；目標指引改用新劇情驗證（守衛打完之後指向梨攤、設定關掉不顯示、走到旁邊不顯示）；`--face` 改驗席菈、艾妲、南街守衛、斷拱。
+- 開發旗標各用 headless 跑 150～200 幀，沒有 SCRIPT ERROR：`--level=frostbridge`、`--rb-at=market --at=plaza --dialogue=rb_ada_wages`、`--rb-at=market --open=pause`、`--rb-at=guardian --face=undertaker --pos=…`、`--rb-at=market --at=main --nohud --hide=noen`、`--benchmark`、不帶旗標（標題）。跑完只有 `saves_dev_reboot/auto.json`，沒有 `saves_reboot`。
+- CI 才有的三步在本機也跑了一次（b706013 的程式）：Linux 匯出、`verify_package.py`（必要檔案 54/54）、匯出版 smoke test（新旗標 `--rb-at=market --at=main`）都過。
+- CI：**run 42967626430（75953eb）兩個 job 全綠**（Import、測試、匯出 2 分 25 秒；截圖、匯出版 smoke test、打包、更新「latest」都過；盤點截圖 17 分鐘，比上一輪少 10 分鐘）。**run 42969006484（b706013）**14:01 開始，「Import、測試、匯出」14:04 綠（344 個測試＋Windows／Linux 匯出＋打包檢查）；「測試與匯出」job 14:11 **全綠**（截圖、匯出版 smoke test、打包、更新「latest」都過——「latest」現在是 b706013 的建置）；它的「盤點截圖」job 收尾時（14:13）還在拍（約 14:20 結束，新的 `02`、`03`、`05`、`10` 下一輪看）。
+
+**畫面前後對照的結論**
+
+- 這一輪的目標是「畫面完全不變」。用固定鏡頭跟 CI 的基準（上一輪的程式拍的）比數字：`45-rb-guardian`（南街守衛、吊燈、斷拱）差異 **0.0%**、亮度 67.7、過曝 0.02%、死黑 0.16%；`51-rb-market`（梨攤、艾妲、貨梯）差異 **0.0%**、亮度 35.2、過曝 0.01%、死黑 2.17%。差異是 0，沒有看圖。（第一張照例是 Vulkan 逾時退回 OpenGL 的假數字——差異 73%、死黑 37%——當暖機，沒有採用。）
+- 沒有拍的：開場（北街）與藥箱。這兩段用到的程式（`RebootOpening`）一行都沒改，鎮的幾何也沒改。
+
+**遇到的問題**
+
+- 舊劇情牽連的範圍比清單寫的還深（石拱「重現」連到 HUD 提示、混音、設定、日記；灰巡者被 11 個測試檔拿來當「一般的敵人」）。這一輪切在「玩家與開發旗標都走不到舊流程、關卡檔乾淨」；石拱要先換成單純的場景物件才能刪（不然南街的畫面會變），留給下一輪，清單在 NEXT。
+- 測試結束時印 `16 ObjectDB instances were leaked at exit`（不影響結果）。逐檔跑了一遍找來源：`test_status_effects.gd`、`test_mist_and_status_hud.gd`、`test_sfx.gd`——都是這一輪沒動過的檔，這一輪改過的測試檔單獨跑都是 0。沒有修，記在 NEXT「0」。
+- `add_repo` 工具這一輪也載不到；repo 已經在工作目錄裡、可以直接 push，沒有影響。
+
 ## 2026-11-11 11:26–12:15　第 76 輪：照 Jacky 的回覆開始刪舊版——標題沒有「舊版」了、第 1～3 章整個刪掉、README 改成「怎麼開始玩（3 步）」
 
 **做了什麼**

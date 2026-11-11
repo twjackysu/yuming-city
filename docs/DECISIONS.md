@@ -2,6 +2,22 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-221　2026-11-11　舊版清理第 2 步的切法：入口只剩一種、霜橋鎮的關卡檔只蓋鎮、過場與成就系統整套刪；開發旗標的存檔另外放
+
+- 決策（接 D-220 的第 2 步，這一輪做了前半）：
+  1. **入口只剩一種**：`GameSession.new_game()`（舊劇情）、`MAIN_QUEST`／`MAIN_QUESTS`、`is_slice_complete()`，以及 `Game.new_game()`／`continue_game()`／`has_continue()` 刪掉；`main_quest()` 固定回傳 `rb_main`；倒下重來沒有存檔時一律重開這個劇情。
+  2. **`frostbridge.gd` 只蓋鎮**：梨販、敲鐘、北街陷落與救援、席菈會合、灰巡者、車隊戰、石拱回憶、收束、地窖木板、攤子後面的剪影，以及它們的開發旗標（`--convoy`、`--rescue`、`--arch`、`--throw`、`--felled`、`--phase2`、`--insight`）全部拿掉。`StoryLevel` 只剩地面高度與腳步聲材質。劇情全部在 `RebootOpening`。
+  3. **沒有開新遊戲的 session ＝ 只有鎮**：`frostbridge.gd` 只在 `Game.session.is_reboot()` 時掛 `RebootOpening`。benchmark 與「只看鎮」的測試（`test_frostbridge.gd`）用這個狀態，不會被開場對話、推車、送葬者干擾。
+  4. **過場系統整套刪**（`CutsceneRunner`、`CutsceneView`、`RingTally`、`data/cutscenes/`、`Game.play_cutscene()` 等）：只有敲鐘在用，新劇情沒有過場。之後真的需要再做新的，不留一套沒人用的。
+  5. **成就系統整套刪**（`AchievementTracker`、`AchievementToast`、`SteamBridge`、`data/achievements.json`、`ACH_*` 翻譯、成就圖示與 Steam 膠囊圖的腳本與 CI 步驟）：八個成就的條件全是舊劇情的旗標（敲九下、救三人、車隊通過…），新劇情一個都解不到。Steam 暫緩（Jacky 11/10）；之後要做成就，照新劇情重新訂條件，接 Steam 的那一層到時候再寫。
+  5b. **一起刪的**：開發沙盒（`scenes/dev/`，只有舊流程的測試在用）、`RescueSite`、`CoalPile`、`ConvoyEncounter`、`ThrownFrame`、`FrameThrowEvent`、`JournalView`、Steam 商店截圖腳本（`store-shots.*`、`store_shots.txt`、`check_store_shots.py`，拍的全是舊劇情的畫面）。
+  6. **開發旗標的存檔另外放**：`--level=frostbridge [--rb-at=…]` 開的遊戲寫到 `user://saves_dev_reboot`（`Game.DEV_SAVE_DIR`），不碰 `user://saves_reboot`；`--benchmark` 不開新遊戲、不寫任何存檔。
+  7. **`--level=frostbridge` 不帶 `--rb-at`＝從開場開始的新遊戲**；要拍鎮本身就用 `--rb-at=market --at=plaza|main|steps…`（守衛打完之後、安靜的鎮）。`--at`／`--pos`／`--face`／`--hide` 改成在劇情擺好場面之後才套用。
+  8. Tab／手把 Back 的功能本來就只剩「再看一次目前的目標」（日記畫面刪了）：按鍵設定裡的名字從「日記」改成「看目前的目標」。動作的內部名稱 `journal` 第 3 步再改。
+- 這一輪**沒有**刪、留到下一輪的（都已經沒有入口，玩家碰不到）：南街石拱還是停用的 `NineBreathSite`（要先換成單純的場景物件，不然南街的畫面會變）、`NineBreath`／`RestorePrompt`／`RestoreMix`、`Journal` 與日記資料、灰巡者、送葬者與席菈身上車隊戰專用的招式、舊的對話／任務／翻譯資料、北街房子的「陷落後破屋頂」。清單在 NEXT「000」。
+- 理由：第 6 點是這次改動帶出來的——以前 `--level=frostbridge` 開的是舊劇情、寫到舊資料夾；入口統一之後它會寫到玩家真正的存檔。Jacky 照 playtest.md 用 `--rb-at=…` 跳段落或跑 benchmark 時，不應該把自己玩到一半的進度蓋掉。第 3 點讓「鎮的測試」不用跟著劇情每次改動而壞。
+- 影響：測試 409 → 344 個（少掉的是被刪內容自己的測試；新劇情的 69 個測試一個沒少，其中 2 個「舊版沒有某某」改成「沒有開新遊戲時沒有某某」，另外加 1 個「開發旗標不會寫到玩家的存檔」）。`game/` 再少約 5,500 行。CI 的截圖少 `bell.png`、`combat.png`、`ninebreath.png`、`street.png` 與盤點的 `04`、`06`～`09`、`11`；`02`、`03`、`05`、`10` 改成拍新劇情裡的鎮；「latest」不再附 Steam 膠囊圖與成就圖示。
+
 ## D-220　2026-11-11　舊版全部刪掉（Jacky 11/11 的指示），分三步做，每一步 main 都是綠的
 
 - 決策：照 Jacky 在 FOR_JACKY 回覆區 11/11 寫的「舊版本的東西可以全部砍掉，包括 code 和 README 內的，除非有東西要在新版本沿用」，把舊劇情（霜橋鎮敲鐘、「重現」與記憶代價、第 1～3 章）從 repo 移除。這一則取代排程提示裡「舊劇情凍結、程式與資產保留、舊存檔不壞」那一條，也取代 D-211 的「舊版」選項。
