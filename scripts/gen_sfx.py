@@ -8,15 +8,8 @@
 - slash：席菈斷劍。帶通噪音＋金屬泛音。
 - whoosh：閃避風聲。慢起慢落的低通噪音。
 - ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
-- water_splash：一桶髒水從天花板倒下來（第 1 章一百七十二階）。木桶「咚」＋一陣低通噪音的嘩啦，尾巴是幾聲滴水。
-- child_laugh：樓梯深處小孩的笑聲（第 1 章）。高音的「哈、哈、哈」：脈衝串經過兩個母音共振峰，加長的回音當作「很遠、在石階下面」。
 - daylight_ambience：白晝城的環境音（第 1 章段落 7，可循環 8 秒）。鐘走得很慢的「喀、答」（每秒一下、木頭共鳴）＋遠處低低的水聲與幾滴水；頭尾交叉淡化，循環時沒有接縫。
-- brace_creak：伊薩右腿金屬支架的「吱」一聲（第 2 章）。生鏽的鉸鏈：基頻從 620 Hz 往上滑到 900 Hz 再掉回來的摩擦音（調頻＋顆粒），帶一點金屬泛音，0.5 秒。
-- deep_rumble：窗外那堵黑牆「動了一下」（第 2 章段落 5）。很低的隆隆聲：30～70 Hz 的低通噪音＋兩個慢慢拍頻的低音，0.4 秒湧上來、2.6 秒退掉，像隔著石牆感覺到的震動。
-- cloth_knock：席菈用布包著的小石頭隔著銅片敲（第 3 章段落 2）。悶悶的「咚」：200 Hz 往下滑的短正弦＋很淡的銅片泛音（1.3／2.9 kHz，快速衰減，被布蓋住），0.25 秒。
-- chain_creak：掛著的送葬者要轉頭之前，鏈子先響（第 3 章段落 2 的觀察提示音）。三下很輕的鐵環碰撞「喀啦」＋一聲低低的摩擦，0.7 秒。
 - canal_ambience：乾運河的環境音（第 3 章，可循環 10 秒）。地底空空的低風聲（很低的低通噪音、慢慢起伏）＋遠處幾滴水（帶石牆的回音）＋吊樑很輕的一聲木頭嘎吱；頭尾交叉淡化，循環時沒有接縫。
-- slap：彌夏打黎歐的那一巴掌（第 2 章段落 3）。不重：很短的一聲帶通噪音「啪」（1～4 kHz、60 毫秒內衰減）＋一點點低頻的肉聲，0.2 秒。
 - frost_wind：霜橋鎮冬夜的風雪（可循環 12 秒，D-180）。低低的風（低通噪音）＋一道慢慢滑動的帶通「呼——」（中心 260～720 Hz）＋細細的雪粒沙沙聲（高通噪音），三層都跟著陣風的包絡起伏；頭尾交叉淡化。
 - frost_wind_indoor：同一段風從屋裡聽（酒館、柯德家）：再低通兩次、去掉雪粒，只剩牆外悶悶的呼呼聲。
 - hearth_crackle：酒館壁爐的柴火（可循環 7 秒，D-180）。低低的火焰呼嚕（低通噪音、快速閃爍的起伏）＋隨機的細小劈啪（每秒約 9 下，帶通 1.5～5 kHz 的極短噪音）＋幾聲比較大的爆裂（多一點低頻的「啵」）；頭尾交叉淡化。
@@ -24,7 +17,6 @@
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
 - part_end_theme：第一部前半的收尾配樂（可循環 28 秒，D-188；結尾卡＋感謝試玩頁，走 Music 匯流排）。回答標題的鐘聲：標題是往下走（D4、C4、A3，第二次落到 F3），這裡從 F3 往上走（F3、A3、C4），第二次 A3、C4 停在 D4＝標題開頭那個音。底下是 F2＋C3 的長音（比收束的小三度暖一點）＋很小聲的 A3，14 秒一次漲落；鐘聲帶三個越來越悶的回音。
 - step_heavy：送葬者的拖步（D-187，約 0.65 秒；不分地面）。很重的低頻「咚」（72 → 38 Hz 往下掉、加一個高八度的泛音讓小喇叭也聽得到）＋落地的悶悶碎響＋拖在後面的鐵鏈擦地（高通噪音、斷斷續續地抖）＋三下鐵環碰撞。
-- stair_ambience：一百七十二階的環境音（可循環 9 秒，D-180）。很深的石井裡空空的低風（比乾運河更低更悶）＋上面某處的滴水，每一滴後面跟著四個越來越悶的長回音（井很高）；頭尾交叉淡化。
 授權：程序生成，無外部素材（docs/CREDITS.md）。
 """
 import math
@@ -129,21 +121,6 @@ def swish(seconds, lo, hi, seed, rise=0.35, metal=0.0):
     return out
 
 
-def heartbeat(seconds=0.9):
-    """九息倒數：低沉的「咚—咚」（lub-dub），尾巴帶一點空間感。"""
-    a = thump(0.22, 75, 38, seed=7)
-    b = thump(0.2, 68, 34, seed=8)
-    n = int(seconds * RATE)
-    out = [0.0] * n
-    off = int(0.17 * RATE)
-    for i, v in enumerate(a):
-        out[i] += 0.95 * v
-    for i, v in enumerate(b):
-        if off + i < n:
-            out[off + i] += 0.7 * v
-    return onepole_lp(out, 420)
-
-
 def scrape(seconds=0.42, seed=9):
     """搬瓦礫：石頭互相刮、碎石滾落（帶顆粒的中頻雜訊＋幾下小碰撞）。"""
     rng = random.Random(seed)
@@ -218,74 +195,6 @@ def ui_tick(seconds=0.14, seed=17):
     return out
 
 
-def water_splash(seconds=1.6, seed=19):
-    """一桶髒水倒下來：木桶翻倒的悶響＋嘩啦（低通噪音，快起慢落）＋幾滴水。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    gush = onepole_lp(hp(noise(n, rng), 120), 2600)
-    out = []
-    for i in range(n):
-        t = i / RATE
-        env = min(t / 0.03, 1.0) * math.exp(-max(t - 0.15, 0.0) * 3.2)
-        # 水一波一波落下：慢速的幅度起伏
-        wob = 0.75 + 0.25 * math.sin(2 * math.pi * 7.0 * t + rng.uniform(-0.2, 0.2))
-        out.append(gush[i] * env * wob * 1.2)
-    knock = thump(0.25, 110, 60, seed=seed + 1)
-    for i, v in enumerate(knock):
-        out[i] += 0.5 * v
-    for k in range(6):
-        start = int(rng.uniform(0.7, seconds - 0.08) * RATE)
-        f = rng.uniform(900, 1500)
-        for j in range(int(0.05 * RATE)):
-            if start + j < n:
-                tt = j / RATE
-                out[start + j] += 0.18 * math.sin(2 * math.pi * (f + 2400 * tt) * tt) * math.exp(-tt * 70)
-    return out
-
-
-def child_laugh(seconds=1.9, seed=23):
-    """遠處小孩的笑聲：五聲「哈」（音高略往下）、聲門脈衝經過 /a/ 的兩個共振峰，加三道回音（石階深處）。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    dry = [0.0] * n
-    beats = [0.0, 0.17, 0.33, 0.5, 0.7]
-    for b, start_t in enumerate(beats):
-        f0 = 430.0 - b * 18.0 + rng.uniform(-8, 8)
-        length = 0.12 + rng.uniform(0.0, 0.03)
-        phase = 0.0
-        start = int(start_t * RATE)
-        for j in range(int(length * RATE)):
-            i = start + j
-            if i >= n:
-                break
-            t = j / RATE
-            env = math.sin(math.pi * t / length) ** 1.5
-            phase += f0 * (1.0 - 0.15 * t / length) / RATE
-            # 聲門脈衝：幾個諧波，強度往高頻遞減
-            v = sum(math.sin(2 * math.pi * h * phase) / h for h in range(1, 9))
-            dry[i] += v * env + 0.25 * rng.uniform(-1, 1) * env  # 一點氣音
-    # 母音 /a/ 共振峰（約 1000 Hz、1600 Hz）：兩個簡單的帶通疊起來
-    def bandpass(xs, f, q):
-        w = 2 * math.pi * f / RATE
-        r = math.exp(-w / (2 * q))
-        a1, a2 = -2 * r * math.cos(w), r * r
-        y1 = y2 = 0.0
-        out = []
-        for x in xs:
-            y = (1 - r) * x - a1 * y1 - a2 * y2
-            y2, y1 = y1, y
-            out.append(y)
-        return out
-    voiced = [a + 0.6 * b for a, b in zip(bandpass(dry, 1000, 5), bandpass(dry, 1600, 6))]
-    voiced = onepole_lp(voiced, 3000)
-    out = [v * 0.35 for v in voiced]
-    for delay, gain in [(0.11, 0.45), (0.23, 0.3), (0.37, 0.18)]:
-        d = int(delay * RATE)
-        for i in range(n - d):
-            out[i + d] += voiced[i] * gain * 0.35
-    return onepole_lp(out, 2400)
-
-
 def daylight_ambience(seconds=8.0, seed=29):
     """白晝城：很慢的鐘擺聲＋遠處的水聲（07「鐘走得很慢的滴答＋遠處的水聲」）。頭尾交叉淡化成可循環。"""
     rng = random.Random(seed)
@@ -324,101 +233,6 @@ def daylight_ambience(seconds=8.0, seed=29):
         w = i / fade
         looped[i] = out[i] * w + out[n + i] * (1.0 - w)
     return looped
-
-
-def brace_creak(seconds=0.5, seed=31):
-    """金屬支架的吱聲：滑動的摩擦音（基頻上滑再回落）＋顆粒（黏滑）＋兩個金屬泛音。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    out = []
-    phase = 0.0
-    stick = 0.0
-    for i in range(n):
-        t = i / RATE
-        u = t / seconds
-        f = 620 + 280 * math.sin(math.pi * min(u * 1.3, 1.0)) + 25 * math.sin(2 * math.pi * 31 * t)
-        phase += 2 * math.pi * f / RATE
-        if rng.random() < 0.02:
-            stick = rng.uniform(0.4, 1.0)
-        stick *= 0.996
-        tone = math.sin(phase) + 0.45 * math.sin(phase * 2.01) + 0.2 * math.sin(phase * 3.7)
-        env = min(t / 0.03, 1.0) * max(0.0, 1.0 - u) ** 1.5
-        out.append(0.5 * tone * env * (0.5 + 0.5 * stick))
-    grit = onepole_lp(hp(noise(n, rng), 1200), 5000)
-    for i in range(n):
-        u = i / n
-        out[i] += 0.12 * grit[i] * max(0.0, 1.0 - u)
-    return out
-
-
-def slap(seconds=0.2, seed=37):
-    """一巴掌（不重）：極快起音的帶通噪音＋很短的 180 Hz 肉聲，尾巴是一點點房間的回聲。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    burst = onepole_lp(hp(noise(n, rng), 1000), 4200)
-    out = []
-    for i in range(n):
-        t = i / RATE
-        env = min(t / 0.0015, 1.0) * math.exp(-t / 0.018)
-        body = math.sin(2 * math.pi * 180 * t) * math.exp(-t / 0.025)
-        room = 0.18 * math.exp(-t / 0.07)
-        out.append(burst[i] * (env + room * 0.5) + 0.35 * body)
-    return out
-
-
-def deep_rumble(seconds=3.0, seed=41):
-    """窗外的牆動了一下：低通噪音（很低）＋38／41 Hz 兩個拍頻的低音，慢起慢收。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    rumble = onepole_lp(onepole_lp(noise(n, rng), 90), 70)
-    out = []
-    for i in range(n):
-        t = i / RATE
-        env = min(t / 0.4, 1.0) * math.exp(-max(t - 0.4, 0.0) / 0.9)
-        tone = 0.5 * math.sin(2 * math.pi * 38 * t) + 0.4 * math.sin(2 * math.pi * 41 * t + 0.7)
-        out.append(env * (rumble[i] * 6.0 + tone * 0.55))
-    peak = max(abs(v) for v in out) or 1.0
-    return [v / peak * 0.85 for v in out]
-
-
-def cloth_knock(seconds=0.25, seed=43):
-    """布包的小石頭敲銅片：悶的低音「咚」＋被布蓋住的一點銅泛音。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    nz = onepole_lp(noise(n, rng), 700)
-    out = []
-    phase = 0.0
-    for i in range(n):
-        t = i / RATE
-        f = 120 + 80 * math.exp(-t * 40)
-        phase += 2 * math.pi * f / RATE
-        env = min(t / 0.002, 1.0) * math.exp(-t * 22)
-        ring = 0.12 * math.sin(2 * math.pi * 1310 * t) * math.exp(-t * 28) + 0.06 * math.sin(2 * math.pi * 2930 * t) * math.exp(-t * 40)
-        out.append(0.85 * env * math.sin(phase) + 0.35 * nz[i] * math.exp(-t * 60) + ring)
-    peak = max(abs(v) for v in out) or 1.0
-    return [v / peak * 0.8 for v in out]
-
-
-def chain_creak(seconds=0.7, seed=47):
-    """鏈子先響：三下鐵環碰撞（短的非諧波泛音）＋一聲低低的摩擦（低通噪音、慢慢起落）。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    rub = onepole_lp(hp(noise(n, rng), 300), 1400)
-    out = [0.0] * n
-    for i in range(n):
-        t = i / RATE
-        env = math.sin(math.pi * min(t / seconds, 1.0)) ** 2
-        out[i] = 0.5 * rub[i] * env
-    for k, (at, f) in enumerate([(0.05, 2100.0), (0.21, 2650.0), (0.33, 1870.0)]):
-        start = int(at * RATE)
-        for j in range(int(0.12 * RATE)):
-            if start + j >= n:
-                break
-            t = j / RATE
-            v = math.sin(2 * math.pi * f * t) + 0.6 * math.sin(2 * math.pi * f * 2.76 * t)
-            out[start + j] += 0.28 * v * math.exp(-t * 55)
-    peak = max(abs(v) for v in out) or 1.0
-    return [v / peak * 0.7 for v in out]
 
 
 def canal_ambience(seconds=10.0, seed=53):
@@ -601,45 +415,6 @@ def title_theme(seconds=24.0, seed=67):
     return [v / peak * 0.7 for v in looped]
 
 
-def aftermath_theme(seconds=32.0, seed=83):
-    """切片收束的配樂（D-185）：車隊過去之後回到梨販攤。比標題更低、更空：
-    D2＋F2 的長音（小三度，慢慢拍頻）、16 秒一次很淺的漲落，偶爾一聲很遠很悶的鐘（不成旋律）。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(3.0 * RATE)
-    total = n + fade
-    table = _wavetable([(1, 1.0), (2, 0.3), (3, 0.12), (4, 0.04)])
-    size = len(table)
-    drone = [0.0] * total
-    # 高八度的 D3／F3 小聲一點，筆電喇叭才聽得到
-    for f, amp in [(73.42, 0.5), (73.55, 0.4), (87.31, 0.26), (87.12, 0.22), (110.0, 0.1), (146.83, 0.16), (174.61, 0.1)]:
-        ph = rng.random() * size
-        step = f * size / RATE
-        for i in range(total):
-            drone[i] += amp * table[int(ph) % size]
-            ph += step
-    for i in range(total):
-        t = i / RATE
-        drone[i] *= 0.75 + 0.25 * math.sin(2 * math.pi * t / 16.0 - 0.6)  # 16 秒一次，32 秒剛好兩次
-    drone = onepole_lp(onepole_lp(drone, 700), 900)
-    dpeak = max(abs(v) for v in drone) or 1.0
-    out = [v / dpeak * 0.5 for v in drone]
-    # 很遠的鐘：只有兩聲，音很低、很悶，回音比聲音本身長
-    for at, f, gain in [(6.0, 146.83, 0.7), (21.5, 130.81, 0.55)]:
-        b = onepole_lp(onepole_lp(bell(f, 6.0), 900), 1200)
-        bpeak = max(abs(v) for v in b) or 1.0
-        for delay, tap in [(0.0, 0.22), (0.61, 0.1), (1.43, 0.06), (2.4, 0.035)]:
-            start = int((at + delay) * RATE)
-            g = gain * tap / bpeak
-            for j, v in enumerate(b):
-                if start + j >= total:
-                    break
-                out[start + j] += g * v
-    looped = _loop_crossfade(out, n, fade)
-    peak = max(abs(v) for v in looped) or 1.0
-    return [v / peak * 0.6 for v in looped]
-
-
 def part_end_theme(seconds=28.0, seed=97):
     """第一部前半的收尾配樂（D-188）：F2＋C3 的長音、往上走的鐘聲（回答標題往下走的那三聲），第二次停在 D4。"""
     rng = random.Random(seed)
@@ -680,89 +455,6 @@ def part_end_theme(seconds=28.0, seed=97):
     looped = _loop_crossfade(out, n, fade)
     peak = max(abs(v) for v in looped) or 1.0
     return [v / peak * 0.7 for v in looped]
-
-
-def bell_far(seconds=8.0):
-    """隔著石頭聽到的鐘（D-192）：地底城轉角的換班鐘聲。跟鐘樓同一口鐘（G3），高頻幾乎被濾掉、
-    敲擊的金屬噪音聽不到，三個越來越晚、越來越悶的回音比聲音本身長——聽得出是那口鐘，但很遠、在上面。"""
-    n = int(seconds * RATE)
-    b = onepole_lp(onepole_lp(onepole_lp(bell(196.0, 5.5), 600), 800), 1100)
-    bpeak = max(abs(v) for v in b) or 1.0
-    out = [0.0] * n
-    for delay, tap in [(0.0, 1.0), (0.47, 0.42), (1.13, 0.22), (1.98, 0.11)]:
-        start = int(delay * RATE)
-        for j, v in enumerate(b):
-            if start + j >= n:
-                break
-            out[start + j] += tap * v / bpeak
-    # 很慢的起音（聲音穿過石頭，沒有敲擊的「叮」）
-    attack = int(0.06 * RATE)
-    for i in range(attack):
-        out[i] *= i / attack
-    fade = int(1.5 * RATE)
-    for i in range(fade):
-        out[n - fade + i] *= 1.0 - i / fade
-    return out
-
-
-def _soft_pluck(f, seconds=4.0):
-    """很輕的撥弦（加法合成，音準準確）：泛音越高衰減越快，5 毫秒的起音，聽起來像遠處的小豎琴。"""
-    n = int(seconds * RATE)
-    partials = [(1, 1.0, 1.1), (2, 0.5, 1.8), (3, 0.26, 2.7), (4, 0.13, 3.6), (5, 0.07, 4.6), (6, 0.035, 6.0)]
-    out = [0.0] * n
-    for k, amp, decay in partials:
-        w = 2 * math.pi * k * f / RATE
-        for i in range(n):
-            out[i] += amp * math.sin(w * i) * math.exp(-(i / RATE) * decay)
-    attack = int(0.005 * RATE)
-    for i in range(attack):
-        out[i] *= i / attack
-    return onepole_lp(out, 3200)
-
-
-def after_dinner_theme(seconds=24.0, seed=101):
-    """第 1 章柯德家晚餐之後、走在白晝城往鐘院的路上（D-190）：B♭2＋F3 的長音（加一點 D3，大三度比較暖），
-    上面很輕的撥弦——標題往下走的三聲（D4、C4、A3）在這裡變成 D4、C4、B♭3：同樣往下走，落在暖的那個音。
-    第一句停在 C4（還沒說完），第二句往下到 F3 再回到 B♭3。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(2.5 * RATE)
-    total = n + fade
-    table = _wavetable([(1, 1.0), (2, 0.3), (3, 0.1), (4, 0.03)])
-    size = len(table)
-    drone = [0.0] * total
-    for f, amp in [(116.54, 0.5), (116.71, 0.42), (174.61, 0.3), (174.4, 0.25), (146.83, 0.1)]:
-        ph = rng.random() * size
-        step = f * size / RATE
-        for i in range(total):
-            drone[i] += amp * table[int(ph) % size]
-            ph += step
-    for i in range(total):
-        t = i / RATE
-        drone[i] *= 0.72 + 0.28 * math.sin(2 * math.pi * t / 12.0 - 0.9)  # 12 秒一次，24 秒剛好兩次
-    drone = onepole_lp(onepole_lp(drone, 800), 1000)
-    dpeak = max(abs(v) for v in drone) or 1.0
-    out = [v / dpeak * 0.36 for v in drone]
-    plucks = {}
-    motif = [(2.0, 293.66, 0.8), (3.0, 261.63, 0.72), (4.0, 233.08, 0.78), (5.6, 261.63, 0.66),
-             (13.0, 293.66, 0.74), (14.0, 261.63, 0.68), (15.0, 233.08, 0.74), (16.6, 174.61, 0.7), (18.2, 233.08, 0.85)]
-    for at, f, gain in motif:
-        if f not in plucks:
-            p = _soft_pluck(f)
-            ppeak = max(abs(v) for v in p) or 1.0
-            plucks[f] = [v / ppeak for v in p]
-        p = plucks[f]
-        # 原聲＋兩個很淡的回音（石板街、兩側的白牆）
-        for delay, tap in [(0.0, 0.3), (0.31, 0.08), (0.74, 0.035)]:
-            start = int((at + delay) * RATE)
-            g = gain * tap
-            for j, v in enumerate(p):
-                if start + j >= total:
-                    break
-                out[start + j] += g * v
-    looped = _loop_crossfade(out, n, fade)
-    peak = max(abs(v) for v in looped) or 1.0
-    return [v / peak * 0.66 for v in looped]
 
 
 def _step_env(n, attack, decay):
@@ -857,32 +549,6 @@ def step_heavy(seed=89):
     return out
 
 
-def stair_ambience(seconds=9.0, seed=83):
-    """一百七十二階：深石井裡空空的低風＋上面某處的滴水（長回音）。"""
-    rng = random.Random(seed)
-    n = int(seconds * RATE)
-    fade = int(0.8 * RATE)
-    total = n + fade
-    wind = onepole_lp(onepole_lp(hp(noise(total, rng), 30), 180), 220)
-    out = []
-    for i in range(total):
-        t = i / RATE
-        swell = 0.6 + 0.25 * math.sin(2 * math.pi * t / 9.0) + 0.12 * math.sin(2 * math.pi * 0.41 * t + 0.8)
-        out.append(wind[i] * swell * 2.4)
-    for at in (0.9, 3.4, 5.1, 7.6):
-        f = rng.uniform(1200, 1700)
-        for echo, (delay, amp) in enumerate([(0.0, 0.16), (0.27, 0.08), (0.58, 0.05), (0.93, 0.03), (1.34, 0.015)]):
-            start = int((at + delay) * RATE)
-            for j in range(int(0.08 * RATE)):
-                if start + j >= total:
-                    break
-                tt = j / RATE
-                out[start + j] += amp * math.sin(2 * math.pi * (f - echo * 120 + 1400 * tt) * tt) * math.exp(-tt * (55 - echo * 6))
-    looped = _loop_crossfade(out, n, fade)
-    peak = max(abs(v) for v in looped) or 1.0
-    return [v / peak * 0.6 for v in looped]
-
-
 def poison_hiss(seconds=0.9, seed=107, charge=False):
     """守衛噴毒（D-207）：高頻的嘶聲（滑動的帶通噪音＋一點更高的氣聲）。
     charge＝前兆：慢慢變大、音高往上（跟舉手揮擊的「呼」分得出來）；否則是噴出去那一下：快起慢落＋一聲很短的低頻「噗」。"""
@@ -936,33 +602,21 @@ def main():
         write("claw", swish(0.22, 1800, 9000, seed=4, rise=0.2)),
         write("slash", swish(0.28, 900, 7000, seed=5, rise=0.3, metal=0.25)),
         write("whoosh", swish(0.35, 200, 1600, seed=6, rise=0.45)),
-        write("heartbeat", heartbeat()),
         write("rubble_scrape", scrape()),
         write("iron_clang", clang()),
         write("ignite", ignite()),
         write("ui_tick", ui_tick()),
-        write("water_splash", water_splash()),
-        write("child_laugh", child_laugh()),
         write("daylight_ambience", daylight_ambience()),
-        write("brace_creak", brace_creak()),
-        write("slap", slap()),
-        write("deep_rumble", deep_rumble()),
-        write("cloth_knock", cloth_knock()),
-        write("chain_creak", chain_creak()),
         write("canal_ambience", canal_ambience()),
         write("frost_wind", frost_wind()),
         write("frost_wind_indoor", frost_wind(indoor=True)),
         write("hearth_crackle", hearth_crackle()),
         write("title_theme", title_theme()),
-        write("aftermath_theme", aftermath_theme()),
         write("part_end_theme", part_end_theme()),
-        write("after_dinner_theme", after_dinner_theme()),
-        write("bell_far", bell_far()),
         write("step_snow", step_snow()),
         write("step_stone", step_stone()),
         write("step_wood", step_wood()),
         write("step_heavy", step_heavy()),
-        write("stair_ambience", stair_ambience()),
         write("poison_charge", poison_hiss(1.1, seed=107, charge=True)),
         write("poison_hiss", poison_hiss(0.9, seed=109)),
         write("glass_clink", glass_clink()),
