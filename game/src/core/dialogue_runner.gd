@@ -2,7 +2,7 @@ class_name DialogueRunner
 extends RefCounted
 ## 跑一段對話：顯示台詞、依條件過濾選項、套用效果。純邏輯，UI（字幕、選項）只聽訊號。
 ## 效果只透過 StoryLogic 改 GameState；效果套用後發出 state_changed，由外殼呼叫 GameSession.advance()
-## 讓任務推進（例如對話結束時設 slice.met_pear_seller）。
+## 讓任務推進（例如對話結束時設 rb.sheila_met）。
 
 signal line_shown(speaker_key: String, text_key: String)
 signal choices_shown(choices: Array[Dictionary])

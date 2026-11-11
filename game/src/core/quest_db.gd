@@ -3,7 +3,7 @@ extends RefCounted
 ## 任務資料（res://data/quests/*.json）。只放結構與翻譯 key（D-013）。
 ##
 ## {
-##   "id": "slice_main", "title": "Q_SLICE_MAIN_TITLE",
+##   "id": "rb_main", "title": "Q_RB_MAIN_TITLE",
 ##   "stages": [
 ##     {"id": "explore_town", "objective": "Q_...", "checkpoint": "start",
 ##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段",

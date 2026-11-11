@@ -3,10 +3,13 @@ extends RefCounted
 ## 存檔格式：JSON，最外層 {"version": int, "saved_at": String, "state": {...}}。
 ## 每次改格式：CURRENT_VERSION +1，並在 _migrate_step 加一段舊版 → 新版的轉換與測試。
 ## 寫檔先寫 .tmp 再改名，舊檔保留為 .bak，避免當機時毀掉存檔。
+## v3 以前（v0～v2）是已經刪掉的舊劇情的存檔：不遷移、不刪檔，讀到回 TOO_OLD（當成沒有存檔，D-224）。
 
 const CURRENT_VERSION: int = 3
+## 還讀得懂的最舊版本
+const MIN_VERSION: int = 3
 
-enum Status { OK, NOT_FOUND, CORRUPT, TOO_NEW }
+enum Status { OK, NOT_FOUND, CORRUPT, TOO_NEW, TOO_OLD }
 
 
 static func encode(state: GameState, saved_at: String = "") -> String:
@@ -30,6 +33,8 @@ static func decode(text: String) -> Dictionary:
 	var version: int = int(root.get("version", 0))
 	if version > CURRENT_VERSION:
 		return {"status": Status.TOO_NEW, "state": null, "from_version": version}
+	if version < MIN_VERSION:
+		return {"status": Status.TOO_OLD, "state": null, "from_version": version}
 	var migrated: Dictionary = migrate(root)
 	var state_v: Variant = migrated.get("state", null)
 	if not (state_v is Dictionary):
@@ -40,7 +45,7 @@ static func decode(text: String) -> Dictionary:
 ## 逐版遷移到 CURRENT_VERSION。輸入不會被修改。
 static func migrate(root: Dictionary) -> Dictionary:
 	var data: Dictionary = root.duplicate(true)
-	var version: int = int(data.get("version", 0))
+	var version: int = maxi(int(data.get("version", 0)), MIN_VERSION)
 	while version < CURRENT_VERSION:
 		data = _migrate_step(version, data)
 		version += 1
@@ -48,34 +53,8 @@ static func migrate(root: Dictionary) -> Dictionary:
 	return data
 
 
-static func _migrate_step(from_version: int, data: Dictionary) -> Dictionary:
-	match from_version:
-		0:
-			# v0：原型期的扁平格式 {"chapter", "flags", ...}，沒有 "state" 包裝。
-			var state: Dictionary = {}
-			for key: String in ["chapter", "checkpoint", "playtime_sec", "flags", "quests", "memories_paid"]:
-				if data.has(key):
-					state[key] = data[key]
-					data.erase(key)
-			data["state"] = state
-		1:
-			# v1 → v2（第 36 輪，D-148）：多了攻略筆記 state.guide。切片的存檔還沒寫下任何條目。
-			var st: Variant = data.get("state", null)
-			if st is Dictionary and not (st as Dictionary).has("guide"):
-				(st as Dictionary)["guide"] = {}
-		2:
-			# v2 → v3（第 66 輪，D-202）：新版劇情重寫的欄位。v2 以前一定是舊版（classic），
-			# 新欄位全空；memories_paid 照舊留著、不映射成新版任何資源。
-			var st3: Variant = data.get("state", null)
-			if st3 is Dictionary:
-				var sd: Dictionary = st3 as Dictionary
-				sd["mode"] = "classic"
-				for key: String in ["statuses", "grants"]:
-					if not sd.has(key):
-						sd[key] = []
-				for key: String in ["reversal", "items", "vitals"]:
-					if not sd.has(key):
-						sd[key] = {}
+## 一版一段：`match from_version:` 裡加 `3:`（v3 → v4）……。現在只有一個版本，沒有東西要轉。
+static func _migrate_step(_from_version: int, data: Dictionary) -> Dictionary:
 	return data
 
 

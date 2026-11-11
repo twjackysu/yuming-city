@@ -1,8 +1,0 @@
-{
-  "id": "slice_arch_memory",
-  "start": "see",
-  "nodes": {
-    "see": {"speaker": "SPK_NOEN", "text": "DLG_ARCH_001", "next": "hide"},
-    "hide": {"speaker": "SPK_NOEN", "text": "DLG_ARCH_002", "do": {"set": {"slice.saw_south_arch": true}}}
-  }
-}

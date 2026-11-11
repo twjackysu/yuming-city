@@ -102,7 +102,8 @@ func test_no_obscure_terms() -> void:
 func test_translations_are_registered() -> void:
 	TranslationServer.set_locale("zh_TW")
 	assert_eq(tr("GAME_TITLE"), "餘命城", "繁中標題")
-	assert_eq(tr("Q_SLICE_MAIN_TITLE"), "第九聲鐘", "切片任務文字（slice.csv）")
+	assert_eq(tr("Q_RB_MAIN_TITLE"), "這瓶不是解藥", "劇情的文字（reboot.csv）")
+	assert_eq(tr("SPK_SHEILA"), "席菈", "說話者的名字")
 	TranslationServer.set_locale("en")
 	assert_eq(tr("GAME_TITLE"), "Yuming City", "英文標題")
 

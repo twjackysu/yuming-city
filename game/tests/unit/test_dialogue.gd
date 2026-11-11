@@ -1,5 +1,6 @@
 extends TestCase
-## 對話：資料驗證、選項條件（付過的記憶讓選項消失）、效果推進任務、跳過不跳選項。
+## 對話：資料驗證、選項條件（條件不成立的選項消失）、效果推進任務、跳過不跳選項、依狀態換台詞。
+## 遊戲裡的資料用 rb_sheila_meet（有選項）驗；目前劇情還沒用到的功能（選項的 if、text_if）用測試內的小對話驗。
 
 
 func _db() -> DialogueDB:
@@ -8,9 +9,29 @@ func _db() -> DialogueDB:
 	return db
 
 
+## 測試用的小對話：一句開場 → 三個選項（一個有條件）→ 道別（依旗標換台詞、設旗標）
+func _memory_db() -> DialogueDB:
+	var db := DialogueDB.new()
+	db.add_dialogue({"id": "t_stall", "start": "hello", "nodes": {
+		"hello": {"speaker": "S", "text": "T_HELLO", "next": "ask"},
+		"ask": {"speaker": "S", "text": "T_ASK", "choices": [
+			{"text": "T_C_BUY", "next": "bye", "do": {"set": {"t.bought": true}}},
+			{"text": "T_C_LEAVE", "next": "bye"},
+			{"text": "T_C_SECRET", "next": "bye", "if": {"not": {"flag": "t.secret_spent"}}},
+		]},
+		"bye": {"speaker": "S", "text": "T_BYE", "do": {"set": {"t.talked": true}}, "text_if": [
+			{"if": {"flag": "t.count", "gte": 4}, "text": "T_BYE_MANY"},
+			{"if": {"flag": "t.count", "gte": 2}, "text": "T_BYE_SOME"},
+		]},
+	}})
+	assert_eq(db.errors, PackedStringArray(), "測試對話本身沒有錯")
+	return db
+
+
 func test_default_data_is_valid_and_keys_exist() -> void:
 	var db: DialogueDB = _db()
-	assert_true(db.has_dialogue("slice_pear_seller"), "梨販對話")
+	assert_true(db.has_dialogue("rb_sheila_meet"), "席菈的對話")
+	assert_true(db.has_dialogue("rb_ada_wages"), "艾妲的對話")
 	TranslationServer.set_locale("en")
 	for key: String in db.translation_keys():
 		assert_ne(TranslationServer.translate(key), StringName(key), "對話用到不存在的翻譯 key：" + key)
@@ -34,89 +55,108 @@ func test_validation_catches_mistakes() -> void:
 	var bad_effect: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
 		"x": {"speaker": "S", "text": "T", "do": {"run": "os.exit"}}}})
 	assert_true(bad_effect.size() > 0, "效果只能用 set／add")
+	var old_condition: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {
+		"x": {"speaker": "S", "text": "T", "choices": [{"text": "C", "next": "y"}, {"text": "D", "next": "y", "if": {"memory_paid": "m"}}]},
+		"y": {"speaker": "S", "text": "T"}}})
+	assert_true(old_condition.size() > 0, "已經拿掉的條件（memory_paid）會被擋下來，不會默默當成不成立")
 
 
-func test_pear_seller_buy_route_advances_quest() -> void:
+## 遊戲裡的資料：席菈的對話跳過只跳到選項為止，選項的效果寫進旗標，最後一句設 rb.sheila_met。
+func test_sheila_meet_choice_sets_flags() -> void:
 	var state := GameState.new()
-	var quests := QuestRunner.new(QuestDB.load_default(), state)
-	quests.start("slice_main")
 	var r := DialogueRunner.new(_db(), state)
-	r.state_changed.connect(quests.evaluate)
 	var lines: Array[String] = []
 	r.line_shown.connect(func(_speaker: String, text: String) -> void: lines.append(text))
-	assert_true(r.start("slice_pear_seller"))
+	assert_true(r.start("rb_sheila_meet"))
 	r.skip_to_choice()
-	assert_eq(",".join(PackedStringArray(lines)), "DLG_PEAR_001,DLG_PEAR_002,DLG_PEAR_003", "跳過只跳到選項為止")
-	assert_eq(r.visible_choices.size(), 3, "三個選項")
-	assert_true(r.choose(0), "買梨")
-	assert_eq(state.get_flag("slice.bought_pears"), true, "選項效果")
-	assert_eq(quests.stage_of("slice_main"), "explore_town", "還沒說完不推進")
+	assert_eq(",".join(PackedStringArray(lines)),
+		"DLG_RB_SHEILA_001,DLG_RB_SHEILA_002,DLG_RB_SHEILA_003,DLG_RB_SHEILA_004,DLG_RB_SHEILA_005", "跳過只跳到選項為止")
+	assert_eq(r.visible_choices.size(), 2, "兩個選項")
+	assert_false(r.choose(5), "超出範圍的選項無效")
+	assert_true(r.choose(0), "把傷口給她看")
+	assert_eq(state.get_flag("rb.showed_sheila_wound"), true, "選項效果")
+	assert_eq(r.current_text(), "DLG_RB_SHEILA_L_SHOW")
+	assert_false(bool(state.get_flag("rb.sheila_met", false)), "還沒說完不設旗標")
 	r.advance()
-	assert_eq(r.current().get("text"), "DLG_PEAR_007")
-	assert_eq(quests.stage_of("slice_main"), "ring_bell", "道別節點設旗標 → 任務推進")
+	assert_eq(r.current_text(), "DLG_RB_SHEILA_006")
+	assert_eq(state.get_flag("rb.sheila_met"), true, "最後一句設旗標")
 	var done: Array[bool] = [false]
 	r.finished.connect(func(_id: String) -> void: done[0] = true)
 	assert_false(r.advance(), "最後一句之後結束")
 	assert_true(done[0] and not r.is_running())
 
 
-func test_paid_memory_hides_choice() -> void:
+## 對話的效果發出 state_changed → 任務重新檢查條件 → 推進（外殼就是這樣接 GameSession.advance()）。
+func test_choice_effect_advances_quest() -> void:
 	var state := GameState.new()
-	var r := DialogueRunner.new(_db(), state)
-	r.start("slice_pear_seller")
+	var qdb := QuestDB.new()
+	qdb.add_quest({"id": "t_quest", "title": "T_Q", "stages": [
+		{"id": "talk", "objective": "T_OBJ_TALK", "done_when": {"flag": "t.talked"}},
+		{"id": "after", "objective": "T_OBJ_AFTER", "done_when": {"flag": "t.never"}},
+	]})
+	assert_eq(qdb.errors, PackedStringArray(), "測試任務本身沒有錯")
+	var quests := QuestRunner.new(qdb, state)
+	quests.start("t_quest")
+	var r := DialogueRunner.new(_memory_db(), state)
+	r.state_changed.connect(quests.evaluate)
+	var lines: Array[String] = []
+	r.line_shown.connect(func(_speaker: String, text: String) -> void: lines.append(text))
+	assert_true(r.start("t_stall"))
+	r.skip_to_choice()
+	assert_eq(",".join(PackedStringArray(lines)), "T_HELLO,T_ASK", "跳過只跳到選項為止")
+	assert_eq(r.visible_choices.size(), 3, "三個選項")
+	assert_eq(quests.stage_of("t_quest"), "talk", "還沒說完不推進")
+	assert_true(r.choose(0), "買")
+	assert_eq(state.get_flag("t.bought"), true, "選項效果")
+	assert_eq(r.current().get("text"), "T_BYE")
+	assert_eq(quests.stage_of("t_quest"), "after", "道別節點設旗標 → 任務推進")
+	assert_false(r.advance(), "最後一句之後結束")
+
+
+func test_condition_hides_choice() -> void:
+	var db: DialogueDB = _memory_db()
+	var state := GameState.new()
+	var r := DialogueRunner.new(db, state)
+	r.start("t_stall")
 	r.skip_to_choice()
 	var texts: Array[String] = []
 	for c: Dictionary in r.visible_choices:
 		texts.append(str(c["text"]))
-	assert_true(texts.has("DLG_PEAR_C_FATHER"), "還記得父親時可以提他")
+	assert_true(texts.has("T_C_SECRET"), "條件成立時選項在")
 	var state2 := GameState.new()
-	state2.pay_memory("arch_father_last_talk")
-	var r2 := DialogueRunner.new(_db(), state2)
-	r2.start("slice_pear_seller")
+	state2.set_flag("t.secret_spent", true)
+	var r2 := DialogueRunner.new(db, state2)
+	r2.start("t_stall")
 	r2.skip_to_choice()
-	assert_eq(r2.visible_choices.size(), 2, "付出記憶後，那個選項消失")
+	assert_eq(r2.visible_choices.size(), 2, "條件不成立，那個選項消失")
 	for c: Dictionary in r2.visible_choices:
-		assert_ne(str(c["text"]), "DLG_PEAR_C_FATHER")
-	assert_false(r2.choose(5), "超出範圍的選項無效")
+		assert_ne(str(c["text"]), "T_C_SECRET")
+	assert_false(r2.choose(2), "消失的選項選不到（索引照看得見的算）")
+	assert_true(r2.choose(1), "看得見的最後一個選得到")
 
 
-func test_ada_aftermath_reflects_paid_memory() -> void:
-	var db: DialogueDB = DialogueDB.load_default()
-	assert_eq(db.errors, PackedStringArray(), "對話資料沒有錯")
-	var keep := GameState.new()
-	var r := DialogueRunner.new(db, keep)
-	assert_true(r.start("slice_ada_aftermath"))
-	r.advance()  # 死者名單那句
-	assert_eq(r.visible_choices.size(), 2, "記得父親：可以答，也可以反問")
-	var paid := GameState.new()
-	paid.pay_memory("arch_father_last_talk")
-	var r2 := DialogueRunner.new(db, paid)
-	assert_true(r2.start("slice_ada_aftermath"))
-	r2.advance()
-	assert_eq(r2.visible_choices.size(), 1, "付了石拱的記憶：只剩「……真的不準？」")
-	assert_eq(str(r2.visible_choices[0]["text"]), "DLG_AFTER_C_ASK")
-
-
-## 收束的死者名單：依救出人數與車隊傷者換台詞（text_if，第一個成立的）。
-func test_ada_death_toll_reflects_rescue_and_convoy() -> void:
-	var db: DialogueDB = DialogueDB.load_default()
+## 依狀態換台詞（text_if，第一個成立的）；流程不變，line_shown 也是換過的台詞。
+func test_text_if_picks_first_match() -> void:
+	var db: DialogueDB = _memory_db()
 	var cases: Array = [
-		[3, 1, "DLG_AFTER_DEAD_31"],
-		[4, 0, "DLG_AFTER_DEAD_29"],
-		[4, 1, "DLG_AFTER_DEAD_30"],
-		[3, 3, "DLG_AFTER_DEAD_33"],
-		[4, 4, "DLG_AFTER_DEAD_33"],
+		[0, "T_BYE"],
+		[1, "T_BYE"],
+		[2, "T_BYE_SOME"],
+		[3, "T_BYE_SOME"],
+		[4, "T_BYE_MANY"],
+		[9, "T_BYE_MANY"],
 	]
 	for c: Array in cases:
 		var st := GameState.new()
-		st.set_flag("slice.rescued_count", c[0])
-		st.set_flag("slice.convoy_injured", c[1])
+		st.set_flag("t.count", c[0])
 		var r := DialogueRunner.new(db, st)
 		var seen: Array[String] = []
 		r.line_shown.connect(func(_sp: String, text: String) -> void: seen.append(text))
-		assert_true(r.start("slice_ada_aftermath"))
-		assert_eq(r.current_text(), str(c[2]), "救出 %d、傷者 %d" % [c[0], c[1]])
-		assert_eq(seen, [str(c[2])] as Array[String], "line_shown 也是換過的台詞")
+		assert_true(r.start("t_stall"))
+		r.skip_to_choice()
+		assert_true(r.choose(1))
+		assert_eq(r.current_text(), str(c[1]), "t.count＝%d" % c[0])
+		assert_eq(seen[seen.size() - 1], str(c[1]), "line_shown 也是換過的台詞")
 
 
 func test_text_if_validation() -> void:
@@ -126,19 +166,3 @@ func test_text_if_validation() -> void:
 	var ok: PackedStringArray = DialogueDB.validate_dialogue({"id": "x", "start": "a", "nodes": {
 		"a": {"speaker": "S", "text": "T", "text_if": [{"if": {"flag": "f"}, "text": "U"}]}}})
 	assert_eq(ok, PackedStringArray())
-
-
-
-## 收束：席菈提前燒過燃燒劍（手傷 2）→ 艾妲最後一句多叮嚀包手；只燒一次（石拱路線）就是原句。
-func test_ada_notices_sheila_hand_after_two_burns() -> void:
-	var db: DialogueDB = DialogueDB.load_default()
-	for c: Array in [[1, "DLG_AFTER_005"], [2, "DLG_AFTER_005_HAND"]]:
-		var st := GameState.new()
-		st.set_flag("sheila.hand_injury", c[0])
-		var r := DialogueRunner.new(db, st)
-		assert_true(r.start("slice_ada_aftermath"))
-		r.advance()
-		assert_true(r.choose(r.visible_choices.size() - 1), "選「……真的不準？」")
-		assert_eq(r.current_text(), "DLG_AFTER_004")
-		r.advance()
-		assert_eq(r.current_text(), str(c[1]), "手傷 %d" % c[0])

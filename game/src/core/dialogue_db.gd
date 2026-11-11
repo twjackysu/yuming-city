@@ -3,7 +3,7 @@ extends RefCounted
 ## 對話資料（res://data/dialogue/*.json）。只放結構與翻譯 key（D-013）。
 ##
 ## {
-##   "id": "slice_pear_seller", "start": "greet",
+##   "id": "rb_sheila_meet", "start": "greet",
 ##   "nodes": {
 ##     "greet": {"speaker": "SPK_...", "text": "DLG_...", "next": "ada", "do": {...效果，進入節點時套用}},
 ##     "ask":   {"speaker": "SPK_...", "text": "DLG_...", "choices": [

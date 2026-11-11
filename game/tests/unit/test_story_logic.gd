@@ -8,7 +8,6 @@ func _state() -> GameState:
 	s.set_flag("count", 3)
 	s.set_flag("name", "ada")
 	s.quests["q"] = "middle"
-	s.pay_memory("arch")
 	return s
 
 
@@ -23,8 +22,6 @@ func test_basic_conditions() -> void:
 	assert_true(StoryLogic.check({"flag": "name", "eq": "ada"}, s))
 	assert_true(StoryLogic.check({"flag": "name", "ne": "mia"}, s))
 	assert_true(StoryLogic.check({"flag": "missing", "lte": 0}, s), "不存在的數字旗標視為 0")
-	assert_true(StoryLogic.check({"memory_paid": "arch"}, s))
-	assert_false(StoryLogic.check({"memory_paid": "other"}, s))
 	assert_true(StoryLogic.check({"quest": "q", "stage": "middle"}, s))
 	assert_true(StoryLogic.check({"quest": "q", "done": false}, s))
 	assert_false(StoryLogic.check({"quest": "q", "done": true}, s))
@@ -41,9 +38,9 @@ func test_compound_conditions() -> void:
 func test_json_float_compares_as_number() -> void:
 	# 存讀檔後整數會變成 float（JSON），比較結果不能改變。
 	var s := GameState.new()
-	s.set_flag("slice.bell_rings", 9.0)
-	assert_true(StoryLogic.check({"flag": "slice.bell_rings", "gte": 9}, s))
-	assert_true(StoryLogic.check({"flag": "slice.bell_rings", "eq": 9}, s))
+	s.set_flag("rb.barrels_hit", 9.0)
+	assert_true(StoryLogic.check({"flag": "rb.barrels_hit", "gte": 9}, s))
+	assert_true(StoryLogic.check({"flag": "rb.barrels_hit", "eq": 9}, s))
 
 
 func test_effects() -> void:
@@ -59,7 +56,8 @@ func test_effects() -> void:
 
 func test_validation() -> void:
 	assert_eq(StoryLogic.validate_condition({"flag": "a", "gte": 1}), "")
-	assert_eq(StoryLogic.validate_condition({"all": [{"flag": "a"}, {"memory_paid": "m"}]}), "")
+	assert_eq(StoryLogic.validate_condition({"all": [{"flag": "a"}, {"quest": "q", "done": true}]}), "")
+	assert_ne(StoryLogic.validate_condition({"memory_paid": "m"}), "", "記憶代價的條件拿掉了：資料裡再出現要報錯")
 	assert_ne(StoryLogic.validate_condition({"all": []}), "", "空的 all")
 	assert_ne(StoryLogic.validate_condition({"flag": "a", "gte": 1, "lte": 2}), "", "兩個比較")
 	assert_ne(StoryLogic.validate_condition({"script": "OS.execute()"}), "", "不允許任意程式")

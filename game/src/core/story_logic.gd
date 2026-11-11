@@ -1,11 +1,10 @@
 class_name StoryLogic
 extends RefCounted
-## 任務與對話共用的條件與效果（D-013）。只能讀寫 GameState 的旗標與記憶，不執行任意程式。
+## 任務與對話共用的條件與效果（D-013）。只能讀寫 GameState 的旗標，不執行任意程式。
 ##
 ## 條件：
 ##   {"flag": "k"}                       旗標為真（存在且不是 false／0／""）
 ##   {"flag": "k", "eq"|"ne"|"gte"|"lte"|"gt"|"lt": v}
-##   {"memory_paid": "id"}
 ##   {"quest": "id", "stage": "s"} 或 {"quest": "id", "done": true}
 ##   {"all": [...]}／{"any": [...]}／{"not": {...}}
 ##   空字典＝永遠成立
@@ -34,8 +33,6 @@ static func check(cond: Dictionary, state: GameState) -> bool:
 		return false
 	if cond.has("not"):
 		return not check(cond["not"] as Dictionary, state)
-	if cond.has("memory_paid"):
-		return state.has_paid_memory(str(cond["memory_paid"]))
 	if cond.has("quest"):
 		var stage: String = str(state.quests.get(str(cond["quest"]), ""))
 		if cond.has("done"):
@@ -86,8 +83,6 @@ static func validate_condition(cond: Variant) -> String:
 			return ""
 	if d.has("not"):
 		return validate_condition(d["not"])
-	if d.has("memory_paid"):
-		return "" if str(d["memory_paid"]) != "" else "memory_paid 不可為空"
 	if d.has("quest"):
 		return "" if d.has("stage") or d.has("done") else "quest 條件需要 stage 或 done"
 	if d.has("flag"):

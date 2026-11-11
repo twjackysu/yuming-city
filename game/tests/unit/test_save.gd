@@ -1,5 +1,5 @@
 extends TestCase
-## 存檔：版本、遷移、壞檔回復、記憶代價不重複扣。
+## 存檔：版本、太舊／太新的存檔、壞檔回復、狀態與道具照原樣存。
 
 var _dir: String = ""
 
@@ -17,12 +17,12 @@ func after_each() -> void:
 
 func _sample() -> GameState:
 	var s := GameState.new()
-	s.checkpoint = "after_bell"
+	s.mode = "reboot"
+	s.checkpoint = "rb_guardian"
 	s.playtime_sec = 321.5
-	s.set_flag("slice.rescued_count", 4)
-	s.set_flag("slice.told_truth_about_bell", true)
-	s.quests["frostbridge_main"] = "evacuate"
-	s.pay_memory("arch_father_last_talk")
+	s.set_flag("rb.barrels_hit", 4)
+	s.set_flag("rb.sheila_met", true)
+	s.quests["rb_main"] = "guardian"
 	return s
 
 
@@ -31,34 +31,60 @@ func test_round_trip() -> void:
 	var r: Dictionary = SaveCodec.decode(text)
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	var s: GameState = r["state"]
-	assert_eq(s.checkpoint, "after_bell")
+	assert_eq(r["from_version"], SaveCodec.CURRENT_VERSION)
+	assert_eq(s.mode, "reboot")
+	assert_eq(s.checkpoint, "rb_guardian")
 	assert_eq(s.playtime_sec, 321.5)
-	assert_eq(int(s.get_flag("slice.rescued_count")), 4, "JSON 數字讀回後要能轉 int")
-	assert_eq(s.get_flag("slice.told_truth_about_bell"), true)
-	assert_eq(s.quests.get("frostbridge_main"), "evacuate")
-	assert_true(s.has_paid_memory("arch_father_last_talk"))
+	assert_eq(int(s.get_flag("rb.barrels_hit")), 4, "JSON 數字讀回後要能轉 int")
+	assert_eq(s.get_flag("rb.sheila_met"), true)
+	assert_eq(s.quests.get("rb_main"), "guardian")
 
 
-func test_memory_cost_is_paid_once() -> void:
-	var s := GameState.new()
-	assert_true(s.pay_memory("arch_father_last_talk"), "第一次付出")
-	assert_false(s.pay_memory("arch_father_last_talk"), "同一段記憶不能付第二次")
-	var reloaded: GameState = SaveCodec.decode(SaveCodec.encode(s))["state"]
-	assert_false(reloaded.pay_memory("arch_father_last_talk"), "讀檔後也不會重複扣")
-	assert_eq(reloaded.memories_paid.size(), 1)
-
-
-func test_migrate_v0_flat_format() -> void:
-	var v0: Dictionary = {"chapter": "slice_frostbridge", "checkpoint": "bell", "flags": {"a": 1}}
-	var r: Dictionary = SaveCodec.decode(JSON.stringify(v0))
+## v3 的存檔裡還有舊欄位（memories_paid、guide；值一定是空的）：讀得進來、欄位丟掉，再存就沒有了。
+func test_v3_save_with_removed_fields_still_loads() -> void:
+	var v3: Dictionary = {"version": 3, "saved_at": "2026-11-11T00:00:00", "state": {
+		"chapter": "rb_ch1", "checkpoint": "rb_mist", "mode": "reboot", "flags": {"rb.sheila_met": true},
+		"quests": {"rb_main": "mist"}, "memories_paid": [], "guide": {}, "items": {"mist_serpent_poison": 1},
+		"statuses": [], "reversal": {}, "grants": ["rb.guardian_crate"], "vitals": {"hp": 40.0}}}
+	var r: Dictionary = SaveCodec.decode(JSON.stringify(v3))
 	assert_eq(r["status"], SaveCodec.Status.OK)
-	assert_eq(r["from_version"], 0)
 	var s: GameState = r["state"]
-	assert_eq(s.checkpoint, "bell")
-	assert_eq(int(s.get_flag("a")), 1)
-	var migrated: Dictionary = SaveCodec.migrate(v0)
-	assert_eq(migrated["version"], SaveCodec.CURRENT_VERSION)
-	assert_false(v0.has("state"), "遷移不能修改輸入")
+	assert_eq(s.checkpoint, "rb_mist")
+	assert_eq(s.quests.get("rb_main"), "mist")
+	assert_eq(int(s.items["mist_serpent_poison"]), 1)
+	assert_false(s.grant_once("rb.guardian_crate"), "領過的還是領過")
+	assert_eq(float(s.vitals["hp"]), 40.0)
+	var again: Dictionary = s.to_dict()
+	assert_false(again.has("memories_paid") or again.has("guide"), "再存一次就沒有舊欄位了")
+
+
+## v0～v2 是已經刪掉的舊劇情的存檔：不遷移，回 TOO_OLD（呼叫端當成沒有存檔），也不會當成壞檔去翻備份。
+func test_saves_older_than_v3_are_too_old() -> void:
+	var v0: Dictionary = {"chapter": "slice_frostbridge", "checkpoint": "bell", "flags": {"a": 1}}
+	var v2: Dictionary = {"version": 2, "saved_at": "2026-11-09T00:00:00", "state": {
+		"chapter": "ch3", "checkpoint": "ch3_corner", "flags": {"ch3.done": true}, "quests": {"ch3_main": "corner"}}}
+	for old: Dictionary in [v0, {"version": 1, "state": {}}, v2]:
+		var r: Dictionary = SaveCodec.decode(JSON.stringify(old))
+		assert_eq(r["status"], SaveCodec.Status.TOO_OLD, "v%d" % int(old.get("version", 0)))
+		assert_eq(r["state"], null)
+		assert_eq(r["from_version"], int(old.get("version", 0)))
+	assert_eq(SaveCodec.MIN_VERSION, 3, "v3 起才是現在的劇情")
+	var migrated: Dictionary = SaveCodec.migrate({"version": 3, "state": {"checkpoint": "x"}})
+	assert_eq(migrated["version"], SaveCodec.CURRENT_VERSION, "v3 不用轉")
+
+
+## 太舊的存檔留在原地：讀不到、不刪檔、不覆寫；GameSession 當成沒有存檔可以讀。
+func test_too_old_file_is_left_untouched() -> void:
+	var path: String = _dir.path_join("auto.json")
+	var text: String = JSON.stringify({"version": 2, "state": {"checkpoint": "ch3_corner"}})
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(text)
+	f.close()
+	assert_eq(SaveCodec.read_file(path)["status"], SaveCodec.Status.TOO_OLD)
+	var s := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(s.load_slot(GameSession.AUTO_SLOT), SaveCodec.Status.TOO_OLD)
+	assert_eq(s.state.checkpoint, GameState.new().checkpoint, "狀態沒被換掉")
+	assert_eq(FileAccess.get_file_as_string(path), text, "舊檔一個字都沒變")
 
 
 func test_reject_newer_version() -> void:
@@ -76,7 +102,7 @@ func test_file_write_and_backup_recovery() -> void:
 	assert_eq(SaveCodec.read_file(path)["status"], SaveCodec.Status.NOT_FOUND)
 	assert_eq(SaveCodec.write_file(path, _sample()), OK, "第一次寫入")
 	var second: GameState = _sample()
-	second.checkpoint = "arch"
+	second.checkpoint = "rb_market"
 	assert_eq(SaveCodec.write_file(path, second), OK, "第二次寫入")
 	assert_false(FileAccess.file_exists(path + ".tmp"), "暫存檔要被改名掉")
 	# 主檔損毀 → 讀 .bak（上一份）
@@ -86,22 +112,7 @@ func test_file_write_and_backup_recovery() -> void:
 	var r: Dictionary = SaveCodec.read_file(path)
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	assert_eq(r.get("recovered_from_backup", false), true)
-	assert_eq((r["state"] as GameState).checkpoint, "after_bell")
-
-
-func test_migrate_v2_to_v3_is_classic_and_does_not_map_memories() -> void:
-	var v2: Dictionary = {"version": 2, "saved_at": "2026-11-09T00:00:00", "state": {
-		"chapter": "ch3", "checkpoint": "ch3_corner", "flags": {"ch3.done": true},
-		"quests": {"ch3_main": "corner"}, "memories_paid": ["arch_father_last_talk"], "guide": {}}}
-	var r: Dictionary = SaveCodec.decode(JSON.stringify(v2))
-	assert_eq(r["status"], SaveCodec.Status.OK)
-	assert_eq(r["from_version"], 2)
-	var s: GameState = r["state"]
-	assert_eq(s.mode, "classic", "v2 以前一定是舊版")
-	assert_true(s.has_paid_memory("arch_father_last_talk"), "舊版的記憶代價照舊留著")
-	assert_true(s.items.is_empty() and s.statuses.is_empty() and s.grants.is_empty(), "記憶不映射成新版任何資源")
-	assert_true(s.reversal.is_empty() and s.vitals.is_empty())
-	assert_eq(s.quests.get("ch3_main"), "corner", "舊進度不動")
+	assert_eq((r["state"] as GameState).checkpoint, "rb_guardian")
 
 
 func test_v3_reboot_fields_round_trip() -> void:
