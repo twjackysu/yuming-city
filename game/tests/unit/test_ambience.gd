@@ -3,7 +3,7 @@ extends TestCase
 
 
 func test_looped_copy_does_not_touch_shared_stream() -> void:
-	for n: String in ["frost_wind", "title_theme", "part_end_theme"]:
+	for n: String in ["frost_wind", "market_murmur", "title_theme", "part_end_theme"]:
 		var s: AudioStreamWAV = Ambience.looped(n)
 		assert_not_null(s, "有 %s" % n)
 		if s == null:

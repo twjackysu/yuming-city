@@ -8,6 +8,7 @@
 - slash：席菈斷劍。帶通噪音＋金屬泛音。
 - whoosh：閃避風聲。慢起慢落的低通噪音。
 - ui_tick：選單切換值。很小的一聲高音鐘「叮」（兩個非諧波泛音快速衰減）＋極短的木頭「喀」。
+- market_murmur：地下市場的底噪（可循環 12 秒，D-230）。六個遠處的人聲（鋸齒波聲帶＋一個共振峰，音節一個個起伏、句子之間停頓）疊成聽不出內容的嗡嗡聲＋岩洞的空氣聲＋兩道短回音＋偶爾很小的碰撞聲。
 - frost_wind：霜橋鎮冬夜的風雪（可循環 12 秒，D-180）。低低的風（低通噪音）＋一道慢慢滑動的帶通「呼——」（中心 260～720 Hz）＋細細的雪粒沙沙聲（高通噪音），三層都跟著陣風的包絡起伏；頭尾交叉淡化。
 - title_theme：標題畫面的配樂（可循環 24 秒，D-181；走 Music 匯流排）。低低的長音鋪底（D2＋A2＋D3，每個音兩個微微走音的聲部互相拍頻，12 秒一次慢慢漲落）＋霧裡遠遠的鐘聲動機：D4、C4、A3 往下走三聲，十二秒後 D4、C4 再往下落到 F3（第二次停在更低的地方）；鐘聲低通、帶三個越來越悶的回音。
 - step_snow／step_stone／step_wood：諾恩的腳步聲（D-182，各約 0.12～0.16 秒；播放時音高與音量隨機一點）。雪：一串很密的細小「喀嚓」（壓實雪粒，顆粒噪音、低通）＋很輕的悶聲；石：很短的低頻「咚」＋一點砂粒的高頻擦聲；木：中空的「叩」（180／420 Hz 兩個共鳴快速衰減）＋一點木板的吱。
@@ -216,6 +217,86 @@ def frost_wind(seconds=12.0, seed=59):
     for i in range(total):
         g = _gust(i / RATE)
         out.append(bed[i] * (0.5 + 0.7 * g) * 1.6 + howl[i] * (g ** 2) * 0.55 + hiss[i] * (g ** 3) * 0.05)
+    looped = _loop_crossfade(out, n, fade)
+    peak = max(abs(v) for v in looped) or 1.0
+    return [v / peak * 0.7 for v in looped]
+
+
+def _far_voice(total, rng, f0, formant_lo, formant_hi):
+    """遠處一個人在講話（聽不出內容）：鋸齒波的聲帶（每個音節音高滑一點）→ 一個共振峰（每個音節換一個母音）。
+    音節一個個起伏，一句 3～9 個音節，句子之間停下來換氣、聽別人講。"""
+    env = [0.0] * total
+    form = [0.0] * total
+    pitch = [0.0] * total
+    cur_f = rng.uniform(formant_lo, formant_hi)
+    cur_p = f0
+    i = int(rng.uniform(0.0, 1.4) * RATE)
+    while i < total:
+        for _ in range(rng.randint(3, 9)):
+            dur = int(rng.uniform(0.11, 0.26) * RATE)
+            amp = rng.uniform(0.45, 1.0)
+            nf = rng.uniform(formant_lo, formant_hi)
+            npitch = f0 * rng.uniform(0.86, 1.2)
+            for k in range(min(dur, total - i)):
+                w = k / dur
+                env[i + k] = amp * math.sin(math.pi * w)
+                form[i + k] = cur_f + (nf - cur_f) * w
+                pitch[i + k] = cur_p + (npitch - cur_p) * w
+            cur_f, cur_p = nf, npitch
+            i += dur + int(rng.uniform(0.0, 0.05) * RATE)
+            if i >= total:
+                break
+        i += int(rng.uniform(0.35, 1.5) * RATE)
+    out = []
+    phase = 0.0
+    low = band = 0.0
+    fc = 2.0 * math.pi * cur_f / RATE
+    for j in range(total):
+        e = env[j]
+        src = 0.0
+        if e > 0.0:
+            fc = 2.0 * math.pi * form[j] / RATE
+            phase += pitch[j] / RATE
+            phase -= int(phase)
+            src = (2.0 * phase - 1.0) * e
+        high = src - low - 0.3 * band
+        band += fc * high
+        low += fc * band
+        out.append(band)
+    return out
+
+
+def market_murmur(seconds=12.0, seed=131):
+    """地下市場的底噪（可循環 12 秒，D-230）：六個遠處的人聲疊起來（聽不出內容的嗡嗡聲，有起伏、不會整片安靜）
+    ＋岩洞裡低低的空氣聲＋兩道短回音（岩壁）＋偶爾一聲很小的鍋蓋／瓶子的碰撞。頭尾交叉淡化。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    fade = int(1.2 * RATE)
+    total = n + fade
+    crowd = [0.0] * total
+    for f0 in (104.0, 127.0, 149.0, 183.0, 208.0, 236.0):
+        gain = rng.uniform(0.5, 1.0)
+        voice = _far_voice(total, rng, f0, 290.0, 820.0)
+        for i in range(total):
+            crowd[i] += voice[i] * gain
+    # 遠、隔著攤子與布棚：高頻收掉
+    crowd = onepole_lp(onepole_lp(crowd, 2400), 3200)
+    room = onepole_lp(onepole_lp(hp(noise(total, rng), 60), 260), 340)
+    out = [crowd[i] + room[i] * 2.2 for i in range(total)]
+    # 岩壁的兩道短回音
+    for delay, amount in ((int(0.083 * RATE), 0.3), (int(0.137 * RATE), 0.22)):
+        for i in range(delay, total):
+            out[i] += out[i - delay] * amount
+    peak = max(abs(v) for v in out) or 1.0
+    out = [v / peak for v in out]
+    # 偶爾的小碰撞聲（鍋蓋、玻璃瓶）：很小聲，不落在交叉淡化的那一段
+    for _ in range(4):
+        at = int(rng.uniform(0.8, seconds - 1.0) * RATE)
+        freq = rng.uniform(1900.0, 3300.0)
+        amp = rng.uniform(0.05, 0.11)
+        for k in range(int(0.22 * RATE)):
+            tt = k / RATE
+            out[at + k] += amp * math.exp(-tt * 34.0) * (math.sin(2 * math.pi * freq * tt) + 0.5 * math.sin(2 * math.pi * freq * 2.31 * tt))
     looped = _loop_crossfade(out, n, fade)
     peak = max(abs(v) for v in looped) or 1.0
     return [v / peak * 0.7 for v in looped]
@@ -460,6 +541,7 @@ def main():
         write("iron_clang", clang()),
         write("ui_tick", ui_tick()),
         write("frost_wind", frost_wind()),
+        write("market_murmur", market_murmur()),
         write("title_theme", title_theme()),
         write("part_end_theme", part_end_theme()),
         write("step_snow", step_snow()),

@@ -163,6 +163,13 @@ func test_market_is_built_terrace_ramp_street_and_green_shop() -> void:
 	for i: int in UndergroundMarket.PAPER_COLORS.size():
 		var warm: Color = UndergroundMarket.paper_color(float(i))
 		assert_true(warm.r > warm.g and warm.g > warm.b, "其他的是暖色（%d）" % i)
+	# D-230：市場有自己的底噪（遠處的人聲），不是霜橋鎮的風
+	var murmur: AudioStreamPlayer = level.get_node_or_null("Ambience") as AudioStreamPlayer
+	assert_not_null(murmur, "市場的底噪")
+	if murmur != null:
+		assert_eq(Ambience.sfx_of(murmur), "market_murmur")
+		assert_eq(murmur.bus, &"SFX", "跟著音效音量走")
+		assert_true(murmur.volume_db <= -12.0 and murmur.volume_db >= -24.0, "聽得到、不蓋過對話（%.0f dB）" % murmur.volume_db)
 	# 高台上卸下來的貨不擋路：從貨梯走到坡道口是直的
 	_stand(level, Vector3(0.0, 0.0, -6.0))
 	player.yaw = PI

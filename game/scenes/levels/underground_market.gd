@@ -99,8 +99,9 @@ const PAPER_COLORS: Array[Color] = [
 ## 藥店前面的紙燈籠是綠的：離門面這麼近以內的掛燈繩（最後兩條）
 const SHOP_PAPER: Color = Color(0.4, 1.0, 0.55)
 const SHOP_PAPER_REACH: float = 9.0
-## 地底的穿堂風（很小聲）
-const DRAFT_DB: float = -24.0
+## 市場的底噪（D-230）：遠處的人聲嗡嗡的、岩洞的空氣聲、偶爾一聲碰撞。以前只有很小聲的風
+const MURMUR_SFX: String = "market_murmur"
+const MURMUR_DB: float = -14.0
 ## 樑下大鐵燈的左右位置（不排成一直線，也不擋住街底的綠窗）
 const FRAME_LAMP_X: Array[float] = [-1.9, 1.9]
 const CLOTH_STACK_COLORS: Array[Color] = [
@@ -159,7 +160,7 @@ func _ready() -> void:
 	var market: Node3D = _batch.build(self, "Market")
 	_build_paper_lanterns()
 	_build_probes(market)
-	Ambience.play(self, "frost_wind", DRAFT_DB)
+	Ambience.play(self, MURMUR_SFX, MURMUR_DB)
 
 	var player: PlayerController = $Player as PlayerController
 	var spawn: Marker3D = $Spawn
