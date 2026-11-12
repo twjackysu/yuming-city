@@ -2,6 +2,27 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-234　2026-11-12　試戴護腕（C 的前半）：麻痺是「不碰生命」的狀態——沒反轉不能出手、反轉＝只有出手變快（上限 1.5 倍）；在彌夏的測試板上試過才解鎖，裝進第二格
+
+- 決策：
+  1. **新任務 `rb_bracer`**（`MAIN_QUESTS` 第四條）：`back_to_shop`（走回藥店櫃台前 → 彌夏要他照規矩先在板子上試）→ `test_bracer`（按住互動 2 秒 → 麻痺解鎖、裝進第二格 → 3 秒後彌夏講結果）→「待續／兩格一起用」。**不是 `rb_demo` 做完就自動開**，而是拿到護腕的那一刻由劇情開（`_tick_demo_won()` 裡 `grant_once` 成功時）；第 87 輪「拿到護腕就待續」的存檔在 `GameSession.load_slot` 補開。
+  2. **麻痺 `paralysis`**（`statuses.json`，新欄位 `kind: "action"`；沒寫 `kind` 的＝`"dot"`，就是中毒那種每秒扣血／回血）：
+     - 不扣血也不回血；`StatusEffects.tick` 只幫它計時。
+     - 沒反轉：這段時間**不能出手**（`blocks_attack()`）；走路、閃避照常。
+     - 反轉：**只有「出手」這個動作播得快**（`attack_speed()` → `Puppet.attack_speed`）。倍率＝那一份麻痺的強度，上限 `max_reversed_rate`＝1.5；同一種狀態只有一份（沿用中毒的規則：強的蓋掉弱的、時間取長的、最長 20 秒）。測試板的那一份是 1.35 倍、12 秒。
+     - **不會自動覺醒**：開場的中毒是唯一的特例（`ReversalSlots.FIRST_AWAKEN`）；麻痺要 `unlock` 之後才裝得進去。
+  3. **「第二格」就是開場就有、一直空著的那一格**（`ReversalSlots.START_SLOTS`＝2）：這一輪沒有加格子，只是第一次有東西裝進去。`reverse_paralysis()` 指定裝進第二格（第一格留給中毒）；已經裝了再叫不會多佔。
+  4. **看得到的回饋**：測試板的指針——按住的時候往紅的那邊擺，試完翻到綠的那邊、綠燈亮（沿用 A 的板子）；畫面中央兩行字「【麻痺】／【第二格反轉】麻痺 → 出手加速」（沿用開場覺醒的那個位置）；左下的狀態列（生命條上面）多一行黃色閃電的圖示＋綠字「麻痺 → 出手加速 12」；護腕戴到諾恩的右前臂（`NoenBracer`，跟守衛手上同一個做法：兩圈冷光，發光材質、不加燈）。
+  5. **存檔**：試到一半（手放上去了、彌夏還沒講完）不存——讀檔回到櫃台前、還沒試過；講完的那一刻任務做完、自動存檔。做完之後讀檔站在藥店外面（`AFTER_BRACER_SPAWN`），走到櫃台前才是「待續」。
+  6. 固定鏡頭 `66-rb2-bracer`（`--rb-at=bracer_read`）。
+- 理由：
+  - 1：`rb_demo` 在兩個守衛倒下的那一刻就做完了；如果那時候就開 `rb_bracer`，商人還在認輸、護腕還沒到手，畫面右上的目標已經寫「回彌夏的店」。
+  - 2：status-reversal.md 麻痺那一列寫「攻速有上限，不加快世界所有計時」——所以倍率只乘在人偶的出手動作上，不動 `Engine.time_scale`、不動閃避的無敵時間、不動敵人的前兆。「不能出手」而不是「整個人不能動」：整個人不能動在動作遊戲裡等於直接死，而且那是「冰凍／定身」的位置（表格裡另外兩種狀態），麻痺留給「動作被打斷」。
+  - 2（不自動覺醒）：status-reversal.md「首次遇見未裝備狀態會留下可研究的紀錄；戰後透過安全測試解鎖，不允許中招瞬間自動獲得所有免疫」。這一段就是第一次示範這條規矩：先看到別人被麻（守衛）→ 拿到東西 → 在安全的地方試 → 才裝進去。
+  - 3：開場 UI 就畫了兩格（09 第 6 節），玩家從第一分鐘就看到一個空格；現在把它填起來，比「突然多一格」更有「終於」的感覺。
+  - 5：試到一半不存，是因為解鎖與裝備寫在玩家身上、存檔時才寫回去；如果只存旗標不存欄位，讀檔會變成「旗標說試過了、第二格卻是空的」。等對話講完一起存最單純。
+- 影響：`statuses.json`（`paralysis`、來源 `bracer_test`）、`StatusRules.kind()`、`StatusEffects`（`PARALYSIS`、`blocks_attack()`、`attack_speed()`、`tick` 只對 `dot` 動生命）、`Puppet.attack_speed`、`PlayerController`（每幀把倍率交給人偶；麻痺沒反轉不開始攻擊）、`StatusHud._draw_bolt()`、`GameSession`（`BRACER_QUEST`、`MAIN_QUESTS`、`load_slot` 的遷移）、`Game.CHECKPOINT_LEVELS`（`rb2_bracer`、`rb2_bracer_board`）、`UndergroundMarket.worn_bracer()`、`UndergroundMarketStory`（`_tick_bracer()`、`reverse_paralysis()`、`bracer_ready()`、`_wear_bracer()`、`_dev_bracer_read()`、`dev_advance` 多 `bracer|bracer_ask|bracer_read`、`END_TITLE_KEY` 換成 `RB2_END5_TITLE`）、`data/quests/rb_bracer.json`、`data/dialogue/rb2_bracer_ask.json`／`rb2_bracer_result.json`、`i18n/reboot.csv`（17 個新 key）、`scripts/shots/rb_market_level.txt` 與 CI 的 `66`。測試：`test_status_effects.gd`（＋2）、`test_puppet.gd`（＋1）、`test_story_market_level.gd`（＋1，另外兩個流程測試的結尾往後延）、`test_story_playthrough.gd`。**還沒做的（下一輪）**：戰鬥裡麻痺從哪裡來（護腕戴著的時候怎麼持續給）、小戰檢驗、彌夏圈出乾運河、補給；`RB2_END4_TITLE`（試戴護腕）這個 key 現在沒有人用了（任務標題 `Q_RB_BRACER_TITLE` 是同樣的字），留著不刪。
+
 ## D-233　2026-11-12　示範場的守衛戰：兩個人形守衛（`DemoGuard`），戴護腕的那個「出拳快、打完手就麻」就是騙局的證據；打贏拿到護腕，下一段才試戴
 
 - 決策：
