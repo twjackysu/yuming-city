@@ -34,9 +34,11 @@
 | 黑市示範場 | — | 黑市示範場 | the black-market demo | 地下市場裡商人當眾示範商品的地方（下一段的場景）；不寫「競技場」「展演廳」 |
 | 解藥 | — | 解藥 | antidote | 一般人中毒之後吃的藥；彌夏的台詞裡出現 |
 | 示範台 | `DemoStage`（`UndergroundMarket.DEMO_POS`） | 示範台；目標寫「街中段搭著台子的地方」 | the stage / the demo stage | 黑市示範場裡商人站的台子（街中段西側）；不寫「舞台」「擂台」 |
-| 高速護腕 | `Bracer`（還不是物品） | 高速護腕；口語「護腕」 | the speed bracer | 戴上去出手變快、戴久了手會麻痺的詛咒物；商人靠賣它的解藥賺錢 |
+| 高速護腕 | `Bracer`（守衛手上的節點）；拿到＝`GameState.grants` 裡的 `rb2_demo_bracer`（還不能裝，C 才做） | 高速護腕；口語「護腕」 | the speed bracer | 戴上去出手變快、戴久了手會麻痺的詛咒物；商人靠賣它的解藥賺錢 |
 | 護腕商人 | `demo_seller`（`SPK_DEMO_SELLER`） | 護腕商人 | Bracer Seller | 示範場上叫賣的人；還沒有名字 |
-| 麻痺 | —（狀態還沒做，C 才有） | 麻痺；口語「手會麻、會動不了」 | paralysis / goes numb | 護腕的副作用；不寫「麻痹」「定身」 |
+| 麻痺 | —（狀態還沒做，C 才有；守衛的「麻」只是他出招後的破綻 `DemoGuard.is_numb()`） | 麻痺；口語「手會麻、會動不了、僵住」 | paralysis / goes numb | 護腕的副作用；不寫「麻痹」「定身」 |
+| 示範場守衛 | `DemoGuard`（`demo_guard`＝拿棍子的、`demo_bracer`＝戴護腕的） | 示範場守衛／戴護腕的守衛 | Demo Guard / Bracer Guard | 護腕商人雇的兩個人，胸前掛紅白布條；不寫「打手」「保鑣」 |
+| 守衛的招式 | `swing`／`thrust`／`jab` | 棍子橫掃／棍子直刺／快拳（打完手會麻） | Club swing / Club thrust / Fast punch | 都是直接傷害，沒有狀態 |
 | 工錢 | `coins`（`RB_WAGES_PAID`） | 工錢 | pay | 雷德欠的那份（艾妲只代付一半）；不寫「欠薪」「薪資」 |
 | 看穿 | `insight` | 看穿 | Insight | 按住顯示已知的弱點與招式 |
 | 灰巡者、送葬者 | `Ashwalker`、`Undertaker` | 灰巡者、送葬者 | Ashwalker、Undertaker | 怪物名字 |
