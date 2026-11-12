@@ -25,8 +25,11 @@ const MAIN_QUEST: String = "rb_main"
 const MARKET_QUEST: String = "rb_market"
 ## 第二段 B：黑市示範場（design/10「B 的流程」，D-232）。rb_market 做完時自動開始（rb_market.json 的 on_complete）
 const DEMO_QUEST: String = "rb_demo"
+## 第二段 C 的前半：回彌夏的店試戴護腕、麻痺裝進第二格（design/10「C 的流程」，D-234）。
+## 拿到護腕的那一刻由劇情開（不是 rb_demo 做完就開：打贏到拿到護腕之間還有一段對話）
+const BRACER_QUEST: String = "rb_bracer"
 ## 主線照順序排；HUD 的目標與任務標記指「第一條還沒做完的」
-const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST, MARKET_QUEST, DEMO_QUEST]
+const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST, MARKET_QUEST, DEMO_QUEST, BRACER_QUEST]
 const FIRST_CHAPTER: String = "rb_ch1"
 
 var db: QuestDB
@@ -136,6 +139,9 @@ func load_slot(slot: String) -> SaveCodec.Status:
 	# 同樣的遷移：藥店那一段做完時還沒有黑市示範場這條任務（第 85 輪的存檔）——補開，「繼續」從藥店門外開始
 	if in_story() and quests.is_done(MARKET_QUEST) and not state.quests.has(DEMO_QUEST):
 		quests.start(DEMO_QUEST)
+	# 同樣的遷移：拿到護腕就「待續」的存檔（第 87 輪）——補開「試戴護腕」，「繼續」從示範台往藥店走
+	if in_story() and quests.is_done(DEMO_QUEST) and bool(state.get_flag("rb2.bracer_taken", false)) and not state.quests.has(BRACER_QUEST):
+		quests.start(BRACER_QUEST)
 	_autosave_pending = false
 	return status
 

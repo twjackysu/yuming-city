@@ -3,7 +3,7 @@ extends Node
 ## 邏輯都在 GameSession（res://src/core/game_session.gd），這裡只做場景切換。
 ##
 ## 開發用：`godot --path game -- --level=frostbridge [--rb-at=…]` 直接進入關卡（截圖驗證用）；
-## `--level=market --rb-at=arrive|street|shop|board|board_read|deal|demo|demo_end` 是地下市場；
+## `--level=market --rb-at=arrive|street|shop|board|board_read|deal|demo|demo_end|fight|demo_won|bracer|bracer_ask|bracer_read` 是地下市場；
 ## `-- --benchmark` 跑效能測試後結束（結果在 user://benchmark/）。
 
 signal level_loaded(level_id: String)
@@ -38,6 +38,8 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	# 黑市示範場（第二段 B，任務 rb_demo）：同一個關卡
 	"rb2_demo": "market",
 	"rb2_demo_fight": "market",
+	"rb2_bracer": "market",
+	"rb2_bracer_board": "market",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
 ## `--level=…` 開發旗標用的存檔資料夾（實際寫到 user://saves_dev_reboot）

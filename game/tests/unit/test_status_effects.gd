@@ -197,3 +197,69 @@ func test_potion_belt_grant_once_and_use() -> void:
 	var reloaded: GameState = SaveCodec.decode(SaveCodec.encode(state))["state"]
 	assert_eq(PotionBelt.new(reloaded, _rules()).count("mist_serpent_poison"), 0, "數量跟著存檔")
 	assert_false(PotionBelt.new(reloaded, _rules()).grant_once("rb.guardian_crate", "mist_serpent_poison", 2), "讀檔後也不會重複領")
+
+
+## 麻痺（D-234）：不碰生命。沒反轉＝這段時間不能出手；時間到就恢復。
+func test_paralysis_without_reversal_blocks_attacks_but_never_touches_health() -> void:
+	var fx := StatusEffects.new(_rules(), null)
+	var h := _hurt(50.0)
+	assert_eq(_rules().kind("paralysis"), "action")
+	assert_eq(_rules().kind("poison"), "dot")
+	assert_eq(fx.apply_source("bracer_test"), "start")
+	assert_true(fx.has("paralysis"))
+	assert_true(fx.blocks_attack(), "沒反轉：不能出手")
+	assert_eq(fx.attack_speed(), 1.0, "沒反轉不會變快")
+	fx.tick(3.0, h)
+	assert_eq(h.hp, 50.0, "麻痺不扣血也不回血")
+	fx.tick(float(_rules().source("bracer_test")["duration"]), h)
+	assert_false(fx.has("paralysis"), "時間到就退")
+	assert_false(fx.blocks_attack())
+	assert_eq(h.hp, 50.0)
+
+
+## 麻痺裝進第二格：出手加速，有上限；同一種只有一份，怎麼疊都不會更快、時間不超過上限；中毒照舊回血，兩格互不影響。
+func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> void:
+	var slots := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), slots)
+	var h := _hurt(50.0)
+	fx.apply_source("barrel_mist")
+	assert_eq(slots.equipped[0], "poison", "第一次中毒：第一格")
+	assert_eq(slots.equipped[1], "", "第二格開場是空的")
+	# 沒解鎖不能裝；第一次麻痺不會像中毒那樣自動覺醒
+	assert_false(slots.equip("paralysis"), "沒解鎖不能裝")
+	fx.apply_source("bracer_test")
+	assert_false(slots.unlocked.has("paralysis"), "麻痺不會自動解鎖（開場的中毒是唯一的特例）")
+	assert_true(fx.blocks_attack())
+	# 安全測試之後解鎖、裝進第二格
+	slots.unlock("paralysis")
+	assert_true(slots.equip("paralysis"))
+	assert_eq(slots.equipped[1], "paralysis")
+	assert_false(slots.equip("paralysis"), "已經裝了不會再佔一格")
+	assert_eq(slots.free_slots(), 0)
+	assert_false(fx.blocks_attack(), "反轉了")
+	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "板子的麻痺：出手 1.35 倍")
+	# 同一來源再來十次：還是一份、一樣快、時間不超過上限
+	for i: int in 10:
+		assert_eq(fx.apply_source("bracer_test"), "refresh")
+	assert_eq(fx.ids().size(), 2, "一個中毒＋一個麻痺")
+	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "不會越疊越快")
+	assert_true(fx.remaining("paralysis") <= _rules().max_duration("paralysis") + 0.001)
+	# 很強的來源也有上限
+	fx.apply("paralysis", 9.0, 999.0, "test")
+	assert_true(absf(fx.attack_speed() - _rules().max_reversed_rate("paralysis")) < 0.001, "倍率有上限")
+	assert_true(absf(fx.remaining("paralysis") - _rules().max_duration("paralysis")) < 0.001, "時間有上限")
+	# 兩格一起：中毒照舊回血、麻痺不碰生命
+	var before: float = h.hp
+	fx.tick(1.0, h)
+	assert_true(absf(h.hp - before - 6.0) < 0.001, "只有中毒的回血（%s）" % (h.hp - before))
+	# 存檔照原樣存、讀回來還是反轉的
+	var saved: Array = fx.to_array()
+	var again := StatusEffects.new(_rules(), ReversalSlots.from_dict(slots.to_dict()))
+	again.load_array(saved)
+	assert_true(again.has("paralysis") and again.is_reversed("paralysis"))
+	assert_true(again.attack_speed() > 1.0)
+	# 沒有麻痺的舊存檔：兩格、第二格是空的
+	var old := ReversalSlots.from_dict({"slots": 2, "unlocked": ["poison"], "equipped": ["poison"], "awakened_once": true})
+	assert_eq(old.equipped.size(), 2)
+	assert_eq(old.equipped[1], "")
+	assert_false(old.is_reversed("paralysis"))

@@ -1550,6 +1550,13 @@ func _bracer_on_peg(at: Vector3, peg: float) -> void:
 
 
 ## 拿在手上／戴在手臂上的護腕（自己一個節點，跟著關節動）。
+## 戴在前臂上的護腕（掛在人偶的 elbow_L／elbow_R 底下）。諾恩試戴之後手上的那一個也用這個（D-234）。
+func worn_bracer() -> Node3D:
+	var worn: Node3D = _bracer_node(1.15)
+	worn.position = Vector3(0.0, -Puppet.FOREARM_LEN * 0.62, 0.0)
+	return worn
+
+
 func _bracer_node(size: float) -> Node3D:
 	var root := Node3D.new()
 	root.name = "Bracer"

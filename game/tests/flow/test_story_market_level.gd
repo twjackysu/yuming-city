@@ -404,10 +404,99 @@ func test_arrive_street_shop_then_to_be_continued() -> void:
 	assert_true(bool(s.state.get_flag("rb2.bracer_taken", false)))
 	await _frames(4)
 	assert_eq(s.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "護腕拿到一個")
+	# 試戴護腕（D-234）：拿到護腕不是結尾——任務 rb_bracer 開始，走回藥店
+	assert_false(story.ending, "拿到護腕不是待續")
+	assert_false(level.has_node("ChapterCard"))
+	assert_eq(s.quests.stage_of("rb_bracer"), "back_to_shop")
+	assert_eq(s.main_quest(), "rb_bracer")
+	assert_eq(s.state.checkpoint, "rb2_bracer")
+	assert_eq(tr(s.objective_key()), tr("Q_RB2_OBJ_BRACER_BACK"))
+	assert_false(player.reversal.unlocked.has("paralysis"), "還沒試過：麻痺沒有解鎖")
+	assert_eq(player.reversal.equipped[1], "", "第二格是空的")
+	assert_true(player.puppet().joint("elbow_R").get_node_or_null("NoenBracer") == null, "護腕還沒戴上")
+	# 走回櫃台前 → 彌夏：先在板子上試
+	_stand(level, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(4)
+	assert_true(bool(_game().call("is_in_dialogue")), "彌夏開口")
+	await _run_dialogue(level)
+	await _frames(2)
+	assert_eq(s.quests.stage_of("rb_bracer"), "test_bracer")
+	assert_eq(s.state.checkpoint, "rb2_bracer_board")
+	assert_true(story.bracer_ready())
+	assert_eq(str(story.interact_hint().get("action", "")), "interact", "按住互動的提示")
+	assert_true(str(story.interact_hint().get("fmt", "")).contains(tr("RB2_BRACER_HINT").split("{key}")[1]), "是護腕的那一句")
+	# 按一下就放：歸零、什麼都沒發生
+	Input.action_press("interact")
+	await _frames(40)
+	assert_true(story.board_hold > 0.4, "按住在累計")
+	Input.action_release("interact")
+	await _frames(2)
+	assert_eq(story.board_hold, 0.0, "放開就歸零")
+	assert_false(player.status_effects.has("paralysis"))
+	# 按滿 2 秒：麻痺解鎖、裝進第二格、從第一幀起就是反轉的（出手加速）；生命不會因為麻痺掉
+	var hp_before: float = player.health.hp
+	Input.action_press("interact")
+	await _frames(int(UndergroundMarketStory.BOARD_HOLD_SEC * 60.0) + 6)
+	Input.action_release("interact")
+	assert_true(bool(s.state.get_flag("rb2.bracer_tested", false)), "按滿了")
+	assert_true(player.reversal.unlocked.has("paralysis"), "麻痺解鎖")
+	assert_eq(player.reversal.equipped[0], "poison", "第一格還是中毒")
+	assert_eq(player.reversal.equipped[1], "paralysis", "麻痺裝進第二格")
+	assert_true(player.status_effects.has("paralysis"))
+	assert_true(player.status_effects.is_reversed("paralysis"))
+	assert_eq(player.status_effects.source_of("paralysis"), UndergroundMarketStory.BRACER_SOURCE)
+	assert_true(absf(player.status_effects.attack_speed() - 1.35) < 0.001, "出手 1.35 倍")
+	assert_false(player.status_effects.blocks_attack(), "反轉了：不會擋出手")
+	assert_true(player.health.hp >= hp_before - 0.001, "麻痺不扣血")
+	assert_not_null(player.puppet().joint("elbow_R").get_node_or_null("NoenBracer"), "護腕戴在右前臂")
+	assert_true(story.interact_hint().is_empty(), "試過了，提示收掉")
+	assert_true(level.board_lamp_on, "板子的綠燈亮")
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	var status_hud: StatusHud = hud.find_child("StatusHud", true, false) as StatusHud
+	assert_not_null(status_hud)
+	await _frames(2)
+	var shown: bool = false
+	for i: int in status_hud.rows.size():
+		if str(status_hud.rows[i]["id"]) == "paralysis":
+			shown = true
+			assert_true(bool(status_hud.rows[i]["reversed"]), "HUD 上是反轉的那一種")
+			assert_true(status_hud.line_text(i).begins_with(tr("RB_STATUS_PARALYSIS_REVERSED")), status_hud.line_text(i))
+	assert_true(shown, "HUD 上看得到麻痺 → 出手加速")
+	assert_true(absf(player.puppet().attack_speed - 1.35) < 0.001, "人偶的出手真的調快了（%s）" % player.puppet().attack_speed)
+	# 出手一次：比原本的 0.55 秒早收招
+	player.start_attack()
+	var swing_frames: int = 0
+	while player.puppet().action == "attack" and swing_frames < 120:
+		await tree.physics_frame
+		swing_frames += 1
+	assert_true(swing_frames < int(float(Puppet.ACTION_TIME["attack"]) * 60.0) - 4, "出手比原本快（%d 幀）" % swing_frames)
+	# 再叫一次（同一來源）：不會多一份、不會更快、不會多一格、護腕還是一個
+	story.reverse_paralysis()
+	var para: int = 0
+	for e: Variant in player.status_effects.to_array():
+		if str((e as Dictionary).get("id", "")) == "paralysis":
+			para += 1
+	assert_eq(para, 1, "同一來源不疊加")
+	assert_true(absf(player.status_effects.attack_speed() - 1.35) < 0.001)
+	assert_eq(player.reversal.equipped.count("paralysis"), 1)
+	assert_eq(player.reversal.slots, 2)
+	var worn: int = 0
+	for c: Node in player.puppet().joint("elbow_R").get_children():
+		if str(c.name).begins_with("NoenBracer"):
+			worn += 1
+	assert_eq(worn, 1, "手上只有一個護腕")
+	# 板子讀幾秒 → 彌夏講結果 → 任務做完 →「待續／兩格一起用」
+	assert_false(bool(_game().call("is_in_dialogue")), "隔幾秒彌夏才開口")
+	await _frames(int(UndergroundMarketStory.BOARD_READ_SEC * 60.0) + 8)
+	assert_true(bool(_game().call("is_in_dialogue")), "彌夏講結果")
+	await _run_dialogue(level)
+	await _frames(4)
+	assert_true(s.quests.is_done("rb_bracer"), "這一段做完")
+	assert_true(bool(s.state.get_flag("rb2.market_c1_done", false)))
 	assert_true(story.ending)
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(card, "待續的卡")
-	assert_eq(card.title_text(), tr("RB2_END4_TITLE"))
+	assert_eq(card.title_text(), tr("RB2_END5_TITLE"))
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
 	assert_eq(story.play_end_card(), card, "不會疊第二張")
@@ -582,10 +671,8 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	await _run_dialogue(level6)
 	await _frames(4)
 	assert_eq(retried.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1)
-	var card6: ChapterCard = level6.get_node_or_null("ChapterCard") as ChapterCard
-	assert_not_null(card6, "打贏、拿到護腕才是待續")
-	if card6 != null:
-		assert_eq(card6.title_text(), tr("RB2_END4_TITLE"))
+	assert_false(level6.has_node("ChapterCard"), "拿到護腕不是待續（D-234）：接著回藥店試戴")
+	assert_eq(retried.quests.stage_of("rb_bracer"), "back_to_shop")
 	level6.queue_free()
 	await tree.process_frame
 	# 打贏之後的存檔（「繼續」）：場上是打完的樣子，不會再打一次、不會再講一次、不會再拿一次；走近才是「待續」
@@ -594,7 +681,8 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	assert_eq(after.load_story_slot(), SaveCodec.Status.OK)
 	assert_true(after.quests.is_done("rb_demo"))
 	assert_true(bool(after.state.get_flag("rb2.bracer_taken", false)), "拿到護腕的那一刻存過檔")
-	assert_eq(after.state.checkpoint, "rb2_demo_fight")
+	assert_eq(after.state.checkpoint, "rb2_bracer", "回藥店試戴的那個檢查點")
+	assert_eq(str(_game().call("level_for_checkpoint", after.state.checkpoint)), "market")
 	var level7: UndergroundMarket = await _load()
 	level7.story.end_done = func() -> void: pass
 	await _frames(6)
@@ -606,9 +694,73 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	await _frames(6)
 	assert_eq(level7.story.guards.size(), 0, "不會再打一次")
 	assert_false(bool(_game().call("is_in_dialogue")), "不會再講一次")
-	assert_not_null(level7.get_node_or_null("ChapterCard"), "走近才是待續")
+	assert_false(level7.has_node("ChapterCard"), "示範台前不再是待續")
 	assert_eq(after.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "護腕還是一個")
+	# 試戴護腕（D-234）：讀檔站在示範台南邊、面向南；走回櫃台前 → 彌夏答應 → 檢查點換成櫃台前
+	var p7: PlayerController = level7.get_node("Player") as PlayerController
+	_stand(level7, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(4)
+	assert_true(bool(_game().call("is_in_dialogue")), "彌夏開口")
+	await _run_dialogue(level7)
+	await _frames(2)
+	assert_eq(after.state.checkpoint, "rb2_bracer_board")
+	# 手放上去、還沒聽完結果就關遊戲（或倒下重試）：回到櫃台前、還沒試過——麻痺沒有解鎖、第二格是空的、不會再聽一次彌夏的規矩
+	Input.action_press("interact")
+	await _frames(int(UndergroundMarketStory.BOARD_HOLD_SEC * 60.0) + 6)
+	Input.action_release("interact")
+	assert_eq(p7.reversal.equipped[1], "paralysis")
 	level7.queue_free()
+	await tree.process_frame
+	var mid := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", mid)
+	assert_eq(mid.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(mid.state.checkpoint, "rb2_bracer_board")
+	assert_eq(mid.quests.stage_of("rb_bracer"), "test_bracer")
+	assert_false(bool(mid.state.get_flag("rb2.bracer_tested", false)), "試到一半沒有存")
+	var level8: UndergroundMarket = await _load()
+	level8.story.end_done = func() -> void: pass
+	var p8: PlayerController = level8.get_node("Player") as PlayerController
+	await _frames(6)
+	assert_true(p8.global_position.z > UndergroundMarket.SHOP_INNER_Z, "站在店裡")
+	assert_true(FrostbridgeOpening.flat_distance(p8.global_position, UndergroundMarket.BOARD_POS) < 1.6, "櫃台前")
+	assert_false(bool(_game().call("is_in_dialogue")), "不會再講一次規矩")
+	assert_false(p8.reversal.unlocked.has("paralysis"), "讀檔：麻痺沒有白拿")
+	assert_eq(p8.reversal.equipped[1], "")
+	assert_false(p8.status_effects.has("paralysis"))
+	assert_true(level8.story.bracer_ready(), "可以直接再試")
+	Input.action_press("interact")
+	await _frames(int(UndergroundMarketStory.BOARD_HOLD_SEC * 60.0) + 6)
+	Input.action_release("interact")
+	assert_eq(p8.reversal.equipped[1], "paralysis")
+	await _frames(int(UndergroundMarketStory.BOARD_READ_SEC * 60.0) + 8)
+	await _run_dialogue(level8)
+	await _frames(4)
+	assert_true(mid.quests.is_done("rb_bracer"))
+	assert_not_null(level8.get_node_or_null("ChapterCard"), "試完才是待續")
+	level8.queue_free()
+	await tree.process_frame
+	# 做完之後的存檔（「繼續」）：第二格的麻痺存進去了、不會多一格；站在藥店外面，不會一讀檔就黑掉；走到櫃台前才是「待續」
+	var last := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", last)
+	assert_eq(last.load_story_slot(), SaveCodec.Status.OK)
+	assert_true(last.quests.is_done("rb_bracer"))
+	var level9: UndergroundMarket = await _load()
+	level9.story.end_done = func() -> void: pass
+	var p9: PlayerController = level9.get_node("Player") as PlayerController
+	await _frames(6)
+	assert_eq(p9.reversal.slots, 2)
+	assert_eq(p9.reversal.equipped[1], "paralysis", "第二格的麻痺存下來了")
+	assert_eq(p9.reversal.equipped.count("paralysis"), 1, "只佔一格")
+	assert_eq(p9.reversal.equipped[0], "", "這個存檔是直接跳到示範場的（沒中過毒）：第一格還是空的，麻痺不會跑去佔第一格")
+	assert_true(p9.global_position.z < UndergroundMarket.SHOP_Z, "站在藥店外面")
+	assert_false(level9.has_node("ChapterCard"), "不會一讀檔就黑掉")
+	assert_not_null(p9.puppet().joint("elbow_R").get_node_or_null("NoenBracer"), "護腕還戴著")
+	assert_eq(last.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1)
+	_stand(level9, UndergroundMarket.BOARD_POS + Vector3(-0.3, 0.0, -1.0))
+	await _frames(6)
+	assert_false(bool(_game().call("is_in_dialogue")), "不會再講一次")
+	assert_not_null(level9.get_node_or_null("ChapterCard"), "走到櫃台前才是待續")
+	level9.queue_free()
 	await tree.process_frame
 
 
@@ -716,6 +868,46 @@ func test_old_save_that_finished_the_shop_continues_to_the_demo() -> void:
 	var third := GameSession.new(QuestDB.load_default(), _dir)
 	assert_eq(third.load_story_slot(), SaveCodec.Status.OK)
 	assert_eq(third.quests.stage_of("rb_demo"), "stop_demo")
+
+
+## 舊存檔的遷移：拿到護腕就「待續」的存檔（第 87 輪）——讀檔時補開「試戴護腕」，「繼續」從示範台往藥店走；
+## 存檔裡沒有麻痺、反轉欄位只有中毒：讀得進來，第二格是空的。
+func test_old_save_that_took_the_bracer_continues_to_trying_it_on() -> void:
+	var s := _session_at("demo_won")
+	s.set_flag("rb2.bracer_taken", true)
+	s.state.grant_once(UndergroundMarketStory.BRACER_GRANT)
+	assert_true(s.quests.is_done("rb_demo"))
+	# 模擬舊資料：存檔裡沒有 rb_bracer、檢查點還是守衛戰那一個、反轉欄位只有中毒
+	s.state.quests.erase("rb_bracer")
+	s.state.checkpoint = "rb2_demo_fight"
+	s.state.reversal = {"slots": 2, "unlocked": ["poison"], "equipped": ["poison", ""], "awakened_once": true}
+	assert_eq(s.save(GameSession.AUTO_SLOT), OK)
+	var again := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", again)
+	assert_eq(again.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(again.quests.stage_of("rb_bracer"), "back_to_shop", "補開了")
+	assert_eq(again.main_quest(), "rb_bracer")
+	assert_eq(again.state.checkpoint, "rb2_bracer")
+	assert_eq(str(_game().call("level_for_checkpoint", again.state.checkpoint)), "market")
+	assert_eq(again.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "護腕不會多給")
+	var slots := ReversalSlots.from_dict(again.state.reversal)
+	assert_eq(slots.slots, 2)
+	assert_eq(slots.equipped[0], "poison")
+	assert_eq(slots.equipped[1], "", "舊存檔：第二格是空的")
+	assert_false(slots.unlocked.has("paralysis"))
+	# 還沒拿到護腕的存檔（打贏了、商人還沒講完）不會補開
+	var won := _session_at("demo_won")
+	won.state.quests.erase("rb_bracer")
+	assert_eq(won.save(GameSession.AUTO_SLOT), OK)
+	var third := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(third.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(third.quests.stage_of("rb_bracer"), "", "還沒拿到護腕：不開")
+	# 再讀一次不會重開、進度不會退回去
+	again.set_flag("rb2.bracer_asked", true)
+	assert_eq(again.save(GameSession.AUTO_SLOT), OK)
+	var fourth := GameSession.new(QuestDB.load_default(), _dir)
+	assert_eq(fourth.load_story_slot(), SaveCodec.Status.OK)
+	assert_eq(fourth.quests.stage_of("rb_bracer"), "test_bracer")
 
 
 ## 示範台（D-232）：街中段西側的空位。台子、直條紋的背景布、聚光燈、商人與守衛、看熱鬧的人；街的東半邊還走得過去。

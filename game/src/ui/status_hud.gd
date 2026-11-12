@@ -11,6 +11,7 @@ const COL_REVERSED: Color = Color(0.55, 0.92, 0.55)
 const COL_HARMFUL: Color = Color(0.95, 0.45, 0.4)
 const COL_ICON_BG: Color = Color(0.05, 0.06, 0.08, 0.7)
 const COL_BOTTLE: Color = Color(0.78, 0.86, 0.62)
+const COL_BOLT: Color = Color(1.0, 0.86, 0.35)
 
 ## 每格：{"id", "reversed", "remaining", "label"}
 var rows: Array[Dictionary] = []
@@ -68,6 +69,8 @@ func _draw() -> void:
 		draw_arc(c, ICON * 0.5, 0.0, TAU, 24, COL_REVERSED if bool(r["reversed"]) else COL_HARMFUL, 1.5)
 		if str(r["id"]) == "poison":
 			_draw_bottle(c)
+		elif str(r["id"]) == "paralysis":
+			_draw_bolt(c)
 		if bool(r["reversed"]):
 			_draw_reverse_mark(c + Vector2(ICON * 0.34, ICON * 0.34))
 
@@ -80,6 +83,15 @@ func _draw_bottle(c: Vector2) -> void:
 	draw_circle(c + Vector2(-2.6, 2), 1.5, dark)
 	draw_circle(c + Vector2(2.6, 2), 1.5, dark)
 	draw_line(c + Vector2(-2.5, 6), c + Vector2(2.5, 6), dark, 1.2)
+
+
+## 麻痺的原圖示：一道閃電（黃）
+func _draw_bolt(c: Vector2) -> void:
+	var pts := PackedVector2Array([
+		c + Vector2(2.5, -10.0), c + Vector2(-6.0, 1.5), c + Vector2(-0.5, 1.5),
+		c + Vector2(-3.0, 10.0), c + Vector2(6.0, -2.5), c + Vector2(0.5, -2.5),
+	])
+	draw_colored_polygon(pts, COL_BOLT)
 
 
 ## 反轉標記：右下角的綠色迴轉箭頭

@@ -128,3 +128,20 @@ DLG_RB2_DEMO_WON_002,"He hit fast. But after every punch his arm just hung there
 DLG_RB2_DEMO_WON_003,Everyone here saw it. He will not sell another one today.,在場的人都看到了。他今天一個也賣不出去。
 DLG_RB2_DEMO_WON_004,Do not put that on. Your arm will go numb too.,那個你別戴。你的手也會麻。
 DLG_RB2_DEMO_WON_005,"Poison heals me. I want to know what paralysis turns into. I will try it at Misha's shop, where it is safe.",毒會讓我回血。我想知道麻痺會變成什麼。回彌夏的店裡試，那裡安全。
+RB_STATUS_PARALYSIS,Paralyzed,麻痺
+RB_STATUS_PARALYSIS_REVERSED,Paralyzed → Faster attacks,麻痺 → 出手加速
+RB2_SLOT2_LINE1,[Paralyzed],【麻痺】
+RB2_SLOT2_LINE2,[Second reversal slot] Paralyzed → Faster attacks,【第二格反轉】麻痺 → 出手加速
+RB2_BRACER_HINT,Hold {key} — put the hand with the bracer on the test board,按住 {key}　把戴著護腕的手放到測試板上
+Q_RB_BRACER_TITLE,Trying the Bracer,試戴護腕
+Q_RB2_OBJ_BRACER_BACK,Go back to Misha's shop: test the bracer on her board first,回彌夏的店：先在測試板上試護腕
+Q_RB2_OBJ_BRACER_TEST,Put the hand with the bracer on the test board,把戴著護腕的手放到測試板上
+RB2_END5_TITLE,Two Slots at Once,兩格一起用
+DLG_RB2_BRACER_ASK_001,You brought that thing into my shop? Even the man selling it will not wear it.,你把那個東西帶進我店裡？賣它的人自己都不敢戴。
+DLG_RB2_BRACER_ASK_002,Poison heals me. I want to know what paralysis turns into.,毒會讓我回血。我想知道麻痺會變成什麼。
+DLG_RB2_BRACER_ASK_003,"Fine. My rules: put it on, then put that hand on the test board. If the board says danger, you take it off at once.",可以。照我的規矩：先戴上，再把那隻手放到測試板上。板子說危險，你就馬上拿下來。
+DLG_RB2_BRACER_ASK_004,All right. You watch the needle. I will watch my hand.,好。妳看指針，我看我的手。
+DLG_RB2_BRACER_RESULT_001,"The needle swung to red, then flipped all the way to green. And your arm did not drop.",指針先甩到紅的那邊，然後整個翻到綠的那邊。你的手也沒有垂下來。
+DLG_RB2_BRACER_RESULT_002,"It is not numb. It is faster. On me, paralysis turns into speed.",不但沒麻，手還變快了。麻痺在我身上會變成加速。
+DLG_RB2_BRACER_RESULT_003,Poison heals you. Paralysis speeds you up. That is two slots. I want to see both at once.,中毒回血，麻痺加速。你有兩格了。兩格一起用是什麼樣子，我也想看。
+DLG_RB2_BRACER_RESULT_004,Then I need somewhere to try it. Only a real fight will tell.,那就找個地方試。真的打一場才知道。

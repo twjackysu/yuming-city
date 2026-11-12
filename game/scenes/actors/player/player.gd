@@ -180,6 +180,8 @@ func _physics_process(delta: float) -> void:
 	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進（D-202）
 	if not Game.is_player_locked():
 		status_effects.tick(delta, health)
+	# 麻痺被反轉＝出手變快（只有出手，不是整個人變快）；沒反轉的麻痺＝這段時間不能出手（D-234）
+	_puppet.attack_speed = status_effects.attack_speed()
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var talking: bool = Game.is_player_locked()
 	if talking:
@@ -199,7 +201,7 @@ func _physics_process(delta: float) -> void:
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
 		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -4.0)
-	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead():
+	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead() and not status_effects.blocks_attack():
 		start_attack()
 	if not talking and Input.is_action_just_pressed("lock_on"):
 		toggle_lock()

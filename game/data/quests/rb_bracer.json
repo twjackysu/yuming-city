@@ -1,0 +1,21 @@
+{
+  "id": "rb_bracer",
+  "title": "Q_RB_BRACER_TITLE",
+  "stages": [
+    {
+      "id": "back_to_shop",
+      "objective": "Q_RB2_OBJ_BRACER_BACK",
+      "checkpoint": "rb2_bracer",
+      "marker": "node:MishaTestBoard",
+      "done_when": {"flag": "rb2.bracer_asked"}
+    },
+    {
+      "id": "test_bracer",
+      "objective": "Q_RB2_OBJ_BRACER_TEST",
+      "checkpoint": "rb2_bracer_board",
+      "marker": "node:MishaTestBoard",
+      "done_when": {"flag": "rb2.bracer_done"}
+    }
+  ],
+  "on_complete": {"set": {"rb2.market_c1_done": true}}
+}

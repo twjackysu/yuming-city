@@ -37,6 +37,11 @@ static func load_file(path: String) -> StatusRules:
 	return r
 
 
+## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺，D-234）
+func kind(status_id: String) -> String:
+	return str((statuses.get(status_id, {}) as Dictionary).get("kind", "dot"))
+
+
 func max_duration(status_id: String) -> float:
 	return float((statuses.get(status_id, {}) as Dictionary).get("max_duration", 30.0))
 

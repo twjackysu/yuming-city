@@ -8,11 +8,15 @@ extends Node
 ## （rb2_demo_pitch：諾恩看出他賣的其實是解藥）→ stop_demo（D-233）：再走近 → 席菈「再示範一次。這次不准喝解藥。」
 ## → 兩個守衛（DemoGuard：台下拿棍子的、台上戴護腕的）打過來，看熱鬧的人退開、商人縮到台子後面 → 兩個都倒下
 ## → rb2.demo_won（任務做完）→ 對話 rb2_demo_won（商人把護腕丟過來）→ rb2.bracer_taken、拿到護腕（一次）
-## → 「待續／試戴護腕」→ 回標題。倒下重試回 rb2_demo_fight：守衛滿血重來，諾恩的生命照存檔、不補滿。
+## 倒下重試回 rb2_demo_fight：守衛滿血重來，諾恩的生命照存檔、不補滿。
+## → 任務 rb_bracer（第二段 C 的前半，D-234）：back_to_shop：走回藥店的櫃台前 → 彌夏要他先在板子上試（rb2_bracer_ask）
+## → test_bracer：按住互動 2 秒 → 麻痺解鎖、裝進第二格（麻痺 → 出手加速）→ 彌夏講結果（rb2_bracer_result）
+## → 「待續／兩格一起用」→ 回標題。
 ## 掛在 UndergroundMarket 底下（`Game.session.in_story()` 時）。
 
 const QUEST: String = GameSession.MARKET_QUEST
 const DEMO_QUEST: String = GameSession.DEMO_QUEST
+const BRACER_QUEST: String = GameSession.BRACER_QUEST
 ## 檢查點 → 諾恩出生的位置與朝向（度；180＝面向南）
 const SPAWNS: Dictionary = {
 	"rb2_arrive": [Vector3(0.0, 0.0, -2.6), 180.0],
@@ -25,8 +29,14 @@ const SPAWNS: Dictionary = {
 	# 聽完叫賣之後讀檔＝示範台南邊幾步、街心偏西、斜對著台子（離台子比 DEMO_RANGE 遠：不會一讀檔就觸發；
 	# 鏡頭在他右後方，要留在街上——再往東站鏡頭會跑進東側的攤子裡，被柱子擋住）
 	"rb2_demo_fight": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
+	# 試戴護腕（任務 rb_bracer，D-234）：拿到護腕之後讀檔＝示範台南邊幾步、面向南（藥店的方向）
+	"rb2_bracer": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 180.0],
+	# 彌夏答應讓他試之後讀檔＝櫃台前、測試板的東邊半步（跟 dev_board 同一個站位，固定鏡頭 66 也用這裡）
+	"rb2_bracer_board": [Vector3(UndergroundMarket.BOARD_POS.x + 0.55, 0.0, UndergroundMarket.COUNTER_Z - 1.2), 180.0],
 	# 截圖用（--rb-at=demo，固定鏡頭 64）：跟上面同一個站位，還沒聽叫賣
 	"dev_demo": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
+	# 截圖用（--rb-at=bracer_read，固定鏡頭 66）：櫃台前，剛試完護腕
+	"dev_bracer_read": [Vector3(UndergroundMarket.BOARD_POS.x + 0.55, 0.0, UndergroundMarket.COUNTER_Z - 1.2), 180.0],
 	# 截圖用（--rb-at=fight，固定鏡頭 65）：同一個站位，守衛戰打到一半（兩個守衛停在姿勢上）
 	"dev_fight": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
 }
@@ -55,7 +65,7 @@ const BOARD_HINT_KEY: String = "RB2_BOARD_HINT"
 ## --- 黑市示範場（任務 rb_demo）
 ## 離示範台多近商人的叫賣聽得到（對話 rb2_demo_pitch）／「待續」
 const DEMO_RANGE: float = 4.6
-const END_TITLE_KEY: String = "RB2_END4_TITLE"
+const END_TITLE_KEY: String = "RB2_END5_TITLE"
 ## --- 示範場的守衛戰（D-233）
 const FIGHT_BANNER_KEY: String = "RB2_DEMO_FIGHT_START"
 const FIGHT_BANNER_SEC: float = 6.0
@@ -64,6 +74,18 @@ const SHEILA_CALL_KEY: String = "RB2_SHEILA_DEMO_CALL"
 const WON_TALK_SEC: float = 1.6
 ## 護腕只拿一次（GameState.grant_once）
 const BRACER_GRANT: String = "rb2_demo_bracer"
+## --- 試戴護腕（任務 rb_bracer，D-234）
+const BRACER_HINT_KEY: String = "RB2_BRACER_HINT"
+## 測試板上戴著護腕的那隻手：麻痺（出手 1.35 倍、12 秒；同一來源不疊加）
+const BRACER_SOURCE: String = "bracer_test"
+const PARALYSIS: String = StatusEffects.PARALYSIS
+const SLOT2_LINE1_KEY: String = "RB2_SLOT2_LINE1"
+const SLOT2_LINE2_KEY: String = "RB2_SLOT2_LINE2"
+const SLOT2_LINES_SEC: float = 4.5
+## 麻痺裝進哪一格（0 起算）
+const SECOND_SLOT: int = 1
+## 試戴護腕做完之後讀檔站在哪裡（藥店門口外面幾步、面向南）
+const AFTER_BRACER_SPAWN: String = "rb2_shop"
 
 var level: UndergroundMarket
 var player: PlayerController
@@ -80,6 +102,11 @@ var _sheila_sent_out: bool = false
 var fight_started: bool = false
 var guards: Array[DemoGuard] = []
 var won_t: float = 0.0
+## 試戴護腕：板子讀了幾秒（> 0＝這一次開機剛試完）；諾恩手上的護腕（戴上才有）
+var bracer_read: float = 0.0
+var worn_bracer: Node3D = null
+## 截圖用：停在剛試完的那一刻（彌夏不開口）
+var dev_hold_read: bool = false
 
 
 func _ready() -> void:
@@ -91,7 +118,11 @@ func _ready() -> void:
 		Game.session.quests.start(QUEST)
 	if player != null:
 		var st: GameState = Game.session.state
-		_place_player(str(st.get_flag("rb2.dev_spawn", st.checkpoint)))
+		var spawn: String = str(st.get_flag("rb2.dev_spawn", st.checkpoint))
+		# 試戴護腕做完之後讀檔：站在藥店外面（走進去到櫃台前才是「待續」，不會一讀檔就黑掉）
+		if Game.session.quests.is_done(BRACER_QUEST) and not st.flags.has("rb2.dev_spawn"):
+			spawn = AFTER_BRACER_SPAWN
+		_place_player(spawn)
 		if bool(st.get_flag("rb2.board_done", false)):
 			level.set_board_healing(true)
 		# 席菈站在他斜前方（已經在往街上看）：不擋在鏡頭與街之間；人在店裡的話她站在門的西邊（不擋鏡頭）
@@ -105,9 +136,14 @@ func _ready() -> void:
 		# 讀檔回來已經打贏了：場上直接是打完的樣子（守衛不在、看熱鬧的人在遠處、商人縮在台子後面）
 		if bool(st.get_flag("rb2.demo_won", false)):
 			level.begin_demo_fight(true)
+		# 讀檔回來已經試戴過了：護腕在他手上
+		if bool(st.get_flag("rb2.bracer_tested", false)):
+			_wear_bracer()
 		player.snap_camera()
 		if str(st.get_flag("rb2.dev_spawn", "")) == "dev_fight":
 			_dev_hold_fight()
+		elif str(st.get_flag("rb2.dev_spawn", "")) == "dev_bracer_read":
+			_dev_bracer_read()
 
 
 ## 截圖、測試用：照正式流程設旗標，推到地下市場的那一段。arrive＝剛下貨梯；street＝走到街上了；shop＝到藥店門口了。
@@ -128,17 +164,28 @@ static func dev_advance(s: GameSession, at: String) -> void:
 	# deal＝跟彌夏談完了（rb_market 做完、rb_demo 開始，站在藥店門外）；demo＝走到示範台前幾步、還沒聽叫賣（固定鏡頭 64）；
 	# demo_end＝聽完了（現在的結尾：走近就是「待續」）
 	# fight＝守衛戰打到一半（固定鏡頭 65：拿棍子的停在橫掃的前兆、戴護腕的剛打完一拳手麻了）；demo_won＝兩個都打倒了、還沒拿護腕
-	if at in ["deal", "demo", "demo_end", "fight", "demo_won"]:
+	# bracer＝拿到護腕了、站在示範台南邊（rb_bracer 剛開始）；bracer_ask＝彌夏答應了、站在櫃台前還沒試；
+	# bracer_read＝剛試完（固定鏡頭 66：指針在綠色、第二格亮著、護腕在手上）
+	if at in ["deal", "demo", "demo_end", "fight", "demo_won", "bracer", "bracer_ask", "bracer_read"]:
 		for flag: String in ["rb2.street_reached", "rb2.rules_heard", "rb2.shop_reached", "rb2.misha_met", "rb2.pricked", "rb2.board_done", "rb2.first_shop_done"]:
 			s.set_flag(flag, true)
 	if at == "demo":
 		s.set_flag("rb2.dev_spawn", "dev_demo")
-	if at in ["demo_end", "fight", "demo_won"]:
+	if at in ["demo_end", "fight", "demo_won", "bracer", "bracer_ask", "bracer_read"]:
 		s.set_flag("rb2.pitch_heard", true)
 	if at == "fight":
 		s.set_flag("rb2.dev_spawn", "dev_fight")
-	if at == "demo_won":
+	if at in ["demo_won", "bracer", "bracer_ask", "bracer_read"]:
 		s.set_flag("rb2.demo_won", true)
+	if at in ["bracer", "bracer_ask", "bracer_read"]:
+		s.set_flag("rb2.bracer_taken", true)
+		s.state.grant_once(BRACER_GRANT)
+		s.quests.start(BRACER_QUEST)
+		s.advance()
+	if at in ["bracer_ask", "bracer_read"]:
+		s.set_flag("rb2.bracer_asked", true)
+	if at == "bracer_read":
+		s.set_flag("rb2.dev_spawn", "dev_bracer_read")
 
 
 func stage() -> String:
@@ -201,11 +248,88 @@ func _tick_demo_won(delta: float, pos: Vector3) -> void:
 		elif near_demo(pos):
 			Game.start_dialogue("rb2_demo_won")
 		return
-	# 拿到護腕的那一刻存一次：「繼續」回來不會再聽一次、也不會再拿一次
+	# 拿到護腕的那一刻：護腕只給一次、開下一條任務（回藥店試戴，D-234）、存一次——「繼續」回來不會再聽一次、也不會再拿一次
 	if st.grant_once(BRACER_GRANT):
+		Game.session.quests.start(BRACER_QUEST)
 		Game.session.save(GameSession.AUTO_SLOT)
-	if fight_started or won_t > 0.0 or near_demo(pos):
-		play_end_card()
+	_tick_bracer(delta, st, pos)
+
+
+## 試戴護腕（design/10「C 的流程」前半，D-234）。back_to_shop：走回藥店的櫃台前 → 彌夏：先在板子上試（rb2_bracer_ask）
+## → test_bracer：按住互動 2 秒把戴著護腕的手放上測試板 → 麻痺解鎖、裝進第二格（反轉：出手加速）→ 板子的指針翻到「回復」
+## → 幾秒後 rb2_bracer_result（最後一句設 rb2.bracer_done＝任務做完、自動存檔）→「待續／兩格一起用」。
+func _tick_bracer(delta: float, st: GameState, pos: Vector3) -> void:
+	if Game.session.quests.is_done(BRACER_QUEST):
+		# 剛試完（這一次開機）直接「待續」；讀檔回來走到櫃台前才是
+		if bracer_read > 0.0 or at_counter(pos):
+			play_end_card()
+		return
+	match Game.session.quests.stage_of(BRACER_QUEST):
+		"back_to_shop":
+			if at_counter(pos):
+				Game.start_dialogue("rb2_bracer_ask")
+		"test_bracer":
+			if not bool(st.get_flag("rb2.bracer_tested", false)):
+				# 按住互動鍵：戴著護腕的手放在板子上（指針先往「受傷」那邊擺）；放開或走開就歸零
+				var holding: bool = bracer_ready() and Input.is_action_pressed("interact")
+				board_hold = board_hold + delta if holding else 0.0
+				level.set_board_progress(board_hold / BOARD_HOLD_SEC)
+				if board_hold >= BOARD_HOLD_SEC:
+					board_hold = 0.0
+					reverse_paralysis()
+					Game.session.set_flag("rb2.bracer_tested", true)
+				return
+			level.set_board_healing(true)
+			if dev_hold_read:
+				return
+			bracer_read += delta
+			if bracer_read >= BOARD_READ_SEC:
+				Game.start_dialogue("rb2_bracer_result")
+
+
+## 安全測試的結果：麻痺解鎖、裝進第二格（已經裝了就不會再裝一次），板子給的麻痺從第一幀起就是反轉的（出手加速）。
+## 同一個來源不疊加（StatusEffects）；畫面中央兩行字、護腕戴到他手上。
+func reverse_paralysis() -> void:
+	player.reversal.unlock(PARALYSIS)
+	# 指定第二格（第一格是開場的中毒）；第二格被別的佔了才找其他空格。已經裝了就不會再裝
+	var second_free: bool = player.reversal.slots > SECOND_SLOT and player.reversal.equipped[SECOND_SLOT] == ""
+	player.reversal.equip(PARALYSIS, SECOND_SLOT if second_free else -1)
+	player.status_effects.apply_source(BRACER_SOURCE)
+	level.set_board_healing(true)
+	_wear_bracer()
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_center_lines(SLOT2_LINE1_KEY, SLOT2_LINE2_KEY, SLOT2_LINES_SEC)
+
+
+## 現在可以把戴著護腕的手放上測試板（彌夏答應了、還沒試、人在板子前）
+func bracer_ready() -> bool:
+	if player == null or ending or Game.session.quests.stage_of(BRACER_QUEST) != "test_bracer":
+		return false
+	if bool(Game.session.state.get_flag("rb2.bracer_tested", false)):
+		return false
+	var pos: Vector3 = player.global_position
+	return pos.z > UndergroundMarket.SHOP_INNER_Z and FrostbridgeOpening.flat_distance(pos, UndergroundMarket.BOARD_POS) <= BOARD_RANGE
+
+
+## 護腕戴到諾恩的右前臂上（冷光的兩圈；只有一個）
+func _wear_bracer() -> void:
+	if worn_bracer != null or player == null or player.puppet() == null:
+		return
+	var elbow: Node3D = player.puppet().joint("elbow_R")
+	if elbow == null:
+		return
+	worn_bracer = level.worn_bracer()
+	worn_bracer.name = "NoenBracer"
+	elbow.add_child(worn_bracer)
+
+
+## 截圖用（--rb-at=bracer_read，固定鏡頭 66）：剛試完——第二格亮著、麻痺 → 出手加速在計時、指針在綠色、護腕在手上
+func _dev_bracer_read() -> void:
+	reverse_paralysis()
+	Game.session.set_flag("rb2.bracer_tested", true)
+	bracer_read = 0.01
+	dev_hold_read = true
 
 
 ## 開打：席菈喊一句、兩個守衛從布景換成真的敵人、看熱鬧的人退開。只會開始一次（倒下重試是整個關卡重來）。
@@ -299,6 +423,8 @@ func board_ready() -> bool:
 
 
 func interact_hint() -> Dictionary:
+	if bracer_ready():
+		return {"fmt": TranslationServer.translate(BRACER_HINT_KEY), "action": "interact", "progress": clampf(board_hold / BOARD_HOLD_SEC, 0.0, 1.0)}
 	if not board_ready():
 		return {}
 	return {"fmt": TranslationServer.translate(BOARD_HINT_KEY), "action": "interact", "progress": clampf(board_hold / BOARD_HOLD_SEC, 0.0, 1.0)}
@@ -335,7 +461,7 @@ func _tick_test_board(delta: float, st: GameState, pos: Vector3) -> void:
 		Game.start_dialogue("rb2_misha_deal")
 
 
-## 目前做到的地方的結尾：畫面淡成黑 →「待續／示範場的守衛」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
+## 目前做到的地方的結尾：畫面淡成黑 →「待續／兩格一起用」→ 回標題。諾恩停住（黑幕底下不會被按鍵推著走）。
 func play_end_card() -> ChapterCard:
 	if ending:
 		return level.get_node_or_null("ChapterCard") as ChapterCard

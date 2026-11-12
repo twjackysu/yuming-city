@@ -32,8 +32,11 @@ var _banner_tween: Tween
 ## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」，D-204）
 var _center: VBoxContainer
 var _center_tween: Tween
+var _center_back: StyleBoxFlat
 ## 第二行比第一行晚出現幾秒
 const CENTER_LINE_GAP: float = 0.9
+## 中央兩行字的暗底比字多出多少（左右、上下）
+const CENTER_BACK_PAD: Vector2 = Vector2(30.0, 12.0)
 const CENTER_LINE2_COLOR: Color = Color(0.55, 0.95, 0.6)
 
 
@@ -128,6 +131,13 @@ func _build() -> void:
 	_center.alignment = BoxContainer.ALIGNMENT_CENTER
 	_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor.add_child(_center)
+	# 兩行字後面一塊邊緣柔和的暗底：背景很亮、很花的時候（藥店那一排發光的瓶子）字才讀得出來（D-234）
+	_center_back = StyleBoxFlat.new()
+	_center_back.bg_color = Color(0.02, 0.03, 0.04, 0.5)
+	_center_back.set_corner_radius_all(20)
+	_center_back.shadow_color = Color(0.02, 0.03, 0.04, 0.26)
+	_center_back.shadow_size = 30
+	_center.draw.connect(_draw_center_back)
 	for i: int in 2:
 		var l := Label.new()
 		l.name = "Line%d" % (i + 1)
@@ -136,6 +146,8 @@ func _build() -> void:
 		l.add_theme_color_override("font_color", Color(0.95, 0.42, 0.38) if i == 0 else CENTER_LINE2_COLOR)
 		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 		l.add_theme_constant_override("shadow_offset_y", 2)
+		l.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04, 0.9))
+		l.add_theme_constant_override("outline_size", 6)
 		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_center.add_child(l)
 	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
@@ -250,6 +262,11 @@ func show_banner(key: String, seconds: float = 3.0) -> void:
 	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.6)
 
 
+## 中央兩行字的暗底（畫在字的後面，跟著字一起淡入淡出）
+func _draw_center_back() -> void:
+	_center.draw_style_box(_center_back, Rect2(-CENTER_BACK_PAD, _center.size + CENTER_BACK_PAD * 2.0))
+
+
 ## 畫面中間的兩行字（不暫停遊戲）：第一行先出現，第二行晚 CENTER_LINE_GAP 秒，一起停留 seconds 秒後淡出。
 func show_center_lines(key1: String, key2: String, seconds: float = 4.0) -> void:
 	var l1: Label = _center.get_child(0) as Label
@@ -260,6 +277,7 @@ func show_center_lines(key1: String, key2: String, seconds: float = 4.0) -> void
 	_center.reset_size()
 	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
 	_center.position.y -= 150.0
+	_center.queue_redraw()
 	if _center_tween != null:
 		_center_tween.kill()
 	_center_tween = create_tween()

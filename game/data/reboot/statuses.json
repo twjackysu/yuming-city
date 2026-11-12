@@ -6,12 +6,21 @@
 			"max_reversed_rate": 8.0,
 			"name_key": "RB_STATUS_POISON",
 			"reversed_key": "RB_STATUS_POISON_REVERSED"
+		},
+		"paralysis": {
+			"_doc": "麻痺（D-234）：kind=action＝不扣血也不回血。沒反轉＝這段時間不能出手；反轉＝出手加速，rate 是倍率、max_reversed_rate 是倍率上限。",
+			"kind": "action",
+			"max_duration": 20.0,
+			"max_reversed_rate": 1.5,
+			"name_key": "RB_STATUS_PARALYSIS",
+			"reversed_key": "RB_STATUS_PARALYSIS_REVERSED"
 		}
 	},
 	"sources": {
 		"barrel_mist": {"status": "poison", "rate": 6.0, "duration": 4.0},
 		"guardian_spray": {"status": "poison", "rate": 8.0, "duration": 3.0},
-		"test_board": {"status": "poison", "rate": 1.0, "duration": 6.0}
+		"test_board": {"status": "poison", "rate": 1.0, "duration": 6.0},
+		"bracer_test": {"status": "paralysis", "rate": 1.35, "duration": 12.0}
 	},
 	"items": {
 		"mist_serpent_poison": {

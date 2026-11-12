@@ -109,3 +109,24 @@ func test_wounded_use_puppets() -> void:
 			lying += 1
 	assert_eq(lying, 2, "車上兩名傷者仰躺")
 	c.free()
+
+
+## 出手加速（D-234）：attack_speed 只讓出手的動作播得快，閃避還是原速。
+func test_attack_speed_only_speeds_the_attack() -> void:
+	var p: Puppet = _make()
+	p.attack_speed = 1.5
+	p.play_action("attack")
+	var frames: int = 0
+	while p.action == "attack" and frames < 200:
+		p.advance(1.0 / 60.0)
+		frames += 1
+	var normal: int = ceili(float(Puppet.ACTION_TIME["attack"]) * 60.0)
+	assert_true(frames < normal - 6, "出手播得比較快（%d 幀，原本 %d）" % [frames, normal])
+	assert_true(frames >= int(float(normal) / 1.5) - 1, "但只快 1.5 倍")
+	p.play_action("dodge")
+	frames = 0
+	while p.action == "dodge" and frames < 200:
+		p.advance(1.0 / 60.0)
+		frames += 1
+	assert_true(absi(frames - ceili(float(Puppet.ACTION_TIME["dodge"]) * 60.0)) <= 1, "閃避還是原速（%d 幀）" % frames)
+	p.free()

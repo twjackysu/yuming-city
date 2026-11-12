@@ -47,6 +47,8 @@ var model_animation: String = ""
 var move_speed: float = 0.0
 var action: String = ""
 var action_time: float = 0.0
+## 出手動作播多快（1＝原速）。只影響 "attack"；麻痺被反轉時玩家把它調快（D-234）
+var attack_speed: float = 1.0
 var phase: float = 0.0
 var breath: float = 0.0
 
@@ -111,7 +113,7 @@ func advance(delta: float) -> void:
 	if move_speed >= WALK_MIN_SPEED:
 		phase = fmod(phase + delta * TAU * lerpf(0.9, 1.4, speed_t), TAU)
 	if action != "":
-		action_time += delta
+		action_time += delta * (attack_speed if action == "attack" else 1.0)
 		if action_time >= float(ACTION_TIME[action]):
 			action = ""
 			action_time = 0.0

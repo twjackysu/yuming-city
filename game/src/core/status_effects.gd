@@ -8,6 +8,8 @@ extends RefCounted
 ## - 反轉後的好處有上限（max_reversed_rate）。直接傷害不歸這裡管（Health.apply_damage）。
 ## - 每一份狀態記得來源、強度、剩餘時間；存檔照原樣存（讀檔不補滿、不清掉）。
 
+const PARALYSIS: String = "paralysis"
+
 ## event："start"（新上身）、"refresh"（同種刷新）、"end"（時間到）、"clear"（被清掉）
 signal changed(status_id: String, event: String)
 
@@ -48,6 +50,19 @@ func source_of(status_id: String) -> String:
 
 func is_reversed(status_id: String) -> bool:
 	return reversal != null and reversal.is_reversed(status_id)
+
+
+## 麻痺沒有反轉的時候：這段時間不能出手（動作被打斷）。裝進反轉欄位就不會擋。
+func blocks_attack() -> bool:
+	return has(PARALYSIS) and not is_reversed(PARALYSIS)
+
+
+## 出手的速度倍率：麻痺被反轉時＝它的強度（不超過 max_reversed_rate；同一種只有一份，所以不會越疊越快）；其他時候 1。
+## 只加快自己的出手，不加快別的計時（status-reversal.md 麻痺那一列）。
+func attack_speed() -> float:
+	if not has(PARALYSIS) or not is_reversed(PARALYSIS):
+		return 1.0
+	return clampf(rate(PARALYSIS), 1.0, maxf(rules.max_reversed_rate(PARALYSIS), 1.0))
 
 
 ## 上狀態。回傳 "start"／"refresh"／"ignored"（強度或時間不合法）。
@@ -94,7 +109,8 @@ func tick(delta: float, health: Health) -> void:
 		var id: String = str(k)
 		var cur: Dictionary = _active[id] as Dictionary
 		var dt: float = minf(delta, float(cur["remaining"]))
-		if health != null and dt > 0.0:
+		# 麻痺這一類（kind=action）不碰生命：只計時，效果由 attack_speed()／blocks_attack() 問
+		if health != null and dt > 0.0 and rules.kind(id) == "dot":
 			var info: Dictionary = {"status": id, "source": cur["source"]}
 			if is_reversed(id):
 				var capped: float = minf(float(cur["rate"]), rules.max_reversed_rate(id))
