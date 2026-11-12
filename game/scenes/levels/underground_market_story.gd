@@ -5,9 +5,11 @@ extends Node
 ## test_board（D-231）：走進店裡到櫃台前 → 彌夏以為他來鬧事（rb2_misha_meet）→ 生命是滿的話她先扎一針 →
 ## 按住互動 2 秒把手放上測試板（弱的中毒：1／秒、6 秒）→ 指針甩到「回復」、綠燈亮 → 她願意談（rb2_misha_deal）
 ## → 任務 rb_demo（第二段 B，D-232）：go_demo：走出藥店、往北走到街中段的示範台 → 商人當眾賣「高速護腕」
-## （rb2_demo_pitch：諾恩看出他賣的其實是解藥）→ stop_demo：打斷示範的守衛——**這一段還沒做**，現在在這裡
-## 「待續／示範場的守衛」→ 回標題。
-## 掛在 UndergroundMarket 底下（`Game.session.in_story()` 時）。還沒有戰鬥，不會倒下；讀檔回到檢查點。
+## （rb2_demo_pitch：諾恩看出他賣的其實是解藥）→ stop_demo（D-233）：再走近 → 席菈「再示範一次。這次不准喝解藥。」
+## → 兩個守衛（DemoGuard：台下拿棍子的、台上戴護腕的）打過來，看熱鬧的人退開、商人縮到台子後面 → 兩個都倒下
+## → rb2.demo_won（任務做完）→ 對話 rb2_demo_won（商人把護腕丟過來）→ rb2.bracer_taken、拿到護腕（一次）
+## → 「待續／試戴護腕」→ 回標題。倒下重試回 rb2_demo_fight：守衛滿血重來，諾恩的生命照存檔、不補滿。
+## 掛在 UndergroundMarket 底下（`Game.session.in_story()` 時）。
 
 const QUEST: String = GameSession.MARKET_QUEST
 const DEMO_QUEST: String = GameSession.DEMO_QUEST
@@ -25,6 +27,8 @@ const SPAWNS: Dictionary = {
 	"rb2_demo_fight": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
 	# 截圖用（--rb-at=demo，固定鏡頭 64）：跟上面同一個站位，還沒聽叫賣
 	"dev_demo": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
+	# 截圖用（--rb-at=fight，固定鏡頭 65）：同一個站位，守衛戰打到一半（兩個守衛停在姿勢上）
+	"dev_fight": [Vector3(-0.8, 0.0, UndergroundMarket.DEMO_Z + 4.7), 28.0],
 }
 ## 走過這條線＝到街上了
 const STREET_LINE_Z: float = UndergroundMarket.RAMP_S + 0.6
@@ -51,7 +55,15 @@ const BOARD_HINT_KEY: String = "RB2_BOARD_HINT"
 ## --- 黑市示範場（任務 rb_demo）
 ## 離示範台多近商人的叫賣聽得到（對話 rb2_demo_pitch）／「待續」
 const DEMO_RANGE: float = 4.6
-const END_TITLE_KEY: String = "RB2_END3_TITLE"
+const END_TITLE_KEY: String = "RB2_END4_TITLE"
+## --- 示範場的守衛戰（D-233）
+const FIGHT_BANNER_KEY: String = "RB2_DEMO_FIGHT_START"
+const FIGHT_BANNER_SEC: float = 6.0
+const SHEILA_CALL_KEY: String = "RB2_SHEILA_DEMO_CALL"
+## 兩個都倒下之後隔多久商人開口
+const WON_TALK_SEC: float = 1.6
+## 護腕只拿一次（GameState.grant_once）
+const BRACER_GRANT: String = "rb2_demo_bracer"
 
 var level: UndergroundMarket
 var player: PlayerController
@@ -64,6 +76,10 @@ var end_music: AudioStreamPlayer
 var board_hold: float = 0.0
 var board_read: float = 0.0
 var _sheila_sent_out: bool = false
+## 守衛戰：開打了沒（不存檔——讀檔、倒下重試都從頭打）、場上的兩個守衛、打贏之後過了幾秒
+var fight_started: bool = false
+var guards: Array[DemoGuard] = []
+var won_t: float = 0.0
 
 
 func _ready() -> void:
@@ -86,7 +102,12 @@ func _ready() -> void:
 			_spawn_sheila(player.global_position + Vector3(2.7, 0.0, -1.7))
 		else:
 			_spawn_sheila(player.global_position + Vector3(1.7, 0.0, 1.1))
+		# 讀檔回來已經打贏了：場上直接是打完的樣子（守衛不在、看熱鬧的人在遠處、商人縮在台子後面）
+		if bool(st.get_flag("rb2.demo_won", false)):
+			level.begin_demo_fight(true)
 		player.snap_camera()
+		if str(st.get_flag("rb2.dev_spawn", "")) == "dev_fight":
+			_dev_hold_fight()
 
 
 ## 截圖、測試用：照正式流程設旗標，推到地下市場的那一段。arrive＝剛下貨梯；street＝走到街上了；shop＝到藥店門口了。
@@ -106,13 +127,18 @@ static func dev_advance(s: GameSession, at: String) -> void:
 		s.set_flag("rb2.board_done", true)
 	# deal＝跟彌夏談完了（rb_market 做完、rb_demo 開始，站在藥店門外）；demo＝走到示範台前幾步、還沒聽叫賣（固定鏡頭 64）；
 	# demo_end＝聽完了（現在的結尾：走近就是「待續」）
-	if at in ["deal", "demo", "demo_end"]:
+	# fight＝守衛戰打到一半（固定鏡頭 65：拿棍子的停在橫掃的前兆、戴護腕的剛打完一拳手麻了）；demo_won＝兩個都打倒了、還沒拿護腕
+	if at in ["deal", "demo", "demo_end", "fight", "demo_won"]:
 		for flag: String in ["rb2.street_reached", "rb2.rules_heard", "rb2.shop_reached", "rb2.misha_met", "rb2.pricked", "rb2.board_done", "rb2.first_shop_done"]:
 			s.set_flag(flag, true)
 	if at == "demo":
 		s.set_flag("rb2.dev_spawn", "dev_demo")
-	if at == "demo_end":
+	if at in ["demo_end", "fight", "demo_won"]:
 		s.set_flag("rb2.pitch_heard", true)
+	if at == "fight":
+		s.set_flag("rb2.dev_spawn", "dev_fight")
+	if at == "demo_won":
+		s.set_flag("rb2.demo_won", true)
 
 
 func stage() -> String:
@@ -126,7 +152,7 @@ func _physics_process(delta: float) -> void:
 	var pos: Vector3 = player.global_position
 	# 藥店那一段做完了：接黑市示範場（任務 rb_demo）
 	if Game.session.quests.is_done(QUEST):
-		_tick_demo(pos)
+		_tick_demo(delta, pos)
 		return
 	match stage():
 		"arrive":
@@ -142,19 +168,105 @@ func _physics_process(delta: float) -> void:
 			_tick_test_board(delta, st, pos)
 
 
-## 黑市示範場（design/10「B 的流程」）。go_demo：走到示範台附近 → 商人的叫賣；stop_demo：守衛戰還沒做，走近就是「待續」。
-func _tick_demo(pos: Vector3) -> void:
+## 黑市示範場（design/10「B 的流程」）。go_demo：走到示範台附近 → 商人的叫賣；stop_demo：守衛戰（D-233）。
+func _tick_demo(delta: float, pos: Vector3) -> void:
 	# 剛談完人還在店裡：席菈先到門外等（她是直線跟人，站在 1.3 m 寬的門洞裡會把人堵在店裡）
 	if not _sheila_sent_out and pos.z > UndergroundMarket.SHOP_INNER_Z:
 		_sheila_sent_out = true
 		_send_sheila_outside()
+	if Game.session.quests.is_done(DEMO_QUEST):
+		_tick_demo_won(delta, pos)
+		return
 	match Game.session.quests.stage_of(DEMO_QUEST):
 		"go_demo":
 			if near_demo(pos):
 				Game.start_dialogue("rb2_demo_pitch")
 		"stop_demo":
-			if near_demo(pos):
-				play_end_card()
+			if not fight_started:
+				if near_demo(pos):
+					start_demo_fight()
+			elif guards_down():
+				Game.session.set_flag("rb2.demo_won", true)
+
+
+## 打贏了：隔一下商人開口（rb2_demo_won，最後一句設 rb2.bracer_taken）→ 拿到護腕（只有一次）→「待續／試戴護腕」。
+## 讀檔回來（已經打贏、還沒講完）：走近示範台才講，不會一讀檔就開口。
+func _tick_demo_won(delta: float, pos: Vector3) -> void:
+	var st: GameState = Game.session.state
+	if not bool(st.get_flag("rb2.bracer_taken", false)):
+		if fight_started:
+			won_t += delta
+			if won_t >= WON_TALK_SEC:
+				Game.start_dialogue("rb2_demo_won")
+		elif near_demo(pos):
+			Game.start_dialogue("rb2_demo_won")
+		return
+	# 拿到護腕的那一刻存一次：「繼續」回來不會再聽一次、也不會再拿一次
+	if st.grant_once(BRACER_GRANT):
+		Game.session.save(GameSession.AUTO_SLOT)
+	if fight_started or won_t > 0.0 or near_demo(pos):
+		play_end_card()
+
+
+## 開打：席菈喊一句、兩個守衛從布景換成真的敵人、看熱鬧的人退開。只會開始一次（倒下重試是整個關卡重來）。
+func start_demo_fight() -> void:
+	if fight_started:
+		return
+	fight_started = true
+	level.begin_demo_fight()
+	for spec: Array in UndergroundMarket.DEMO_FIGHTERS:
+		var g := DemoGuard.new()
+		g.kind = str(spec[3])
+		g.height = float(spec[2])
+		g.name = "DemoFighter%d" % guards.size()
+		var at: Vector3 = spec[0] as Vector3
+		g.position = Vector3(at.x, level.ground_y(at) + 0.05, at.z)
+		level.add_child(g)
+		g.set_facing(deg_to_rad(float(spec[1])))
+		guards.append(g)
+	# 戴護腕的那個是從台上跳下來的：身體從台子的高度落到地上
+	if guards.size() > 0:
+		guards[0].hop_down(UndergroundMarket.DEMO_STAGE_H, 0.28)
+	var ally: Sheila = level.get_node_or_null("Sheila") as Sheila
+	if ally != null:
+		ally.say(SHEILA_CALL_KEY)
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner(FIGHT_BANNER_KEY, FIGHT_BANNER_SEC)
+
+
+## 兩個守衛都倒下了
+func guards_down() -> bool:
+	if guards.is_empty():
+		return false
+	for g: DemoGuard in guards:
+		if is_instance_valid(g) and not g.health.is_dead():
+			return false
+	return true
+
+
+## 截圖用（--rb-at=fight）：一進場就開打，兩個守衛擺在諾恩前面、停在姿勢上——
+## 拿棍子的在左前方、橫掃的前兆快到底（棍子拉到身後、銅箍亮著）；戴護腕的在右前方、剛打完一拳（右手垂著、護腕閃暗紅），席菈在他對面。
+func _dev_hold_fight() -> void:
+	start_demo_fight()
+	if guards.size() < 2:
+		return
+	var p: Vector3 = player.global_position
+	var fwd := Vector3(-sin(player.rotation.y), 0.0, -cos(player.rotation.y))
+	var right := Vector3(-fwd.z, 0.0, fwd.x)
+	var club: DemoGuard = guards[1]
+	var bracer: DemoGuard = guards[0]
+	# 鏡頭在他右後方：正前方的東西會被他自己擋住，所以三個人都擺在他的右前方、一個比一個遠
+	club.global_position = p + fwd * 2.3 + right * 0.75
+	bracer.global_position = p + fwd * 3.6 + right * 2.1
+	var ally: Sheila = level.get_node_or_null("Sheila") as Sheila
+	var ally_at: Vector3 = p + fwd * 2.5 + right * 3.4
+	if ally != null:
+		ally.global_position = ally_at
+		ally.set_physics_process(false)
+		ally.rotation.y = atan2(-(bracer.global_position.x - ally_at.x), -(bracer.global_position.z - ally_at.z))
+	club.hold_pose("swing", EnemyBrain.State.TELEGRAPH, 0.9, p)
+	bracer.hold_pose("jab", EnemyBrain.State.RECOVER, 0.4, ally_at)
 
 
 ## 走到示範台附近了（在街上，不是隔著牆在店裡）

@@ -383,7 +383,7 @@ func test_new_game_to_lift_in_one_run() -> void:
 	assert_true(s.quests.is_done("rb_market"), "地下市場這一段做完")
 	assert_false(market.has_node("ChapterCard"), "藥店不是結尾：還要去黑市示範場")
 	assert_eq(s.quests.stage_of("rb_demo"), "go_demo")
-	# 出店門往北走到示範台前 → 商人叫賣、諾恩看出他賣的是解藥 → 席菈「這個我會」→ 待續（守衛戰還沒做）
+	# 出店門往北走到示範台前 → 商人叫賣、諾恩看出他賣的是解藥 → 席菈「這個我會」→ 守衛戰 → 拿到護腕 → 待續
 	_stand(market, UndergroundMarket.SHOP_DOOR + Vector3(0.0, 0.0, -2.0))
 	await _frames(6)
 	assert_false(_talking(), "店門外還聽不到叫賣")
@@ -394,10 +394,26 @@ func test_new_game_to_lift_in_one_run() -> void:
 	await _frames(4)
 	assert_eq(s.quests.stage_of("rb_demo"), "stop_demo", "聽完了")
 	assert_eq(s.state.checkpoint, "rb2_demo_fight")
+	# 守衛戰（D-233）：聽完還站在台前 → 開打（不是待續）→ 兩個守衛都倒下 → 商人把護腕丟過來 → 待續
+	var mstory: UndergroundMarketStory = market.story
+	assert_true(mstory.fight_started, "聽完就開打")
+	assert_false(market.has_node("ChapterCard"), "還沒到結尾")
+	assert_eq(mstory.guards.size(), 2, "兩個守衛")
+	for dg: DemoGuard in mstory.guards:
+		dg.set_physics_process(false)
+		dg.health.apply_damage(dg.health.hp, {"source": p2})
+	await _frames(4)
+	assert_true(s.quests.is_done("rb_demo"), "兩個都倒下：這一段做完")
+	assert_false(_talking(), "隔一下商人才開口")
+	await _frames(int(UndergroundMarketStory.WON_TALK_SEC * 60.0) + 12)
+	assert_true(_talking(), "商人認輸")
+	await _run_dialogue(market)
+	await _frames(4)
+	assert_eq(s.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "拿到護腕，只有一個")
 	var end_card: ChapterCard = market.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(end_card, "待續的卡")
 	if end_card != null:
-		assert_eq(end_card.title_text(), tr("RB2_END3_TITLE"))
+		assert_eq(end_card.title_text(), tr("RB2_END4_TITLE"))
 		end_card.finish()
 	assert_eq(ended[0], 1, "卡播完 → 回標題")
 	# 一路走完：狀態不會留一堆、藥還剩一瓶、工錢只有一份

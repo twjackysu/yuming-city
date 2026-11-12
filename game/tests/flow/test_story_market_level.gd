@@ -355,11 +355,59 @@ func test_arrive_street_shop_then_to_be_continued() -> void:
 	assert_eq(s.state.checkpoint, "rb2_demo_fight")
 	assert_eq(s.objective_key(), "Q_RB2_OBJ_STOP_DEMO")
 	assert_false(s.quests.is_done("rb_demo"), "守衛還沒打：這條任務沒做完")
+	# 守衛戰（D-233）：聽完還站在台前 → 開打，不是「待續」。席菈喊一句、布景的兩個守衛換成真的敵人、看熱鬧的人退到街的北邊
+	var crowd_z: float = UndergroundMarket.DEMO_Z + UndergroundMarket.DEMO_CROWD[0].z
 	await _frames(4)
+	assert_true(story.fight_started, "走近就開打")
+	assert_false(story.ending, "不是待續")
+	assert_false(level.has_node("ChapterCard"))
+	assert_eq(story.guards.size(), 2, "兩個守衛")
+	for dg: DemoGuard in story.guards:
+		dg.set_physics_process(false)
+		assert_eq(dg.health.hp, dg.health.max_hp, "滿血")
+		assert_true(dg.is_in_group("enemies"))
+		assert_true(dg.global_position.x > UndergroundMarket.DEMO_STAGE_FRONT_X and absf(dg.global_position.x) < UndergroundMarket.STREET_HALF, "在街上（%s）" % dg.global_position)
+	assert_true(story.guards[0].is_bracer(), "台上那個戴護腕")
+	assert_false(story.guards[1].is_bracer(), "台下那個拿棍子")
+	assert_false(level.demo_guards[0].visible or level.demo_guards[1].visible, "布景的守衛收起來了（不會有四個）")
+	assert_eq(level.demo_blocks[0].collision_layer, 0, "台下守衛原本的碰撞盒關掉")
+	assert_eq((level.get_node("Sheila") as Sheila).line_text(), tr("RB2_SHEILA_DEMO_CALL"), "席菈：再示範一次")
+	for i: int in level.demo_crowd.size():
+		var block: StaticBody3D = level.demo_blocks[i + 1]
+		assert_true(block.position.z < UndergroundMarket.DEMO_Z - 5.0, "看熱鬧的人的碰撞盒搬到北邊（%s）" % block.position)
+		assert_true(absf(block.position.x) < UndergroundMarket.STREET_HALF, "還在街上")
+	await _frames(int((UndergroundMarket.DEMO_FLEE_SEC + 1.0) * 60.0))
+	for i: int in level.demo_crowd.size():
+		var who: Puppet = level.demo_crowd[i]
+		assert_true(who.position.distance_to(level.demo_blocks[i + 1].position) < 0.05, "人跑到碰撞盒那裡了")
+		assert_eq(who.move_speed, 0.0, "停下來")
+	assert_true(level.demo_crowd[0].position.z < crowd_z - 4.0, "離台子遠了")
+	assert_true(level.demo_seller.position.x < UndergroundMarket.DEMO_STAGE_FRONT_X - 1.0, "商人縮到台子後面")
+	assert_eq(story.guards.size(), 2, "開打只會開始一次")
+	story.start_demo_fight()
+	assert_eq(story.guards.size(), 2)
+	# 只倒一個不算贏；兩個都倒才算
+	story.guards[1].health.apply_damage(9999.0, {"source": player})
+	await _frames(4)
+	assert_false(bool(s.state.get_flag("rb2.demo_won", false)), "還有一個站著")
+	assert_false(s.quests.is_done("rb_demo"))
+	story.guards[0].health.apply_damage(9999.0, {"source": player})
+	await _frames(4)
+	assert_true(bool(s.state.get_flag("rb2.demo_won", false)), "兩個都倒下")
+	assert_true(s.quests.is_done("rb_demo"), "這一段做完")
+	assert_true(bool(s.state.get_flag("rb2.market_b_done", false)))
+	assert_false(bool(_game().call("is_in_dialogue")), "隔一下商人才開口")
+	assert_eq(s.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 0, "還沒拿到護腕")
+	await _frames(int(UndergroundMarketStory.WON_TALK_SEC * 60.0) + 12)
+	assert_true(bool(_game().call("is_in_dialogue")), "商人認輸")
+	await _run_dialogue(level)
+	assert_true(bool(s.state.get_flag("rb2.bracer_taken", false)))
+	await _frames(4)
+	assert_eq(s.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "護腕拿到一個")
 	assert_true(story.ending)
 	var card: ChapterCard = level.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(card, "待續的卡")
-	assert_eq(card.title_text(), tr("RB2_END3_TITLE"))
+	assert_eq(card.title_text(), tr("RB2_END4_TITLE"))
 	assert_eq(player.process_mode, Node.PROCESS_MODE_DISABLED, "黑幕底下諾恩停住")
 	assert_eq(done[0], 0, "卡還沒播完")
 	assert_eq(story.play_end_card(), card, "不會疊第二張")
@@ -471,9 +519,12 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	assert_false(level4.has_node("ChapterCard"), "櫃台前不再是待續")
 	level4.queue_free()
 	await tree.process_frame
-	# 聽完叫賣的存檔（現在的結尾）：回到示範台南邊幾步，不會一讀檔就黑掉；走近才是「待續」，商人不會從頭再喊
+	# 聽完叫賣的存檔（守衛戰的檢查點）：回到示範台南邊幾步，不會一讀檔就開打；走近才開打，商人不會從頭再喊
 	var s5 := _session_at("demo_end")
 	assert_eq(s5.quests.stage_of("rb_demo"), "stop_demo")
+	# 帶著傷到這裡（存檔裡的生命是 63；讀檔最低補到一半，所以用比一半高的數字）：讀檔、倒下重試都不補滿
+	s5.state.vitals["hp"] = 63.0
+	assert_eq(s5.save(GameSession.AUTO_SLOT), OK)
 	var heard := GameSession.new(QuestDB.load_default(), _dir)
 	tree.root.get_node("Game").set("session", heard)
 	assert_eq(heard.load_story_slot(), SaveCodec.Status.OK)
@@ -484,16 +535,80 @@ func test_reload_returns_to_each_checkpoint_without_repeating_or_regranting() ->
 	var p5: PlayerController = level5.get_node("Player") as PlayerController
 	await _frames(6)
 	assert_false(level5.has_node("ChapterCard"), "讀檔回來不會馬上黑掉")
+	assert_false(level5.story.fight_started, "也不會一讀檔就開打")
+	assert_true(absf(p5.health.hp - 63.0) < 0.01, "生命照存檔，不補滿（%s）" % p5.health.hp)
 	assert_true(FrostbridgeOpening.flat_distance(p5.global_position, UndergroundMarket.DEMO_POS) > UndergroundMarketStory.DEMO_RANGE, "出生點在觸發範圍外")
 	assert_true(FrostbridgeOpening.flat_distance(p5.global_position, UndergroundMarket.DEMO_POS) < 10.0, "但是看得到台子")
 	_stand(level5, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
 	await _frames(6)
 	assert_false(bool(_game().call("is_in_dialogue")), "不會從頭再喊")
-	var card5: ChapterCard = level5.get_node_or_null("ChapterCard") as ChapterCard
-	assert_not_null(card5, "走近才是待續")
-	if card5 != null:
-		assert_eq(card5.title_text(), tr("RB2_END3_TITLE"))
+	assert_false(level5.has_node("ChapterCard"), "走近不再是待續")
+	assert_true(level5.story.fight_started, "走近就開打")
+	assert_eq(level5.story.guards.size(), 2)
+	for dg: DemoGuard in level5.story.guards:
+		dg.set_physics_process(false)
+	# 打到一半（一個倒了、另一個剩一半）倒下重試：整個關卡重來——兩個守衛都回來、滿血；諾恩的生命還是存檔的 63、沒有護腕
+	level5.story.guards[1].health.apply_damage(9999.0, {"source": p5})
+	level5.story.guards[0].health.apply_damage(50.0, {"source": p5})
+	p5.health.hp = 7.0
+	await _frames(3)
+	assert_false(bool(heard.state.get_flag("rb2.demo_won", false)), "還沒贏")
 	level5.queue_free()
+	await tree.process_frame
+	_game().call("retry", false)
+	var retried: GameSession = _game().get("session") as GameSession
+	assert_eq(retried.state.checkpoint, "rb2_demo_fight")
+	assert_false(bool(retried.state.get_flag("rb2.demo_won", false)))
+	assert_eq(retried.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 0)
+	var level6: UndergroundMarket = await _load()
+	level6.story.end_done = func() -> void: pass
+	var p6: PlayerController = level6.get_node("Player") as PlayerController
+	await _frames(6)
+	assert_true(absf(p6.health.hp - 63.0) < 0.01, "倒下重試不補滿血（%s）" % p6.health.hp)
+	assert_false(level6.story.fight_started, "重來也是走近才開打")
+	assert_true(level6.demo_guards[0].visible and level6.demo_guards[1].visible, "布景的守衛站回去")
+	assert_false(level6.demo_fight_begun)
+	_stand(level6, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
+	await _frames(6)
+	assert_eq(level6.story.guards.size(), 2, "兩個守衛都回來")
+	for dg: DemoGuard in level6.story.guards:
+		dg.set_physics_process(false)
+		assert_eq(dg.health.hp, dg.health.max_hp, "滿血重來")
+	# 打贏 → 講完 → 護腕只有一個
+	for dg: DemoGuard in level6.story.guards:
+		dg.health.apply_damage(9999.0, {"source": p6})
+	await _frames(int(UndergroundMarketStory.WON_TALK_SEC * 60.0) + 16)
+	assert_true(bool(_game().call("is_in_dialogue")), "商人認輸")
+	await _run_dialogue(level6)
+	await _frames(4)
+	assert_eq(retried.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1)
+	var card6: ChapterCard = level6.get_node_or_null("ChapterCard") as ChapterCard
+	assert_not_null(card6, "打贏、拿到護腕才是待續")
+	if card6 != null:
+		assert_eq(card6.title_text(), tr("RB2_END4_TITLE"))
+	level6.queue_free()
+	await tree.process_frame
+	# 打贏之後的存檔（「繼續」）：場上是打完的樣子，不會再打一次、不會再講一次、不會再拿一次；走近才是「待續」
+	var after := GameSession.new(QuestDB.load_default(), _dir)
+	tree.root.get_node("Game").set("session", after)
+	assert_eq(after.load_story_slot(), SaveCodec.Status.OK)
+	assert_true(after.quests.is_done("rb_demo"))
+	assert_true(bool(after.state.get_flag("rb2.bracer_taken", false)), "拿到護腕的那一刻存過檔")
+	assert_eq(after.state.checkpoint, "rb2_demo_fight")
+	var level7: UndergroundMarket = await _load()
+	level7.story.end_done = func() -> void: pass
+	await _frames(6)
+	assert_true(level7.demo_fight_begun, "打完的樣子")
+	assert_false(level7.demo_guards[0].visible or level7.demo_guards[1].visible, "守衛不在了")
+	assert_true(level7.demo_crowd[0].position.distance_to(UndergroundMarket.DEMO_CROWD_FLEE[0]) < 0.05, "看熱鬧的人在遠處")
+	assert_false(level7.has_node("ChapterCard"), "不會一讀檔就黑掉")
+	_stand(level7, UndergroundMarket.DEMO_POS + Vector3(3.0, 0.0, 2.0))
+	await _frames(6)
+	assert_eq(level7.story.guards.size(), 0, "不會再打一次")
+	assert_false(bool(_game().call("is_in_dialogue")), "不會再講一次")
+	assert_not_null(level7.get_node_or_null("ChapterCard"), "走近才是待續")
+	assert_eq(after.state.grants.count(UndergroundMarketStory.BRACER_GRANT), 1, "護腕還是一個")
+	level7.queue_free()
 	await tree.process_frame
 
 

@@ -1,0 +1,35 @@
+{
+  "id": "rb2_demo_won",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_DEMO_SELLER",
+      "text": "DLG_RB2_DEMO_WON_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB2_DEMO_WON_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB2_DEMO_WON_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_RB2_DEMO_WON_004",
+      "next": "l04"
+    },
+    "l04": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_RB2_DEMO_WON_005",
+      "do": {
+        "set": {
+          "rb2.bracer_taken": true
+        }
+      }
+    }
+  }
+}

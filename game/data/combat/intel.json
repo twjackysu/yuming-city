@@ -67,5 +67,32 @@
         "hidden": true
       }
     ]
+  },
+  "demo_guard": {
+    "name": "ENEMY_DEMO_GUARD",
+    "weakpoints": [],
+    "moves": [
+      {
+        "id": "swing",
+        "label": "MOVE_GUARD_SWING",
+        "verified": true
+      },
+      {
+        "id": "thrust",
+        "label": "MOVE_GUARD_THRUST",
+        "verified": true
+      }
+    ]
+  },
+  "demo_bracer": {
+    "name": "ENEMY_DEMO_BRACER",
+    "weakpoints": [],
+    "moves": [
+      {
+        "id": "jab",
+        "label": "MOVE_BRACER_JAB",
+        "verified": true
+      }
+    ]
   }
 }

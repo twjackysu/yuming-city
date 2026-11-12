@@ -107,7 +107,6 @@ SPK_DEMO_SELLER,Bracer Seller,護腕商人
 Q_RB_DEMO_TITLE,The Black-Market Demo,黑市示範場
 Q_RB2_OBJ_GO_DEMO,Go to the black-market demo: the stage halfway up the street,去黑市示範場：街中段搭著台子的地方
 Q_RB2_OBJ_STOP_DEMO,Stop the demo: deal with the guards,打斷示範：解決示範場的守衛
-RB2_END3_TITLE,The Demo Guards,示範場的守衛
 DLG_RB2_DEMO_PITCH_001,"Step up and look. The speed bracer. Strap it on and your hand moves twice as fast. My man will show you.",各位看好：高速護腕。戴上去，出手快一倍。我的人示範給你們看。
 DLG_RB2_DEMO_PITCH_002,"Yes, wear it a while and the arm goes numb. It is on the tag. I hide nothing. But one bottle of my antidote, forty coins, and the paralysis is gone.",對，戴久了手會麻、會動不了，牌子上寫了，我沒騙人。不過配我的解藥，一瓶四十枚，麻痺馬上消。
 DLG_RB2_DEMO_PITCH_003,"The bracer is fifteen coins. The antidote is forty, and you need one every time you wear it. He is not selling bracers. He is selling antidote.",護腕十五枚，解藥四十枚，而且每戴一次就要喝一瓶。他賣的不是護腕，是解藥。
@@ -116,3 +115,16 @@ DLG_RB2_DEMO_PITCH_005,"The tag says it may go numb now and then. The man on the
 DLG_RB2_DEMO_PITCH_006,...What do you want me to do?,……你要我做什麼？
 DLG_RB2_DEMO_PITCH_007,"Ask him to show it again, without the antidote. He will say no, and the guards will come over first.",請他再示範一次，不准喝解藥。他不會答應，守衛會先走過來。
 DLG_RB2_DEMO_PITCH_008,That part I can do.,這個我會。
+ENEMY_DEMO_GUARD,Demo Guard,示範場守衛
+ENEMY_DEMO_BRACER,Bracer Guard,戴護腕的守衛
+MOVE_GUARD_SWING,Club swing,棍子橫掃
+MOVE_GUARD_THRUST,Club thrust,棍子直刺
+MOVE_BRACER_JAB,Fast punch (his arm goes numb after),快拳（打完手會麻）
+RB2_SHEILA_DEMO_CALL,Show it again. No antidote this time.,再示範一次。這次不准喝解藥。
+RB2_DEMO_FIGHT_START,"The guard with the bracers hits fast, but his arm goes numb after every punch. Hit him while he is stuck.",戴護腕的守衛出手很快，但每打一拳手就會麻。趁他僵住的時候打。
+RB2_END4_TITLE,Trying the Bracer,試戴護腕
+DLG_RB2_DEMO_WON_001,"Stop! Stop hitting them! Take it. Take the bracer and go!",別打了！別打了！拿去，護腕給你，快走！
+DLG_RB2_DEMO_WON_002,"He hit fast. But after every punch his arm just hung there. That is the real side effect.",他出拳很快。可是每打一拳，手就垂在那裡動不了。這才是真正的副作用。
+DLG_RB2_DEMO_WON_003,Everyone here saw it. He will not sell another one today.,在場的人都看到了。他今天一個也賣不出去。
+DLG_RB2_DEMO_WON_004,Do not put that on. Your arm will go numb too.,那個你別戴。你的手也會麻。
+DLG_RB2_DEMO_WON_005,"Poison heals me. I want to know what paralysis turns into. I will try it at Misha's shop, where it is safe.",毒會讓我回血。我想知道麻痺會變成什麼。回彌夏的店裡試，那裡安全。

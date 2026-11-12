@@ -62,6 +62,14 @@ const DEMO_LANTERNS: int = 6
 const DEMO_CROWD: Array[Vector3] = [Vector3(-0.9, 1.0, -1.1), Vector3(-0.6, 0.94, -0.2), Vector3(-0.85, 1.03, 0.7)]
 ## 伸到街上的一截台子（商人站在這裡）：從街的南邊走過來，貼牆的台子被隔壁的攤子擋住，只有伸出來的這一截看得到
 const DEMO_TONGUE_OUT: float = 1.0
+## 守衛戰（D-233）：開打時看熱鬧的人退到哪裡（街的北邊，中間留 2.5 m 的路）；跑過去花幾秒
+const DEMO_CROWD_FLEE: Array[Vector3] = [Vector3(-1.9, 0.0, 13.4), Vector3(-1.1, 0.0, 12.5), Vector3(1.9, 0.0, 13.2)]
+const DEMO_FLEE_SEC: float = 1.3
+## 真的會打人的守衛從哪裡出來、面向哪裡（度）、身高、種類：0＝戴護腕的（從台上跳下來，落在台子南端前面）、1＝拿棍子的（原本站的地方）
+const DEMO_FIGHTERS: Array[Array] = [
+	[Vector3(DEMO_STAGE_FRONT_X + 0.75, 0.0, DEMO_Z + 1.25), -90.0, 1.08, "bracer"],
+	[Vector3(DEMO_STAGE_FRONT_X + 0.5, 0.0, DEMO_Z - DEMO_STAGE_LEN * 0.5 + 0.1), -60.0, 1.1, "club"],
+]
 const DEMO_BOOM_OUT: float = 0.45
 const DEMO_TONGUE_Z: Vector2 = Vector2(-1.2, 0.6)
 const DEMO_SPOT_COLOR: Color = Color(1.0, 0.86, 0.64)
@@ -190,6 +198,10 @@ var demo_guards: Array[Puppet] = []
 var demo_crowd: Array[Puppet] = []
 var demo_spot: SpotLight3D
 var demo_drape_count: int = 0
+## 守衛戰（D-233）：站著的人各自的碰撞盒（0＝台下的守衛、1～3＝看熱鬧的人）——開打的時候要搬走／關掉，所以不進 _batch
+var demo_blocks: Array[StaticBody3D] = []
+## 開打了（或打完了）：布景的兩個守衛藏起來、看熱鬧的人退到街的北邊、商人縮到台子後面
+var demo_fight_begun: bool = false
 var demo_bracer_count: int = 0
 var _board_lamp_mat: StandardMaterial3D
 var _board_deg: float = 0.0
@@ -1441,14 +1453,65 @@ func _build_demo_stage() -> void:
 	# 台下的守衛：站在台子北邊的角落、面向街上，手上有棍子
 	var floor_guard: Puppet = _demo_person("DemoGuard1", Vector3(front + 0.5, 0.0, z0 + 0.1), -60.0, 1.1, guard_coat, guard_trim, true)
 	demo_guards = [shown, floor_guard]
-	_person_block(floor_guard.position)
+	demo_blocks.append(_person_body("DemoBlock0", floor_guard.position))
 	# 看熱鬧的人：街的西半邊、面向台子
 	var coats: Array[Color] = [Color(0.27, 0.22, 0.15), Color(0.16, 0.2, 0.27), Color(0.3, 0.16, 0.13)]
 	for i: int in DEMO_CROWD.size():
 		var spec: Vector3 = DEMO_CROWD[i]
 		var at := Vector3(spec.x, 0.0, DEMO_Z + spec.z)
 		demo_crowd.append(_demo_person("DemoCrowd%d" % i, at, 90.0 + _hash01(float(i), 3.0) * 24.0 - 12.0, spec.y, coats[i % coats.size()], Color(0.46, 0.4, 0.3), false))
-		_person_block(at)
+		demo_blocks.append(_person_body("DemoBlock%d" % (i + 1), at))
+
+
+## 守衛戰開始（D-233）：布景的兩個守衛藏起來（真的敵人由劇情在 DEMO_FIGHTERS 生出來）、台下那個的碰撞盒關掉；
+## 看熱鬧的人跑到街的北邊回頭看（碰撞盒直接搬過去——那裡離打架的地方 5 m 以上）；商人縮到台子後面、兩手舉著。
+## instant＝讀檔回來已經打完了：不演，直接擺成打完的樣子。
+func begin_demo_fight(instant: bool = false) -> void:
+	if demo_fight_begun:
+		return
+	demo_fight_begun = true
+	for g: Puppet in demo_guards:
+		g.visible = false
+	if demo_blocks.size() > 0:
+		demo_blocks[0].collision_layer = 0
+	for i: int in demo_crowd.size():
+		var who: Puppet = demo_crowd[i]
+		var to: Vector3 = DEMO_CROWD_FLEE[i % DEMO_CROWD_FLEE.size()]
+		if i + 1 < demo_blocks.size():
+			demo_blocks[i + 1].position = to
+		# 跑的時候面向北，到了轉回來看（朝示範台）
+		var look_back: float = rad_to_deg(atan2(-(DEMO_POS.x - to.x), -(DEMO_POS.z - to.z)))
+		if instant:
+			who.position = to
+			who.rotation_degrees.y = look_back
+			continue
+		who.rotation_degrees.y = rad_to_deg(atan2(-(to.x - who.position.x), -(to.z - who.position.z)))
+		who.set_move_speed(4.2)
+		var t: Tween = who.create_tween()
+		t.tween_interval(0.12 * float(i))
+		t.tween_property(who, "position", to, DEMO_FLEE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		t.tween_callback(who.set_move_speed.bind(0.0))
+		t.tween_property(who, "rotation_degrees:y", look_back, 0.35)
+	if demo_seller != null:
+		var hide_at := Vector3(-WALL_X + 0.75, DEMO_STAGE_H, DEMO_Z - 0.9)
+		var cower: PoseOverride = demo_seller.get_node_or_null("PoseOverride") as PoseOverride
+		if cower != null:
+			cower.pose = {
+				"shoulder_R": Vector3(2.35, 0.0, 0.45), "elbow_R": Vector3(1.25, 0.0, 0.0),
+				"shoulder_L": Vector3(2.35, 0.0, -0.45), "elbow_L": Vector3(1.25, 0.0, 0.0),
+				"chest": Vector3(0.28, 0.0, 0.0), "neck": Vector3(0.2, 0.0, 0.0),
+			}
+			cower.sway = {"shoulder_R": Vector3(0.05, 0.0, 0.0), "shoulder_L": Vector3(0.05, 0.0, 0.0)}
+			cower.speed = 9.0
+		# 手上那個護腕掉了（打完之後諾恩拿走的就是它）
+		var held: Node = demo_seller.hand("R").get_node_or_null("Bracer") if demo_seller.hand("R") != null else null
+		if held != null:
+			held.queue_free()
+		if instant:
+			demo_seller.position = hide_at
+		else:
+			var back_off: Tween = demo_seller.create_tween()
+			back_off.tween_property(demo_seller, "position", hide_at, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## 垂掛的一幅布：上緣從 a 到 b，往下垂 drop。fold＝皺褶往外凸多少、waves＝幾道皺褶；越往下皺得越深（上緣是綁住的）。
@@ -1540,11 +1603,19 @@ func _pose_puppet(p: Puppet, pose: Dictionary, sway: Dictionary, speed: float) -
 	p.add_child(o)
 
 
-## 站著的人腳邊的碰撞盒：諾恩不會穿過去。
-func _person_block(at: Vector3) -> void:
+## 站著的人自己的碰撞盒（不進 _batch：之後要搬走或關掉的人用這個）。
+func _person_body(body_name: String, at: Vector3) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = body_name
+	body.position = at
+	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(0.5, 1.7, 0.5)
-	_batch.add_shape(Transform3D(Basis(), at + Vector3(0.0, 0.85, 0.0)), shape)
+	col.shape = shape
+	col.position = Vector3(0.0, 0.85, 0.0)
+	body.add_child(col)
+	add_child(body)
+	return body
 
 
 func _box_lantern(at: Vector3, size: float, color: Color, energy: float) -> void:
