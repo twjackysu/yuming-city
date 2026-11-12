@@ -17,6 +17,9 @@ signal knelt
 ## 被打中、往後仰的那一刻（角色節點往後退一小步）。interrupted＝這一下把正在擺的前兆打斷了。
 signal flinched(interrupted: bool)
 
+## 進入硬撐的那一刻（後仰滿 brace_after 次的那一下）：角色節點整個人變紅、播警告音（D-241）。
+signal braced
+
 const STATE_NAMES: PackedStringArray = ["idle", "chase", "telegraph", "strike", "recover", "staggered", "dead", "flinch"]
 
 var state: State = State.IDLE
@@ -220,6 +223,8 @@ func flinch() -> bool:
 	interrupts += 1
 	_enter(State.FLINCH)
 	flinched.emit(interrupted)
+	if is_braced():
+		braced.emit()
 	return true
 
 

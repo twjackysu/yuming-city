@@ -101,10 +101,13 @@ func test_flinch_interrupts_telegraph_then_braces_until_he_strikes() -> void:
 	b.brace_after = 2
 	var seen: Array[bool] = []
 	b.flinched.connect(func(interrupted: bool) -> void: seen.append(interrupted))
+	var braced_seen: Array[int] = [0]
+	b.braced.connect(func() -> void: braced_seen[0] += 1)
 	b.tick(0.1, 10.0)
 	b.tick(0.1, 1.0)
 	assert_eq(b.state_name(), "telegraph")
 	assert_true(b.flinch(), "前兆中被打中：打斷")
+	assert_eq(braced_seen[0], 0, "才一次：還沒硬撐")
 	assert_eq(b.state_name(), "flinch")
 	assert_eq(seen, [true] as Array[bool], "訊號說這一下打斷了前兆")
 	assert_false(b.tick(0.2, 1.0), "後仰中不出招")
@@ -114,12 +117,14 @@ func test_flinch_interrupts_telegraph_then_braces_until_he_strikes() -> void:
 	assert_true(b.flinch(), "追人中被打中：也停一下")
 	assert_eq(seen, [true, false] as Array[bool], "這一下沒有打斷什麼")
 	assert_true(b.is_braced(), "後仰過兩次：硬撐")
+	assert_eq(braced_seen[0], 1, "進入硬撐的那一下發一次訊號（角色節點變紅、播警告音，D-241）")
 	b.tick(0.26, 1.0)
 	b.tick(0.01, 1.0)
 	assert_eq(b.state_name(), "telegraph")
 	assert_false(b.flinch(), "硬撐中打不斷")
 	assert_eq(b.state_name(), "telegraph")
 	assert_eq(seen.size(), 2, "沒有再發訊號")
+	assert_eq(braced_seen[0], 1, "硬撐中再被打也不會重複發")
 	assert_true(b.tick(b.telegraph_sec + 0.01, 1.0), "這一招一定打得出來")
 	b.tick(b.strike_sec + 0.01, 1.0)
 	assert_eq(b.state_name(), "recover")

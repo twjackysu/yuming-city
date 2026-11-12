@@ -77,6 +77,13 @@ static func parse_user_args(argv: PackedStringArray) -> Dictionary:
 	return out
 
 
+## 連拍改成「從現在起第 delay 幀」開始拍（開發用，D-241）：要拍的事情什麼時候發生每場不一樣（例如敵人變紅），
+## 就把 --burst-from 設成很大的數字、事情發生的那一刻叫這個（戰鬥場的 --burst-on=brace）。印出實際的幀數，改前的版本用同一個數字拍。
+func burst_start_in(delay: int) -> void:
+	burst_from = _frame + maxi(delay, 1)
+	print("[App] burst from frame %d" % burst_from)
+
+
 ## 這一幀是不是連拍要存的那一幀。純函式。
 static func burst_index(frame: int, from: int, every: int, count: int) -> int:
 	if frame < from or (frame - from) % every != 0:

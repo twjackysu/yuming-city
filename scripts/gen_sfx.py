@@ -530,6 +530,49 @@ def glass_clink(seconds=0.42, seed=113):
     return [v / peak * 0.6 for v in out]
 
 
+def interrupt_crack(seconds=0.2, seed=137):
+    """出手被打斷（D-241）：棍子被敲偏的一聲短「喀」——乾的高頻一下＋很短的木頭共鳴，沒有低頻
+    （跟命中的「咚」分得開：聽到這一聲＝他那一招沒了）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    click = onepole_lp(hp(noise(n, rng), 1800), 8000)
+    out = []
+    for i in range(n):
+        t = i / RATE
+        wood = math.sin(2 * math.pi * 620 * t) * math.exp(-t * 26) + 0.5 * math.sin(2 * math.pi * 1480 * t) * math.exp(-t * 42)
+        out.append(0.8 * click[i] * math.exp(-t * 70) + 0.6 * wood * min(1.0, t / 0.001))
+    return out
+
+
+def brace_warn(seconds=0.6, seed=139):
+    """硬撐（D-241）：「這一下打不斷了，該閃」的警告。兩段：往上滑的低吼（帶泛音的 105→230 Hz，越來越大），
+    收在一聲短而亮的金屬音（非諧波，像鐵箍被燒紅繃緊）。跟所有命中聲、前兆的「呼」都不像——只在這個時候出現。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    breath = svf_band(noise(n, rng), lambda i: 700.0 + 1500.0 * (i / n), 0.5)
+    out = []
+    phase = 0.0
+    ring_at = 0.36
+    for i in range(n):
+        t = i / RATE
+        u = min(t / ring_at, 1.0)
+        f = 105.0 + 125.0 * u * u
+        phase += 2 * math.pi * f / RATE
+        growl = sum(math.sin(phase * k) / k for k in (1, 2, 3, 4, 5, 7))
+        # 一點顫（28 Hz）：聽起來像咬牙，不是合成器的滑音
+        growl *= 1.0 + 0.35 * math.sin(2 * math.pi * 28 * t)
+        env = (u ** 1.5) if t < ring_at else math.exp(-(t - ring_at) * 16)
+        s = 0.5 * growl * env + 0.35 * breath[i] * env
+        if t >= ring_at - 0.02:
+            r = t - (ring_at - 0.02)
+            ring = math.sin(2 * math.pi * 1660 * r) + 0.6 * math.sin(2 * math.pi * 2490 * 1.07 * r) + 0.35 * math.sin(2 * math.pi * 4210 * r)
+            s += 0.55 * ring * math.exp(-r * 14) * min(1.0, r / 0.002)
+        out.append(s)
+    for i in range(int(0.004 * RATE)):
+        out[i] *= i / (0.004 * RATE)
+    return out
+
+
 def main():
     made = [
         write("blunt", thump(0.3, 140, 55, seed=2)),
@@ -551,6 +594,8 @@ def main():
         write("poison_charge", poison_hiss(1.1, seed=107, charge=True)),
         write("poison_hiss", poison_hiss(0.9, seed=109)),
         write("glass_clink", glass_clink()),
+        write("interrupt", interrupt_crack()),
+        write("brace_warn", brace_warn()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

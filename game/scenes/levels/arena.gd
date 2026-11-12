@@ -24,6 +24,9 @@ const WAVE_START_KEY: String = "ARENA_WAVE_START"
 const WAVE_DONE_KEY: String = "ARENA_WAVE_DONE"
 const ALL_DONE_KEY: String = "ARENA_ALL_DONE"
 const RETRY_KEY: String = "ARENA_RETRY"
+## 第一次有人硬撐（整個人變紅，D-241）的那一刻講一次：紅＝打不斷，要閃。之後不再講（重來、下一波都不講）
+const BRACE_TIP_KEY: String = "ARENA_TIP_BRACE"
+const BRACE_TIP_SEC: float = 3.0
 
 var level: UndergroundMarket
 var player: PlayerController
@@ -50,6 +53,11 @@ const SIDE_CAM_X: float = -2.4
 const SIDE_CAM_Y: float = 2.5
 const SIDE_CAM_FOV: float = 52.0
 var side_cam: Camera3D
+## 硬撐的提示講過了沒（只講一次）
+var brace_tip_shown: bool = false
+var _burst_on: String = ""
+## 開發用（連拍）：`--brace-early`＝每個敵人第一次後仰就硬撐。正常打的時候硬撐很少出現（一場 0～2 次、多半在最後），等不到
+var _brace_early: bool = false
 var _hp_before: Dictionary = {}
 var _pending: int = 0
 var _rng := RandomNumberGenerator.new()
@@ -112,6 +120,8 @@ func _ready() -> void:
 		bot.kind = bot_kind
 		bot.arena = self
 		add_child(bot)
+	_burst_on = str(App.parse_user_args(OS.get_cmdline_user_args()).get("burst-on", ""))
+	_brace_early = App.parse_user_args(OS.get_cmdline_user_args()).has("brace-early")
 	if App.parse_user_args(OS.get_cmdline_user_args()).has("side-cam"):
 		make_side_cam()
 	start_wave(wave)
@@ -206,11 +216,32 @@ func start_wave(index: int) -> void:
 		_hp_before[e.get_instance_id()] = e.health.hp
 		e.health.damaged.connect(_on_enemy_damaged.bind(e))
 		e.health.status_damaged.connect(_on_enemy_damaged.bind(e))
+		e.brain.braced.connect(_on_enemy_braced)
+		if _brace_early:
+			e.brain.interrupts = maxi(e.brain.brace_after - 1, 0)
 		enemies.append(e)
-	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0}
+	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
+	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0}
 	fighting = true
 	if hud != null and bot_kind == "":
 		hud.show_banner(tr(WAVE_START_KEY).format({"n": wave + 1, "total": wave_count()}), 2.5)
+
+
+func _on_enemy_braced() -> void:
+	if fighting:
+		if int(stats.get("braces", 0)) == 0:
+			stats["first_brace"] = float(stats.get("time", 0.0))
+		stats["braces"] = int(stats.get("braces", 0)) + 1
+	if _burst_on == "brace":
+		# 開發用：連拍從第一次有人變紅的那一刻開始（scripts/burst.sh … 99999 … --burst-on=brace）
+		_burst_on = ""
+		App.burst_start_in(1)
+	if brace_tip_shown or bot_kind != "":
+		return
+	brace_tip_shown = true
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner(BRACE_TIP_KEY, BRACE_TIP_SEC)
 
 
 func _make_enemy(spec: Dictionary) -> EnemyActor:
@@ -304,6 +335,18 @@ func _finish(result: String) -> void:
 	r["wave"] = wave + 1
 	r["hp_left"] = player.health.hp
 	r["noen_share"] = noen_share()
+	# 這一場敵人後仰了幾次、其中幾次是前兆被打斷（D-240）、失衡跪下幾次
+	var flinches: int = 0
+	var interrupts: int = 0
+	var kneels: int = 0
+	for e: EnemyActor in enemies:
+		if is_instance_valid(e):
+			flinches += e.flinch_count
+			interrupts += e.interrupt_count
+			kneels += e.kneel_count
+	r["flinches"] = flinches
+	r["interrupts"] = interrupts
+	r["kneels"] = kneels
 	results.append(r)
 	fight_finished.emit(r)
 	if bot_kind != "":
@@ -340,9 +383,10 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
-		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"])])
+		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
+		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

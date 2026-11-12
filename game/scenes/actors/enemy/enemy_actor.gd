@@ -61,6 +61,7 @@ func _ready() -> void:
 	brain = EnemyBrain.new().configure(intel_id(), difficulty)
 	brain.knelt.connect(_on_kneel)
 	brain.flinched.connect(_on_flinched)
+	brain.braced.connect(_on_braced)
 	attack_slots = int(CombatTuning.num("crowd.attack_slots", 0.0))
 	attack_gap = CombatTuning.num("crowd.attack_gap", 0.0)
 	wait_ring = CombatTuning.num("crowd.wait_ring", 0.0)
@@ -123,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	_tick_footsteps(delta, Vector2(horizontal.x, horizontal.z).length())
 	_after_move()
 	_update_look()
+	_update_brace(delta)
 	_update_insight()
 
 
@@ -305,6 +307,9 @@ func _on_flinched(interrupted: bool) -> void:
 	flinch_count += 1
 	if interrupted:
 		interrupt_count += 1
+		last_flinch_sound = INTERRUPT_SFX
+		if is_inside_tree():
+			Sfx.play_at(get_parent(), INTERRUPT_SFX, global_position + Vector3.UP * _hit_height(), INTERRUPT_DB, 0.08, 5.0)
 	_push_speed = brain.flinch_push / maxf(brain.flinch_sec, 0.01)
 	if _push_dir == Vector3.ZERO:
 		_push_dir = -forward()
@@ -329,6 +334,182 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 		away.y = 0.0
 		_push_dir = away.normalized() if away.length() > 0.01 else -forward()
 		brain.flinch()
+
+
+# ---------------------------------------------------------------- 硬撐的訊號（D-241）
+## 硬撐（後仰過幾次之後打不斷、下一招一定打得出來，D-240）是這個戰鬥唯一的「該閃了」訊號。
+## 第 92 輪只有棍頭的兩圈箍變紅——縮小的連拍圖上是一個小橘點，看不出來。現在三樣一起：
+## ①整個身體蓋一層紅光（`brace_glow.gdshader`，material_overlay：輪廓一圈最亮），硬撐多久就亮多久、一下一下跳；
+## ②變紅的那一刻：腳邊一圈紅環往外擴、胸口一片紅色的亮斑、一盞很短的紅燈（掛在關卡上，自己收掉）；
+## ③一聲警告音（`brace_warn`：往上滑的低吼＋一聲金屬音），只在這個時候出現。
+## 被打斷的那一下另外有一聲短的「喀」（`interrupt`）：聽得出「他那一招沒了」。
+## 都看 brain.is_braced()：不會後仰的敵人（劇情裡的、頭目）永遠不會亮。
+const BRACE_SHADER: Shader = preload("res://src/world/brace_glow.gdshader")
+const BRACE_COLOR: Color = Color(1.0, 0.16, 0.05)
+const BRACE_SFX: String = "brace_warn"
+const BRACE_DB: float = -2.0
+const INTERRUPT_SFX: String = "interrupt"
+const INTERRUPT_DB: float = -6.0
+## 平常的亮度、一秒跳幾下、跳多深
+const BRACE_STRENGTH: float = 1.0
+const BRACE_PULSE_HZ: float = 3.0
+const BRACE_PULSE_DEPTH: float = 0.3
+## 剛變紅的那一下多亮幾倍、多久退回平常
+const BRACE_FLARE: float = 1.6
+const BRACE_FLARE_SEC: float = 0.35
+## 擺前兆的時候再往上（越接近出手越亮）
+const BRACE_WINDUP_BOOST: float = 0.9
+## 變紅的那一刻：紅環從多大擴到多大（公尺，半徑）、整組多久收掉
+const BRACE_RING_FROM: float = 0.45
+const BRACE_RING_TO: float = 1.7
+const BRACE_RING_SEC: float = 0.38
+const BRACE_POP_SIZE: float = 1.9
+const BRACE_FLASH_ENERGY: float = 5.0
+const BRACE_FLASH_RANGE: float = 4.5
+
+## 進入硬撐幾次、最後一次那一組特效、最後播的警告音與被打斷的聲音（測試、截圖用）
+var brace_count: int = 0
+var last_brace_fx: Node3D
+var last_brace_sound: String = ""
+var last_flinch_sound: String = ""
+## 截圖用：變紅那一刻的特效不收掉
+var debug_hold_brace: bool = false
+var _brace_mat: ShaderMaterial
+var _brace_lit: bool = false
+var _brace_t: float = 0.0
+var _brace_meshes: Array[GeometryInstance3D] = []
+
+
+## 身上的紅光現在亮不亮、亮度多少、蓋了幾塊（測試用）。
+func is_brace_lit() -> bool:
+	return _brace_lit
+
+
+func brace_strength() -> float:
+	return float(_brace_mat.get_shader_parameter("strength")) if _brace_lit and _brace_mat != null else 0.0
+
+
+func brace_mesh_count() -> int:
+	var n: int = 0
+	for g: GeometryInstance3D in _brace_meshes:
+		if is_instance_valid(g) and g.material_overlay == _brace_mat:
+			n += 1
+	return n
+
+
+## 進入硬撐的那一刻（EnemyBrain.braced）：警告音＋腳邊的紅環＋胸口的亮斑。
+func _on_braced() -> void:
+	brace_count += 1
+	last_brace_sound = BRACE_SFX
+	_set_brace_lit(true)
+	if not is_inside_tree():
+		return
+	var parent: Node = get_parent() if get_parent() != null else self
+	Sfx.play_at(parent, BRACE_SFX, global_position + Vector3.UP * _hit_height(), BRACE_DB, 0.03, 7.0)
+	var fx := Node3D.new()
+	fx.name = "BraceFx"
+	var ring := MeshInstance3D.new()
+	ring.name = "Ring"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.86
+	torus.outer_radius = 1.0
+	torus.rings = 40
+	torus.ring_segments = 6
+	ring.mesh = torus
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	# 加法混色、亮度超過 1：有 glow 的時候會暈開
+	ring_mat.albedo_color = Color(BRACE_COLOR.r * 2.6, BRACE_COLOR.g * 2.6, BRACE_COLOR.b * 2.6, 1.0)
+	ring.material_override = ring_mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.scale = Vector3(BRACE_RING_FROM, 0.25, BRACE_RING_FROM)
+	ring.position = Vector3(0.0, 0.08, 0.0)
+	fx.add_child(ring)
+	var pop := MeshInstance3D.new()
+	pop.name = "Pop"
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE * BRACE_POP_SIZE
+	pop.mesh = quad
+	var pop_mat: StandardMaterial3D = ParticleLook.material(Color(BRACE_COLOR.r, BRACE_COLOR.g, BRACE_COLOR.b, 0.9), true)
+	pop_mat.no_depth_test = true
+	pop.material_override = pop_mat
+	pop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pop.position = Vector3(0.0, _hit_height(), 0.0)
+	pop.scale = Vector3.ONE * 0.5
+	fx.add_child(pop)
+	var flash := OmniLight3D.new()
+	flash.name = "Flash"
+	flash.light_color = BRACE_COLOR
+	flash.light_energy = BRACE_FLASH_ENERGY
+	flash.omni_range = BRACE_FLASH_RANGE
+	flash.omni_attenuation = 1.3
+	flash.shadow_enabled = false
+	flash.light_volumetric_fog_energy = 0.5
+	flash.position = Vector3(0.0, _hit_height(), 0.0)
+	fx.add_child(flash)
+	parent.add_child(fx, true)
+	fx.global_position = global_position
+	last_brace_fx = fx
+	if debug_hold_brace:
+		return
+	var t: Tween = fx.create_tween()
+	var big := Vector3(BRACE_RING_TO, 0.25, BRACE_RING_TO)
+	t.tween_property(ring, "scale", big, BRACE_RING_SEC).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	t.parallel().tween_property(ring_mat, "albedo_color:a", 0.0, BRACE_RING_SEC).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(pop, "scale", Vector3.ONE, BRACE_RING_SEC * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	t.parallel().tween_property(pop_mat, "albedo_color:a", 0.0, BRACE_RING_SEC).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(flash, "light_energy", 0.0, BRACE_RING_SEC).set_ease(Tween.EASE_OUT)
+	t.tween_callback(fx.queue_free)
+
+
+## 每一幀：硬撐中就亮著（一下一下跳），打出那一招、跪完、倒下就關掉。
+func _update_brace(delta: float) -> void:
+	var on: bool = brain.is_braced()
+	if on != _brace_lit:
+		_set_brace_lit(on)
+	if not on or _brace_mat == null:
+		return
+	_brace_t += delta
+	var flare: float = BRACE_FLARE * maxf(0.0, 1.0 - _brace_t / BRACE_FLARE_SEC)
+	var pulse: float = 1.0 - BRACE_PULSE_DEPTH * (0.5 - 0.5 * cos(_brace_t * TAU * BRACE_PULSE_HZ))
+	var windup: float = BRACE_WINDUP_BOOST * brain.telegraph_progress()
+	if brain.state == EnemyBrain.State.STRIKE:
+		windup = BRACE_WINDUP_BOOST
+	_brace_mat.set_shader_parameter("strength", BRACE_STRENGTH * pulse + flare + windup)
+
+
+func _set_brace_lit(on: bool) -> void:
+	if on == _brace_lit:
+		return
+	_brace_lit = on
+	_brace_t = 0.0
+	if on and _brace_mat == null:
+		_brace_mat = ShaderMaterial.new()
+		_brace_mat.shader = BRACE_SHADER
+		_brace_mat.set_shader_parameter("glow_color", BRACE_COLOR)
+		var fade: Vector2 = camera_fade_range()
+		_brace_mat.set_shader_parameter("fade_near", fade.x)
+		_brace_mat.set_shader_parameter("fade_far", fade.y)
+	if on:
+		_brace_mat.set_shader_parameter("strength", BRACE_STRENGTH + BRACE_FLARE)
+		_brace_meshes.clear()
+		if _body != null:
+			_collect_brace_meshes(_body)
+	for g: GeometryInstance3D in _brace_meshes:
+		if is_instance_valid(g):
+			g.material_overlay = _brace_mat if on else null
+	if not on:
+		_brace_meshes.clear()
+
+
+## 身體上看得到的實心東西（網格、CSG）；粒子、文字、弱點標記不蓋。
+func _collect_brace_meshes(n: Node) -> void:
+	if (n is MeshInstance3D or n is CSGShape3D) and n != _weak_marker:
+		_brace_meshes.append(n as GeometryInstance3D)
+	for c: Node in n.get_children():
+		_collect_brace_meshes(c)
 
 
 # ---------------------------------------------------------------- 被打中的那一下（D-217）
@@ -540,6 +721,7 @@ func _begin_death() -> void:
 	brain.kill()
 	remove_from_group("damageable")
 	set_physics_process(false)
+	_set_brace_lit(false)
 	collision_layer = 0
 	if _insight_card != null:
 		_insight_card.visible = false

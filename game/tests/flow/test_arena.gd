@@ -253,6 +253,67 @@ func test_noen_hits_flinch_and_push_back_but_sheilas_do_not() -> void:
 	await _close(level)
 
 
+## 硬撐看得懂、聽得到（D-241）：後仰滿了的那一下整個人蓋上紅光、腳邊一圈紅環、一聲警告音；打出那一招就關掉。
+## 被打斷的那一下有自己的聲音。第 92 輪只有棍頭的箍變紅，縮小的連拍圖上看不出來。
+func test_brace_lights_the_whole_body_and_warns_until_he_strikes() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var e: EnemyActor = arena.enemies[0]
+	var need: int = e.brain.brace_after
+	assert_true(need >= 2, "要後仰幾次才硬撐（%d）" % need)
+	assert_false(e.is_brace_lit(), "平常不亮")
+	assert_eq(e.brace_mesh_count(), 0)
+	e.brain.state = EnemyBrain.State.TELEGRAPH
+	e.health.apply_damage(1.0, {"source": player, "stagger": 0.0})
+	assert_eq(e.last_flinch_sound, EnemyActor.INTERRUPT_SFX, "打斷前兆的那一下有自己的聲音")
+	assert_true(Sfx.NAMES.has(EnemyActor.INTERRUPT_SFX) and Sfx.NAMES.has(EnemyActor.BRACE_SFX), "兩個音效都在清單裡")
+	assert_false(e.is_brace_lit(), "才後仰一次：還沒紅")
+	for i: int in need - 1:
+		e.brain.state = EnemyBrain.State.CHASE
+		e.health.apply_damage(1.0, {"source": player, "stagger": 0.0})
+	assert_true(e.brain.is_braced(), "後仰滿了：硬撐")
+	assert_eq(e.brace_count, 1, "進入硬撐只算一次")
+	assert_eq(e.last_brace_sound, EnemyActor.BRACE_SFX, "警告音")
+	assert_true(arena.brace_tip_shown, "第一次有人變紅：畫面上講一次「紅＝打不斷，閃開」")
+	assert_eq(int(arena.stats["braces"]), 1, "這一場記一次硬撐（機器人的表會印）")
+	assert_true(float(arena.stats["first_brace"]) >= 0.0, "記下第一次硬撐在開場後幾秒")
+	assert_true(tr(Arena.BRACE_TIP_KEY) != Arena.BRACE_TIP_KEY, "提示有翻譯")
+	assert_true(e.is_brace_lit(), "變紅的那一刻就亮（不等下一幀）")
+	assert_true(e.brace_mesh_count() >= 8, "整個身體都蓋到，不是只有棍頭（%d 塊）" % e.brace_mesh_count())
+	assert_true(e.brace_strength() > EnemyActor.BRACE_STRENGTH * 1.5, "剛變紅的那一下特別亮（%.2f）" % e.brace_strength())
+	var fx: Node3D = e.last_brace_fx
+	assert_not_null(fx, "腳邊的紅環")
+	if fx != null:
+		assert_eq(fx.get_parent(), e.get_parent(), "掛在關卡上，不跟著人走")
+		assert_not_null(fx.get_node_or_null("Ring"))
+		assert_true(fx.global_position.distance_to(e.global_position) < 0.05)
+	# 再打：不再後仰、不會重複警告
+	e.health.apply_damage(1.0, {"source": player, "stagger": 0.0})
+	assert_eq(e.brace_count, 1)
+	# 過半秒：特效自己收掉，身上還亮著、在跳（比剛變紅時暗）
+	# （他離諾恩 6 m 多，這 0.6 秒還走不到出手距離：不會開始擺前兆）
+	e.brain.state = EnemyBrain.State.CHASE
+	e.set_physics_process(true)
+	await _frames(36)
+	assert_true(fx == null or not is_instance_valid(fx), "紅環 0.4 秒內收掉")
+	assert_true(e.is_brace_lit(), "硬撐多久就亮多久")
+	assert_true(e.brace_strength() > 0.5 and e.brace_strength() < EnemyActor.BRACE_STRENGTH * 1.5, "平常的亮度（%.2f）" % e.brace_strength())
+	# 打出那一招（進破綻）：重新算，紅光關掉
+	e.brain.interrupts = 0
+	await _frames(2)
+	assert_false(e.is_brace_lit(), "打出那一招之後不亮")
+	assert_eq(e.brace_mesh_count(), 0, "那一層拿掉了")
+	# 硬撐中倒下：也要關
+	e.brain.interrupts = need
+	await _frames(2)
+	assert_true(e.is_brace_lit())
+	e.health.apply_damage(9999.0, {"source": player})
+	assert_false(e.is_brace_lit(), "倒下就不亮")
+	arena.set_physics_process(false)
+	await _close(level)
+
+
 ## 出手往敵人滑一小步（D-240；只有戰鬥場）：差一點夠不到的距離，按下去會自己貼上去、打得到。
 func test_attack_slides_toward_the_enemy_in_the_arena_only() -> void:
 	var level: UndergroundMarket = await _open(0)
