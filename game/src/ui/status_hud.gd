@@ -13,7 +13,7 @@ const COL_ICON_BG: Color = Color(0.05, 0.06, 0.08, 0.7)
 const COL_BOTTLE: Color = Color(0.78, 0.86, 0.62)
 const COL_BOLT: Color = Color(1.0, 0.86, 0.35)
 
-## 每格：{"id", "reversed", "remaining", "label"}
+## 每格：{"id", "reversed", "remaining", "label", "hint"}
 var rows: Array[Dictionary] = []
 var _labels: Array[Label] = []
 
@@ -23,7 +23,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-func refresh(effects: StatusEffects) -> void:
+## hint_id／hint：這一種狀態現在可以「釋放」（D-245）——那一列後面多一段組好的字（「滑鼠右鍵：炸出去 56」）。空的＝不顯示。
+func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") -> void:
 	rows.clear()
 	if effects != null:
 		var ids: PackedStringArray = effects.ids()
@@ -32,7 +33,7 @@ func refresh(effects: StatusEffects) -> void:
 			var def: Dictionary = effects.rules.statuses.get(id, {}) as Dictionary
 			var reversed: bool = effects.is_reversed(id)
 			var key: String = str(def.get("reversed_key" if reversed else "name_key", id))
-			rows.append({"id": id, "reversed": reversed, "remaining": effects.remaining(id), "label": key})
+			rows.append({"id": id, "reversed": reversed, "remaining": effects.remaining(id), "label": key, "hint": hint if id == hint_id else ""})
 	while _labels.size() < rows.size():
 		var l := Label.new()
 		l.add_theme_font_size_override("font_size", 17)
@@ -50,6 +51,8 @@ func refresh(effects: StatusEffects) -> void:
 			continue
 		var r: Dictionary = rows[i]
 		l.text = "%s  %d" % [tr(str(r["label"])), ceili(float(r["remaining"]))]
+		if str(r.get("hint", "")) != "":
+			l.text += "　" + str(r["hint"])
 		l.add_theme_color_override("font_color", COL_REVERSED if bool(r["reversed"]) else COL_HARMFUL)
 		l.position = Vector2(ICON + 10.0, ROW_H * float(i) + (ICON - 24.0) * 0.5)
 	custom_minimum_size = Vector2(260.0, ROW_H * float(rows.size()))

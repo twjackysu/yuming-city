@@ -1,5 +1,5 @@
 {
-  "_doc": "戰鬥場的波次（docs/design/11-combat-first.md 3.1）。pos＝[x, z]（地下市場的街：x 在 ±2.5 以內，+z 往南）；facing_deg＝0 面向北、180 面向南。kind：club 拿棍子的、bracer 戴護腕的、thrower 丟毒瓶的、guardian 南街守衛。戰鬥場的敵人預設都只追諾恩（D-239）；要某一個改追最近的人就寫 \"focus_player\": false。reinforcements＝後面幾批（D-242）：場上還站著的人剩 when_alive_at_most 個以下，下一批就從街的北邊走進來；每個人寫 x（街上的左右位置）與 ahead（生在諾恩北邊幾公尺；6～13）。全部的批次都倒了這一波才算贏。第一波一次只多來一個（場上最多 2 個），後面兩波一次來兩三個（場上最多 3～4 個）；一波總共 5～8 個。",
+  "_doc": "戰鬥場的波次（docs/design/11-combat-first.md 3.1）。pos＝[x, z]（地下市場的街：x 在 ±2.5 以內，+z 往南）；facing_deg＝0 面向北、180 面向南。kind：club 拿棍子的、bracer 戴護腕的、thrower 丟毒瓶的、guardian 南街守衛。戰鬥場的敵人預設都只追諾恩（D-239）；要某一個改追最近的人就寫 \"focus_player\": false。reinforcements＝後面幾批（D-242）：場上還站著的人（丟毒瓶的不算，D-245）剩 when_alive_at_most 個以下，下一批就從街的北邊走進來；每個人寫 x（街上的左右位置）與 ahead（生在諾恩北邊幾公尺；6～13）。全部的批次都倒了這一波才算贏。第一波一次只多來一個（場上最多 3 個），後面兩波一次來兩三個（場上最多 3～4 個）；一波總共 6～8 個。第一波就有一個丟毒瓶的（D-245）：他丟的那一團霧是諾恩的毒的來源——站在裡面身上的毒越來越多秒，按「釋放」一次炸出去。",
   "player": {"pos": [0.0, 31.0], "facing_deg": 0.0},
   "sheila": {"offset": [1.7, -0.8]},
   "waves": [
@@ -7,7 +7,8 @@
       "id": "two_clubs",
       "enemies": [
         {"kind": "club", "pos": [-1.2, 24.6], "height": 1.1},
-        {"kind": "club", "pos": [1.1, 23.8], "height": 1.06}
+        {"kind": "club", "pos": [1.1, 23.8], "height": 1.06},
+        {"kind": "thrower", "pos": [0.1, 20.6], "height": 1.0}
       ],
       "reinforcements": [
         {"when_alive_at_most": 1, "enemies": [

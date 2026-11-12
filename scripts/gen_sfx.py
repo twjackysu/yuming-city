@@ -511,6 +511,14 @@ def poison_hiss(seconds=0.9, seed=107, charge=False):
     return out
 
 
+def poison_burst(seconds=0.75, seed=149):
+    """毒爆（D-245）：諾恩把身上的毒一次放出去。一聲往下掉的悶響（有份量）＋往外散開的嘶聲（聽得出是毒，不是鈍擊）。"""
+    low = thump(seconds, 190, 42, crack=0.5, seed=seed)
+    hiss = poison_hiss(seconds, seed=seed + 2)
+    n = min(len(low), len(hiss))
+    return [1.0 * low[i] + 0.8 * hiss[i] for i in range(n)]
+
+
 def glass_clink(seconds=0.42, seed=113):
     """玻璃瓶互相碰到（D-209，藥箱）：三下很短的高音「叮」（玻璃的非諧波泛音，衰減快），最後一下最輕。"""
     rng = random.Random(seed)
@@ -596,6 +604,7 @@ def main():
         write("glass_clink", glass_clink()),
         write("interrupt", interrupt_crack()),
         write("brace_warn", brace_warn()),
+        write("poison_burst", poison_burst()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

@@ -86,6 +86,15 @@ var status_effects: StatusEffects
 var heal_fx: HealMotes
 ## 可攜藥劑滿血時要先問（PotionBelt 回傳 confirm_full）：UI 接這個訊號跳「還是要喝嗎？」
 signal potion_needs_confirm(item_id: String)
+## 釋放（D-245）：把身上反轉中的中毒一次用掉＝毒爆。info：{"seconds" 用掉幾秒, "damage" 每個人扣多少, "hits" 炸到幾個, "kills" 炸倒幾個}
+signal released(info: Dictionary)
+const RELEASE_STATUS: String = "poison"
+const RELEASE_SFX: String = "poison_burst"
+const RELEASE_DB: float = -1.0
+## 放了幾次、最後一次的結果、最後一次的特效（測試、機器人的統計、截圖用）
+var release_count: int = 0
+var last_release: Dictionary = {}
+var last_release_fx: PoisonBurst
 ## 讀檔／死亡重試：生命照檢查點存的，但至少這個比例（09 第 3 節）
 const RESTORE_MIN_HP_RATIO: float = 0.5
 ## 新版可攜藥劑（快捷鍵 use_item）
@@ -205,6 +214,9 @@ func _physics_process(delta: float) -> void:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 	_update_camera_distance(delta)
 	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進（D-202）
+	# 戰鬥場的兩個數字（D-245）：站在霧裡越站越多秒、留著毒的回血打幾折。劇情是 0 與 1＝照舊
+	status_effects.refresh_gain = CombatTuning.num("noen.status_refresh_gain", 0.0)
+	status_effects.reversed_scale = CombatTuning.num("noen.reversed_heal_scale", 1.0)
 	if not Game.is_player_locked():
 		status_effects.tick(delta, health)
 	# 麻痺被反轉＝出手變快（只有出手，不是整個人變快）；沒反轉的麻痺＝這段時間不能出手（D-234）
@@ -233,6 +245,10 @@ func _physics_process(delta: float) -> void:
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
 		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -4.0)
+	elif want == "release":
+		# 釋放不用等收招、閃到一半也能放（只有挨打的硬直中不行）；身上沒有能放的＝這一下沒有作用
+		_buffered = ""
+		release()
 	elif want == "attack" and _puppet.action == "" and not health.is_dead() and not status_effects.blocks_attack():
 		_buffered = ""
 		start_attack()
@@ -560,12 +576,14 @@ func is_invulnerable() -> bool:
 	return invulnerable
 
 
-## 這一幀玩家要的動作："dodge"／"attack"／""。剛按下去的優先（同一幀兩個都按＝閃避）；沒有的話看有沒有還記著的。
+## 這一幀玩家要的動作："dodge"／"release"／"attack"／""。剛按下去的優先（同一幀都按＝閃避 → 釋放 → 出手）；沒有的話看有沒有還記著的。
 ## `noen.input_buffer` 是 0 的時候就是「只有按下去的那一幀算」，跟以前一樣。
 func _wanted_action(delta: float, locked: bool) -> String:
 	var now: String = ""
 	if Input.is_action_just_pressed("dodge"):
 		now = "dodge"
+	elif release_enabled() and Input.is_action_just_pressed("release"):
+		now = "release"
 	elif Input.is_action_just_pressed("attack"):
 		now = "attack"
 	if locked or health.is_dead():
@@ -594,6 +612,63 @@ func swing_holds_facing() -> bool:
 	if _swing_resolved or _puppet.action != "attack" or _lunge_target == null or not is_instance_valid(_lunge_target):
 		return false
 	return CombatTuning.num("noen.attack_face_lock", 0.0) > 0.0
+
+
+## 「釋放」這個鍵有沒有作用（`noen.release_enabled`：戰鬥場 1、劇情 0＝按了沒有反應，D-245）
+func release_enabled() -> bool:
+	return CombatTuning.num("noen.release_enabled", 0.0) > 0.0
+
+
+## 現在放出去每個人扣多少（0＝不能放）：身上要有**反轉中的**中毒，而且至少剩 burst_min_sec 秒。
+## 沒裝進反轉欄位的毒不能放（那是在扣他的血，不是他的東西）。
+func release_power() -> float:
+	if not release_enabled() or health == null or health.is_dead() or status_effects == null:
+		return 0.0
+	if not status_effects.has(RELEASE_STATUS) or not status_effects.is_reversed(RELEASE_STATUS):
+		return 0.0
+	var secs: float = status_effects.remaining(RELEASE_STATUS)
+	if secs < CombatTuning.num("noen.burst_min_sec", 0.5):
+		return 0.0
+	return minf(secs * CombatTuning.num("noen.burst_per_sec", 8.0), CombatTuning.num("noen.burst_max", 80.0))
+
+
+## 毒爆：把身上的毒整個用掉（之後就沒有回血了），周圍 burst_radius 公尺內的敵人每個扣「用掉的秒數 × burst_per_sec」。
+## 不能放的時候什麼都不做、回傳空的。回傳 {"seconds", "damage", "hits", "kills"}。
+func release() -> Dictionary:
+	var damage: float = release_power()
+	if damage <= 0.0:
+		return {}
+	var secs: float = status_effects.consume(RELEASE_STATUS)
+	var radius: float = CombatTuning.num("noen.burst_radius", 3.0)
+	var stagger: float = CombatTuning.num("noen.burst_stagger", 30.0)
+	var hits: int = 0
+	var kills: int = 0
+	for n: Node in get_tree().get_nodes_in_group("damageable"):
+		var target: Node3D = n as Node3D
+		if target == null or target == self:
+			continue
+		if Vector2(target.global_position.x - global_position.x, target.global_position.z - global_position.z).length() > radius:
+			continue
+		var h: Health = target.get_node_or_null("Health") as Health
+		if h == null or h.is_dead():
+			continue
+		if h.apply_damage(damage, {"source": self, "stagger": stagger, "kind": "burst"}):
+			hits += 1
+			if h.is_dead():
+				kills += 1
+	var cap: float = maxf(CombatTuning.num("noen.burst_max", 80.0), 1.0)
+	last_release_fx = PoisonBurst.create(radius, damage / cap)
+	var parent: Node = get_parent() if get_parent() != null else self
+	parent.add_child(last_release_fx)
+	last_release_fx.global_position = global_position
+	Sfx.play_at(parent, RELEASE_SFX, global_position + Vector3.UP, RELEASE_DB, 0.04, 8.0)
+	if hits > 0:
+		Game.hit_stop(CombatTuning.num("feel.hit_stop_kill" if kills > 0 else "feel.hit_stop_weak", 0.08))
+	shake(CombatTuning.num("feel.shake_kill", 0.3))
+	release_count += 1
+	last_release = {"seconds": secs, "damage": damage, "hits": hits, "kills": kills}
+	released.emit(last_release)
+	return last_release
 
 
 func start_attack() -> void:

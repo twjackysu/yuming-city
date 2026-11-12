@@ -74,7 +74,9 @@ func test_wave_data_is_valid_and_gets_harder() -> void:
 	assert_eq(Arena.validate(d).size(), 0, "waves.json 沒有寫錯：%s" % ", ".join(Arena.validate(d)))
 	var waves: Array = d["waves"] as Array
 	assert_eq(waves.size(), 4, "四波")
-	assert_eq(((waves[0] as Dictionary)["enemies"] as Array).size(), 2, "第一波兩個人")
+	var first: Array = (waves[0] as Dictionary)["enemies"] as Array
+	assert_eq(first.size(), 3, "第一波開場三個人")
+	assert_eq(str((first[2] as Dictionary)["kind"]), "thrower", "第一波就有一個丟毒瓶的＝毒的來源（D-245）")
 	assert_eq(((waves[2] as Dictionary)["enemies"] as Array).size(), 3, "第三波三個人")
 	assert_eq(str((((waves[3] as Dictionary)["enemies"] as Array)[0] as Dictionary)["kind"]), "guardian", "最後一波是南街守衛")
 	assert_true(Arena.validate({"waves": [{"id": "x", "enemies": [{"kind": "dragon", "pos": [9.0, 0.0]}]}]}).size() >= 2, "不認得的種類、不在街上的位置都會被抓到")
@@ -215,7 +217,8 @@ func test_standing_still_loses_the_first_wave() -> void:
 		frames += 1
 		var winding: int = 0
 		for e: EnemyActor in arena.enemies:
-			if e.brain.state in [EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE]:
+			# 丟毒瓶的不排隊（D-240；第一波現在有一個，D-245）：他丟他的，不算在「同時出手」裡
+			if e.uses_attack_slot() and e.brain.state in [EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE]:
 				winding += 1
 		most_at_once = maxi(most_at_once, winding)
 	assert_false(arena.results.is_empty(), "25 秒內打得出結果")
@@ -489,18 +492,23 @@ func test_reinforcements_walk_in_and_the_wave_ends_only_when_every_batch_is_down
 	var arena: Arena = level.arena
 	var player: PlayerController = arena.player
 	var hud: Hud = level.get_node("Hud") as Hud
-	assert_eq(arena.enemies.size(), 2, "開場兩個人")
-	assert_eq(arena.wave_total(), 5, "第一波總共五個")
-	assert_eq(arena.enemies_left(), 5)
+	assert_eq(arena.enemies.size(), 3, "開場三個人（兩個拿棍子的、一個丟毒瓶的）")
+	assert_eq(arena.wave_total(), 6, "第一波總共六個")
+	assert_eq(arena.enemies_left(), 6)
+	assert_eq(arena.melee_alive_count(), 2, "會走過來打人的兩個")
 	assert_true(arena.has_reinforcements())
 	await _frames(3)
-	assert_eq(arena.enemies.size(), 2, "兩個都還站著：沒有人進場")
-	# 倒一個：下一個進場
+	assert_eq(arena.enemies.size(), 3, "都還站著：沒有人進場")
+	# 丟毒瓶的倒了不算（D-245）：後援看的是「會走過來打人的」剩幾個
+	arena.enemies[2].health.apply_damage(999.0, {"source": player})
+	await _frames(3)
+	assert_eq(arena.enemies.size(), 3, "只倒了丟毒瓶的：沒有人進場")
+	# 拿棍子的倒一個：下一個進場
 	arena.enemies[0].health.apply_damage(999.0, {"source": player})
 	await _frames(3)
-	assert_eq(arena.enemies.size(), 3, "場上剩一個：下一批（一個人）進場，而且只進一批")
+	assert_eq(arena.enemies.size(), 4, "拿棍子的剩一個：下一批（一個人）進場，而且只進一批")
 	assert_eq(arena.enemies_left(), 4)
-	var fresh: EnemyActor = arena.enemies[2]
+	var fresh: EnemyActor = arena.enemies[3]
 	var ahead: float = player.global_position.z - fresh.global_position.z
 	assert_true(ahead >= Arena.REINFORCE_AHEAD.x - 1.5 and ahead <= Arena.REINFORCE_AHEAD.y, "從諾恩北邊走進來，不是憑空出現在臉上（%.1f m）" % ahead)
 	assert_true(absf(fresh.global_position.x) <= UndergroundMarket.STREET_HALF, "在街上")
@@ -519,21 +527,21 @@ func test_reinforcements_walk_in_and_the_wave_ends_only_when_every_batch_is_down
 			e.health.apply_damage(999.0, {"source": player})
 	await _frames(3)
 	assert_true(arena.fighting, "還有人沒進場：這一波還沒打完")
-	assert_eq(arena.enemies.size(), 5, "剩下兩批都進場了")
+	assert_eq(arena.enemies.size(), 6, "剩下兩批都進場了")
 	assert_false(arena.has_reinforcements())
 	for e: EnemyActor in arena.enemies:
 		if not e.health.is_dead():
 			e.health.apply_damage(999.0, {"source": player})
 	await _frames(2)
-	assert_false(arena.fighting, "五個都倒了才打完")
+	assert_false(arena.fighting, "六個都倒了才打完")
 	assert_eq(str(arena.results[0]["result"]), "win")
-	assert_eq(int(arena.results[0]["downed"]), 5)
-	assert_eq(int(arena.results[0]["total"]), 5)
+	assert_eq(int(arena.results[0]["downed"]), 6)
+	assert_eq(int(arena.results[0]["total"]), 6)
 	# 重來這一波：後援也重新算
 	arena.start_wave(0)
 	await _frames(2)
-	assert_eq(arena.enemies.size(), 2)
-	assert_eq(arena.enemies_left(), 5)
+	assert_eq(arena.enemies.size(), 3)
+	assert_eq(arena.enemies_left(), 6)
 	await _close(level)
 
 
@@ -675,3 +683,60 @@ func test_skilled_bot_sees_only_telegraphs_that_can_reach() -> void:
 	club.health.apply_damage(999.0)
 	assert_true(ArenaBot.nearest_enemy(at, arena.enemies) != club, "倒下的不算")
 	await _close(level)
+
+
+## 會打的機器人（D-245）：身上的毒夠多秒、炸得到兩個人就按「釋放」（走的是按鍵）；`use_release = false` 就不放。
+func test_skilled_bot_releases_when_the_burst_reaches_two_and_not_when_told_not_to() -> void:
+	var level: UndergroundMarket = await _open(0, ArenaBot.KIND_SKILLED)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	assert_true(arena.bot.use_release, "預設會放")
+	arena.bot.use_release = false
+	arena.enemies[0].global_position = player.global_position + Vector3(-1.0, 0.0, -2.0)
+	arena.enemies[1].global_position = player.global_position + Vector3(1.0, 0.0, -2.0)
+	player.status_effects.apply("poison", 5.0, 6.0, "test")
+	await _frames(6)
+	assert_eq(player.release_count, 0, "關掉的時候不放")
+	arena.bot.use_release = true
+	var hp0: float = arena.enemies[0].health.hp
+	await _frames(6)
+	assert_eq(player.release_count, 1, "炸得到兩個、身上 4 秒以上：放")
+	assert_eq(int(arena.stats["releases"]), 1, "這一場記一次")
+	assert_eq(int(arena.stats["burst_hits"]), 2, "炸到兩個人")
+	assert_true(float(arena.stats["burst_damage"]) > 60.0, "毒爆扣的血另外記（%.0f）" % float(arena.stats["burst_damage"]))
+	assert_true(arena.enemies[0].health.hp < hp0 - 30.0, "敵人真的扣血")
+	assert_false(player.status_effects.has("poison"), "毒用掉了")
+	# 只有一個人在旁邊、毒也還沒養滿：留著
+	arena.enemies[1].global_position = player.global_position + Vector3(1.0, 0.0, -9.0)
+	player.status_effects.apply("poison", 5.0, 6.0, "test")
+	await _frames(6)
+	assert_eq(player.release_count, 1, "只炸得到一個：先留著")
+	await _close(level)
+	for a: String in ArenaBot.ACTIONS:
+		assert_false(Input.is_action_pressed(a), "機器人離場之後按鍵都放開（%s）" % a)
+
+
+## 會打的機器人看到地上的毒霧、身上的毒還不夠多：走進去。純函式的部分一起驗。
+func test_skilled_bot_walks_into_a_mist_it_can_see() -> void:
+	var level: UndergroundMarket = await _open(0, ArenaBot.KIND_SKILLED)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var start: Vector3 = player.global_position
+	player.health.apply_damage(30.0)
+	for e: EnemyActor in arena.enemies:
+		e.global_position = start + Vector3(0.0, 0.0, -14.0)
+	var mist: PoisonMist = PoisonMist.create(2.0, "poison_bottle", 6.0)
+	mist.position = start + Vector3(2.4, 0.0, 3.6)
+	level.add_child(mist)
+	await _frames(2)
+	assert_true(ArenaBot.nearest_mist(start, tree.get_nodes_in_group("poison_mist"), ArenaBot.MIST_SEEK_DIST, ArenaBot.MIST_MIN_LIFE) == mist, "看得到這一團")
+	assert_true(ArenaBot.nearest_mist(start, tree.get_nodes_in_group("poison_mist"), 2.0, ArenaBot.MIST_MIN_LIFE) == null, "太遠的不去")
+	assert_true(ArenaBot.nearest_mist(start, tree.get_nodes_in_group("poison_mist"), ArenaBot.MIST_SEEK_DIST, 99.0) == null, "快散掉的不去")
+	assert_eq(ArenaBot.enemies_within(start, arena.enemies, 3.0), 0)
+	assert_eq(ArenaBot.enemies_within(start + Vector3(0.0, 0.0, -13.0), arena.enemies, 3.0), 3)
+	await _frames(120)
+	assert_true(mist.contains(player.global_position), "敵人在北邊，它還是先往南走進霧裡（離霧心 %.1f m）" % player.global_position.distance_to(mist.global_position))
+	assert_true(player.status_effects.remaining("poison") > 3.5, "站在裡面，身上的毒越來越多秒（%.1f）" % player.status_effects.remaining("poison"))
+	assert_true(float(arena.stats["status_heal"]) > 0.0, "留著的時候慢慢回血")
+	await _close(level)
+

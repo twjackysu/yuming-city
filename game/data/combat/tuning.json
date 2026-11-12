@@ -17,7 +17,16 @@
     "hurt_stun": 0.0,
     "hurt_push": 0.0,
     "input_buffer": 0.0,
-    "attack_face_lock": 0
+    "attack_face_lock": 0,
+    "_doc_release": "釋放（D-245，design/11 3.5）：把身上反轉中的中毒一次用掉＝毒爆。傷害＝用掉的秒數 × burst_per_sec（上限 burst_max），自己周圍 burst_radius 公尺。release_enabled 0＝這個鍵沒有作用（劇情）。status_refresh_gain＝已經中毒的時候每再中一次（毒霧每 0.25 秒一次）多加幾秒：0＝照舊（不會越站越多）。reversed_heal_scale＝反轉之後的回血乘幾成（1＝照舊；戰鬥場調低：留著毒只是慢慢補，大的好處要按釋放去拿）。",
+    "release_enabled": 0,
+    "burst_per_sec": 8,
+    "burst_max": 80,
+    "burst_radius": 3.0,
+    "burst_stagger": 30,
+    "burst_min_sec": 0.5,
+    "status_refresh_gain": 0.0,
+    "reversed_heal_scale": 1.0
   },
   "sheila": {
     "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
@@ -106,7 +115,7 @@
   },
   "profiles": {
     "arena": {
-      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7, "input_buffer": 0.2, "attack_face_lock": 1},
+      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7, "input_buffer": 0.2, "attack_face_lock": 1, "release_enabled": 1, "status_refresh_gain": 0.75, "reversed_heal_scale": 0.2},
       "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
       "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9},
       "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},

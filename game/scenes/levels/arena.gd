@@ -28,6 +28,10 @@ const RETRY_KEY: String = "ARENA_RETRY"
 ## 第一次有人硬撐（整個人變紅，D-241）的那一刻講一次：紅＝打不斷，要閃。之後不再講（重來、下一波都不講）
 const BRACE_TIP_KEY: String = "ARENA_TIP_BRACE"
 const BRACE_TIP_SEC: float = 3.0
+## 第一次身上的毒夠放的時候教一次「釋放」（D-245）：身上至少這麼多秒才講（剛沾到一下就講，人還沒看到數字在漲）
+const RELEASE_TIP_KEY: String = "ARENA_TIP_RELEASE"
+const RELEASE_TIP_SEC: float = 5.0
+const RELEASE_TIP_AT: float = 3.0
 ## 後面幾批進場（D-242）：畫面上講一句「又來了幾個、這一波還剩幾個」
 const REINFORCE_KEY: String = "ARENA_REINFORCE"
 const REINFORCE_BANNER_SEC: float = 2.2
@@ -63,11 +67,15 @@ const SIDE_CAM_FOV: float = 52.0
 var side_cam: Camera3D
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
+var release_tip_shown: bool = false
 var _burst_on: String = ""
 ## 開發用（連拍）：`--brace-early`＝每個敵人第一次後仰就硬撐。正常打的時候硬撐很少出現（一場 0～2 次、多半在最後），等不到
 var _brace_early: bool = false
 ## 開發用（連拍）：`--reinforce-early`＝開場 1 秒第一批後援就進場（不等場上剩一個）。正常打要等第一個人倒下，連拍等不到
 var _reinforce_early: bool = false
+## 開發用（--release-early）：一開場身上就有 8 秒的毒。連拍「釋放」用——不然要等丟毒瓶的丟第一瓶、再養幾秒，
+## 這台機器連拍一秒只畫一兩幀，等不到
+var _release_early: bool = false
 var _hp_before: Dictionary = {}
 ## 這一波還沒進場的批次（waves.json 的 reinforcements）與下一批是第幾批
 var _batches: Array = []
@@ -152,15 +160,19 @@ func _ready() -> void:
 	player.health.damaged.connect(_on_player_damaged)
 	player.health.healed.connect(_on_player_healed)
 	player.health.died.connect(_on_player_died)
+	player.released.connect(_on_player_released)
 	if bot_kind != "":
 		bot = ArenaBot.new()
 		bot.name = "ArenaBot"
 		bot.kind = bot_kind
 		bot.arena = self
+		# 開發用：--no-release＝會打的機器人不找毒、不釋放（量「放與不放」差多少，D-245）
+		bot.use_release = not App.parse_user_args(OS.get_cmdline_user_args()).has("no-release")
 		add_child(bot)
 	_burst_on = str(App.parse_user_args(OS.get_cmdline_user_args()).get("burst-on", ""))
 	_brace_early = App.parse_user_args(OS.get_cmdline_user_args()).has("brace-early")
 	_reinforce_early = App.parse_user_args(OS.get_cmdline_user_args()).has("reinforce-early")
+	_release_early = App.parse_user_args(OS.get_cmdline_user_args()).has("release-early")
 	if App.parse_user_args(OS.get_cmdline_user_args()).has("side-cam"):
 		make_side_cam()
 	start_wave(wave)
@@ -245,7 +257,11 @@ func start_wave(index: int) -> void:
 		var spec: Dictionary = s as Dictionary
 		_spawn_enemy(spec, _spawn_xz(spec.get("pos", []), Vector2(0.0, 24.0)))
 	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
-	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0}
+	# releases＝這一場放了幾次（D-245）；burst_damage＝毒爆實際扣掉的血；burst_hits＝炸到幾人次；burst_secs＝總共用掉幾秒的毒
+	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0,
+		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0}
+	if _release_early:
+		player.status_effects.apply(PlayerController.RELEASE_STATUS, 5.0, 8.0, "dev")
 	fighting = true
 	if hud != null and bot_kind == "":
 		hud.show_banner(tr(WAVE_START_KEY).format({"n": wave + 1, "total": wave_count()}), 2.5)
@@ -282,6 +298,16 @@ func alive_count() -> int:
 	return n
 
 
+## 場上還站著幾個「會走過來打人」的（丟毒瓶的不算，D-245）。後援看的是這個數字：
+## 不然留著丟毒瓶的當毒的來源，場上就一直只有他加一個人——第 97 輪量到亂按第一波 55% → 100%。
+func melee_alive_count() -> int:
+	var n: int = 0
+	for e: EnemyActor in enemies:
+		if is_instance_valid(e) and not e.health.is_dead() and e.uses_attack_slot():
+			n += 1
+	return n
+
+
 ## 這一波總共幾個人（含還沒進場的）。
 func wave_total() -> int:
 	var waves: Array = data.get("waves", []) as Array
@@ -301,14 +327,14 @@ func has_reinforcements() -> bool:
 	return _next_batch < _batches.size()
 
 
-## 後面幾批（D-242）：場上站著的人剩 when_alive_at_most 個以下，下一批就從街的北邊（諾恩北邊 ahead 公尺）走進來。
+## 後面幾批（D-242）：場上站著的人（丟毒瓶的不算，D-245）剩 when_alive_at_most 個以下，下一批就從街的北邊（諾恩北邊 ahead 公尺）走進來。
 ## 一幀最多進一批。回傳這一幀有沒有人進場。
 func _maybe_reinforce() -> bool:
 	if not has_reinforcements():
 		return false
 	var batch: Dictionary = _batches[_next_batch] as Dictionary
 	var early: bool = _reinforce_early and _next_batch == 0 and float(stats.get("time", 0.0)) >= 1.0
-	if alive_count() > int(batch.get("when_alive_at_most", 0)) and not early:
+	if melee_alive_count() > int(batch.get("when_alive_at_most", 0)) and not early:
 		return false
 	_next_batch += 1
 	var list: Array = batch.get("enemies", []) as Array
@@ -397,6 +423,7 @@ func _physics_process(delta: float) -> void:
 		# 開發用：連拍從諾恩第一次出手的那一刻開始（scripts/burst.sh … 99999 … --bot=circle --burst-on=swing）
 		_burst_on = ""
 		App.burst_start_in(1)
+	_maybe_release_tip()
 	_maybe_reinforce()
 	if enemies_down():
 		_finish("win")
@@ -409,6 +436,29 @@ func _on_player_damaged(_amount: float, _info: Dictionary) -> void:
 		stats["hits_taken"] = int(stats["hits_taken"]) + 1
 	if _burst_on == "hurt":
 		# 開發用：連拍從諾恩第一次被打中的那一刻開始（scripts/burst.sh … 99999 … --bot=idle --burst-on=hurt）
+		_burst_on = ""
+		App.burst_start_in(1)
+
+
+## 第一次身上的毒夠放：畫面上方講一次按哪個鍵（之後看生命條下面那一列的提示）。機器人跑的時候不講。
+func _maybe_release_tip() -> void:
+	if release_tip_shown or bot_kind != "" or player.status_effects == null:
+		return
+	if player.release_power() <= 0.0 or player.status_effects.remaining(PlayerController.RELEASE_STATUS) < RELEASE_TIP_AT:
+		return
+	release_tip_shown = true
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_banner(tr(RELEASE_TIP_KEY).format({"key": InputGlyphs.label_for_action("release", App.last_device)}), RELEASE_TIP_SEC)
+
+
+func _on_player_released(info: Dictionary) -> void:
+	if fighting:
+		stats["releases"] = int(stats.get("releases", 0)) + 1
+		stats["burst_hits"] = int(stats.get("burst_hits", 0)) + int(info.get("hits", 0))
+		stats["burst_secs"] = float(stats.get("burst_secs", 0.0)) + float(info.get("seconds", 0.0))
+	if _burst_on == "release":
+		# 開發用：連拍從諾恩第一次釋放的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=release）
 		_burst_on = ""
 		App.burst_start_in(1)
 
@@ -431,7 +481,10 @@ func _on_enemy_damaged(_amount: float, info: Dictionary, e: EnemyActor) -> void:
 	_hp_before[id] = e.health.hp
 	if info.get("source", null) == player:
 		stats["noen_damage"] = float(stats["noen_damage"]) + dealt
-		stats["noen_hits"] = int(stats["noen_hits"]) + 1
+		if str(info.get("kind", "")) == "burst":
+			stats["burst_damage"] = float(stats.get("burst_damage", 0.0)) + dealt
+		else:
+			stats["noen_hits"] = int(stats["noen_hits"]) + 1
 	else:
 		stats["ally_damage"] = float(stats["ally_damage"]) + dealt
 
@@ -494,11 +547,12 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
 		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
 		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0)),
-		int(r.get("downed", 0)), int(r.get("total", 0))])
+		int(r.get("downed", 0)), int(r.get("total", 0)),
+		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

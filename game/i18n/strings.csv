@@ -9,6 +9,8 @@ ARENA_ALL_DONE,"All waves cleared: {sec} s, hit {hits} times. Back to wave 1.",�
 ARENA_RETRY,Down. Same wave again.,倒下了。這一波重來
 ARENA_REINFORCE,"{n} more coming. {left} left in this wave.",又來了 {n} 個。這一波還剩 {left} 個
 ARENA_TIP_BRACE,"Glowing red: can't be interrupted and barely feels your hits. Dodge, then hit back.",他發紅了：打不斷、也打不痛。閃開，等他打完再打
+ARENA_TIP_RELEASE,"You're poisoned, and for you that heals. Press {key} to burst it: the more seconds, the harder it hits.",你中毒了——對你是回血。按 {key} 把毒炸出去：身上的毒越多秒，炸得越痛
+ARENA_RELEASE_HINT,{key}: burst {dmg},{key}：炸出去 {dmg}
 MENU_SETTINGS,Settings,設定
 MENU_QUIT,Quit,離開
 MENU_LANGUAGE,Language,語言
@@ -60,6 +62,7 @@ ACT_MOVE_RIGHT,Move Right,右移
 ACT_SPRINT,Sprint,奔跑
 ACT_DODGE,Dodge,閃避
 ACT_ATTACK,Attack,攻擊
+ACT_RELEASE,Release (burst your poison),釋放（把身上的毒炸出去）
 ACT_LOCK_ON,Lock On,鎖定
 ACT_INSIGHT,Insight,看穿
 ACT_COMMAND_WEAKPOINT,Command: Strike Weak Point,指令：打弱點

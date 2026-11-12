@@ -16,6 +16,13 @@ signal changed(status_id: String, event: String)
 var rules: StatusRules
 ## 擁有者的反轉欄位；null＝這個角色沒有反轉（NPC、敵人）
 var reversal: ReversalSlots = null
+## 「養」（D-245）：已經在身上的持續傷害類狀態（中毒）每再上一次，剩餘時間多加這麼多秒（還是不超過 max_duration）。
+## 0＝照舊（取剩下的與新的較長者）＝劇情。戰鬥場由 PlayerController 每幀從 `noen.status_refresh_gain` 寫進來：
+## 毒霧每 0.25 秒上一次，所以站在霧裡越久身上的毒越多秒——「釋放」的威力看的就是這個秒數。
+var refresh_gain: float = 0.0
+## 反轉之後的好處乘幾成（D-245）。1＝照舊＝劇情。戰鬥場調低（`noen.reversed_heal_scale`）：留著毒只是慢慢補，
+## 大的好處要自己按「釋放」去拿——不然丟毒瓶的一上場，站著亂按也贏（第 97 輪量到：亂按 55% → 100%）。
+var reversed_scale: float = 1.0
 ## status_id -> {"rate": float, "remaining": float, "source": String}
 var _active: Dictionary = {}
 
@@ -80,7 +87,10 @@ func apply(status_id: String, p_rate: float, duration: float, source: String = "
 		if p_rate > float(cur["rate"]):
 			cur["rate"] = p_rate
 			cur["source"] = source
-		cur["remaining"] = minf(maxf(float(cur["remaining"]), duration), cap)
+		var want: float = maxf(float(cur["remaining"]), duration)
+		if refresh_gain > 0.0 and rules.kind(status_id) == "dot":
+			want = maxf(float(cur["remaining"]) + refresh_gain, duration)
+		cur["remaining"] = minf(want, cap)
 	else:
 		_active[status_id] = {"rate": p_rate, "remaining": minf(duration, cap), "source": source}
 	changed.emit(status_id, event)
@@ -100,6 +110,16 @@ func clear(status_id: String) -> void:
 		changed.emit(status_id, "clear")
 
 
+## 把一種狀態整個用掉（釋放，D-245）：回傳用掉幾秒（身上沒有＝0）。之後身上就沒有這個狀態了。
+func consume(status_id: String) -> float:
+	if not _active.has(status_id):
+		return 0.0
+	var left: float = maxf(remaining(status_id), 0.0)
+	_active.erase(status_id)
+	changed.emit(status_id, "clear")
+	return left
+
+
 ## 推進 delta 秒。health 為 null 時只計時（例如測試）。
 func tick(delta: float, health: Health) -> void:
 	if delta <= 0.0 or _active.is_empty():
@@ -115,7 +135,7 @@ func tick(delta: float, health: Health) -> void:
 			if is_reversed(id):
 				var capped: float = minf(float(cur["rate"]), rules.max_reversed_rate(id))
 				info["reversed"] = true
-				health.heal(capped * dt, info)
+				health.heal(capped * reversed_scale * dt, info)
 			else:
 				health.apply_status_damage(float(cur["rate"]) * dt, info)
 		cur["remaining"] = float(cur["remaining"]) - delta

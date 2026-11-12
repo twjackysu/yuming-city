@@ -8,6 +8,8 @@ const OBJECTIVE_FADE_SEC: float = 0.6
 const OBJECTIVE_HOLD_SEC: float = 8.0
 const OBJECTIVE_PEEK_SEC: float = 4.0
 const SAVED_SHOW_SEC: float = 2.2
+## 狀態列後面的「可以釋放」提示（D-245）
+const RELEASE_HINT_KEY: String = "ARENA_RELEASE_HINT"
 
 var _objective: Label
 var _objective_box: VBoxContainer
@@ -172,7 +174,12 @@ func _process(delta: float) -> void:
 	guide.emphasized = is_objective_shown()
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	var pc: PlayerController = player as PlayerController
-	status.refresh(pc.status_effects if pc != null else null)
+	# 身上的毒可以放出去的時候（戰鬥場，D-245），那一列後面寫按哪個鍵、會扣多少
+	var power: float = pc.release_power() if pc != null else 0.0
+	var hint: String = ""
+	if power > 0.0:
+		hint = tr(RELEASE_HINT_KEY).format({"key": InputGlyphs.label_for_action("release", App.last_device), "dmg": int(power)})
+	status.refresh(pc.status_effects if pc != null else null, PlayerController.RELEASE_STATUS, hint)
 	# 戰鬥 HUD 的諾恩名字在 size.y-174；狀態一列 34，往上長
 	var view_h: float = get_viewport().get_visible_rect().size.y
 	status.position = Vector2(56.0, view_h - 182.0 - status.custom_minimum_size.y)
