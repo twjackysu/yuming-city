@@ -2,21 +2,55 @@ class_name CombatTuning
 extends RefCounted
 ## 戰鬥數值（D-014）：預設在 res://data/combat/tuning.json，開發時可用 user://tuning.json 覆寫同名 key（深層合併）。
 ## 遊戲中按 F5（App）重新載入，不用重新匯出。讀值用路徑：CombatTuning.num("noen.blunt_damage")。
+##
+## 另一套數值（D-239）：tuning.json 最上層的 "profiles" 底下，每個名字是一份「只寫要改的 key」的覆寫，
+## `set_profile("arena")` 之後深層合併進來、`set_profile("")` 還原。戰鬥場用這個試新的數值，劇情流程的數字不動。
 
 const DEFAULT_PATH: String = "res://data/combat/tuning.json"
 const OVERRIDE_PATH: String = "user://tuning.json"
 
+const PROFILES_KEY: String = "profiles"
+const PROFILE_ARENA: String = "arena"
+
 static var _data: Dictionary = {}
+## 沒有套 profile 的那一份（檔案＋user:// 覆寫）
+static var _base: Dictionary = {}
+static var _profile: String = ""
 static var _loaded: bool = false
 
 
 static func load_tuning(default_path: String = DEFAULT_PATH, override_path: String = OVERRIDE_PATH) -> void:
-	_data = _read(default_path)
+	_base = _read(default_path)
 	var over: Dictionary = _read(override_path)
 	if not over.is_empty():
-		_data = merge(_data, over)
+		_base = merge(_base, over)
 		print("[CombatTuning] 套用覆寫 %s" % override_path)
 	_loaded = true
+	_apply_profile()
+
+
+## 換一套數值（""＝原本的）。已經生出來的角色不會跟著變：他們的數值是生出來的時候讀的。
+static func set_profile(which: String) -> void:
+	if not _loaded:
+		load_tuning()
+	if which == _profile:
+		return
+	_profile = which
+	_apply_profile()
+
+
+static func profile() -> String:
+	return _profile
+
+
+static func _apply_profile() -> void:
+	_data = _base
+	if _profile == "":
+		return
+	var all: Variant = _base.get(PROFILES_KEY, {})
+	var over: Variant = (all as Dictionary).get(_profile, {}) if all is Dictionary else {}
+	if over is Dictionary and not (over as Dictionary).is_empty():
+		_data = merge(_base, over as Dictionary)
 
 
 ## 深層合併：b 的值蓋過 a；兩邊都是字典時往下合併。

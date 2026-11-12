@@ -16,6 +16,9 @@ var intel_overrides: Dictionary = {}
 ## 空字串＝用設定裡的難度；設定改了即時套用
 var difficulty: String = ""
 var move_speed: float = 2.6
+## true＝只追諾恩（他倒下才找別人）。預設還是「最近的心跳」。小戰檢驗的第一個人（D-235）與戰鬥場的每一個敵人（D-239）會開：
+## 都追最近的話，敵人圍著席菈打，諾恩站著不動也沒事。
+var focus_player: bool = false
 ## 腳步聲（D-187）：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
 var footsteps: Footsteps
 
@@ -219,6 +222,8 @@ func _on_settings_changed() -> void:
 
 
 func _nearest_heartbeat() -> Node3D:
+	if focus_player and _player != null and is_instance_valid(_player) and not _player.health.is_dead():
+		return _player
 	if target != null and is_instance_valid(target) and brain.state in [EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE]:
 		return target
 	var best: Node3D = null

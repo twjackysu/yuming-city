@@ -184,6 +184,26 @@ func _arena() -> Array:
 	return [root, player, sheila]
 
 
+## 倒下的席菈不擋路（D-239）：戰鬥場第 4 波，南街守衛被她躺著的身體卡在 0.9 m 外、100 秒一步都沒動。
+func test_downed_sheila_does_not_block_the_way() -> void:
+	var a: Array = _arena()
+	var root: Node3D = a[0]
+	var player: PlayerController = a[1]
+	var sheila: Sheila = a[2]
+	sheila.global_position = player.global_position + Vector3(1.0, 0, 0)
+	await tree.physics_frame
+	var standing: int = sheila.collision_layer
+	assert_true(standing != 0, "站著的時候擋得到人")
+	sheila.health.apply_damage(9999.0, {})
+	assert_eq(sheila.brain.mode, CompanionBrain.Mode.DOWN)
+	assert_eq(sheila.collision_layer, 0, "倒下：不擋路")
+	assert_true(sheila.is_in_group("heartbeat"), "還是算一個人（拉得起來）")
+	assert_true(sheila.revive(), "拉得起來")
+	assert_eq(sheila.collision_layer, standing, "拉起來：又擋得到人")
+	root.queue_free()
+	await tree.process_frame
+
+
 func test_sheila_follows_player() -> void:
 	var a: Array = _arena()
 	var root: Node3D = a[0]

@@ -16,6 +16,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	tree.paused = false
+	Engine.time_scale = 1.0
 	for a: String in ArenaBot.ACTIONS:
 		Input.action_release(a)
 	_game().set("arena_mode", false)
@@ -153,6 +154,61 @@ func test_wave_spawns_from_data_with_both_slots_and_bracer() -> void:
 	assert_true(absf(float(arena.stats["ally_damage"]) - 20.0) < 0.01, "席菈打的算席菈的")
 	var hit: float = CombatTuning.num("noen.blunt_damage", 6.0)
 	assert_true(absf(arena.noen_share() - hit / (hit + 20.0)) < 0.01, "占比＝諾恩的／全隊的")
+	await _close(level)
+
+
+## 戰鬥場用自己的一套數值、每個敵人都找諾恩、席菈不先衝（D-239）。
+func test_arena_uses_its_own_numbers_and_enemies_go_for_noen() -> void:
+	assert_eq(CombatTuning.profile(), "", "還沒進戰鬥場：劇情的數字")
+	var level: UndergroundMarket = await _open(0, "", false)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var sheila: Sheila = level.get_node("Sheila") as Sheila
+	assert_eq(CombatTuning.profile(), CombatTuning.PROFILE_ARENA, "進戰鬥場：換成戰鬥場那一套")
+	assert_true(sheila.brain.engage_range < 6.0, "席菈：敵人走近了才動手（%.1f m）" % sheila.brain.engage_range)
+	var sheila_start: Vector3 = sheila.global_position
+	# 開場半秒：敵人往諾恩走，席菈還站在他旁邊（以前 0.8 秒她已經衝到敵人面前）
+	await _frames(30)
+	for e: EnemyActor in arena.enemies:
+		assert_true(e.focus_player, "每一個都找諾恩")
+		assert_true(e.target == player, "目標是諾恩，不是比較近的席菈")
+	assert_true(sheila.global_position.distance_to(sheila_start) < 0.6,
+			"席菈沒有先衝出去（動了 %.2f m）" % sheila.global_position.distance_to(sheila_start))
+	assert_eq(sheila.brain.mode, CompanionBrain.Mode.FOLLOW, "還沒動手")
+	# 把席菈放到敵人面前：他們還是找諾恩
+	_freeze(level)
+	sheila.global_position = arena.enemies[0].global_position + Vector3(0.0, 0.0, 1.0)
+	arena.enemies[0].set_physics_process(true)
+	await _frames(2)
+	assert_true(arena.enemies[0].target == player, "席菈比較近也一樣")
+	arena.enemies[0].set_physics_process(false)
+	# 第四波的南街守衛也是
+	arena.start_wave(3)
+	await _frames(2)
+	assert_true(arena.enemies[0] is Undertaker)
+	assert_true(arena.enemies[0].focus_player, "南街守衛也找諾恩")
+	assert_true(arena.enemies[0].target == player)
+	await _close(level)
+	_game().set("arena_mode", false)
+	assert_eq(CombatTuning.profile(), "", "離開戰鬥場：數字換回來")
+	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), 12.0, "劇情的橫掃還是 12")
+
+
+## 這一步的驗收（design/11 第 4 節）：什麼都不按，第一波會輸，而且席菈救不了他。
+func test_standing_still_loses_the_first_wave() -> void:
+	var level: UndergroundMarket = await _open(0, "idle", false)
+	var arena: Arena = level.arena
+	var frames: int = 0
+	while arena.results.is_empty() and frames < 1500:
+		await tree.physics_frame
+		frames += 1
+	assert_false(arena.results.is_empty(), "25 秒內打得出結果")
+	if not arena.results.is_empty():
+		var r: Dictionary = arena.results[0]
+		assert_eq(str(r["result"]), "lose", "站著不動會輸")
+		assert_true(int(r["hits_taken"]) >= 3 and int(r["hits_taken"]) <= 6, "幾下就倒（%d 下）" % int(r["hits_taken"]))
+		assert_true(float(r["noen_share"]) < 0.01, "他一下都沒打")
+	arena.set_physics_process(false)
 	await _close(level)
 
 

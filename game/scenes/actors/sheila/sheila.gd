@@ -39,6 +39,9 @@ const RUN_STRIDE: float = 1.0
 const STEP_DB: float = -18.0
 const RUN_STEP_DB: float = -14.0
 var footsteps: Footsteps = Footsteps.new(STRIDE, RUN_STRIDE, STEP_DB, RUN_STEP_DB)
+## 站著的時候的碰撞層。倒下時關掉（D-239）：躺著的身體會把直線走過來的敵人卡住——
+## 戰鬥場第 4 波，南街守衛被她擋在 0.9 m 外、100 秒一步都沒動。拉起來再開。
+var _standing_layer: int = 1
 
 
 func _ready() -> void:
@@ -54,6 +57,7 @@ func _ready() -> void:
 	health.invulnerable_check = brain.is_invulnerable
 	health.died.connect(_on_died)
 	add_child(health)
+	_standing_layer = collision_layer
 	_build()
 	CameraFade.apply(self, CameraFade.CHARACTER_NEAR, CameraFade.CHARACTER_FAR)  # D-115
 
@@ -304,6 +308,7 @@ func revive(hp_ratio: float = -1.0) -> bool:
 	health.reset()
 	health.hp = health.max_hp * hp_ratio
 	brain.set_down(false)
+	collision_layer = _standing_layer
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:z", 0.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	say("SHEILA_REVIVED")
@@ -332,6 +337,7 @@ func _enemies_near(radius: float) -> bool:
 
 func _on_died() -> void:
 	brain.set_down(true)
+	collision_layer = 0
 	_puppet.set_move_speed(0.0)
 	var t := create_tween()
 	t.tween_property(_body, "rotation_degrees:z", 80.0, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

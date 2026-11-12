@@ -1,12 +1,12 @@
 {
-  "_doc": "戰鬥場的波次（docs/design/11-combat-first.md 3.1）。pos＝[x, z]（地下市場的街：x 在 ±2.5 以內，+z 往南）；facing_deg＝0 面向北、180 面向南。kind：club 拿棍子的、bracer 戴護腕的、thrower 丟毒瓶的、guardian 南街守衛。focus_player＝只追諾恩。",
+  "_doc": "戰鬥場的波次（docs/design/11-combat-first.md 3.1）。pos＝[x, z]（地下市場的街：x 在 ±2.5 以內，+z 往南）；facing_deg＝0 面向北、180 面向南。kind：club 拿棍子的、bracer 戴護腕的、thrower 丟毒瓶的、guardian 南街守衛。戰鬥場的敵人預設都只追諾恩（D-239）；要某一個改追最近的人就寫 \"focus_player\": false。",
   "player": {"pos": [0.0, 31.0], "facing_deg": 0.0},
   "sheila": {"offset": [1.7, -0.8]},
   "waves": [
     {
       "id": "two_clubs",
       "enemies": [
-        {"kind": "club", "pos": [-1.2, 24.6], "height": 1.1, "focus_player": true},
+        {"kind": "club", "pos": [-1.2, 24.6], "height": 1.1},
         {"kind": "club", "pos": [1.1, 23.8], "height": 1.06}
       ]
     },
@@ -14,15 +14,15 @@
       "id": "club_and_bracer",
       "enemies": [
         {"kind": "club", "pos": [1.1, 24.2], "height": 1.1},
-        {"kind": "bracer", "pos": [-1.2, 24.8], "height": 1.08, "focus_player": true}
+        {"kind": "bracer", "pos": [-1.2, 24.8], "height": 1.08}
       ]
     },
     {
       "id": "clubs_and_thrower",
       "enemies": [
-        {"kind": "club", "pos": [-1.5, 24.8], "height": 1.1, "focus_player": true},
+        {"kind": "club", "pos": [-1.5, 24.8], "height": 1.1},
         {"kind": "club", "pos": [1.0, 24.2], "height": 1.06},
-        {"kind": "thrower", "pos": [-0.2, 21.8], "height": 1.0, "focus_player": true}
+        {"kind": "thrower", "pos": [-0.2, 21.8], "height": 1.0}
       ]
     },
     {

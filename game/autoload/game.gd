@@ -52,7 +52,11 @@ const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
 
 ## 戰鬥場（docs/design/11-combat-first.md 3.1，D-238）：true＝地下市場不掛劇情、掛 Arena；不讀不寫劇情存檔。
 ## 開發旗標：`-- --arena [--wave=1..4] [--bot=idle|mash|skilled] [--runs=20]`（機器人跑完印 ARENA_SUMMARY 後結束；用法見 scripts/arena_bots.sh）
-var arena_mode: bool = false
+var arena_mode: bool = false:
+	set(v):
+		arena_mode = v
+		# 戰鬥場用自己的一套數值（tuning.json 的 profiles.arena，D-239）；離開就還原
+		CombatTuning.set_profile(CombatTuning.PROFILE_ARENA if v else "")
 var arena_wave: int = 0
 var arena_bot: String = ""
 var arena_runs: int = 0

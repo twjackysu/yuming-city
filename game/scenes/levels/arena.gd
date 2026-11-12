@@ -181,12 +181,16 @@ func start_wave(index: int) -> void:
 
 
 func _make_enemy(spec: Dictionary) -> EnemyActor:
+	# 戰鬥場的敵人預設都找諾恩（D-239）；資料寫 "focus_player": false 的才追最近的
+	var focus: bool = bool(spec.get("focus_player", true))
 	if str(spec.get("kind", "")) == "guardian":
-		return Undertaker.new()
+		var boss := Undertaker.new()
+		boss.focus_player = focus
+		return boss
 	var g := DemoGuard.new()
 	g.kind = str(spec.get("kind", DemoGuard.KIND_CLUB))
 	g.height = float(spec.get("height", 1.1))
-	g.focus_player = bool(spec.get("focus_player", false))
+	g.focus_player = focus
 	return g
 
 

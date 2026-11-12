@@ -43,9 +43,8 @@ var last_move: String = ""
 var debug_hold: bool = false
 ## 還沒開打：站在原地等（不追、不出招、不算敵人——席菈不會先衝過去、鏡頭不會拉遠）。用 set_waiting() 改
 var waiting: bool = false
-## true＝只追諾恩（小戰檢驗：商人的人是來找他討護腕的。都追「最近的心跳」的話，兩個拿棍子的會一起圍席菈——
-## 諾恩站著不動的時候她 16 秒就倒了，D-235）
-var focus_player: bool = false
+## `focus_player`（只追諾恩）搬到 EnemyActor 了（D-239）。小戰檢驗：商人的人是來找他討護腕的——都追「最近的心跳」的話，
+## 兩個拿棍子的會一起圍席菈，諾恩站著不動的時候她 16 秒就倒了（D-235）
 ## 丟毒瓶的：丟過幾瓶、最後一瓶落地的那團霧（還在飛的時候是 null）、最後一瓶瞄的落點
 var toss_count: int = 0
 var last_mist: PoisonMist
@@ -149,12 +148,6 @@ func _hit_height() -> float:
 
 func _held(_delta: float) -> bool:
 	return debug_hold or waiting
-
-
-func _nearest_heartbeat() -> Node3D:
-	if focus_player and _player != null and is_instance_valid(_player) and not _player.health.is_dead():
-		return _player
-	return super._nearest_heartbeat()
 
 
 ## 出招：前方扇形裡的心跳（諾恩、席菈）受傷。每一招的距離、角度、傷害在 tuning.json。

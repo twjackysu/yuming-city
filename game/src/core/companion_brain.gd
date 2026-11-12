@@ -59,6 +59,7 @@ func configure(difficulty: String = "standard") -> CompanionBrain:
 	slash_cost = CombatTuning.num("sheila.slash_cost", 10.0)
 	slash_range = CombatTuning.num("sheila.slash_range", 1.8)
 	slash_interval = CombatTuning.num("sheila.slash_interval", 1.3)
+	engage_range = CombatTuning.num("sheila.engage_range", 10.0)
 	command_cooldown = CombatTuning.num("sheila.command_cooldown", 1.5)
 	command_window = CombatTuning.num("difficulty.%s.command_window" % difficulty, 0.6)
 	return self

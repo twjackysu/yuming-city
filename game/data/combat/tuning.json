@@ -14,7 +14,7 @@
   },
   "sheila": {
     "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
-    "dodge_cost": 20, "slash_cost": 10, "slash_range": 1.8, "slash_interval": 1.3, "command_cooldown": 1.5,
+    "dodge_cost": 20, "slash_cost": 10, "slash_range": 1.8, "slash_interval": 1.3, "engage_range": 10.0, "command_cooldown": 1.5,
     "weak_damage": 60, "counter_damage": 27, "counter_stagger": 30, "countered_damage": 14,
     "revive_window": 8.0, "revive_range": 1.8, "revive_hp": 0.4, "after_combat_hp": 0.25
   },
@@ -92,5 +92,12 @@
     "story": {"enemy_damage": 0.5, "telegraph": 1.3, "command_window": 1.0},
     "standard": {"enemy_damage": 1.0, "telegraph": 1.0, "command_window": 0.6},
     "hard": {"enemy_damage": 1.4, "telegraph": 0.85, "command_window": 0.35}
+  },
+  "profiles": {
+    "arena": {
+      "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
+      "demo_guard": {"moves": {"swing": {"damage": 28}, "thrust": {"damage": 24}}},
+      "demo_bracer": {"moves": {"jab": {"damage": 21}}}
+    }
   }
 }
