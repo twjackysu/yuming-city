@@ -22,8 +22,19 @@ var focus_player: bool = false
 ## 腳步聲（D-187）：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
 var footsteps: Footsteps
 
+## 同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限；D-240）。別人剛出完招的 attack_gap 秒內也算佔著。
+## 沒輪到的人停在 attack_range + wait_ring 外面等。數值在 tuning.json 的 crowd.*（劇情＝不限，戰鬥場＝1）；生出來的時候讀一次。
+var attack_slots: int = 0
+var attack_gap: float = 0.0
+var wait_ring: float = 0.0
+## 被諾恩打中後仰過幾次、其中幾次打斷了前兆（測試、機器人的統計用）
+var flinch_count: int = 0
+var interrupt_count: int = 0
+
 var _player: PlayerController
 var _body: Node3D
+var _push_dir: Vector3 = Vector3.ZERO
+var _push_speed: float = 0.0
 var _insight_layer: CanvasLayer
 var _insight_card: InsightCard
 var _insight_text: String = ""
@@ -49,6 +60,10 @@ func _ready() -> void:
 		Settings.changed.connect(_on_settings_changed)
 	brain = EnemyBrain.new().configure(intel_id(), difficulty)
 	brain.knelt.connect(_on_kneel)
+	brain.flinched.connect(_on_flinched)
+	attack_slots = int(CombatTuning.num("crowd.attack_slots", 0.0))
+	attack_gap = CombatTuning.num("crowd.attack_gap", 0.0)
+	wait_ring = CombatTuning.num("crowd.wait_ring", 0.0)
 	move_speed = CombatTuning.num(intel_id() + ".move_speed", move_speed)
 	health = Health.new(CombatTuning.num(intel_id() + ".max_hp", 60.0))
 	health.name = "Health"
@@ -84,11 +99,21 @@ func _physics_process(delta: float) -> void:
 		_update_look()
 		_update_insight()
 		return
+	brain.may_attack = _may_attack()
 	if brain.tick(delta, dist):
 		_on_strike()
 	var horizontal := Vector3.ZERO
 	if brain.state == EnemyBrain.State.STRIKE:
 		horizontal = _on_strike_tick(delta)
+	elif brain.state == EnemyBrain.State.FLINCH:
+		horizontal = _push_dir * _push_speed
+	elif brain.is_moving() and target != null and not brain.may_attack:
+		# 還沒輪到：停在出手距離外面一圈等；站得太近就慢慢退開
+		var ring: float = brain.attack_range + wait_ring
+		if dist > ring:
+			horizontal = forward() * move_speed
+		elif dist < ring - WAIT_SLACK:
+			horizontal = -forward() * move_speed * WAIT_BACK_SPEED
 	elif brain.is_moving() and target != null and dist > brain.attack_range * 0.8:
 		horizontal = forward() * move_speed
 	velocity.x = horizontal.x
@@ -240,6 +265,51 @@ func _nearest_heartbeat() -> Node3D:
 	return best
 
 
+# ---------------------------------------------------------------- 輪流出手、挨打後仰（D-240）
+## 等的人離圈子多近才開始往後退、退多快（走路速度的幾成）
+const WAIT_SLACK: float = 0.5
+const WAIT_BACK_SPEED: float = 0.5
+
+
+## 這種敵人的出手要不要排隊（丟毒瓶的不用：他在後面丟，霧對諾恩是回血）。
+func uses_attack_slot() -> bool:
+	return true
+
+
+## 正佔著一個出手名額：前兆、出招中，或剛出完招還不到 gap 秒。
+func holds_attack_slot(gap: float) -> bool:
+	match brain.state:
+		EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE:
+			return true
+		EnemyBrain.State.RECOVER:
+			return brain.time_in_state < gap
+	return false
+
+
+## 這一幀可不可以開始擺前兆：對同一個目標，佔著名額的其他敵人不到 attack_slots 個。
+func _may_attack() -> bool:
+	if attack_slots <= 0 or target == null or not uses_attack_slot() or not is_inside_tree():
+		return true
+	var busy: int = 0
+	for n: Node in get_tree().get_nodes_in_group("enemies"):
+		var e: EnemyActor = n as EnemyActor
+		if e == null or e == self or e.brain == null or e.target != target or not e.uses_attack_slot():
+			continue
+		if e.holds_attack_slot(attack_gap):
+			busy += 1
+	return busy < attack_slots
+
+
+## 後仰的那一刻：往攻擊者的反方向退 flinch_push 公尺（在後仰的時間裡走完）。
+func _on_flinched(interrupted: bool) -> void:
+	flinch_count += 1
+	if interrupted:
+		interrupt_count += 1
+	_push_speed = brain.flinch_push / maxf(brain.flinch_sec, 0.01)
+	if _push_dir == Vector3.ZERO:
+		_push_dir = -forward()
+
+
 func _first_player() -> PlayerController:
 	for n: Node in get_tree().get_nodes_in_group("player"):
 		return n as PlayerController
@@ -252,6 +322,13 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 		_flash_weak()
 	_hit_fx(info)
 	brain.add_stagger(float(info.get("stagger", 0.0)))
+	# 只有諾恩打的會讓他後仰（席菈打的也算的話，她一個人就能把敵人鎖死）
+	var src: Node3D = info.get("source") as Node3D
+	if src is PlayerController and not health.is_dead():
+		var away: Vector3 = global_position - src.global_position
+		away.y = 0.0
+		_push_dir = away.normalized() if away.length() > 0.01 else -forward()
+		brain.flinch()
 
 
 # ---------------------------------------------------------------- 被打中的那一下（D-217）

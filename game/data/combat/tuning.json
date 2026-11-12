@@ -10,7 +10,10 @@
     "dodge_invuln": 0.25,
     "dodge_cooldown": 0.2,
     "weak_damage_mult": 2.0,
-    "weak_stagger_mult": 2.0
+    "weak_stagger_mult": 2.0,
+    "lunge_dist": 0.0,
+    "lunge_seek": 3.4,
+    "lunge_stop": 1.25
   },
   "sheila": {
     "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
@@ -93,11 +96,18 @@
     "standard": {"enemy_damage": 1.0, "telegraph": 1.0, "command_window": 0.6},
     "hard": {"enemy_damage": 1.4, "telegraph": 0.85, "command_window": 0.35}
   },
+  "crowd": {
+    "_doc": "同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）；別人剛出完招 attack_gap 秒內也算佔著；沒輪到的人停在 attack_range + wait_ring 外面等（D-240）。劇情＝不限。",
+    "attack_slots": 0, "attack_gap": 0.0, "wait_ring": 0.0
+  },
   "profiles": {
     "arena": {
+      "noen": {"lunge_dist": 0.6},
       "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
-      "demo_guard": {"moves": {"swing": {"damage": 28}, "thrust": {"damage": 24}}},
-      "demo_bracer": {"moves": {"jab": {"damage": 21}}}
+      "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9},
+      "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "moves": {"swing": {"damage": 28}, "thrust": {"damage": 24}}},
+      "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "moves": {"jab": {"damage": 21}}},
+      "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3}
     }
   }
 }

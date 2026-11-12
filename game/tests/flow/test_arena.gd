@@ -199,10 +199,17 @@ func test_standing_still_loses_the_first_wave() -> void:
 	var level: UndergroundMarket = await _open(0, "idle", false)
 	var arena: Arena = level.arena
 	var frames: int = 0
+	var most_at_once: int = 0
 	while arena.results.is_empty() and frames < 1500:
 		await tree.physics_frame
 		frames += 1
+		var winding: int = 0
+		for e: EnemyActor in arena.enemies:
+			if e.brain.state in [EnemyBrain.State.TELEGRAPH, EnemyBrain.State.STRIKE]:
+				winding += 1
+		most_at_once = maxi(most_at_once, winding)
 	assert_false(arena.results.is_empty(), "25 秒內打得出結果")
+	assert_eq(most_at_once, 1, "同一時間只有一個人在擺前兆／出手（D-240）")
 	if not arena.results.is_empty():
 		var r: Dictionary = arena.results[0]
 		assert_eq(str(r["result"]), "lose", "站著不動會輸")
@@ -210,6 +217,73 @@ func test_standing_still_loses_the_first_wave() -> void:
 		assert_true(float(r["noen_share"]) < 0.01, "他一下都沒打")
 	arena.set_physics_process(false)
 	await _close(level)
+
+
+## 諾恩打中的那一下（D-240）：敵人後仰、往後退一小步、前兆被打斷；席菈打的不算；丟毒瓶的不排隊。
+func test_noen_hits_flinch_and_push_back_but_sheilas_do_not() -> void:
+	var level: UndergroundMarket = await _open(2)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var sheila: Sheila = level.get_node("Sheila") as Sheila
+	var e: EnemyActor = arena.enemies[0]
+	assert_eq(e.attack_slots, 1, "戰鬥場：同時只有一個人出手")
+	assert_true(e.brain.flinch_sec > 0.1, "戰鬥場的敵人會後仰")
+	assert_true(e.uses_attack_slot(), "拿棍子的要排隊")
+	assert_false(arena.enemies[2].uses_attack_slot(), "丟毒瓶的不排隊")
+	e.brain.state = EnemyBrain.State.TELEGRAPH
+	e.brain.time_in_state = 0.3
+	e.health.apply_damage(6.0, {"source": sheila, "stagger": 0.0})
+	assert_eq(e.brain.state, EnemyBrain.State.TELEGRAPH, "席菈打的不會打斷他")
+	var start: Vector3 = e.global_position
+	var away: Vector3 = (start - player.global_position).normalized()
+	e.health.apply_damage(6.0, {"source": player, "stagger": 0.0})
+	assert_eq(e.brain.state, EnemyBrain.State.FLINCH, "諾恩打的：前兆被打斷、往後仰")
+	assert_eq(e.interrupt_count, 1)
+	# 別人這時候在擺前兆：他站直之後不會馬上跟著擺
+	arena.enemies[1].brain.state = EnemyBrain.State.TELEGRAPH
+	e.set_physics_process(true)
+	await _frames(int(e.brain.flinch_sec * 60.0) + 4)
+	e.set_physics_process(false)
+	var moved: Vector3 = e.global_position - start
+	moved.y = 0.0
+	assert_true(moved.dot(away) > 0.25 and moved.length() < 0.7, "往後退了一小步（%.2f m）" % moved.dot(away))
+	assert_eq(e.brain.state, EnemyBrain.State.CHASE, "站直了；別人佔著名額，他等")
+	assert_false(e.brain.may_attack)
+	arena.set_physics_process(false)
+	await _close(level)
+
+
+## 出手往敵人滑一小步（D-240；只有戰鬥場）：差一點夠不到的距離，按下去會自己貼上去、打得到。
+func test_attack_slides_toward_the_enemy_in_the_arena_only() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var e: EnemyActor = arena.enemies[0]
+	arena.enemies[1].global_position += Vector3(0.0, 0.0, -6.0)
+	player.global_position = e.global_position + Vector3(0.5, 0.0, 2.25)
+	(player.get_node("Body") as Node3D).rotation.y = 0.0
+	await _frames(2)
+	var gap0: float = player.global_position.distance_to(e.global_position)
+	assert_true(gap0 > CombatTuning.num("noen.strike_range"), "原本夠不到（%.2f m）" % gap0)
+	var hp0: float = e.health.hp
+	player.start_attack()
+	await _frames(30)
+	var gap1: float = player.global_position.distance_to(e.global_position)
+	assert_true(player.lunge_moved > 0.4 and player.lunge_moved < 0.61, "滑了一小步（%.2f m）" % player.lunge_moved)
+	assert_true(gap1 < gap0 - 0.4, "是往他那邊滑（%.2f → %.2f m）" % [gap0, gap1])
+	assert_true(e.health.hp < hp0, "這一下打到了")
+	# 已經貼著：不再往前擠
+	player.global_position = e.global_position + Vector3(0.0, 0.0, 1.1)
+	var before: float = player.lunge_moved
+	await _frames(20)
+	player.start_attack()
+	await _frames(20)
+	assert_true(player.lunge_moved - before < 0.02, "貼著的時候不滑")
+	arena.set_physics_process(false)
+	await _close(level)
+	_game().set("arena_mode", false)
+	assert_eq(CombatTuning.num("noen.lunge_dist"), 0.0, "劇情裡出手不滑（數字沒動）")
+	assert_eq(CombatTuning.num("crowd.attack_slots"), 0.0, "劇情裡不限幾個人同時出手")
 
 
 func test_falling_restarts_the_same_wave_in_place() -> void:

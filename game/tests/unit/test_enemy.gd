@@ -94,6 +94,64 @@ func test_stagger_interrupts_telegraph() -> void:
 	assert_eq(b.stagger, 0.0, "失衡歸零")
 
 
+## 挨打後仰（D-240）：打中會打斷前兆；後仰過 brace_after 次就硬撐（打不斷），打出一招之後重新算。
+func test_flinch_interrupts_telegraph_then_braces_until_he_strikes() -> void:
+	var b := EnemyBrain.new().configure("ashwalker")
+	b.flinch_sec = 0.25
+	b.brace_after = 2
+	var seen: Array[bool] = []
+	b.flinched.connect(func(interrupted: bool) -> void: seen.append(interrupted))
+	b.tick(0.1, 10.0)
+	b.tick(0.1, 1.0)
+	assert_eq(b.state_name(), "telegraph")
+	assert_true(b.flinch(), "前兆中被打中：打斷")
+	assert_eq(b.state_name(), "flinch")
+	assert_eq(seen, [true] as Array[bool], "訊號說這一下打斷了前兆")
+	assert_false(b.tick(0.2, 1.0), "後仰中不出招")
+	assert_eq(b.state_name(), "flinch")
+	b.tick(0.06, 1.0)
+	assert_eq(b.state_name(), "chase", "0.25 秒後站直、繼續追")
+	assert_true(b.flinch(), "追人中被打中：也停一下")
+	assert_eq(seen, [true, false] as Array[bool], "這一下沒有打斷什麼")
+	assert_true(b.is_braced(), "後仰過兩次：硬撐")
+	b.tick(0.26, 1.0)
+	b.tick(0.01, 1.0)
+	assert_eq(b.state_name(), "telegraph")
+	assert_false(b.flinch(), "硬撐中打不斷")
+	assert_eq(b.state_name(), "telegraph")
+	assert_eq(seen.size(), 2, "沒有再發訊號")
+	assert_true(b.tick(b.telegraph_sec + 0.01, 1.0), "這一招一定打得出來")
+	b.tick(b.strike_sec + 0.01, 1.0)
+	assert_eq(b.state_name(), "recover")
+	assert_false(b.is_braced(), "打出一招之後重新算")
+	var before: float = b.time_in_state
+	assert_false(b.flinch(), "破綻中被打中不後仰")
+	assert_eq(b.time_in_state, before, "破綻的時間不會被重新算")
+
+
+## 劇情裡的敵人不後仰（flinch_sec 0）；標了打不斷的招打不斷；沒輪到的人不擺前兆。
+func test_flinch_is_opt_in_and_waiting_enemies_do_not_wind_up() -> void:
+	var b := EnemyBrain.new().configure("demo_guard")
+	assert_eq(b.flinch_sec, 0.0, "劇情的數字：不後仰")
+	b.tick(0.1, 10.0)
+	b.may_attack = false
+	b.tick(0.1, 1.0)
+	assert_eq(b.state_name(), "chase", "還沒輪到：在出手距離內也不擺前兆")
+	b.may_attack = true
+	b.tick(0.1, 1.0)
+	assert_eq(b.state_name(), "telegraph", "輪到了才擺")
+	assert_false(b.flinch(), "沒有設後仰時間的敵人打不斷")
+	assert_eq(b.state_name(), "telegraph")
+	b.flinch_sec = 0.25
+	b.moves[b.move_id]["unstoppable"] = true
+	assert_false(b.flinch(), "標了打不斷的招")
+	b.moves[b.move_id]["unstoppable"] = false
+	assert_true(b.flinch())
+	b.kill()
+	assert_false(b.flinch(), "倒下的人不後仰")
+	assert_false(b.is_braced())
+
+
 ## 跪下的那一刻發 knelt（D-191）：跪著再被逼跪（撞牆）不再發；起身後再跪才又發。
 func test_knelt_signal_once_per_kneel() -> void:
 	var b := EnemyBrain.new().configure("ashwalker")

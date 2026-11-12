@@ -44,6 +44,12 @@ var runs: int = 0
 var results: Array[Dictionary] = []
 var bot: ArenaBot
 var worn_bracer: Node3D
+## 開發用：`--side-cam`＝從街的西邊、高一點橫著看（連拍用，D-240；席菈站在東邊，從西邊看她不會擋在前面）。過肩鏡頭裡敵人被諾恩擋在正前面，
+## 看不到後仰、擊退、誰打誰；橫著看兩個人一左一右。機器人照常用 player.yaw，不受影響。
+const SIDE_CAM_X: float = -2.4
+const SIDE_CAM_Y: float = 2.5
+const SIDE_CAM_FOV: float = 52.0
+var side_cam: Camera3D
 var _hp_before: Dictionary = {}
 var _pending: int = 0
 var _rng := RandomNumberGenerator.new()
@@ -106,7 +112,34 @@ func _ready() -> void:
 		bot.kind = bot_kind
 		bot.arena = self
 		add_child(bot)
+	if App.parse_user_args(OS.get_cmdline_user_args()).has("side-cam"):
+		make_side_cam()
 	start_wave(wave)
+
+
+func make_side_cam() -> void:
+	side_cam = Camera3D.new()
+	side_cam.name = "SideCam"
+	side_cam.fov = SIDE_CAM_FOV
+	add_child(side_cam)
+	side_cam.make_current()
+	_aim_side_cam(1.0)
+
+
+func _process(_delta: float) -> void:
+	if side_cam != null:
+		_aim_side_cam(0.15)
+
+
+## 對著諾恩與最近的敵人中間（沿著街跟著走；k＝這一幀跟上幾成）。
+func _aim_side_cam(k: float) -> void:
+	if player == null:
+		return
+	var foe: EnemyActor = ArenaBot.nearest_enemy(player.global_position, enemies)
+	var mid: Vector3 = player.global_position if foe == null else (player.global_position + foe.global_position) * 0.5
+	var z: float = lerpf(side_cam.global_position.z, mid.z, k)
+	side_cam.global_position = Vector3(SIDE_CAM_X, mid.y + SIDE_CAM_Y, z)
+	side_cam.look_at(Vector3(maxf(mid.x, -0.8), mid.y + 0.9, z), Vector3.UP)
 
 
 ## 兩格都裝好、護腕戴在右前臂（打中人 → 麻痺重新計時）。

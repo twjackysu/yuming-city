@@ -91,6 +91,12 @@ const RESTORE_MIN_HP_RATIO: float = 0.5
 ## 新版可攜藥劑（快捷鍵 use_item）
 const PORTABLE_ITEM: String = "mist_serpent_poison"
 var _swing_resolved: bool = true
+## 出手往前滑一小步（D-240；noen.lunge_dist，0＝不滑）：還剩多遠沒滑、往哪邊、這一次有沒有對準某個敵人
+var _lunge_left: float = 0.0
+var _lunge_dir: Vector3 = Vector3.ZERO
+var _lunge_target: Node3D
+## 滑過幾公尺（測試用）
+var lunge_moved: float = 0.0
 var _death_tween: Tween
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
@@ -224,12 +230,17 @@ func _physics_process(delta: float) -> void:
 	else:
 		var target: Vector3 = dir * (SPRINT_SPEED if sprinting else WALK_SPEED)
 		horizontal = horizontal.lerp(target, clampf(ACCEL * delta, 0.0, 1.0))
+	# 出手的那一小步疊在走路上面，但不記進下一幀的速度（不然滑完還會往前溜）
+	var lunge: Vector3 = _lunge_velocity(delta) if _dodge_left <= 0.0 else Vector3.ZERO
 
-	velocity.x = horizontal.x
-	velocity.z = horizontal.z
+	velocity.x = horizontal.x + lunge.x
+	velocity.z = horizontal.z + lunge.z
 	_puppet.set_move_speed(horizontal.length())
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
+	if lunge != Vector3.ZERO:
+		velocity.x = horizontal.x
+		velocity.z = horizontal.z
 	footstep_tick(horizontal.length() * delta, sprinting, is_on_floor() and _dodge_left <= 0.0)
 
 	if lock_target != null and _dodge_left <= 0.0 and not sprinting:
@@ -489,6 +500,67 @@ func is_invulnerable() -> bool:
 func start_attack() -> void:
 	_puppet.play_action("attack")
 	_swing_resolved = false
+	_begin_lunge()
+
+
+## 出手的那一刻決定往哪裡滑：鎖定的目標 → 前方 lunge_seek 公尺內最近的敵人（身體馬上轉過去對準他）→ 沒有就不滑。
+## 「夠不到」是第 89 輪量到的問題：諾恩出手 1.9 m，拿棍子的 2.3～2.9 m。
+func _begin_lunge() -> void:
+	_lunge_left = 0.0
+	_lunge_target = null
+	var dist: float = CombatTuning.num("noen.lunge_dist", 0.0)
+	if dist <= 0.0:
+		return
+	var seek: float = CombatTuning.num("noen.lunge_seek", 3.4)
+	var foe: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else lunge_pick(global_position, -_body.global_basis.z, seek, get_tree().get_nodes_in_group("enemies"))
+	if foe == null:
+		return
+	var to: Vector3 = foe.global_position - global_position
+	to.y = 0.0
+	if to.length() < 0.05 or to.length() > seek:
+		return
+	_lunge_target = foe
+	_lunge_dir = to.normalized()
+	_lunge_left = dist
+	_body.rotation.y = atan2(-_lunge_dir.x, -_lunge_dir.z)
+
+
+## 前方（左右各 75 度）seek 公尺內最近的敵人。純函式。
+static func lunge_pick(origin: Vector3, forward: Vector3, seek: float, candidates: Array) -> Node3D:
+	var best: Node3D = null
+	var best_d: float = seek
+	var f := Vector2(forward.x, forward.z).normalized()
+	for c: Variant in candidates:
+		var n: Node3D = c as Node3D
+		if n == null or not is_instance_valid(n):
+			continue
+		var to := Vector2(n.global_position.x - origin.x, n.global_position.z - origin.z)
+		var d: float = to.length()
+		if d > best_d or d < 0.05 or f.dot(to / d) < 0.26:
+			continue
+		best_d = d
+		best = n
+	return best
+
+
+## 這一幀滑多少（回傳水平速度）：在命中判定之前滑完；離目標 lunge_stop 公尺以內就不再往前擠。
+func _lunge_velocity(delta: float) -> Vector3:
+	if _lunge_left <= 0.0 or _puppet.action != "attack" or _swing_resolved:
+		_lunge_left = 0.0
+		return Vector3.ZERO
+	if _lunge_target != null and is_instance_valid(_lunge_target):
+		var to: Vector3 = _lunge_target.global_position - global_position
+		to.y = 0.0
+		if to.length() <= CombatTuning.num("noen.lunge_stop", 1.25):
+			_lunge_left = 0.0
+			return Vector3.ZERO
+		_lunge_dir = to.normalized()
+	var window: Vector2 = CombatTuning.pair("noen.strike_window", Vector2(0.35, 0.6))
+	var wind_sec: float = maxf(float(Puppet.ACTION_TIME["attack"]) * window.x / maxf(_puppet.attack_speed, 0.01), 0.05)
+	var step: float = minf(CombatTuning.num("noen.lunge_dist", 0.0) / wind_sec * delta, _lunge_left)
+	_lunge_left -= step
+	lunge_moved += step
+	return _lunge_dir * (step / maxf(delta, 0.0001))
 
 
 ## 鐘錘下劈：動作進到命中區間（strike_window，動作時間比例）時判定一次。

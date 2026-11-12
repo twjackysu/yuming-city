@@ -28,6 +28,9 @@ const BRACER_ENERGY: float = 2.6
 ## 棍頭的銅箍：平常幾乎不亮，前兆時亮起來（看得出他要出手了）
 const CLUB_GLOW: Color = Color(1.0, 0.72, 0.4)
 ## 斜掛在胸前的紅白布條（跟示範台的直條紋同一組顏色）：深色的人在暗的街上看得出「這兩個是商人的人」，也跟看熱鬧的人分得開
+## 硬撐（後仰過幾次之後：打不斷、下一招一定打得出來，D-240）：棍箍／護腕燒成紅的，還沒擺前兆就亮著——看到紅的就該閃
+const BRACE_GLOW: Color = Color(1.0, 0.2, 0.08)
+const BRACE_ENERGY: float = 3.2
 const SASH_RED: Color = Color(0.66, 0.11, 0.1)
 const SASH_WHITE: Color = Color(0.86, 0.82, 0.74)
 const STRIDE: float = 0.78
@@ -90,6 +93,11 @@ func set_waiting(on: bool) -> void:
 
 func is_bracer() -> bool:
 	return kind == KIND_BRACER
+
+
+## 丟毒瓶的不排隊出手（他站在後面丟；霧對諾恩是回血），也不佔別人的名額。
+func uses_attack_slot() -> bool:
+	return kind != KIND_THROWER
 
 
 func puppet() -> Puppet:
@@ -235,7 +243,13 @@ func _update_look() -> void:
 		return
 	if not is_bracer():
 		var lit: float = 4.5 if brain.state == EnemyBrain.State.STRIKE else p * p * 5.0
-		_glow_mat.emission_energy_multiplier = 0.12 + lit
+		var braced: bool = brain.is_braced()
+		_glow_mat.emission = BRACE_GLOW if braced else CLUB_GLOW
+		_glow_mat.emission_energy_multiplier = (BRACE_ENERGY if braced else 0.12) + lit
+		return
+	if brain.is_braced() and brain.state in [EnemyBrain.State.CHASE, EnemyBrain.State.TELEGRAPH]:
+		_glow_mat.emission = BRACE_GLOW
+		_glow_mat.emission_energy_multiplier = BRACE_ENERGY + p * 7.0
 		return
 	match brain.state:
 		EnemyBrain.State.TELEGRAPH:
@@ -280,6 +294,8 @@ func apply_pose(_delta: float) -> void:
 				_pose_strike(brain.move_id, 1.0 - ease(k, 0.6))
 		EnemyBrain.State.STAGGERED:
 			_pose_kneel()
+		EnemyBrain.State.FLINCH:
+			_pose_flinch(clampf(brain.time_in_state / maxf(brain.flinch_sec, 0.01), 0.0, 1.0))
 		EnemyBrain.State.DEAD:
 			_rot("shoulder_R", Vector3(2.5, 0.0, 0.5))
 			_rot("elbow_R", Vector3(0.5, 0.0, 0.0))
@@ -354,6 +370,21 @@ func _pose_numb() -> void:
 	_rot("chest", Vector3(0.3, 0.12, 0.0))
 	_rot("spine", Vector3(0.14, 0.0, 0.0))
 	_rot("neck", Vector3(0.45, 0.25, 0.0))
+
+
+## 挨了一下往後仰（k＝0 剛被打中、1 快站直了）：上身往後折、頭甩上去、兩手被震開，前腳離地。
+func _pose_flinch(k: float) -> void:
+	var a: float = 1.0 - ease(k, 2.2)
+	_rot("spine", Vector3(-0.28 * a, 0.0, 0.0))
+	_rot("chest", Vector3(-0.3 * a, 0.25 * a, 0.0))
+	_rot("neck", Vector3(-0.45 * a, 0.0, 0.0))
+	_rot("shoulder_R", Vector3(-0.5 * a, 0.0, 0.12 + 0.85 * a))
+	_rot("elbow_R", Vector3(0.25 + 0.5 * a, 0.0, 0.0))
+	if not is_bracer():
+		_rot("shoulder_L", Vector3(-0.4 * a, 0.0, -0.7 * a))
+		_rot("elbow_L", Vector3(0.45 * a, 0.0, 0.0))
+	_rot("thigh_L", Vector3(0.5 * a, 0.0, 0.0))
+	_rot("knee_L", Vector3(-0.6 * a, 0.0, 0.0))
 
 
 ## 失衡跪地：右膝著地、左腳踩在前面，上身往前垮

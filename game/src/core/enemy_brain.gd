@@ -1,6 +1,6 @@
 class_name EnemyBrain
 extends RefCounted
-## 敵人的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地。
+## 敵人的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地；被諾恩打中會後仰（flinch，D-240）。
 ## 不碰場景，只吃「離目標多遠」與時間；出招那一刻回傳 true，由角色節點判定命中。
 ## 數值來自 CombatTuning（<prefix>.*、difficulty.*.telegraph）。
 ## 一般敵人只有一招（attack_range 內就出）；精英敵人在 <prefix>.moves 定義多招，依 <prefix>.pattern 輪流，
@@ -8,12 +8,16 @@ extends RefCounted
 ## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻）。現在沒有招式用，留給之後的頭目（D-225）。
 ## 讀不懂的招（unreadable[id] = true）：席菈的「閃開」對它一律算失敗，直到諾恩看過一次（看穿變已證實）。
 
-enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD }
+## FLINCH＝被諾恩打中往後仰的那一下（D-240）。加在最後面：前面幾個的數值不變。
+enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD, FLINCH }
 
 ## 跪下的那一刻（失衡滿了、撞牆）：角色節點播「膝蓋落地」的重音（D-191）。已經跪著再被逼跪不算。
 signal knelt
 
-const STATE_NAMES: PackedStringArray = ["idle", "chase", "telegraph", "strike", "recover", "staggered", "dead"]
+## 被打中、往後仰的那一刻（角色節點往後退一小步）。interrupted＝這一下把正在擺的前兆打斷了。
+signal flinched(interrupted: bool)
+
+const STATE_NAMES: PackedStringArray = ["idle", "chase", "telegraph", "strike", "recover", "staggered", "dead", "flinch"]
 
 var state: State = State.IDLE
 var time_in_state: float = 0.0
@@ -36,6 +40,17 @@ var moves: Dictionary = {}
 var pattern: PackedStringArray = []
 ## 讀不懂的招：id → true（看穿未證實、席菈抓不到時機）
 var unreadable: Dictionary = {}
+## 挨打後仰（D-240）。flinch_sec＝仰多久（0＝這種敵人不會後仰：劇情裡的敵人、頭目）。
+## 後仰過 brace_after 次之後「硬撐」：不再後仰、前兆打不斷（還是會扣血），下一招一定打得出來——
+## 不然一直按出手就能把人鎖到死。出完一招（進破綻）或跪完起來就重新算。招式資料寫 "unstoppable": true＝這一招永遠打不斷。
+var flinch_sec: float = 0.0
+var brace_after: int = 2
+## 後仰的時候被往後推多遠（公尺；角色節點在 flinch_sec 內走完）
+var flinch_push: float = 0.4
+## 這一輪已經後仰了幾次（出完一招歸零）；畫面（硬撐的顏色）與測試用 is_braced()
+var interrupts: int = 0
+## 這一幀可不可以開始擺前兆（角色節點每幀設：同時只有幾個人可以對同一個目標出手，D-240）
+var may_attack: bool = true
 var _pattern_i: int = 0
 var _telegraph_mult: float = 1.0
 var _base_telegraph: float = 0.8
@@ -55,6 +70,10 @@ func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
 	attack_range = CombatTuning.num(prefix + ".attack_range", 1.8)
 	telegraph_stagger_mult = CombatTuning.num(prefix + ".telegraph_stagger_mult", 0.5)
 	recover_stagger_mult = CombatTuning.num(prefix + ".recover_stagger_mult", 2.0)
+	# 後仰的三個數字只有會後仰的敵人才寫（戰鬥場的 profiles.arena）；沒寫＝不後仰，不要印「沒有這個 key」
+	flinch_sec = CombatTuning.num(prefix + ".flinch", 0.0) if _has(prefix + ".flinch") else 0.0
+	brace_after = int(CombatTuning.num(prefix + ".brace_after", 2.0)) if _has(prefix + ".brace_after") else 2
+	flinch_push = CombatTuning.num(prefix + ".flinch_push", 0.4) if _has(prefix + ".flinch_push") else 0.4
 	var mv: Variant = CombatTuning.value(prefix + ".moves", {}) if _has(prefix + ".moves") else {}
 	# 複製一份：個別敵人改自己的招式數值時，不能改到共用的 CombatTuning 資料
 	moves = (mv as Dictionary).duplicate(true) if mv is Dictionary else {}
@@ -87,7 +106,7 @@ func tick(delta: float, dist_to_target: float) -> bool:
 			if dist_to_target <= aggro_range:
 				_enter(State.CHASE)
 		State.CHASE:
-			if _choose_move(dist_to_target):
+			if may_attack and _choose_move(dist_to_target):
 				_enter(State.TELEGRAPH)
 		State.TELEGRAPH:
 			if time_in_state >= telegraph_sec:
@@ -100,13 +119,18 @@ func tick(delta: float, dist_to_target: float) -> bool:
 					_set_move(nxt)
 					_enter(State.TELEGRAPH)
 				else:
+					interrupts = 0
 					_enter(State.RECOVER)
+		State.FLINCH:
+			if time_in_state >= flinch_sec:
+				_enter(State.CHASE)
 		State.RECOVER:
 			if time_in_state >= recover_sec:
 				_enter(State.CHASE)
 		State.STAGGERED:
 			if time_in_state >= _kneel_sec:
 				stagger = 0.0
+				interrupts = 0
 				_enter(State.CHASE)
 	return false
 
@@ -180,6 +204,33 @@ func add_stagger(amount: float) -> bool:
 		_enter(State.STAGGERED)
 		return true
 	return false
+
+
+## 被諾恩打中的那一下：往後仰 flinch_sec 秒。追人中 → 停一下；前兆中 → 打斷（標了打不斷的招除外）。
+## 出招、破綻、跪地中不改狀態（破綻的時間不會被重新算，不然打得越快他越晚醒）。
+## 每後仰一次記一次；記滿 brace_after 次就「硬撐」：不再後仰，直到他打出一招。回傳有沒有真的後仰。
+func flinch() -> bool:
+	if flinch_sec <= 0.0 or is_braced():
+		return false
+	var interrupted: bool = state == State.TELEGRAPH
+	if interrupted and _unstoppable(move_id):
+		return false
+	if state not in [State.CHASE, State.FLINCH, State.TELEGRAPH]:
+		return false
+	interrupts += 1
+	_enter(State.FLINCH)
+	flinched.emit(interrupted)
+	return true
+
+
+## 硬撐中：打不斷、不後仰（已經後仰過 brace_after 次），打出一招之後才重新算。
+func is_braced() -> bool:
+	return flinch_sec > 0.0 and interrupts >= brace_after and state != State.DEAD
+
+
+func _unstoppable(id: String) -> bool:
+	var m: Variant = moves.get(id, {})
+	return m is Dictionary and bool((m as Dictionary).get("unstoppable", false))
 
 
 ## 衝撞撞牆之類的硬直：直接跪地 seconds 秒（不累積失衡）。
