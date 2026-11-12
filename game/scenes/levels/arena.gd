@@ -403,6 +403,10 @@ func _physics_process(delta: float) -> void:
 func _on_player_damaged(_amount: float, _info: Dictionary) -> void:
 	if fighting:
 		stats["hits_taken"] = int(stats["hits_taken"]) + 1
+	if _burst_on == "hurt":
+		# 開發用：連拍從諾恩第一次被打中的那一刻開始（scripts/burst.sh … 99999 … --bot=idle --burst-on=hurt）
+		_burst_on = ""
+		App.burst_start_in(1)
 
 
 func _on_player_healed(amount: float, _info: Dictionary) -> void:

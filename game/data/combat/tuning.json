@@ -110,7 +110,7 @@
       "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},
       "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "brace_armor": 0.25, "moves": {"jab": {"damage": 18}}},
       "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25},
-      "undertaker": {"_doc": "諾恩一下 6 → 24（D-242）：頭目的生命跟著乘四，要打幾下才倒跟改之前一樣。失衡沒有補（諾恩一下的失衡 20 → 10，牠比以前難跪；把牠的失衡上限減半的話，席菈一個人就能讓牠一直跪，站著不動 120 秒都不會輸）。頭目自己的調整是 NEXT「000」第 2 項的⑤，還沒做。", "guardian_hp": 1920}
+      "undertaker": {"_doc": "戰鬥場的南街守衛（第 4 波）。guardian_hp：諾恩一下 6 → 24（D-242），生命跟著乘四，要打幾下才倒跟改之前一樣；失衡沒有補（把牠的失衡上限減半的話，席菈一個人就能讓牠一直跪）。pattern_strict（D-243）：照 pattern_guardian 的順序出招，輪到的那一招還太遠就走近、不拿射程比較長的噴毒頂替——不開的話諾恩挨打被推開 0.7 m 之後牠會一直噴毒（六次噴毒才一次橫掃），站著不動 120 秒不會輸。橫掃 28 → 30、下砸 40 → 45：站著不動 21.5 → 19.5 秒倒（目標 10～20）。生命沒有為了「會打的機器人打滿 60 秒」再往上加：現在要打 80 下，再加就是當初的問題；連段、重擊、釋放做出來之後諾恩的輸出會變，那時候再定。", "guardian_hp": 1920, "pattern_strict": true, "moves": {"sweep": {"damage": 30}, "slam": {"damage": 45}}}
     }
   }
 }

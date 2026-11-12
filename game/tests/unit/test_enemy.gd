@@ -157,6 +157,63 @@ func test_flinch_is_opt_in_and_waiting_enemies_do_not_wind_up() -> void:
 	assert_false(b.is_braced())
 
 
+## 照順序出招（D-243）。南街守衛的輪替是橫掃 3.2 m → 噴毒 3.4 m → 下砸 3.0 m → 橫掃。
+## 沒開（劇情）：輪到的招打不到就換下一個打得到的——目標站在 3.3 m 的話，只有噴毒打得到，會一直噴。
+## 開了（戰鬥場的頭目）：輪到的招只是太遠就不換招（留在追人，角色會走近）；太近的招（min_range）照舊跳過。
+func test_strict_pattern_walks_into_range_instead_of_repeating_the_longest_move() -> void:
+	var loose: Array[String] = _moves_at(_guardian_brain(false), [3.3, 3.3, 3.3, 3.3])
+	assert_eq(loose, ["spray", "spray", "spray", "spray"] as Array[String], "沒開：站在 3.3 m 只有噴毒打得到，一直噴（%s）" % str(loose))
+	var b: EnemyBrain = _guardian_brain(true)
+	assert_true(b.pattern_strict)
+	b.tick(0.1, 10.0)
+	b.tick(0.1, 3.3)
+	assert_eq(b.state_name(), "chase", "輪到橫掃（3.2 m）、目標在 3.3 m：不拿噴毒頂替，繼續走近")
+	var strict: Array[String] = _moves_at(b, [3.2, 3.3, 3.3, 3.0, 3.3, 3.1, 3.2, 3.4])
+	assert_eq(strict, ["sweep", "spray", "", "slam", "", "sweep", "sweep", "spray"] as Array[String],
+			"開了：照橫掃 → 噴毒 → 下砸 → 橫掃的順序；輪到下砸（3.0 m）、橫掃（3.2 m）而目標在 3.3 m 就等，不再噴一次（%s）" % str(strict))
+	# 太近的招照舊跳過：衝撞要 4 m 以上，目標貼在面前就換下一招
+	var c := EnemyBrain.new().configure("undertaker")
+	c.pattern_strict = true
+	c.set_pattern(PackedStringArray(["charge", "sweep"]))
+	assert_eq(_moves_at(c, [2.0]), ["sweep"] as Array[String], "太近用不了的招跳過")
+	assert_false(EnemyBrain.new().configure("undertaker").pattern_strict, "劇情的數字：沒開")
+	assert_false(EnemyBrain.new().configure("demo_guard").pattern_strict)
+
+
+func _guardian_brain(strict: bool) -> EnemyBrain:
+	var b := EnemyBrain.new().configure("undertaker")
+	b.set_pattern(PackedStringArray(CombatTuning.value("undertaker.pattern_guardian", []) as Array))
+	b.pattern_strict = strict
+	if not strict:
+		# 從噴毒開始（＝剛被橫掃打退到 3.2 m 外的那一刻）
+		b.tick(0.1, 10.0)
+		b.tick(0.1, 3.2)
+		_finish_move(b)
+	return b
+
+
+## 目標依序站在這幾個距離：每一個距離給牠一次挑招的機會，回傳挑到的招（沒挑＝""），挑到就讓牠打完。
+func _moves_at(b: EnemyBrain, dists: Array) -> Array[String]:
+	var out: Array[String] = []
+	for d: float in dists:
+		if b.state == EnemyBrain.State.IDLE:
+			b.tick(0.1, 10.0)
+		b.tick(0.01, d)
+		if b.state == EnemyBrain.State.TELEGRAPH:
+			out.append(b.move_id)
+			_finish_move(b)
+		else:
+			out.append("")
+	return out
+
+
+func _finish_move(b: EnemyBrain) -> void:
+	for i: int in 400:
+		if b.state == EnemyBrain.State.CHASE:
+			return
+		b.tick(0.05, 99.0)
+
+
 ## 跪下的那一刻發 knelt（D-191）：跪著再被逼跪（撞牆）不再發；起身後再跪才又發。
 func test_knelt_signal_once_per_kneel() -> void:
 	var b := EnemyBrain.new().configure("ashwalker")

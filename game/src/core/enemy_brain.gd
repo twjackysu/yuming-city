@@ -41,6 +41,11 @@ var move_id: String = "claw"
 ## 多招敵人：id → {telegraph, active, recover, min_range, range, ...}；空的＝一般敵人單招
 var moves: Dictionary = {}
 var pattern: PackedStringArray = []
+## 照順序出招（D-243）。false（劇情裡的敵人）＝跟以前一樣：輪到的那一招打不到，就換下一個打得到的。
+## true（戰鬥場的頭目）＝輪到的那一招只是「目標還太遠」的時候不換招，等角色走近再出；
+## 太近（小於 min_range）的招照舊跳過。沒有這個的話，射程最長的那一招（噴毒 3.4 m）會一直頂替別的招：
+## 諾恩被打退到 3.9 m，牠走到 3.4 m 就停下來噴毒，噴完還是只有噴毒打得到——六次噴毒才輪到一次橫掃。
+var pattern_strict: bool = false
 ## 讀不懂的招：id → true（看穿未證實、席菈抓不到時機）
 var unreadable: Dictionary = {}
 ## 挨打後仰（D-240）。flinch_sec＝仰多久（0＝這種敵人不會後仰：劇情裡的敵人、頭目）。
@@ -81,6 +86,7 @@ func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
 	brace_after = int(CombatTuning.num(prefix + ".brace_after", 2.0)) if _has(prefix + ".brace_after") else 2
 	flinch_push = CombatTuning.num(prefix + ".flinch_push", 0.4) if _has(prefix + ".flinch_push") else 0.4
 	brace_armor = CombatTuning.num(prefix + ".brace_armor", 1.0) if _has(prefix + ".brace_armor") else 1.0
+	pattern_strict = bool(CombatTuning.value(prefix + ".pattern_strict", false)) if _has(prefix + ".pattern_strict") else false
 	var mv: Variant = CombatTuning.value(prefix + ".moves", {}) if _has(prefix + ".moves") else {}
 	# 複製一份：個別敵人改自己的招式數值時，不能改到共用的 CombatTuning 資料
 	moves = (mv as Dictionary).duplicate(true) if mv is Dictionary else {}
@@ -153,10 +159,14 @@ func _choose_move(dist: float) -> bool:
 	for k: int in pattern.size():
 		var i: int = (_pattern_i + k) % pattern.size()
 		var id: String = pattern[i]
-		if dist >= move_num(id, "min_range", 0.0) and dist <= move_num(id, "range", attack_range):
+		var too_close: bool = dist < move_num(id, "min_range", 0.0)
+		if not too_close and dist <= move_num(id, "range", attack_range):
 			_pattern_i = (i + 1) % pattern.size()
 			_set_move(id)
 			return true
+		if pattern_strict and not too_close:
+			# 輪到的這一招只是還太遠：不換招，等走近
+			return false
 	return false
 
 

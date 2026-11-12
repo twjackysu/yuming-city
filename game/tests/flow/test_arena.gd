@@ -229,6 +229,45 @@ func test_standing_still_loses_the_first_wave() -> void:
 	await _close(level)
 
 
+## 頭目那一波（D-243）：什麼都不按，20 秒左右會倒。第 94 輪加了「挨打被推開 0.7 m」之後這一波站著不動 120 秒不會輸——
+## 被推到 3.9 m，牠走到 3.4 m 就只有噴毒打得到，噴完還是只有噴毒打得到；毒霧又幫諾恩回血。
+## 現在牠照順序出招、會走進那一招的距離：不會連續噴兩次，橫掃、噴毒、下砸都用得到。
+func test_standing_still_loses_to_the_guardian_who_keeps_his_move_order() -> void:
+	var level: UndergroundMarket = await _open(3, "idle", false)
+	var arena: Arena = level.arena
+	var boss: Undertaker = arena.enemies[0] as Undertaker
+	assert_true(boss.brain.pattern_strict, "戰鬥場的頭目照順序出招")
+	assert_eq(boss.brain.move_num("sweep", "damage"), 30.0, "戰鬥場的橫掃 30")
+	assert_eq(boss.brain.move_num("slam", "damage"), 45.0, "戰鬥場的下砸 45")
+	var order: Array[String] = []
+	var was: EnemyBrain.State = boss.brain.state
+	var frames: int = 0
+	while arena.results.is_empty() and frames < 1800:
+		await tree.physics_frame
+		frames += 1
+		# 打出結果的那一幀，機器人模式會馬上清場開下一場：牠已經不在了
+		if not arena.results.is_empty() or not is_instance_valid(boss):
+			break
+		if boss.brain.state == EnemyBrain.State.STRIKE and was != EnemyBrain.State.STRIKE:
+			order.append(boss.brain.move_id)
+		was = boss.brain.state
+	assert_false(arena.results.is_empty(), "30 秒內打得出結果（出招順序 %s）" % str(order))
+	for i: int in range(1, order.size()):
+		assert_false(order[i] == "spray" and order[i - 1] == "spray", "不會連續噴兩次毒（%s）" % str(order))
+	assert_true(order.has("sweep") and order.has("spray") and order.has("slam"), "三招都用到了（%s）" % str(order))
+	if not arena.results.is_empty():
+		var r: Dictionary = arena.results[0]
+		assert_eq(str(r["result"]), "lose", "站著不動會輸")
+		assert_true(float(r["time"]) >= 10.0 and float(r["time"]) <= 24.0, "10～20 秒左右倒（%.1f 秒）" % float(r["time"]))
+		assert_true(int(r["hits_taken"]) >= 3 and int(r["hits_taken"]) <= 6, "幾下就倒（%d 下）" % int(r["hits_taken"]))
+	arena.set_physics_process(false)
+	await _close(level)
+	_game().set("arena_mode", false)
+	assert_eq(CombatTuning.num("undertaker.moves.sweep.damage"), 28.0, "劇情的橫掃還是 28")
+	assert_eq(CombatTuning.num("undertaker.moves.slam.damage"), 40.0, "劇情的下砸還是 40")
+	assert_eq(CombatTuning.num("undertaker.guardian_hp"), 480.0, "劇情的南街守衛還是 480")
+
+
 ## 諾恩打中的那一下（D-240）：敵人後仰、往後退一小步、前兆被打斷；席菈打的不算；丟毒瓶的不排隊。
 func test_noen_hits_flinch_and_push_back_but_sheilas_do_not() -> void:
 	var level: UndergroundMarket = await _open(2)
