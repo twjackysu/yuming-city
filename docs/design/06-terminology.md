@@ -41,6 +41,8 @@
 | 丟毒瓶的打手 | `DemoGuard.KIND_THROWER`（`demo_thrower`）；瓶子的霧＝來源 `poison_bottle`（D-235） | 丟毒瓶的打手；口語「丟瓶子的」；招式「丟毒瓶（落地一團毒霧）」 | Poison Thrower | 護腕商人帶來的人。瓶子落地的毒霧對諾恩是回血。不寫「投擲手」「毒師」「煉金術士」 |
 | 兩格一起用 | 任務 `rb_trial`（D-235） | 兩格一起用 | Two Slots at Once | 中毒（回血）＋麻痺（出手加速）同時在身上。不寫「雙反轉」「連攜」「組合技」 |
 | 乾運河 | 下一個地點（還沒做）；「待續」卡 `RB2_END6_TITLE` | 乾運河 | the Dry Canal | 彌夏在地圖上圈出來的地方，story-v2 第三章 |
+| 戰鬥場 | 標題的選項 `MENU_ARENA`（D-238） | 戰鬥場 | Combat Arena | 不掛劇情、按下去就開打的地方。不寫「競技場」「試煉」「修練場」 |
+| 波 | 戰鬥場的提示 `ARENA_WAVE_*` | 第 N 波 | Wave N | 一批敵人。不寫「回合」「關」 |
 | 示範場守衛 | `DemoGuard`（`demo_guard`＝拿棍子的、`demo_bracer`＝戴護腕的） | 示範場守衛／戴護腕的守衛 | Demo Guard / Bracer Guard | 護腕商人雇的兩個人，胸前掛紅白布條；不寫「打手」「保鑣」 |
 | 守衛的招式 | `swing`／`thrust`／`jab` | 棍子橫掃／棍子直刺／快拳（打完手會麻） | Club swing / Club thrust / Fast punch | 都是直接傷害，沒有狀態 |
 | 工錢 | `coins`（`RB_WAGES_PAID`） | 工錢 | pay | 雷德欠的那份（艾妲只代付一半）；不寫「欠薪」「薪資」 |
