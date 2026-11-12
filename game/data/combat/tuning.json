@@ -15,7 +15,9 @@
     "lunge_seek": 3.4,
     "lunge_stop": 1.25,
     "hurt_stun": 0.0,
-    "hurt_push": 0.0
+    "hurt_push": 0.0,
+    "input_buffer": 0.0,
+    "attack_face_lock": 0
   },
   "sheila": {
     "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
@@ -104,7 +106,7 @@
   },
   "profiles": {
     "arena": {
-      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7},
+      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7, "input_buffer": 0.2, "attack_face_lock": 1},
       "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
       "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9},
       "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},

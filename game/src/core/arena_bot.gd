@@ -8,18 +8,23 @@ extends Node
 ## - mash：追著最近的敵人一直按出手，不閃。
 ## - skilled：看到打得到自己的前兆快出手了就往後閃，其餘時間貼上去打；丟毒瓶的前兆不閃（霧對諾恩是回血）。
 ##   它的時機是照幀算的，比人準——當成「會打的人」的上限看。
+## - circle：跟 mash 一樣一直按出手、不閃，但是靠近之後一直往右繞（D-244）。人邊走邊按的時候就是這樣；
+##   mash 永遠正對著敵人走，量不到「邊走邊打會不會揮空」。
 
 const KIND_IDLE: String = "idle"
 const KIND_MASH: String = "mash"
 const KIND_SKILLED: String = "skilled"
-const KINDS: PackedStringArray = [KIND_IDLE, KIND_MASH, KIND_SKILLED]
-const ACTIONS: PackedStringArray = ["move_forward", "move_back", "sprint", "attack", "dodge"]
+const KIND_CIRCLE: String = "circle"
+const KINDS: PackedStringArray = [KIND_IDLE, KIND_MASH, KIND_SKILLED, KIND_CIRCLE]
+const ACTIONS: PackedStringArray = ["move_forward", "move_back", "move_left", "move_right", "sprint", "attack", "dodge"]
 ## 離多近就出手（諾恩的出手 1.9 m）
 const ATTACK_DIST: float = 1.75
 ## 離多近就不再往前擠
 const STOP_DIST: float = 1.1
 ## 離這麼遠就用跑的
 const SPRINT_DIST: float = 3.0
+## 繞著按的：離這麼近就開始往右繞
+const CIRCLE_DIST: float = 2.6
 ## 前兆剩幾秒就閃（閃避的無敵 0.25 秒；每一場在這個範圍裡抽一個＝時機不是每次都一樣準）
 const DODGE_LEAD: Vector2 = Vector2(0.1, 0.2)
 ## 敵人的招打得到的距離再加這麼多，就當成有威脅
@@ -99,6 +104,7 @@ func _physics_process(_delta: float) -> void:
 		_hold("dodge", false)
 	_hold("move_forward", dist > STOP_DIST)
 	_hold("sprint", dist > SPRINT_DIST)
+	_hold("move_right", kind == KIND_CIRCLE and dist <= CIRCLE_DIST)
 	if dist <= ATTACK_DIST:
 		_tap("attack")
 	else:

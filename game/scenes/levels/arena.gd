@@ -393,6 +393,10 @@ func _physics_process(delta: float) -> void:
 	if not fighting or player == null:
 		return
 	stats["time"] = float(stats["time"]) + delta
+	if _burst_on == "swing" and player.puppet().action == "attack":
+		# 開發用：連拍從諾恩第一次出手的那一刻開始（scripts/burst.sh … 99999 … --bot=circle --burst-on=swing）
+		_burst_on = ""
+		App.burst_start_in(1)
 	_maybe_reinforce()
 	if enemies_down():
 		_finish("win")

@@ -108,6 +108,11 @@ var hurt_count: int = 0
 var _hurt_dir: Vector3 = Vector3.ZERO
 var _hurt_speed: float = 0.0
 var _hurt_tween: Tween
+## 提早按也算（D-244；`noen.input_buffer` 秒，0＝不記＝劇情那 20 分鐘）：收招、閃避、挨打硬直還沒結束的時候按出手或閃避，
+## 記住這麼久，能動的第一幀就出；後按的蓋掉先按的。沒有這個的話，這些時候按的鍵全部被吃掉
+## （第 96 輪量到：收招時按的出手、閃到一半按的出手、硬直快結束時按的閃避，三種都沒有反應）。
+var _buffered: String = ""
+var _buffer_left: float = 0.0
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
@@ -215,18 +220,21 @@ func _physics_process(delta: float) -> void:
 	_dodge_cooldown = maxf(_dodge_cooldown - delta, 0.0)
 	if not talking and Game.session.in_story() and Input.is_action_just_pressed("use_item") and not health.is_dead():
 		use_potion()
+	var want: String = _wanted_action(delta, talking)
 	if talking:
 		pass
 	elif hurt_left > 0.0:
 		# 挨打的硬直：不能出手、不能閃（D-242）
 		pass
-	elif Input.is_action_just_pressed("dodge") and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
+	elif want == "dodge" and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
+		_buffered = ""
 		_dodge_dir = dir if dir.length() > 0.1 else -_body.global_basis.z
 		_dodge_dir = _dodge_dir.normalized()
 		_dodge_left = DODGE_TIME
 		_puppet.play_action("dodge")
 		Sfx.play_at(self, "whoosh", global_position + Vector3.UP, -4.0)
-	elif Input.is_action_just_pressed("attack") and _puppet.action == "" and not health.is_dead() and not status_effects.blocks_attack():
+	elif want == "attack" and _puppet.action == "" and not health.is_dead() and not status_effects.blocks_attack():
+		_buffered = ""
 		start_attack()
 	if not talking and Input.is_action_just_pressed("lock_on"):
 		toggle_lock()
@@ -263,6 +271,11 @@ func _physics_process(delta: float) -> void:
 	if lock_target != null and _dodge_left <= 0.0 and not sprinting:
 		var to_t: Vector3 = lock_target.global_position - global_position
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(-to_t.x, -to_t.z), clampf(TURN_SPEED * delta, 0.0, 1.0))
+	elif swing_holds_facing():
+		# 出手到判定之前對著這一下瞄的人，不跟著走路的方向轉（D-244）
+		var to_s: Vector3 = _lunge_target.global_position - global_position
+		if Vector2(to_s.x, to_s.z).length() > 0.05:
+			_body.rotation.y = atan2(-to_s.x, -to_s.z)
 	elif horizontal.length() > 0.3:
 		var face: float = atan2(-horizontal.x, -horizontal.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
@@ -547,13 +560,49 @@ func is_invulnerable() -> bool:
 	return invulnerable
 
 
+## 這一幀玩家要的動作："dodge"／"attack"／""。剛按下去的優先（同一幀兩個都按＝閃避）；沒有的話看有沒有還記著的。
+## `noen.input_buffer` 是 0 的時候就是「只有按下去的那一幀算」，跟以前一樣。
+func _wanted_action(delta: float, locked: bool) -> String:
+	var now: String = ""
+	if Input.is_action_just_pressed("dodge"):
+		now = "dodge"
+	elif Input.is_action_just_pressed("attack"):
+		now = "attack"
+	if locked or health.is_dead():
+		_buffered = ""
+		return now
+	if now != "":
+		_buffered = now
+		_buffer_left = CombatTuning.num("noen.input_buffer", 0.0)
+		return now
+	if _buffered != "":
+		_buffer_left -= delta
+		if _buffer_left <= 0.0:
+			_buffered = ""
+	return _buffered
+
+
+## 還記著的按鍵（""＝沒有；測試用）
+func buffered_action() -> String:
+	return _buffered
+
+
+## 出手到判定之前，身體對著這一下瞄的那個人，不跟著走路的方向轉（D-244；`noen.attack_face_lock`，0＝照舊＝劇情）。
+## 沒有這個的話：出手的那一刻身體轉向敵人（D-240 的滑步），接著 0.19 秒內又被「往哪走就面向哪」轉回去——
+## 按著左右或後退出手，判定的時候身體已經偏了 108～173 度，貼著的敵人也打不到（第 96 輪量到）。
+func swing_holds_facing() -> bool:
+	if _swing_resolved or _puppet.action != "attack" or _lunge_target == null or not is_instance_valid(_lunge_target):
+		return false
+	return CombatTuning.num("noen.attack_face_lock", 0.0) > 0.0
+
+
 func start_attack() -> void:
 	_puppet.play_action("attack")
 	_swing_resolved = false
 	_begin_lunge()
 
 
-## 出手的那一刻決定往哪裡滑：鎖定的目標 → 前方 lunge_seek 公尺內最近的敵人（身體馬上轉過去對準他）→ 沒有就不滑。
+## 出手的那一刻決定往哪裡滑：鎖定的目標 → 身體前方 lunge_seek 公尺內最近的敵人 → 鏡頭前方的（身體馬上轉過去對準他）→ 沒有就不滑。
 ## 「夠不到」是第 89 輪量到的問題：諾恩出手 1.9 m，拿棍子的 2.3～2.9 m。
 func _begin_lunge() -> void:
 	_lunge_left = 0.0
@@ -562,7 +611,11 @@ func _begin_lunge() -> void:
 	if dist <= 0.0:
 		return
 	var seek: float = CombatTuning.num("noen.lunge_seek", 3.4)
-	var foe: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else lunge_pick(global_position, -_body.global_basis.z, seek, get_tree().get_nodes_in_group("enemies"))
+	var foes: Array = get_tree().get_nodes_in_group("enemies")
+	var foe: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else lunge_pick(global_position, -_body.global_basis.z, seek, foes)
+	if foe == null:
+		# 身體前面沒有人（例如正在往後退）：改看鏡頭前面——玩家看著誰就打誰（D-244）
+		foe = lunge_pick(global_position, Basis(Vector3.UP, yaw) * Vector3.FORWARD, seek, foes)
 	if foe == null:
 		return
 	var to: Vector3 = foe.global_position - global_position

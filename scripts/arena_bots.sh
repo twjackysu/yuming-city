@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 戰鬥場的機器人對打（docs/design/11-combat-first.md 第 4 節，D-238）：
-#   scripts/arena_bots.sh              # 四波 × 三種機器人，各 20 場，印一張 Markdown 表
+#   scripts/arena_bots.sh              # 四波 × 四種機器人，各 20 場，印一張 Markdown 表（約 7 分鐘）
 #   RUNS=5 WAVES="1 3" BOTS="mash skilled" scripts/arena_bots.sh
 # 無頭、--fixed-fps 60（不等真實時間；一場約 0.3～3 秒）。每場的明細在 build/arena/<波>-<機器人>.log。
 # 先跑過一次 scripts/check.sh（或 --import）再用。這些數字量得出難度與節奏，量不出好不好玩。
@@ -11,7 +11,7 @@ cd "$ROOT"
 GODOT="$(scripts/get-godot.sh)"
 RUNS="${RUNS:-20}"
 WAVES="${WAVES:-1 2 3 4}"
-BOTS="${BOTS:-idle mash skilled}"
+BOTS="${BOTS:-idle mash circle skilled}"
 OUT="$ROOT/build/arena"
 mkdir -p "$OUT"
 
@@ -34,7 +34,7 @@ done
 python3 - "$OUT" "$WAVES" "$BOTS" <<'PY'
 import re, sys, pathlib
 out, waves, bots = pathlib.Path(sys.argv[1]), sys.argv[2].split(), sys.argv[3].split()
-names = {"idle": "站著不動", "mash": "亂按", "skilled": "會打的"}
+names = {"idle": "站著不動", "mash": "亂按", "circle": "繞著按", "skilled": "會打的"}
 # 最後三欄（D-241）：每場平均打斷敵人的前兆幾次、敵人「硬撐」（整個人變紅＝該閃了）幾次、失衡跪下幾次——從每場那一行算
 # 最後一欄（D-242）：每場平均打倒幾個／這一波總共幾個（一波的人分批進場；輸的時候看得出撐到第幾個）
 print("| 波 | 機器人 | 場數 | 勝率 | 打不完 | 贏的平均秒數 | 輸的平均秒數 | 被打中幾下 | 諾恩傷害占比 | 打斷前兆 | 敵人變紅 | 敵人跪下 | 打倒／總共 |")
