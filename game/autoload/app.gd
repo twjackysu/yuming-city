@@ -13,6 +13,14 @@ var last_device: int = InputGlyphs.Device.KBM
 var last_pad: int = 0
 var screenshot_path: String = ""
 var screenshot_frames: int = 60
+## 連拍（docs/design/11-combat-first.md 第 4 節；scripts/burst.sh 在用）：
+##   -- --burst=/tmp/b --burst-from=100 --burst-every=6 --burst-count=8
+##   → 第 100 幀起每 6 幀存一張 /tmp/b-0.png…b-7.png，存完結束。搭配 --fixed-fps 60 就是每 0.1 秒一張。
+var burst_prefix: String = ""
+var burst_from: int = 60
+var burst_every: int = 6
+var burst_count: int = 8
+var _burst_saved: int = 0
 var _frame: int = 0
 
 
@@ -29,7 +37,11 @@ func _ready() -> void:
 	screenshot_frames = int(args.get("frames", 60))
 	if str(args.get("device", "")) == "pad":
 		last_device = InputGlyphs.Device.PAD
-	set_process(screenshot_path != "")
+	burst_prefix = str(args.get("burst", ""))
+	burst_from = int(args.get("burst-from", burst_from))
+	burst_every = maxi(int(args.get("burst-every", burst_every)), 1)
+	burst_count = maxi(int(args.get("burst-count", burst_count)), 1)
+	set_process(screenshot_path != "" or burst_prefix != "")
 
 
 func _input(event: InputEvent) -> void:
@@ -65,8 +77,29 @@ static func parse_user_args(argv: PackedStringArray) -> Dictionary:
 	return out
 
 
+## 這一幀是不是連拍要存的那一幀。純函式。
+static func burst_index(frame: int, from: int, every: int, count: int) -> int:
+	if frame < from or (frame - from) % every != 0:
+		return -1
+	var i: int = (frame - from) / every
+	return i if i < count else -1
+
+
 func _process(_delta: float) -> void:
 	_frame += 1
+	if burst_prefix != "":
+		var i: int = burst_index(_frame, burst_from, burst_every, burst_count)
+		if i < 0:
+			return
+		await RenderingServer.frame_post_draw
+		var shot: Image = get_viewport().get_texture().get_image()
+		var e: Error = shot.save_png("%s-%d.png" % [burst_prefix, i])
+		_burst_saved += 1
+		if e != OK or _burst_saved >= burst_count:
+			print("[App] burst -> %s-0..%d.png (%s)" % [burst_prefix, _burst_saved - 1, error_string(e)])
+			set_process(false)
+			get_tree().quit(0 if e == OK else 1)
+		return
 	if _frame < screenshot_frames:
 		return
 	set_process(false)

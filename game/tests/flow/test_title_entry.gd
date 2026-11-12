@@ -93,14 +93,15 @@ func test_continue_reads_only_the_new_story_save() -> void:
 
 
 ## 標題的選單只有四個：新遊戲、繼續、設定、離開（D-220）
-func test_title_menu_has_only_the_four_entries() -> void:
+## 第 90 輪（D-238）多了「戰鬥場」：四個變五個，還是只有這幾個（沒有舊版、沒有別的劇情入口）
+func test_title_menu_has_only_the_five_entries() -> void:
 	_session()
 	var boot: Control = await _boot()
 	var names: Array[String] = []
 	for c: Node in (boot.get_node("%Menu") as Control).get_children():
 		if c is Button:
 			names.append(str(c.name))
-	assert_eq(names, ["NewGame", "Continue", "Settings", "Quit"] as Array[String])
+	assert_eq(names, ["NewGame", "Continue", "Arena", "Settings", "Quit"] as Array[String])
 	boot.queue_free()
 	await tree.process_frame
 

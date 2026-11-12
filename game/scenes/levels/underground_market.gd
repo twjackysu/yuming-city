@@ -178,6 +178,7 @@ var look := FrostbridgeLook.new()
 var interior := InteriorLook.new()
 var _batch := StaticBatch.new()
 var story: UndergroundMarketStory = null
+var arena: Arena = null
 ## 測試、效能檢查用
 var light_count: int = 0
 var shadow_light_count: int = 0
@@ -260,6 +261,11 @@ func _ready() -> void:
 		story = UndergroundMarketStory.new()
 		story.name = "UndergroundMarketStory"
 		add_child(story)
+	elif Game.arena_mode:
+		# 戰鬥場（D-238）：不掛劇情，只有波次
+		arena = Arena.new()
+		arena.name = "Arena"
+		add_child(arena)
 	player.snap_camera()
 
 

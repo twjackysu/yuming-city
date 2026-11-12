@@ -81,6 +81,15 @@ text = "MENU_CONTINUE"
 alignment = 0
 flat = true
 
+[node name="Arena" type="Button" parent="TitleBlock/Menu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "MENU_ARENA"
+alignment = 0
+flat = true
+
 [node name="Settings" type="Button" parent="TitleBlock/Menu"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 52)

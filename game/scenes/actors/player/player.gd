@@ -91,6 +91,7 @@ const RESTORE_MIN_HP_RATIO: float = 0.5
 ## 新版可攜藥劑（快捷鍵 use_item）
 const PORTABLE_ITEM: String = "mist_serpent_poison"
 var _swing_resolved: bool = true
+var _death_tween: Tween
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
@@ -304,8 +305,29 @@ func _write_vitals(st: GameState) -> void:
 
 func _on_died() -> void:
 	var t := create_tween()
+	_death_tween = t
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Game.on_player_died()
+
+
+## 原地站起來（戰鬥場倒下重來、每一波開始，D-238）：生命補滿、身上的狀態清掉、動作歸零。反轉欄位與身上戴的東西不動。
+## 劇情的倒下重試不走這裡（那是重讀檢查點、不補滿血）。
+func revive() -> void:
+	if _death_tween != null:
+		_death_tween.kill()
+		_death_tween = null
+	_body.rotation_degrees.x = 0.0
+	health.reset()
+	for sid: String in status_effects.ids():
+		status_effects.clear(sid)
+	_puppet.action = ""
+	_puppet.action_time = 0.0
+	_swing_resolved = true
+	_dodge_left = 0.0
+	_dodge_cooldown = 0.0
+	invulnerable = false
+	velocity = Vector3.ZERO
+	lock_target = null
 
 
 ## 鎖定／解除。回傳鎖定後的目標（解除或找不到時為 null）。

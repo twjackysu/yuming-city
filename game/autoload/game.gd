@@ -44,9 +44,18 @@ const CHECKPOINT_LEVELS: Dictionary = {
 	"rb2_trial_fight": "market",
 }
 const DEFAULT_LEVEL: String = "frostbridge"
+## 戰鬥場用哪個關卡（地下市場示範台前的街）
+const ARENA_LEVEL: String = "market"
 ## `--level=…` 開發旗標用的存檔資料夾（實際寫到 user://saves_dev_reboot）
 const DEV_SAVE_DIR: String = "user://saves_dev"
 const TITLE_SCENE: String = "res://scenes/boot/boot.tscn"
+
+## 戰鬥場（docs/design/11-combat-first.md 3.1，D-238）：true＝地下市場不掛劇情、掛 Arena；不讀不寫劇情存檔。
+## 開發旗標：`-- --arena [--wave=1..4] [--bot=idle|mash|skilled] [--runs=20]`（機器人跑完印 ARENA_SUMMARY 後結束；用法見 scripts/arena_bots.sh）
+var arena_mode: bool = false
+var arena_wave: int = 0
+var arena_bot: String = ""
+var arena_runs: int = 0
 
 var session: GameSession
 var dialogues: DialogueDB
@@ -63,6 +72,11 @@ func _ready() -> void:
 	var level: String = str(args.get("level", ""))
 	if args.has("benchmark"):
 		level = "benchmark"
+	if args.has("arena"):
+		arena_bot = str(args.get("bot", ""))
+		arena_runs = int(args.get("runs", 0))
+		start_arena.call_deferred(true, int(args.get("wave", 1)) - 1)
+		level = ""
 	if level != "":
 		# 開發用：`-- --level=frostbridge` 直接開新遊戲；`--rb-at=start|mist|guardian|market…` 推到那一段（D-204）
 		# benchmark 不開新遊戲（只飛過空的霜橋鎮，也不會寫到玩家的存檔）
@@ -94,13 +108,33 @@ func has_continue() -> bool:
 	return session.has_story_save(GameSession.AUTO_SLOT)
 
 
+## 標題畫面的「戰鬥場」：換一個沒有開劇情的 session（in_story() 是 false：不恢復也不寫生命、藥、存檔），
+## 存檔資料夾照舊——回標題之後「新遊戲／繼續」讀寫的還是原本的地方。load_level=false 給測試用。
+func start_arena(load_level: bool = true, wave: int = 0) -> void:
+	arena_mode = true
+	arena_wave = maxi(wave, 0)
+	_player_dead = false
+	dialogue = null
+	session = GameSession.new(session.db, session.save_dir)
+	if load_level:
+		go_to_level(ARENA_LEVEL)
+
+
+## 戰鬥場原地重來：Arena 把人扶起來之後叫這個（不重讀檢查點、不換場景）
+func arena_revived() -> void:
+	_player_dead = false
+	Engine.time_scale = 1.0
+
+
 func new_game(load_level: bool = true) -> void:
+	arena_mode = false
 	session.new_game()
 	if load_level:
 		go_to_level(level_for_checkpoint(session.state.checkpoint))
 
 
 func continue_game(load_level: bool = true) -> bool:
+	arena_mode = false
 	if session.load_story_slot(GameSession.AUTO_SLOT) != SaveCodec.Status.OK:
 		return false
 	if load_level:
@@ -153,6 +187,9 @@ func on_player_died() -> void:
 		return
 	_player_dead = true
 	player_died.emit()
+	# 戰鬥場：不重讀檢查點，Arena 自己原地重來這一波
+	if arena_mode:
+		return
 	await get_tree().create_timer(RETRY_DELAY_SEC, true, false, true).timeout
 	if _player_dead:
 		retry()
@@ -218,6 +255,7 @@ func _on_dialogue_finished(dialogue_id: String) -> void:
 
 
 func back_to_title() -> void:
+	arena_mode = false
 	Engine.time_scale = 1.0
 	_player_dead = false
 	dialogue = null

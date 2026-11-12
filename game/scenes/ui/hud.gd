@@ -249,6 +249,11 @@ func is_death_shown() -> bool:
 	return _died.visible
 
 
+## 「你倒下了」收掉（戰鬥場原地重來，D-238）
+func hide_death() -> void:
+	_died.hide()
+
+
 ## 畫面上方的一行提示（翻譯 key），停留 seconds 秒後淡出。
 func show_banner(key: String, seconds: float = 3.0) -> void:
 	_banner.text = key
