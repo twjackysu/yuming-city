@@ -2,6 +2,27 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-235　2026-11-12　小戰檢驗（C 的後半第一輪）：護腕「打中人才給麻痺」、毒瓶的霧＝諾恩的補給；商人帶三個人堵在藥店門外，一個拿棍子的只追諾恩
+
+- 決策：
+  1. **新任務 `rb_trial`**（`MAIN_QUESTS` 第五條；`rb_bracer.json` 的 `on_complete` 直接 `start_quest`）：`leave_shop`（檢查點 `rb2_trial`＝店裡櫃台前）→ 走出藥店的門 → 對話 `rb2_trial_ambush`（商人：護腕還來、再賠四十枚，我帶了會丟毒瓶的人；諾恩：正好，我在找地方試）→ `trial_fight`（檢查點 `rb2_trial_fight`＝藥店門外、面向北）→ 三個都倒下 → `rb2.trial_won`（任務做完、自動存檔）→ 1.6 秒後對話 `rb2_trial_won`（席菈、諾恩、彌夏各一句；最後一句設 `rb2.trial_talked`、存一次）→「待續／乾運河」。第 88 輪「試戴完就待續」的存檔在 `GameSession.load_slot` 補開（條件：`rb_bracer` 做完）。
+  2. **護腕怎麼持續給麻痺**：`PlayerController.on_hit_source`（戴上護腕時劇情設成 `"bracer_hit"`）——出手**打中人**（`strike()` 命中數 > 0）才 `apply_source`：1.35 倍、6 秒。同一來源只有一份、時間取長的，所以連打不會越來越快、也不會越來越久；停手 6 秒就退。**麻痺沒有裝在反轉欄位裡就不給**（不然打中一下就把自己麻到不能出手）。
+  3. **丟毒瓶的**（`DemoGuard.KIND_THROWER`，數值 `tuning.json` 的 `demo_thrower`）：生命 70、站在 7～8.5 m 外，前兆 0.9 秒（瓶子舉過頭、越舉越亮）→ 瓶子沿弧線飛 0.55 秒 → 落地才有霧（`PoisonMist`，半徑 2 m、3 秒，來源 `poison_bottle`＝每秒 5 點、3 秒）。**這一下沒有直接傷害**；丟完 2.4 秒才掏得出下一瓶（一瓶 3.45 秒 > 霧 3 秒：場上最多一團）。他永遠瞄諾恩。
+  4. **誰打誰**：三個人裡，第一個拿棍子的與丟毒瓶的 `focus_player`＝只追諾恩；第二個拿棍子的照舊追最近的人（多半是席菈）。席菈開打時喊「拿棍子的我來。丟瓶子的交給你。」
+  5. **開打之前他們已經站在街上**：`leave_shop` 階段人還在店裡時就生出來，`set_waiting(true)`——不動、不在 `enemies`／`damageable` 群組裡（席菈不會先衝過去、鏡頭不會拉遠、鎖定不到）；商人喊完話才放開。商人自己（布景的那個人偶）站到他們後面指著人罵，打輸了兩手舉著退到街的北邊。
+  6. 固定鏡頭 `67-rb2-trial`（`--rb-at=trial_hold`）。
+- 理由：
+  - 2：story-v2 寫「中毒回血＋連擊加速」——「連擊」就是打中才有；一直有的話 12 秒過了要嘛永久加速（沒有代價也沒有節奏），要嘛護腕變裝飾（第 88 輪結尾的樣子）。
+  - 3：這一場的重點是讓玩家自己發現「敵人丟過來的東西是我的藥」。所以毒瓶不能有直接傷害（不然站進去是賭博）、霧要比守衛噴的淡（每秒 5 點：回得動，但擋不住兩個拿棍子的一起打）。
+  - 4：**本機不停住任何人跑了兩次**（諾恩站在門口不動、生命 60）。第一版三個人都追最近的心跳：兩個拿棍子的一起圍席菈，她 160 → 0 只花 16 秒。改成一人一個之後：她 14 秒打倒自己那個、剩 94，回頭幫忙，29 秒三個都倒；諾恩一下都沒打中人、一直站在霧裡被打：生命 60 → 最低 38 → 結束時 77（一團霧的回血大約抵掉一個拿棍子的）。真人會還手，只會更快。
+  - 5：走出門才生出來的話，三個人是在玩家眼前憑空出現的。
+- 影響：
+  - `UndergroundMarketStory`：`_tick_trial()`、`_spawn_trial_gang()`、`start_trial_fight()`、`trial_down()`、`outside_shop()`、`_dev_hold_trial()`；`_tick_bracer()` 最前面那一支改成接 `_tick_trial()`；`AFTER_BRACER_SPAWN` 拿掉（試戴完讀檔＝櫃台前）。「待續」的卡名改成 `RB2_END6_TITLE`（乾運河）；`RB2_END5_TITLE`（兩格一起用）沒人用了，key 留著。
+  - `UndergroundMarket`：`TRIAL_POS`、`TRIAL_FIGHTERS`、`TRIAL_SELLER_POS`、`place_trial_seller()`、任務標記 `TrialStreet`。
+  - `DemoGuard`：`KIND_THROWER`、`_toss()`／`_bottle_landed()`、`_bottle_node()`、`_add_bottle_belt()`、`set_waiting()`、`focus_player`（覆寫 `_nearest_heartbeat()`）。
+  - `statuses.json` 多兩個來源（`bracer_hit`、`poison_bottle`）；`intel.json`／`tuning.json` 多 `demo_thrower`；`Game.CHECKPOINT_LEVELS` 多 `rb2_trial`、`rb2_trial_fight`；`dev_advance` 多 `trial|trial_fight|trial_hold|trial_won`（會設 `rb2.dev_equip`：兩格直接裝好）。
+  - 測試 324 → 327。
+
 ## D-234　2026-11-12　試戴護腕（C 的前半）：麻痺是「不碰生命」的狀態——沒反轉不能出手、反轉＝只有出手變快（上限 1.5 倍）；在彌夏的測試板上試過才解鎖，裝進第二格
 
 - 決策：
