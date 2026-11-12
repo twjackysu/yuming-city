@@ -263,3 +263,43 @@ func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> v
 	assert_eq(old.equipped.size(), 2)
 	assert_eq(old.equipped[1], "")
 	assert_false(old.is_reversed("paralysis"))
+
+
+## 戴著護腕打中人的麻痺（D-235）：每次命中只是重新計時——一份、一樣快、不超過 6 秒；停手 6 秒就退，退了之後不擋出手。
+## 丟毒瓶的霧：沒反轉扣血、反轉回血，比守衛噴的淡。
+func test_bracer_hit_refreshes_without_stacking_and_fades_when_you_stop() -> void:
+	var slots := ReversalSlots.new()
+	var fx := StatusEffects.new(_rules(), slots)
+	var h := _hurt(50.0)
+	slots.unlock("paralysis")
+	assert_true(slots.equip("paralysis", 1))
+	assert_eq(fx.apply_source("bracer_hit"), "start")
+	assert_true(absf(fx.attack_speed() - 1.35) < 0.001)
+	assert_true(absf(fx.remaining("paralysis") - 6.0) < 0.001)
+	# 每 0.5 秒打中一下、連打 20 秒：一直是一份、一樣快、剩下的時間不超過 6 秒
+	for i: int in 40:
+		fx.tick(0.5, h)
+		assert_eq(fx.apply_source("bracer_hit"), "refresh")
+		assert_true(fx.remaining("paralysis") <= 6.0 + 0.001)
+	assert_eq(fx.ids().size(), 1, "只有一份")
+	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "不會越打越快")
+	assert_eq(h.hp, 50.0, "麻痺不碰生命")
+	# 停手：6 秒後退掉，出手回到原本的速度，也不會擋出手
+	fx.tick(5.9, h)
+	assert_true(fx.has("paralysis"))
+	fx.tick(0.2, h)
+	assert_false(fx.has("paralysis"), "停手 6 秒就退")
+	assert_eq(fx.attack_speed(), 1.0)
+	assert_false(fx.blocks_attack())
+	# 丟毒瓶的霧：第一次中毒覺醒 → 回血（每秒 5 點），加上麻痺一共兩種狀態
+	fx.apply_source("poison_bottle")
+	fx.apply_source("bracer_hit")
+	fx.tick(1.0, h)
+	assert_true(absf(h.hp - 55.0) < 0.01, "一秒回 5 點（%s）" % h.hp)
+	assert_eq(fx.ids().size(), 2)
+	# 沒有反轉的人（席菈）：同一團霧是扣血
+	var other := StatusEffects.new(_rules(), null)
+	var oh := _hurt(50.0)
+	other.apply_source("poison_bottle")
+	other.tick(1.0, oh)
+	assert_true(absf(oh.hp - 45.0) < 0.01, "沒反轉：一秒扣 5 點（%s）" % oh.hp)

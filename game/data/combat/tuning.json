@@ -63,6 +63,21 @@
       "jab": {"telegraph": 0.32, "active": 0.12, "recover": 1.8, "range": 1.6, "reach": 1.9, "arc_deg": 70, "damage": 9}
     }
   },
+  "demo_thrower": {
+    "max_hp": 70,
+    "stagger_max": 30,
+    "stagger_kneel": 2.2,
+    "attack_range": 7.0,
+    "telegraph": 0.9,
+    "recover": 2.4,
+    "move_speed": 2.2,
+    "telegraph_stagger_mult": 1.0,
+    "recover_stagger_mult": 2.0,
+    "pattern": ["toss"],
+    "moves": {
+      "toss": {"telegraph": 0.9, "active": 0.15, "recover": 2.4, "range": 8.5, "radius": 2.0, "life": 3.0, "flight": 0.55, "damage": 0}
+    }
+  },
   "caravan": {"speed": 1.1, "stop_sec": 2.0},
   "feel": {
     "hit_stop": 0.06,

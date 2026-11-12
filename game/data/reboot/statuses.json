@@ -20,7 +20,9 @@
 		"barrel_mist": {"status": "poison", "rate": 6.0, "duration": 4.0},
 		"guardian_spray": {"status": "poison", "rate": 8.0, "duration": 3.0},
 		"test_board": {"status": "poison", "rate": 1.0, "duration": 6.0},
-		"bracer_test": {"status": "paralysis", "rate": 1.35, "duration": 12.0}
+		"bracer_test": {"status": "paralysis", "rate": 1.35, "duration": 12.0},
+		"bracer_hit": {"_doc": "戴著護腕打中人（D-235）：每命中一次重新計時，停手 6 秒就退；同一種只有一份，不會越打越快。", "status": "paralysis", "rate": 1.35, "duration": 6.0},
+		"poison_bottle": {"_doc": "丟毒瓶的人丟出來的那一團（D-235）：比守衛噴的淡。", "status": "poison", "rate": 5.0, "duration": 3.0}
 	},
 	"items": {
 		"mist_serpent_poison": {

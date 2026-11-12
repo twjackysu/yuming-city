@@ -49,6 +49,10 @@ var invulnerable: bool = false
 var insight_active: bool = false
 ## 上一次揮擊打中弱點的數量（測試與音效用）
 var last_weak_hits: int = 0
+## 出手打中人時給自己的狀態來源（data/reboot/statuses.json 的 sources；空的＝沒有）。戴上護腕時劇情設成 "bracer_hit"（D-235）
+var on_hit_source: String = ""
+## 這樣給過幾次（測試用）
+var on_hit_applied: int = 0
 ## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
 var lock_target: Node3D = null
 var lock_blocked: float = 0.0
@@ -512,11 +516,24 @@ func strike() -> int:
 				last_weak_hits += 1
 			killed = killed or h.is_dead()
 	if hits > 0:
+		_apply_on_hit_source()
 		Sfx.play_at(self, "blunt_weak" if last_weak_hits > 0 else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
 		var stop_key: String = "feel.hit_stop_kill" if killed else ("feel.hit_stop_weak" if last_weak_hits > 0 else "feel.hit_stop")
 		Game.hit_stop(CombatTuning.num(stop_key, 0.06))
 		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))
 	return hits
+
+
+## 打中人的那一刻，身上戴的東西給的狀態（護腕 → 麻痺，D-235）。只有那個狀態已經裝在反轉欄位裡才給：
+## 沒反轉的麻痺會讓他不能出手，打中一下就把自己鎖住不是這個遊戲要的。同一個來源只有一份，每次命中只是重新計時。
+func _apply_on_hit_source() -> void:
+	if on_hit_source == "" or status_effects == null:
+		return
+	var status_id: String = str(status_effects.rules.source(on_hit_source).get("status", ""))
+	if status_id == "" or not status_effects.is_reversed(status_id):
+		return
+	status_effects.apply_source(on_hit_source)
+	on_hit_applied += 1
 
 
 ## 水平面上的扇形判定（不看高度）。純函式。

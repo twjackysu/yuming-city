@@ -165,3 +165,80 @@ func test_guard_stays_down_and_stops_counting_as_an_enemy() -> void:
 	assert_eq(ParticleLook.untextured(g).size(), 0, "倒地的粉是柔邊圓點")
 	root.queue_free()
 	await tree.process_frame
+
+
+## 丟毒瓶的（小戰檢驗，D-235）：瓶子落地才有霧、這一下沒有直接傷害、霧 3 秒自己散——丟得再久場上也不會越積越多。
+func test_thrower_lobs_a_bottle_that_leaves_a_short_poison_cloud() -> void:
+	var brain := EnemyBrain.new().configure("demo_thrower", "standard")
+	assert_eq(brain.pattern, PackedStringArray(["toss"]), "只有丟瓶子")
+	assert_true(brain.move_num("toss", "range") >= 7.0, "站在後面丟")
+	assert_eq(brain.move_num("toss", "damage"), 0.0, "沒有直接傷害")
+	var cycle: float = brain.move_num("toss", "telegraph") + brain.move_num("toss", "active") + brain.move_num("toss", "recover")
+	assert_true(cycle > brain.move_num("toss", "life"), "一瓶散了才丟得出下一瓶（%s 秒一瓶）" % cycle)
+	var rules: StatusRules = StatusRules.load_default()
+	assert_true(rules.errors.is_empty(), "狀態資料沒有錯：%s" % ", ".join(rules.errors))
+	var src: Dictionary = rules.source(DemoGuard.MIST_SOURCE)
+	assert_eq(str(src.get("status", "")), "poison")
+	assert_true(float(src.get("rate", 0.0)) < float(rules.source("guardian_spray").get("rate", 0.0)), "比守衛噴的淡")
+	for key: String in ["ENEMY_DEMO_THROWER", "MOVE_THROWER_TOSS"]:
+		assert_true(tr(key) != key, "%s 有翻譯" % key)
+	assert_true(EnemyIntel.rows("demo_thrower", {}, "").size() >= 1, "有看穿資料")
+	var root: Node3D = _world()
+	var heart: Node3D = _heart(root, Vector3(0, 0.05, -6.0))
+	var g: DemoGuard = _guard(root, DemoGuard.KIND_THROWER, Vector3(0, 0.05, 0))
+	assert_true(g.is_thrower())
+	assert_false(g.is_bracer())
+	assert_eq(g.intel_id(), "demo_thrower")
+	await tree.process_frame
+	assert_true(g.puppet().hand("R").get_node_or_null("BellHammer") == null, "手上沒有棍子")
+	assert_not_null(g.puppet().hand("R").get_node_or_null("HandBottle"), "手上拿著瓶子")
+	assert_not_null(g.puppet().joint("hips").get_node_or_null("BeltBottle0"), "腰上掛著一排")
+	# 還沒開打（站著等）：不追、不丟、不算敵人；放開才動
+	g.set_waiting(true)
+	assert_false(g.is_in_group("enemies") or g.is_in_group("damageable"))
+	for i: int in 150:
+		await tree.physics_frame
+	assert_eq(g.toss_count, 0, "等的時候不會丟")
+	g.set_waiting(false)
+	assert_true(g.is_in_group("enemies") and g.is_in_group("damageable"))
+	var hp: Health = heart.get_node("Health") as Health
+	var waited: int = 0
+	var lit: float = 0.0
+	while g.toss_count < 1 and waited < 300:
+		await tree.physics_frame
+		waited += 1
+		lit = maxf(lit, g.glow_energy())
+	assert_eq(g.toss_count, 1, "丟出去了")
+	assert_eq(g.last_move, "toss")
+	assert_true(lit > DemoGuard.BOTTLE_ENERGY * 2.0, "舉起來的時候瓶子變亮（%s）" % lit)
+	assert_true(g.last_mist == null, "瓶子還在飛：還沒有霧")
+	assert_not_null(root.get_node_or_null("TossedBottle1"), "飛在空中的瓶子")
+	assert_true(FrostbridgeOpening.flat_distance(g.last_toss_at, heart.global_position) < 0.2, "瞄的是人站的地方")
+	for i: int in int(brain.move_num("toss", "flight") * 60.0) + 8:
+		await tree.physics_frame
+	var mist: PoisonMist = g.last_mist
+	assert_not_null(mist, "落地：一團毒霧")
+	assert_true(root.get_node_or_null("TossedBottle1") == null, "瓶子碎了")
+	assert_eq(mist.source_id, DemoGuard.MIST_SOURCE)
+	assert_true(absf(mist.radius - 2.0) < 0.001 and absf(mist.life - 3.0) < 0.001, "小霧：半徑 2、3 秒")
+	assert_true(FrostbridgeOpening.flat_distance(mist.global_position, heart.global_position) < 0.2, "霧在落點")
+	assert_eq(hp.hp, hp.max_hp, "這一下沒有直接傷害")
+	# 連續丟 10 秒：場上的霧最多兩團（通常一團），不會越積越多
+	var most: int = 0
+	for i: int in 600:
+		await tree.physics_frame
+		var alive: int = 0
+		for n: Node in tree.get_nodes_in_group("poison_mist"):
+			if root.is_ancestor_of(n) and not n.is_queued_for_deletion():
+				alive += 1
+		most = maxi(most, alive)
+	assert_true(g.toss_count >= 3, "一直在丟（%d 瓶）" % g.toss_count)
+	assert_true(most <= 2, "霧不會越積越多（最多同時 %d 團）" % most)
+	assert_false(is_instance_valid(mist) and mist.is_inside_tree(), "第一團早就散了")
+	assert_eq(hp.hp, hp.max_hp, "丟了這麼多瓶，一點直接傷害都沒有")
+	# 倒下：不算敵人、手上的瓶子收掉
+	g.health.apply_damage(9999.0, {})
+	await tree.physics_frame
+	assert_false(g.is_in_group("enemies"))
+	root.queue_free()
+	await tree.process_frame

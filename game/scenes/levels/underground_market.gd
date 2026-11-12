@@ -66,6 +66,16 @@ const DEMO_TONGUE_OUT: float = 1.0
 const DEMO_CROWD_FLEE: Array[Vector3] = [Vector3(-1.9, 0.0, 13.4), Vector3(-1.1, 0.0, 12.5), Vector3(1.9, 0.0, 13.2)]
 const DEMO_FLEE_SEC: float = 1.3
 ## 真的會打人的守衛從哪裡出來、面向哪裡（度）、身高、種類：0＝戴護腕的（從台上跳下來，落在台子南端前面）、1＝拿棍子的（原本站的地方）
+## 小戰檢驗（D-235）：護腕商人帶人回來堵在藥店門外的街上。位置、面向（度）、身高、種類、是不是只追諾恩；
+## 最後一個是丟毒瓶的，站在後面。第一個拿棍子的只追諾恩，第二個追最近的人（多半是席菈）——一人一個
+const TRIAL_POS: Vector3 = Vector3(-0.3, 0.0, SHOP_Z - 6.5)
+const TRIAL_FIGHTERS: Array[Array] = [
+	[Vector3(-1.5, 0.0, SHOP_Z - 8.2), 180.0, 1.1, "club", true],
+	[Vector3(1.0, 0.0, SHOP_Z - 8.8), 180.0, 1.06, "club", false],
+	[Vector3(-0.2, 0.0, SHOP_Z - 11.2), 180.0, 1.0, "thrower", true],
+]
+## 商人自己站在他們後面（指著人罵）
+const TRIAL_SELLER_POS: Vector3 = Vector3(1.7, 0.0, SHOP_Z - 12.6)
 const DEMO_FIGHTERS: Array[Array] = [
 	[Vector3(DEMO_STAGE_FRONT_X + 0.75, 0.0, DEMO_Z + 1.25), -90.0, 1.08, "bracer"],
 	[Vector3(DEMO_STAGE_FRONT_X + 0.5, 0.0, DEMO_Z - DEMO_STAGE_LEN * 0.5 + 0.1), -60.0, 1.1, "club"],
@@ -1181,6 +1191,11 @@ func _build_shop_interior() -> void:
 	board_marker.name = "MishaTestBoard"
 	board_marker.position = BOARD_POS + Vector3(0.0, 0.5, 0.0)
 	add_child(board_marker)
+	# 小戰檢驗（任務 rb_trial，D-235）的任務標記：藥店門外的街上
+	var trial_marker := Marker3D.new()
+	trial_marker.name = "TrialStreet"
+	trial_marker.position = Vector3(TRIAL_POS.x, 1.7, TRIAL_POS.z)
+	add_child(trial_marker)
 
 
 ## 一個藥瓶：瓶身＋瓶頸＋軟木塞。base＝瓶底中心。
@@ -1551,6 +1566,31 @@ func _bracer_on_peg(at: Vector3, peg: float) -> void:
 
 ## 拿在手上／戴在手臂上的護腕（自己一個節點，跟著關節動）。
 ## 戴在前臂上的護腕（掛在人偶的 elbow_L／elbow_R 底下）。諾恩試戴之後手上的那一個也用這個（D-234）。
+## 小戰檢驗：商人從台子後面出來，站到他帶來的人後面、指著藥店（run_off＝打輸了：兩手舉著、退到街的北邊）。
+func place_trial_seller(run_off: bool = false) -> void:
+	if demo_seller == null:
+		return
+	var at: Vector3 = TRIAL_SELLER_POS + (Vector3(0.0, 0.0, -9.0) if run_off else Vector3.ZERO)
+	demo_seller.position = Vector3(at.x, ground_y(at), at.z)
+	demo_seller.rotation_degrees.y = 180.0
+	var o: PoseOverride = demo_seller.get_node_or_null("PoseOverride") as PoseOverride
+	if o == null:
+		return
+	if run_off:
+		o.pose = {
+			"shoulder_R": Vector3(2.35, 0.0, 0.45), "elbow_R": Vector3(1.25, 0.0, 0.0),
+			"shoulder_L": Vector3(2.35, 0.0, -0.45), "elbow_L": Vector3(1.25, 0.0, 0.0),
+		}
+		o.sway = {}
+	else:
+		o.pose = {
+			"shoulder_R": Vector3(1.45, 0.0, 0.1), "elbow_R": Vector3(0.12, 0.0, 0.0),
+			"shoulder_L": Vector3(0.25, 0.0, -0.5), "elbow_L": Vector3(1.3, 0.0, 0.0),
+		}
+		o.sway = {"shoulder_R": Vector3(0.09, 0.0, 0.0)}
+		o.speed = 7.0
+
+
 func worn_bracer() -> Node3D:
 	var worn: Node3D = _bracer_node(1.15)
 	worn.position = Vector3(0.0, -Puppet.FOREARM_LEN * 0.62, 0.0)

@@ -17,5 +17,5 @@
       "done_when": {"flag": "rb2.bracer_done"}
     }
   ],
-  "on_complete": {"set": {"rb2.market_c1_done": true}}
+  "on_complete": {"set": {"rb2.market_c1_done": true}, "start_quest": ["rb_trial"]}
 }

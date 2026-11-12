@@ -94,5 +94,16 @@
         "verified": true
       }
     ]
+  },
+  "demo_thrower": {
+    "name": "ENEMY_DEMO_THROWER",
+    "weakpoints": [],
+    "moves": [
+      {
+        "id": "toss",
+        "label": "MOVE_THROWER_TOSS",
+        "verified": true
+      }
+    ]
   }
 }

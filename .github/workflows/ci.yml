@@ -199,6 +199,7 @@ jobs:
           shot 64-rb2-demo 30 --level=market --rb-at=demo --locale=zh_TW
           shot 65-rb2-fight 30 --level=market --rb-at=fight --locale=zh_TW
           shot 66-rb2-bracer 30 --level=market --rb-at=bracer_read --locale=zh_TW
+          shot 67-rb2-trial 30 --level=market --rb-at=trial_hold --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

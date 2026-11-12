@@ -15,3 +15,4 @@
 64-rb2-demo 30 --level=market --rb-at=demo --locale=zh_TW
 65-rb2-fight 30 --level=market --rb-at=fight --locale=zh_TW
 66-rb2-bracer 30 --level=market --rb-at=bracer_read --locale=zh_TW
+67-rb2-trial 30 --level=market --rb-at=trial_hold --locale=zh_TW

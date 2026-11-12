@@ -5,10 +5,20 @@ extends EnemyActor
 ## - club＝台下拿棍子的：棍子橫掃（swing，寬）、直刺（thrust，窄但遠）。
 ## - bracer＝台上示範、兩手戴著高速護腕的：快拳（jab）前兆很短，但**每打完一拳右手就麻掉、垂著僵住很久**
 ##   （破綻長、破綻中失衡三倍）——商人沒講的副作用，打起來一看就知道。他的左手從頭到尾垂著不動（早就麻了）。
-## 沒有狀態攻擊：中毒回血在這一場幫不上忙。倒下之後躺在原地（是人，不沉進地裡），也不再算敵人。
+## - thrower＝丟毒瓶的（小戰檢驗，D-235）：站在後面，把發綠光的瓶子丟到諾恩腳邊，落地一團小毒霧（3 秒）。
+##   這一下沒有直接傷害——對席菈是中毒，對諾恩是回血。生命最少、丟完要掏下一瓶（破綻長），近身就沒招。
+## 前兩種沒有狀態攻擊：中毒回血在示範場那一場幫不上忙。倒下之後躺在原地（是人，不沉進地裡），也不再算敵人。
 
 const KIND_CLUB: String = "club"
 const KIND_BRACER: String = "bracer"
+const KIND_THROWER: String = "thrower"
+## 丟毒瓶的：深橄欖色的外套（跟另外兩個分得開）、瓶子的綠光（跟藥店、毒霧同一個綠）
+const THROWER_COAT: Color = Color(0.13, 0.17, 0.11)
+const BOTTLE_GLOW: Color = Color(0.45, 1.0, 0.4)
+const BOTTLE_ENERGY: float = 1.6
+const MIST_SOURCE: String = "poison_bottle"
+## 瓶子飛出去的弧線最高點比兩端高多少
+const TOSS_ARC: float = 1.5
 const COAT: Color = Color(0.12, 0.14, 0.19)
 const TRIM: Color = Color(0.5, 0.47, 0.42)
 ## 護腕箍上的冷光（跟台上桌子上那三個同一個顏色）；麻掉的時候變成一閃一閃的暗紅
@@ -31,6 +41,16 @@ var strike_count: int = 0
 var last_move: String = ""
 ## 截圖用：停在某個姿勢（不追、不出招）
 var debug_hold: bool = false
+## 還沒開打：站在原地等（不追、不出招、不算敵人——席菈不會先衝過去、鏡頭不會拉遠）。用 set_waiting() 改
+var waiting: bool = false
+## true＝只追諾恩（小戰檢驗：商人的人是來找他討護腕的。都追「最近的心跳」的話，兩個拿棍子的會一起圍席菈——
+## 諾恩站著不動的時候她 16 秒就倒了，D-235）
+var focus_player: bool = false
+## 丟毒瓶的：丟過幾瓶、最後一瓶落地的那團霧（還在飛的時候是 null）、最後一瓶瞄的落點
+var toss_count: int = 0
+var last_mist: PoisonMist
+var last_toss_at: Vector3 = Vector3.ZERO
+var _hand_bottle: Node3D
 
 var _puppet: Puppet
 var _glow_mat: StandardMaterial3D
@@ -47,7 +67,26 @@ class PoseDriver extends Node:
 
 
 func intel_id() -> String:
-	return "demo_bracer" if kind == KIND_BRACER else "demo_guard"
+	match kind:
+		KIND_BRACER:
+			return "demo_bracer"
+		KIND_THROWER:
+			return "demo_thrower"
+	return "demo_guard"
+
+
+func is_thrower() -> bool:
+	return kind == KIND_THROWER
+
+
+## 開打之前站著等／開打。等的時候不在 enemies、damageable 群組裡（鎖定、席菈、戰鬥 HUD、諾恩的揮擊都看不到他）。
+func set_waiting(on: bool) -> void:
+	waiting = on
+	for g: String in ["enemies", "damageable"]:
+		if on:
+			remove_from_group(g)
+		elif not health.is_dead():
+			add_to_group(g)
 
 
 func is_bracer() -> bool:
@@ -109,7 +148,13 @@ func _hit_height() -> float:
 
 
 func _held(_delta: float) -> bool:
-	return debug_hold
+	return debug_hold or waiting
+
+
+func _nearest_heartbeat() -> Node3D:
+	if focus_player and _player != null and is_instance_valid(_player) and not _player.health.is_dead():
+		return _player
+	return super._nearest_heartbeat()
 
 
 ## 出招：前方扇形裡的心跳（諾恩、席菈）受傷。每一招的距離、角度、傷害在 tuning.json。
@@ -117,6 +162,9 @@ func _on_strike() -> void:
 	var move: String = brain.move_id
 	strike_count += 1
 	last_move = move
+	if is_thrower():
+		_toss()
+		return
 	var fwd: Vector3 = forward()
 	var origin: Vector3 = global_position
 	if is_inside_tree():
@@ -127,6 +175,55 @@ func _on_strike() -> void:
 		func(p: Vector3) -> bool: return PlayerController.in_strike_arc(origin, fwd, p, reach, arc))
 
 
+## 丟毒瓶：瞄諾恩腳邊（他不在就瞄最近的人），瓶子沿弧線飛 flight 秒，落地才有霧。沒有直接傷害。
+## 霧不分敵我（PoisonMist）：站進去就中毒——對席菈是扣血，對裝了中毒的諾恩是回血。
+func _toss() -> void:
+	var parent: Node = get_parent()
+	if parent == null or not is_inside_tree():
+		return
+	var aim: Node3D = _player if _player != null and is_instance_valid(_player) else target
+	if aim == null:
+		return
+	toss_count += 1
+	last_mist = null
+	var from: Vector3 = global_position + forward() * 0.35 + Vector3.UP * 1.9 * height
+	var to := Vector3(aim.global_position.x, global_position.y, aim.global_position.z)
+	last_toss_at = to
+	var flight: float = maxf(brain.move_num("toss", "flight", 0.55), 0.05)
+	Sfx.play_at(parent, "whoosh", from, -8.0, 0.08, 5.0)
+	var bottle: Node3D = _bottle_node(1.45, BOTTLE_ENERGY * 2.2)
+	bottle.name = "TossedBottle%d" % toss_count
+	bottle.position = from
+	parent.add_child(bottle)
+	var fly := func(k: float) -> void:
+		if is_instance_valid(bottle):
+			bottle.global_position = from.lerp(to, k) + Vector3.UP * TOSS_ARC * 4.0 * k * (1.0 - k)
+			bottle.rotation.x = k * 9.0
+	var t: Tween = bottle.create_tween()
+	t.tween_method(fly, 0.0, 1.0, flight)
+	t.tween_callback(_bottle_landed.bind(bottle, to, toss_count))
+
+
+func _bottle_landed(bottle: Node3D, at: Vector3, n: int) -> void:
+	var parent: Node = bottle.get_parent() if is_instance_valid(bottle) else null
+	if is_instance_valid(bottle):
+		bottle.queue_free()
+	if parent == null:
+		return
+	var m: PoisonMist = PoisonMist.create(brain.move_num("toss", "radius", 2.0), MIST_SOURCE, brain.move_num("toss", "life", 3.0))
+	m.name = "BottleMist%d_%d" % [get_instance_id() % 1000, n]
+	m.position = at
+	parent.add_child(m)
+	last_mist = m
+	Sfx.play_at(parent, "poison_hiss", at + Vector3.UP * 0.3, -2.0, 0.06, 8.0)
+	# 碎掉的那一下：一小圈往外的淡綠粉（0.5 秒就散）
+	var ps: CPUParticles3D = puff_build(Vector3(0.25, 0.05, 0.25), 22, Color(0.62, 0.95, 0.55, 0.75))
+	ps.spread = 80.0
+	ps.initial_velocity_min = 1.4
+	ps.initial_velocity_max = 3.0
+	puff_start(ps, at + Vector3.UP * 0.12)
+
+
 func _update_look() -> void:
 	_time += get_physics_process_delta_time()
 	if _puppet != null:
@@ -135,6 +232,14 @@ func _update_look() -> void:
 	if _glow_mat == null:
 		return
 	var p: float = brain.telegraph_progress()
+	if is_thrower():
+		# 手上的瓶子：前兆越舉越亮；丟出去之後手上是空的，破綻過一半才掏出下一瓶
+		var empty: bool = brain.state == EnemyBrain.State.STRIKE or brain.state == EnemyBrain.State.DEAD \
+			or (brain.state == EnemyBrain.State.RECOVER and brain.time_in_state < brain.recover_sec * 0.55)
+		if _hand_bottle != null:
+			_hand_bottle.visible = not empty
+		_glow_mat.emission_energy_multiplier = BOTTLE_ENERGY + (p * p * 5.0 if brain.state == EnemyBrain.State.TELEGRAPH else 0.0)
+		return
 	if not is_bracer():
 		var lit: float = 4.5 if brain.state == EnemyBrain.State.STRIKE else p * p * 5.0
 		_glow_mat.emission_energy_multiplier = 0.12 + lit
@@ -198,6 +303,12 @@ func _pose_windup(move: String, p: float) -> void:
 			_rot("elbow_R", Vector3(0.25 + 0.5 * p, 0.0, 0.0))
 			_rot("chest", Vector3(0.0, -0.7 * p, 0.0))
 			_rot("spine", Vector3(-0.05, -0.2 * p, 0.0))
+		"toss":
+			# 瓶子舉過頭、往後拉（整隻手舉到頭後面），上身往後轉
+			_rot("shoulder_R", Vector3(0.5 + 2.55 * p, 0.0, 0.2))
+			_rot("elbow_R", Vector3(0.3 + 0.75 * p, 0.0, 0.0))
+			_rot("chest", Vector3(-0.12 * p, -0.4 * p, 0.0))
+			_rot("shoulder_L", Vector3(0.9 * p, 0.0, -0.15))
 		"thrust":
 			# 手肘往後收、棍頭對著人
 			_rot("shoulder_R", Vector3(-0.75 * p, 0.0, 0.2))
@@ -219,6 +330,13 @@ func _pose_strike(move: String, k: float) -> void:
 			_rot("elbow_R", Vector3(0.25 - 0.1 * k, 0.0, 0.0))
 			_rot("chest", Vector3(0.12 * k, 0.75 * k, 0.0))
 			_rot("spine", Vector3(-0.05, 0.25 * k, 0.0))
+		"toss":
+			# 手往前下方甩出去、上身跟著往前壓
+			_rot("shoulder_R", Vector3(1.05 * k, 0.0, 0.12))
+			_rot("elbow_R", Vector3(0.25 - 0.15 * k, 0.0, 0.0))
+			_rot("chest", Vector3(0.32 * k, 0.4 * k, 0.0))
+			_rot("thigh_L", Vector3(0.4 * k, 0.0, 0.0))
+			_rot("knee_L", Vector3(-0.05 - 0.35 * k, 0.0, 0.0))
 		"thrust":
 			_rot("shoulder_R", Vector3(1.4 * k, 0.0, 0.12))
 			_rot("elbow_R", Vector3(0.25 - 0.2 * k, 0.0, 0.0))
@@ -294,7 +412,7 @@ func _build_body() -> void:
 	ContactShadow.attach(self, 0.6, 0.5)
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
-	_puppet.coat_color = COAT
+	_puppet.coat_color = THROWER_COAT if is_thrower() else COAT
 	_puppet.trim_color = TRIM
 	_puppet.scale = Vector3.ONE * height
 	_body.add_child(_puppet)
@@ -304,7 +422,20 @@ func _build_body() -> void:
 	_glow_mat.albedo_color = Color(0.2, 0.2, 0.22)
 	_glow_mat.emission_enabled = true
 	var club: Node3D = _puppet.hand("R").get_node_or_null("BellHammer") as Node3D if _puppet.hand("R") != null else null
-	if is_bracer():
+	if is_thrower():
+		if club != null:
+			club.queue_free()
+		_glow_mat.albedo_color = Color(0.2, 0.42, 0.2)
+		_glow_mat.emission = BOTTLE_GLOW
+		_glow_mat.emission_energy_multiplier = BOTTLE_ENERGY
+		_glow_mat.roughness = 0.2
+		if _puppet.hand("R") != null:
+			_hand_bottle = _bottle_node(1.45, -1.0)
+			_hand_bottle.name = "HandBottle"
+			_hand_bottle.position = Vector3(0.0, -0.05, 0.0)
+			_puppet.hand("R").add_child(_hand_bottle)
+		_add_bottle_belt()
+	elif is_bracer():
 		if club != null:
 			club.queue_free()
 		_glow_mat.emission = BRACER_GLOW
@@ -341,6 +472,66 @@ func _build_body() -> void:
 	driver.name = "PoseDriver"
 	driver.guard = self
 	_puppet.add_child(driver)
+
+
+## 一個毒瓶：圓肚子＋細頸＋軟木塞。energy < 0＝用手上那一瓶共用的材質（跟著前兆變亮）；不然自己一個固定亮度的材質。
+func _bottle_node(size: float, energy: float) -> Node3D:
+	var root := Node3D.new()
+	var mat: StandardMaterial3D = _glow_mat
+	if energy >= 0.0 or mat == null:
+		mat = StandardMaterial3D.new()
+		mat.albedo_color = Color(0.2, 0.42, 0.2)
+		mat.roughness = 0.2
+		mat.emission_enabled = true
+		mat.emission = BOTTLE_GLOW
+		mat.emission_energy_multiplier = maxf(energy, 0.0)
+	var belly := SphereMesh.new()
+	belly.radius = 0.062 * size
+	belly.height = 0.13 * size
+	belly.radial_segments = 10
+	belly.rings = 5
+	belly.material = mat
+	var b := MeshInstance3D.new()
+	b.name = "Belly"
+	b.mesh = belly
+	root.add_child(b)
+	var neck := CylinderMesh.new()
+	neck.top_radius = 0.02 * size
+	neck.bottom_radius = 0.028 * size
+	neck.height = 0.07 * size
+	neck.radial_segments = 8
+	neck.material = mat
+	var n := MeshInstance3D.new()
+	n.mesh = neck
+	n.position.y = 0.09 * size
+	root.add_child(n)
+	var cork := CylinderMesh.new()
+	cork.top_radius = 0.022 * size
+	cork.bottom_radius = 0.022 * size
+	cork.height = 0.03 * size
+	cork.radial_segments = 8
+	var cork_mat := StandardMaterial3D.new()
+	cork_mat.albedo_color = Color(0.5, 0.36, 0.22)
+	cork_mat.roughness = 0.9
+	cork.material = cork_mat
+	var c := MeshInstance3D.new()
+	c.mesh = cork
+	c.position.y = 0.135 * size
+	root.add_child(c)
+	return root
+
+
+## 丟毒瓶的腰上掛一排瓶子（四瓶，固定的暗綠光）：遠遠看就知道這個人是丟瓶子的。
+func _add_bottle_belt() -> void:
+	var hips: Node3D = _puppet.joint("hips")
+	if hips == null:
+		return
+	for i: int in 4:
+		var bottle: Node3D = _bottle_node(0.8, 0.9)
+		bottle.name = "BeltBottle%d" % i
+		var a: float = (float(i) - 1.5) * 0.42
+		bottle.position = Vector3(sin(a) * 0.2, 0.02, -cos(a) * 0.19)
+		hips.add_child(bottle)
 
 
 ## 胸前斜掛的布條（三段：紅、白、紅）＋兩隻上臂各一圈紅布。掛在胸口的關節上，跟著上身轉。

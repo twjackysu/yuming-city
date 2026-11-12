@@ -430,10 +430,45 @@ func test_new_game_to_lift_in_one_run() -> void:
 	await _run_dialogue(market)
 	await _frames(4)
 	assert_true(s.quests.is_done("rb_bracer"))
+	assert_false(market.has_node("ChapterCard"), "試戴完不是結尾：小戰檢驗（D-235）")
+	# 走出藥店 → 商人帶人堵在街上、喊話 → 開打 → 站進毒瓶的霧裡回血、打中人出手加速 → 三個都倒下 → 席菈、彌夏各一句 → 待續
+	assert_eq(s.quests.stage_of("rb_trial"), "leave_shop")
+	_stand(market, UndergroundMarket.SHOP_DOOR + Vector3(0.0, 0.0, -1.6))
+	await _frames(4)
+	assert_true(_talking(), "商人喊話")
+	await _run_dialogue(market)
+	await _frames(4)
+	assert_true(mstory.trial_started, "開打")
+	assert_eq(mstory.trial_guards.size(), 3)
+	for tg: DemoGuard in mstory.trial_guards:
+		tg.set_physics_process(false)
+	# 兩格一起用：丟毒瓶的那種霧落在腳邊 → 回血（不是扣血）；打中人 → 出手加速。兩種狀態各一份
+	p2.status_effects.clear("poison")
+	p2.status_effects.clear("paralysis")
+	p2.health.hp = p2.health.max_hp * 0.6
+	var cloud: PoisonMist = PoisonMist.create(2.0, DemoGuard.MIST_SOURCE, 3.0)
+	cloud.position = p2.global_position
+	market.add_child(cloud)
+	mstory.trial_guards[0].global_position = p2.global_position + Vector3(0.2, 0.0, 0.0)
+	assert_eq(p2.strike(), 1, "打中拿棍子的")
+	var hp_in_cloud: float = p2.health.hp
+	await _frames(60)
+	assert_true(p2.status_effects.is_reversed("poison") and p2.status_effects.has("poison"), "霧裡：中毒（反轉）")
+	assert_true(p2.health.hp > hp_in_cloud + 3.0, "站在毒霧裡生命往上（%s → %s）" % [hp_in_cloud, p2.health.hp])
+	assert_true(p2.status_effects.attack_speed() > 1.2, "同時出手加速")
+	assert_eq(p2.status_effects.to_array().size(), 2, "一個中毒＋一個麻痺")
+	for tg: DemoGuard in mstory.trial_guards:
+		tg.health.apply_damage(tg.health.hp, {"source": p2})
+	await _frames(4)
+	assert_true(s.quests.is_done("rb_trial"), "三個都倒下：這一段做完")
+	await _frames(int(UndergroundMarketStory.WON_TALK_SEC * 60.0) + 12)
+	assert_true(_talking(), "席菈開口")
+	await _run_dialogue(market)
+	await _frames(4)
 	var end_card: ChapterCard = market.get_node_or_null("ChapterCard") as ChapterCard
 	assert_not_null(end_card, "待續的卡")
 	if end_card != null:
-		assert_eq(end_card.title_text(), tr("RB2_END5_TITLE"))
+		assert_eq(end_card.title_text(), tr("RB2_END6_TITLE"))
 		end_card.finish()
 	assert_eq(ended[0], 1, "卡播完 → 回標題")
 	# 一路走完：狀態不會留一堆（每種最多一份）、藥還剩一瓶、工錢只有一份
