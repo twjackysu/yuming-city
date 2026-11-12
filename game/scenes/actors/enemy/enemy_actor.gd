@@ -18,6 +18,8 @@ var difficulty: String = ""
 var move_speed: float = 2.6
 ## true＝只追諾恩（他倒下才找別人）。預設還是「最近的心跳」。小戰檢驗的第一個人（D-235）與戰鬥場的每一個敵人（D-239）會開：
 ## 都追最近的話，敵人圍著席菈打，諾恩站著不動也沒事。
+## 硬撐中挨了幾下（只扣幾成的那種，D-242；統計與測試用）
+var armored_hits: int = 0
 var focus_player: bool = false
 ## 腳步聲（D-187）：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
 var footsteps: Footsteps
@@ -69,6 +71,7 @@ func _ready() -> void:
 	health = Health.new(CombatTuning.num(intel_id() + ".max_hp", 60.0))
 	health.name = "Health"
 	add_child(health)
+	health.damage_scale = _damage_scale
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	_build_body()
@@ -321,11 +324,23 @@ func _first_player() -> PlayerController:
 	return null
 
 
+## 硬撐中（整個人發紅）挨打只扣幾成（D-242）；順便在 info 留記號，_on_damaged 換一個「打在硬東西上」的聲音。
+func _damage_scale(info: Dictionary) -> float:
+	var k: float = brain.armor_mult()
+	if k < 1.0:
+		info["braced"] = true
+	return k
+
+
 func _on_damaged(_amount: float, info: Dictionary) -> void:
 	var weak: bool = str(info.get("weak", "")) != ""
 	if weak:
 		_flash_weak()
 	_hit_fx(info)
+	if bool(info.get("braced", false)):
+		armored_hits += 1
+		if is_inside_tree():
+			Sfx.play_at(get_parent(), ARMOR_SFX, global_position + Vector3.UP * _hit_height(), ARMOR_DB, 0.1, 6.0)
 	brain.add_stagger(float(info.get("stagger", 0.0)))
 	# 只有諾恩打的會讓他後仰（席菈打的也算的話，她一個人就能把敵人鎖死）
 	var src: Node3D = info.get("source") as Node3D
@@ -349,6 +364,9 @@ const BRACE_COLOR: Color = Color(1.0, 0.16, 0.05)
 const BRACE_SFX: String = "brace_warn"
 const BRACE_DB: float = -2.0
 const INTERRUPT_SFX: String = "interrupt"
+## 打在硬撐中的人身上（只扣幾成，D-242）：一聲悶的鐵響，跟平常命中的「咚」分得開
+const ARMOR_SFX: String = "iron_clang"
+const ARMOR_DB: float = -11.0
 const INTERRUPT_DB: float = -6.0
 ## 平常的亮度、一秒跳幾下、跳多深
 const BRACE_STRENGTH: float = 1.0

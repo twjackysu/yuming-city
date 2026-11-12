@@ -98,6 +98,16 @@ var _lunge_target: Node3D
 ## 滑過幾公尺（測試用）
 var lunge_moved: float = 0.0
 var _death_tween: Tween
+## 挨打的硬直（D-242）：被直接打中（不是狀態扣血）的那一下，出到一半的招沒了、`noen.hurt_stun` 秒內不能出手也不能閃、
+## 被往打他的人的反方向推 `noen.hurt_push` 公尺、上半身往後仰一下。0＝沒有（劇情那 20 分鐘；戰鬥場在 profiles.arena 打開）。
+## 沒有這個的話，挨打除了扣血沒有任何代價：站在原地一直按出手，被打中的同一瞬間還在打人。
+const HURT_LEAN_DEG: float = 13.0
+var hurt_left: float = 0.0
+## 這一輩子進過幾次硬直（測試與統計用）
+var hurt_count: int = 0
+var _hurt_dir: Vector3 = Vector3.ZERO
+var _hurt_speed: float = 0.0
+var _hurt_tween: Tween
 var _shake: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
@@ -130,6 +140,7 @@ func _ready() -> void:
 	health.name = "Health"
 	health.invulnerable_check = is_invulnerable
 	health.died.connect(_on_died)
+	health.damaged.connect(_on_hurt)
 	add_child(health)
 	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
 	heal_fx = HealMotes.attach(self, health)
@@ -206,6 +217,9 @@ func _physics_process(delta: float) -> void:
 		use_potion()
 	if talking:
 		pass
+	elif hurt_left > 0.0:
+		# 挨打的硬直：不能出手、不能閃（D-242）
+		pass
 	elif Input.is_action_just_pressed("dodge") and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
 		_dodge_dir = dir if dir.length() > 0.1 else -_body.global_basis.z
 		_dodge_dir = _dodge_dir.normalized()
@@ -220,7 +234,10 @@ func _physics_process(delta: float) -> void:
 	_update_swing()
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	if _dodge_left > 0.0:
+	if hurt_left > 0.0:
+		hurt_left -= delta
+		horizontal = _hurt_dir * _hurt_speed
+	elif _dodge_left > 0.0:
 		_dodge_left -= delta
 		invulnerable = _dodge_left > DODGE_TIME - DODGE_INVULN
 		horizontal = _dodge_dir * DODGE_SPEED
@@ -314,7 +331,36 @@ func _write_vitals(st: GameState) -> void:
 	st.reversal = reversal.to_dict()
 
 
+## 被直接打中（D-242）。狀態扣血（中毒）不走這裡。死的那一下不算（倒下的動作接手）。
+func _on_hurt(_amount: float, info: Dictionary) -> void:
+	var stun: float = CombatTuning.num("noen.hurt_stun", 0.0)
+	if stun <= 0.0 or health.is_dead():
+		return
+	hurt_left = stun
+	hurt_count += 1
+	# 出到一半的招沒了：還沒判定的那一下不會打出去
+	if _puppet.action == "attack":
+		_puppet.action = ""
+		_puppet.action_time = 0.0
+	_swing_resolved = true
+	_lunge_left = 0.0
+	var src: Node3D = info.get("source") as Node3D
+	var away: Vector3 = global_position - src.global_position if src != null and is_instance_valid(src) else _body.global_basis.z
+	away.y = 0.0
+	_hurt_dir = away.normalized() if away.length() > 0.01 else _body.global_basis.z
+	_hurt_speed = CombatTuning.num("noen.hurt_push", 0.0) / stun
+	if _hurt_tween != null:
+		_hurt_tween.kill()
+	_hurt_tween = create_tween()
+	_hurt_tween.tween_property(_body, "rotation_degrees:x", HURT_LEAN_DEG, stun * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_hurt_tween.tween_property(_body, "rotation_degrees:x", 0.0, stun * 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
 func _on_died() -> void:
+	if _hurt_tween != null:
+		_hurt_tween.kill()
+		_hurt_tween = null
+	hurt_left = 0.0
 	var t := create_tween()
 	_death_tween = t
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -327,6 +373,10 @@ func revive() -> void:
 	if _death_tween != null:
 		_death_tween.kill()
 		_death_tween = null
+	if _hurt_tween != null:
+		_hurt_tween.kill()
+		_hurt_tween = null
+	hurt_left = 0.0
 	_body.rotation_degrees.x = 0.0
 	health.reset()
 	for sid: String in status_effects.ids():

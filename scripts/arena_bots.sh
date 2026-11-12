@@ -36,8 +36,9 @@ import re, sys, pathlib
 out, waves, bots = pathlib.Path(sys.argv[1]), sys.argv[2].split(), sys.argv[3].split()
 names = {"idle": "站著不動", "mash": "亂按", "skilled": "會打的"}
 # 最後三欄（D-241）：每場平均打斷敵人的前兆幾次、敵人「硬撐」（整個人變紅＝該閃了）幾次、失衡跪下幾次——從每場那一行算
-print("| 波 | 機器人 | 場數 | 勝率 | 打不完 | 贏的平均秒數 | 輸的平均秒數 | 被打中幾下 | 諾恩傷害占比 | 打斷前兆 | 敵人變紅 | 敵人跪下 |")
-print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+# 最後一欄（D-242）：每場平均打倒幾個／這一波總共幾個（一波的人分批進場；輸的時候看得出撐到第幾個）
+print("| 波 | 機器人 | 場數 | 勝率 | 打不完 | 贏的平均秒數 | 輸的平均秒數 | 被打中幾下 | 諾恩傷害占比 | 打斷前兆 | 敵人變紅 | 敵人跪下 | 打倒／總共 |")
+print("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 for w in waves:
     for b in bots:
         line = [l for l in (out / f"{w}-{b}.log").read_text(encoding="utf-8").splitlines() if l.startswith("ARENA_SUMMARY")][-1]
@@ -47,5 +48,5 @@ for w in waves:
         wins = float(f["win_rate"])
         win_sec = f["avg_win_sec"] if wins > 0 else "—"
         lose_sec = f["avg_lose_sec"] if wins < 100 and float(f["avg_lose_sec"]) > 0 else "—"
-        print(f"| {w} | {names.get(b, b)} | {f['runs']} | {wins:.0f}% | {f['timeout']} | {win_sec} | {lose_sec} | {f['avg_hits_taken']} | {f['noen_share']}% | {avg('interrupts'):.1f} | {avg('braces'):.1f} | {avg('kneels'):.1f} |")
+        print(f"| {w} | {names.get(b, b)} | {f['runs']} | {wins:.0f}% | {f['timeout']} | {win_sec} | {lose_sec} | {f['avg_hits_taken']} | {f['noen_share']}% | {avg('interrupts'):.1f} | {avg('braces'):.1f} | {avg('kneels'):.1f} | {avg('downed'):.1f}／{avg('total'):.0f} |")
 PY

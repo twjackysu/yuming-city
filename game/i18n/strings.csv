@@ -7,7 +7,8 @@ ARENA_WAVE_START,Wave {n} of {total},第 {n} 波／共 {total} 波
 ARENA_WAVE_DONE,"Wave {n} cleared: {sec} s, hit {hits} times",第 {n} 波打完：{sec} 秒，被打中 {hits} 下
 ARENA_ALL_DONE,"All waves cleared: {sec} s, hit {hits} times. Back to wave 1.",全部打完：共 {sec} 秒，被打中 {hits} 下。從第一波再來
 ARENA_RETRY,Down. Same wave again.,倒下了。這一波重來
-ARENA_TIP_BRACE,Glowing red: you can't interrupt this one. Dodge.,他發紅了：這一下打不斷，閃開
+ARENA_REINFORCE,"{n} more coming. {left} left in this wave.",又來了 {n} 個。這一波還剩 {left} 個
+ARENA_TIP_BRACE,"Glowing red: can't be interrupted and barely feels your hits. Dodge, then hit back.",他發紅了：打不斷、也打不痛。閃開，等他打完再打
 MENU_SETTINGS,Settings,設定
 MENU_QUIT,Quit,離開
 MENU_LANGUAGE,Language,語言

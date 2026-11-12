@@ -78,6 +78,16 @@ func test_wave_data_is_valid_and_gets_harder() -> void:
 	assert_eq(((waves[2] as Dictionary)["enemies"] as Array).size(), 3, "第三波三個人")
 	assert_eq(str((((waves[3] as Dictionary)["enemies"] as Array)[0] as Dictionary)["kind"]), "guardian", "最後一波是南街守衛")
 	assert_true(Arena.validate({"waves": [{"id": "x", "enemies": [{"kind": "dragon", "pos": [9.0, 0.0]}]}]}).size() >= 2, "不認得的種類、不在街上的位置都會被抓到")
+	# 一波的人分批進場（D-242）：前三波總共 5～8 個人、一波比一波多；頭目那一波只有牠
+	var sizes: Array[int] = []
+	for w: Variant in waves:
+		sizes.append(Arena.wave_size(w as Dictionary))
+	assert_true(sizes[0] >= 5 and sizes[2] <= 8, "一般波 5～8 個人（%s）" % str(sizes))
+	assert_true(sizes[0] <= sizes[1] and sizes[1] <= sizes[2], "一波比一波多（%s）" % str(sizes))
+	assert_eq(sizes[3], 1, "頭目沒有後援")
+	var bad: Dictionary = {"waves": [{"id": "x", "enemies": [{"kind": "club", "pos": [0.0, 24.0]}],
+			"reinforcements": [{"enemies": [{"kind": "guardian", "x": 9.0, "ahead": 2.0}]}, {"when_alive_at_most": 1, "enemies": []}]}]}
+	assert_true(Arena.validate(bad).size() >= 5, "後援寫錯都抓得到：沒寫門檻、種類、不在街上、太近、空的一批（%s）" % ", ".join(Arena.validate(bad)))
 
 
 func test_title_button_starts_the_arena_without_touching_story_saves() -> void:
@@ -401,11 +411,18 @@ func test_clearing_a_wave_records_the_fight_and_moves_on() -> void:
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	var hud: Hud = level.get_node("Hud") as Hud
 	await _frames(30)
-	for e: EnemyActor in arena.enemies:
-		e.health.apply_damage(e.health.max_hp, {"source": player})
-	await _frames(2)
+	# 一批一批打倒（後面幾批在場上剩一個以下的時候進場，D-242）
+	var rounds: int = 0
+	while arena.fighting and rounds < 20:
+		rounds += 1
+		for e: EnemyActor in arena.enemies:
+			if is_instance_valid(e) and not e.health.is_dead():
+				e.health.apply_damage(e.health.max_hp, {"source": player})
+		await _frames(2)
 	assert_false(arena.fighting)
+	assert_true(rounds >= 2, "不是第一批倒了就算贏（打了 %d 輪）" % rounds)
 	assert_eq(str(arena.results[0]["result"]), "win")
+	assert_eq(int(arena.results[0]["downed"]), arena.wave_total(), "每一個都倒了")
 	assert_true(float(arena.results[0]["time"]) > 0.4, "有記用時")
 	assert_true(absf(float(arena.results[0]["noen_share"]) - 1.0) < 0.01, "都是諾恩打的")
 	assert_true(hud.banner_text().contains("1"), "打完有一行字（第幾波、幾秒、被打中幾下）：%s" % hud.banner_text())
@@ -425,6 +442,136 @@ func test_clearing_a_wave_records_the_fight_and_moves_on() -> void:
 	assert_true((arena.enemies[0] as Undertaker).guardian_mode)
 	assert_true(absf(arena.enemies[0].health.max_hp - CombatTuning.num("undertaker.guardian_hp", 480.0)) < 0.01, "守衛的生命照 tuning.json")
 	await _close(level)
+
+
+## 一波的人分批進場（D-242）：場上剩一個以下，下一批從街的北邊走進來；每一批都倒了才算贏。
+func test_reinforcements_walk_in_and_the_wave_ends_only_when_every_batch_is_down() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_eq(arena.enemies.size(), 2, "開場兩個人")
+	assert_eq(arena.wave_total(), 5, "第一波總共五個")
+	assert_eq(arena.enemies_left(), 5)
+	assert_true(arena.has_reinforcements())
+	await _frames(3)
+	assert_eq(arena.enemies.size(), 2, "兩個都還站著：沒有人進場")
+	# 倒一個：下一個進場
+	arena.enemies[0].health.apply_damage(999.0, {"source": player})
+	await _frames(3)
+	assert_eq(arena.enemies.size(), 3, "場上剩一個：下一批（一個人）進場，而且只進一批")
+	assert_eq(arena.enemies_left(), 4)
+	var fresh: EnemyActor = arena.enemies[2]
+	var ahead: float = player.global_position.z - fresh.global_position.z
+	assert_true(ahead >= Arena.REINFORCE_AHEAD.x - 1.5 and ahead <= Arena.REINFORCE_AHEAD.y, "從諾恩北邊走進來，不是憑空出現在臉上（%.1f m）" % ahead)
+	assert_true(absf(fresh.global_position.x) <= UndergroundMarket.STREET_HALF, "在街上")
+	assert_true(fresh.is_in_group("enemies") and fresh.focus_player, "一進場就是敵人、找諾恩")
+	assert_true(hud.banner_text().contains("4"), "畫面上講這一波還剩幾個：%s" % hud.banner_text())
+	assert_false(hud.banner_text().contains("{"), "數字有填進去")
+	assert_true(tr(Arena.REINFORCE_KEY) != Arena.REINFORCE_KEY, "有翻譯")
+	# 他自己會走過來（不用等諾恩靠近）
+	var d0: float = fresh.global_position.distance_to(player.global_position)
+	await _frames(60)
+	assert_true(fresh.global_position.distance_to(player.global_position) < d0 - 1.0,
+			"一秒走近了 1 m 以上（%.1f → %.1f）" % [d0, fresh.global_position.distance_to(player.global_position)])
+	# 場上的人一起倒：不算贏，後面的人接著進場
+	for e: EnemyActor in arena.enemies:
+		if not e.health.is_dead():
+			e.health.apply_damage(999.0, {"source": player})
+	await _frames(3)
+	assert_true(arena.fighting, "還有人沒進場：這一波還沒打完")
+	assert_eq(arena.enemies.size(), 5, "剩下兩批都進場了")
+	assert_false(arena.has_reinforcements())
+	for e: EnemyActor in arena.enemies:
+		if not e.health.is_dead():
+			e.health.apply_damage(999.0, {"source": player})
+	await _frames(2)
+	assert_false(arena.fighting, "五個都倒了才打完")
+	assert_eq(str(arena.results[0]["result"]), "win")
+	assert_eq(int(arena.results[0]["downed"]), 5)
+	assert_eq(int(arena.results[0]["total"]), 5)
+	# 重來這一波：後援也重新算
+	arena.start_wave(0)
+	await _frames(2)
+	assert_eq(arena.enemies.size(), 2)
+	assert_eq(arena.enemies_left(), 5)
+	await _close(level)
+
+
+## 硬撐中打不痛（D-242）：變紅之後、那一招打出來之前只扣四分之一；進了破綻照扣。
+## 沒有這一條的話，諾恩一下 24 點，他變紅之後那一招還沒打出來人就倒了——「變紅 → 閃」等於不存在。
+func test_braced_enemy_shrugs_off_hits_until_he_strikes() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var e: EnemyActor = arena.enemies[0]
+	var hit: float = CombatTuning.num("noen.blunt_damage")
+	assert_true(e.health.max_hp / hit <= 5.0, "沒硬撐的時候五下以內倒（%.0f 血、一下 %.0f）" % [e.health.max_hp, hit])
+	assert_true(e.brain.brace_armor < 0.5, "戰鬥場的敵人硬撐時打不痛（%.2f）" % e.brain.brace_armor)
+	for i: int in e.brain.brace_after:
+		e.brain.state = EnemyBrain.State.CHASE
+		assert_true(absf(e.brain.armor_mult() - 1.0) < 0.001, "還沒變紅：照扣")
+		e.health.apply_damage(hit, {"source": player, "stagger": 0.0})
+	assert_true(e.brain.is_braced())
+	assert_eq(e.armored_hits, 0, "讓他變紅的那一下還是照扣")
+	var before: float = e.health.hp
+	e.health.apply_damage(hit, {"source": player, "stagger": 0.0})
+	assert_true(absf((before - e.health.hp) - hit * e.brain.brace_armor) < 0.01, "變紅了：只扣 %.0f%%" % (e.brain.brace_armor * 100.0))
+	assert_eq(e.armored_hits, 1)
+	assert_true(Sfx.NAMES.has(EnemyActor.ARMOR_SFX), "打在硬撐的人身上有自己的聲音")
+	# 他把那一招打出來、進了破綻：照扣
+	e.brain.state = EnemyBrain.State.STRIKE
+	e.brain.time_in_state = 9.0
+	e.brain.tick(0.016, 1.0)
+	assert_eq(e.brain.state, EnemyBrain.State.RECOVER)
+	before = e.health.hp
+	e.health.apply_damage(hit, {"source": player, "stagger": 0.0})
+	assert_true(absf((before - e.health.hp) - hit) < 0.01, "破綻中照扣")
+	assert_eq(e.armored_hits, 1)
+	await _close(level)
+	_game().set("arena_mode", false)
+	assert_true(absf(EnemyBrain.new().configure("demo_guard").brace_armor - 1.0) < 0.001, "劇情裡沒有這回事")
+	assert_eq(CombatTuning.num("noen.blunt_damage"), 6.0, "劇情裡諾恩一下還是 6")
+
+
+## 挨打有代價（D-242）：被打中的那一下，出到一半的招沒了、0.4 秒不能動手、被推開一步。只在戰鬥場。
+func test_getting_hit_staggers_noen_in_the_arena_only() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var e: EnemyActor = arena.enemies[0]
+	var stun: float = CombatTuning.num("noen.hurt_stun")
+	assert_true(stun >= 0.2 and stun <= 0.6, "硬直 0.2～0.6 秒（%.2f）：比敵人兩招之間的空檔（%.1f）短，不會被連到死" % [stun, CombatTuning.num("crowd.attack_gap")])
+	assert_true(stun < CombatTuning.num("crowd.attack_gap"), "硬直比敵人輪流出手的空檔短")
+	player.global_position = e.global_position + Vector3(0.0, 0.0, 1.5)
+	player.start_attack()
+	assert_eq(player.puppet().action, "attack")
+	var start: Vector3 = player.global_position
+	var hp: float = e.health.hp
+	player.health.apply_damage(10.0, {"source": e})
+	assert_true(player.hurt_left > 0.0, "進硬直")
+	assert_eq(player.hurt_count, 1)
+	assert_eq(player.puppet().action, "", "出到一半的招沒了")
+	Input.action_press("attack")
+	await _frames(4)
+	Input.action_release("attack")
+	assert_eq(player.puppet().action, "", "硬直中按出手沒有用")
+	await _frames(int(stun * 60.0) + 6)
+	assert_true(player.hurt_left <= 0.0, "硬直結束")
+	assert_true(absf(e.health.hp - hp) < 0.01, "被打斷的那一下沒有打出去")
+	var moved: Vector3 = player.global_position - start
+	moved.y = 0.0
+	assert_true(moved.z > 0.3 and moved.length() < 1.2, "被往敵人的反方向推開一步（%.2f m）" % moved.z)
+	# 狀態扣血（中毒）不算挨打
+	player.health.apply_status_damage(3.0)
+	assert_eq(player.hurt_count, 1, "中毒扣血不會硬直")
+	# 倒下的那一下不進硬直（倒地動作接手）
+	player.health.apply_damage(999.0, {"source": e})
+	assert_eq(player.hurt_count, 1)
+	arena.set_physics_process(false)
+	await _close(level)
+	_game().set("arena_mode", false)
+	assert_eq(CombatTuning.num("noen.hurt_stun"), 0.0, "劇情裡挨打沒有硬直")
 
 
 func test_summary_line_counts_wins_losses_and_timeouts() -> void:

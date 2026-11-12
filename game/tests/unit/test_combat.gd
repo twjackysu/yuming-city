@@ -39,7 +39,8 @@ func test_arena_profile_overrides_only_listed_keys_and_restores() -> void:
 	assert_eq(CombatTuning.profile(), CombatTuning.PROFILE_ARENA)
 	var swing: float = CombatTuning.num("demo_guard.moves.swing.damage")
 	var hp: float = CombatTuning.num("noen.max_hp")
-	assert_true(swing >= hp / 4.0 and swing <= hp / 3.0, "戰鬥場：拿棍子的橫掃 3～4 下打倒諾恩（%.0f）" % swing)
+	# D-242：28 → 22（挨打有硬直之後調輕一點）。四下不倒、五下倒
+	assert_true(swing > hp / 5.0 and swing <= hp / 3.0, "戰鬥場：拿棍子的橫掃 4～5 下打倒諾恩（%.0f）" % swing)
 	var jab: float = CombatTuning.num("demo_bracer.moves.jab.damage")
 	assert_true(jab > 9.0 and jab < swing, "戰鬥場：快拳比劇情痛、比橫掃輕（%.0f）" % jab)
 	assert_true(CombatTuning.num("sheila.slash_damage") < CombatTuning.num("noen.blunt_damage") * 2.0, "戰鬥場：席菈一刀不到諾恩兩下")
@@ -47,7 +48,13 @@ func test_arena_profile_overrides_only_listed_keys_and_restores() -> void:
 	assert_true(CombatTuning.num("sheila.engage_range") < 6.0, "戰鬥場：敵人走近了她才動手")
 	assert_eq(CombatTuning.num("demo_guard.max_hp"), 120.0, "沒寫的 key 照舊")
 	assert_eq(CombatTuning.num("demo_guard.moves.swing.telegraph"), 0.75, "同一招沒寫的欄位照舊")
-	assert_eq(CombatTuning.num("noen.blunt_damage"), 6.0, "諾恩的數字這一輪沒動")
+	# D-242：諾恩一下 6 → 24，一般敵人五下以內倒；挨打有硬直，比敵人輪流出手的空檔短
+	var hit: float = CombatTuning.num("noen.blunt_damage")
+	for prefix: String in ["demo_guard", "demo_bracer", "demo_thrower"]:
+		var foe_hp: float = CombatTuning.num(prefix + ".max_hp")
+		assert_true(foe_hp / hit >= 2.5 and foe_hp / hit <= 5.0, "戰鬥場：%s 三到五下倒（%.0f 血、一下 %.0f）" % [prefix, foe_hp, hit])
+		assert_true(CombatTuning.num(prefix + ".brace_armor") < 0.5, "戰鬥場：%s 硬撐時打不痛" % prefix)
+	assert_true(CombatTuning.num("noen.hurt_stun") > 0.0 and CombatTuning.num("noen.hurt_stun") < CombatTuning.num("crowd.attack_gap"), "戰鬥場：挨打有硬直")
 	# 重新載入（F5）還是戰鬥場那一套
 	CombatTuning.load_tuning()
 	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), swing, "重新載入不會掉回去")
@@ -56,6 +63,10 @@ func test_arena_profile_overrides_only_listed_keys_and_restores() -> void:
 	assert_eq(CombatTuning.num("demo_bracer.moves.jab.damage"), 9.0, "換回去：快拳 9")
 	assert_eq(CombatTuning.num("sheila.slash_damage"), 18.0, "換回去：席菈 18")
 	assert_eq(CombatTuning.num("sheila.weak_damage"), 60.0, "換回去：弱點 60")
+	assert_eq(CombatTuning.num("noen.blunt_damage"), 6.0, "換回去：諾恩一下 6")
+	assert_eq(CombatTuning.num("noen.blunt_stagger"), 20.0, "換回去：失衡 20")
+	assert_eq(CombatTuning.num("noen.hurt_stun"), 0.0, "換回去：挨打沒有硬直")
+	assert_eq(CombatTuning.num("undertaker.guardian_hp"), 480.0, "換回去：南街守衛 480")
 	CombatTuning.set_profile("no_such_profile")
 	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), 12.0, "不認得的名字＝原本的數字")
 

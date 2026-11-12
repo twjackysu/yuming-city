@@ -48,6 +48,9 @@ var unreadable: Dictionary = {}
 ## 不然一直按出手就能把人鎖到死。出完一招（進破綻）或跪完起來就重新算。招式資料寫 "unstoppable": true＝這一招永遠打不斷。
 var flinch_sec: float = 0.0
 var brace_after: int = 2
+## 硬撐中挨打只扣幾成（1＝照扣，D-242）。沒有這個的話，諾恩一下 24 點、前兆 0.75 秒裡還能再打兩下——
+## 他變紅之後那一招還沒打出來人就倒了，「變紅 → 閃」等於不存在，一直按就贏。
+var brace_armor: float = 1.0
 ## 後仰的時候被往後推多遠（公尺；角色節點在 flinch_sec 內走完）
 var flinch_push: float = 0.4
 ## 這一輪已經後仰了幾次（出完一招歸零）；畫面（硬撐的顏色）與測試用 is_braced()
@@ -77,6 +80,7 @@ func configure(prefix: String, difficulty: String = "standard") -> EnemyBrain:
 	flinch_sec = CombatTuning.num(prefix + ".flinch", 0.0) if _has(prefix + ".flinch") else 0.0
 	brace_after = int(CombatTuning.num(prefix + ".brace_after", 2.0)) if _has(prefix + ".brace_after") else 2
 	flinch_push = CombatTuning.num(prefix + ".flinch_push", 0.4) if _has(prefix + ".flinch_push") else 0.4
+	brace_armor = CombatTuning.num(prefix + ".brace_armor", 1.0) if _has(prefix + ".brace_armor") else 1.0
 	var mv: Variant = CombatTuning.value(prefix + ".moves", {}) if _has(prefix + ".moves") else {}
 	# 複製一份：個別敵人改自己的招式數值時，不能改到共用的 CombatTuning 資料
 	moves = (mv as Dictionary).duplicate(true) if mv is Dictionary else {}
@@ -231,6 +235,13 @@ func flinch() -> bool:
 ## 硬撐中：打不斷、不後仰（已經後仰過 brace_after 次），打出一招之後才重新算。
 func is_braced() -> bool:
 	return flinch_sec > 0.0 and interrupts >= brace_after and state != State.DEAD
+
+
+## 這一刻挨打扣幾成：硬撐、而且那一招還沒打完（追人／後仰／前兆／出招）＝brace_armor；進了破綻或跪下就照扣。
+func armor_mult() -> float:
+	if is_braced() and state in [State.CHASE, State.FLINCH, State.TELEGRAPH, State.STRIKE]:
+		return brace_armor
+	return 1.0
 
 
 func _unstoppable(id: String) -> bool:

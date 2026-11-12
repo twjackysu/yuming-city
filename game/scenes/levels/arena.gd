@@ -4,6 +4,7 @@ extends Node
 ## 掛在地下市場關卡底下（`Game.arena_mode` 時；這時候沒有劇情控制器）。不讀不寫劇情存檔。
 ##
 ## - 波次在 `res://data/arena/waves.json`。諾恩開場就有兩格（中毒、麻痺）與護腕；每一波開始補滿生命、清掉狀態。
+## - 一波的人分批進場（D-242）：場上剩沒幾個的時候，下一批從街的北邊走進來；全部的批次都倒了才算贏。
 ## - 倒下：`RETRY_SEC` 秒後原地重來這一波（不重新載入關卡）。打完：一行字（用時、被打中幾下）→ 下一波；四波打完從第一波再來。
 ## - 每一場的數字記在 `stats`；機器人（`ArenaBot`）跑的時候每場印一行 `ARENA …`，跑滿 `runs` 場就結束程式。
 ##
@@ -27,6 +28,13 @@ const RETRY_KEY: String = "ARENA_RETRY"
 ## 第一次有人硬撐（整個人變紅，D-241）的那一刻講一次：紅＝打不斷，要閃。之後不再講（重來、下一波都不講）
 const BRACE_TIP_KEY: String = "ARENA_TIP_BRACE"
 const BRACE_TIP_SEC: float = 3.0
+## 後面幾批進場（D-242）：畫面上講一句「又來了幾個、這一波還剩幾個」
+const REINFORCE_KEY: String = "ARENA_REINFORCE"
+const REINFORCE_BANNER_SEC: float = 2.2
+## 後面幾批最北生到哪裡（看熱鬧的人退到 z＝12.5～13.4，不要生在他們身上）
+const REINFORCE_NORTH_Z: float = 14.8
+## 資料裡 ahead（生在諾恩北邊幾公尺）可以寫的範圍：太近＝憑空出現在臉上；太遠＝超過敵人看得到人的距離（14 m），他不會走過來
+const REINFORCE_AHEAD: Vector2 = Vector2(6.0, 13.0)
 
 var level: UndergroundMarket
 var player: PlayerController
@@ -58,7 +66,12 @@ var brace_tip_shown: bool = false
 var _burst_on: String = ""
 ## 開發用（連拍）：`--brace-early`＝每個敵人第一次後仰就硬撐。正常打的時候硬撐很少出現（一場 0～2 次、多半在最後），等不到
 var _brace_early: bool = false
+## 開發用（連拍）：`--reinforce-early`＝開場 1 秒第一批後援就進場（不等場上剩一個）。正常打要等第一個人倒下，連拍等不到
+var _reinforce_early: bool = false
 var _hp_before: Dictionary = {}
+## 這一波還沒進場的批次（waves.json 的 reinforcements）與下一批是第幾批
+var _batches: Array = []
+var _next_batch: int = 0
 var _pending: int = 0
 var _rng := RandomNumberGenerator.new()
 
@@ -92,7 +105,32 @@ static func validate(d: Dictionary) -> PackedStringArray:
 			var pos: Array = spec.get("pos", []) as Array
 			if pos.size() != 2 or absf(float(pos[0])) > UndergroundMarket.STREET_HALF:
 				errs.append("第 %d 波有敵人不在街上" % (i + 1))
+		for b: Variant in w.get("reinforcements", []) as Array:
+			var batch: Dictionary = b as Dictionary if b is Dictionary else {}
+			var more: Array = batch.get("enemies", []) as Array
+			if more.is_empty():
+				errs.append("第 %d 波有一批後援是空的" % (i + 1))
+			if int(batch.get("when_alive_at_most", -1)) < 0:
+				errs.append("第 %d 波有一批後援沒寫 when_alive_at_most" % (i + 1))
+			for m: Variant in more:
+				var mspec: Dictionary = m as Dictionary
+				var mkind: String = str(mspec.get("kind", ""))
+				if not mkind in ["club", "bracer", "thrower"]:
+					errs.append("第 %d 波的後援有不認得的種類 %s" % [i + 1, mkind])
+				if absf(float(mspec.get("x", 99.0))) > UndergroundMarket.STREET_HALF:
+					errs.append("第 %d 波的後援有人不在街上" % (i + 1))
+				var ahead: float = float(mspec.get("ahead", 0.0))
+				if ahead < REINFORCE_AHEAD.x or ahead > REINFORCE_AHEAD.y:
+					errs.append("第 %d 波的後援 ahead 要在 %.0f～%.0f m" % [i + 1, REINFORCE_AHEAD.x, REINFORCE_AHEAD.y])
 	return errs
+
+
+## 某一波總共幾個人（第一批＋後面每一批）。純函式。
+static func wave_size(w: Dictionary) -> int:
+	var n: int = (w.get("enemies", []) as Array).size()
+	for b: Variant in w.get("reinforcements", []) as Array:
+		n += ((b as Dictionary).get("enemies", []) as Array).size()
+	return n
 
 
 func wave_count() -> int:
@@ -122,6 +160,7 @@ func _ready() -> void:
 		add_child(bot)
 	_burst_on = str(App.parse_user_args(OS.get_cmdline_user_args()).get("burst-on", ""))
 	_brace_early = App.parse_user_args(OS.get_cmdline_user_args()).has("brace-early")
+	_reinforce_early = App.parse_user_args(OS.get_cmdline_user_args()).has("reinforce-early")
 	if App.parse_user_args(OS.get_cmdline_user_args()).has("side-cam"):
 		make_side_cam()
 	start_wave(wave)
@@ -197,34 +236,96 @@ func start_wave(index: int) -> void:
 	ally.position = Vector3(apos.x, level.ground_y(apos), apos.z)
 	ally.rotation_degrees.y = 0.0
 	level.add_child(ally)
-	# 敵人。機器人跑的時候每場的位置差一點（不然每一場都一模一樣）
+	# 敵人（第一批）。機器人跑的時候每場的位置差一點（不然每一場都一模一樣）
 	_rng.seed = hash("arena-%d-%d" % [wave, results.size()])
-	var specs: Array = ((data.get("waves", []) as Array)[wave] as Dictionary).get("enemies", []) as Array
-	for i: int in specs.size():
-		var spec: Dictionary = specs[i] as Dictionary
-		var at: Vector3 = _spawn_xz(spec.get("pos", []), Vector2(0.0, 24.0))
-		if bot_kind != "":
-			at.x = clampf(at.x + _rng.randf_range(-0.5, 0.5), -UndergroundMarket.STREET_HALF + 0.4, UndergroundMarket.STREET_HALF - 0.4)
-			at.z += _rng.randf_range(-0.6, 0.6)
-		var e: EnemyActor = _make_enemy(spec)
-		e.name = "ArenaEnemy%d" % i
-		e.position = at
-		level.add_child(e)
-		e.set_facing(deg_to_rad(180.0))
-		if e is Undertaker:
-			(e as Undertaker).begin_guardian()
-		_hp_before[e.get_instance_id()] = e.health.hp
-		e.health.damaged.connect(_on_enemy_damaged.bind(e))
-		e.health.status_damaged.connect(_on_enemy_damaged.bind(e))
-		e.brain.braced.connect(_on_enemy_braced)
-		if _brace_early:
-			e.brain.interrupts = maxi(e.brain.brace_after - 1, 0)
-		enemies.append(e)
+	var wdata: Dictionary = (data.get("waves", []) as Array)[wave] as Dictionary
+	_batches = wdata.get("reinforcements", []) as Array
+	_next_batch = 0
+	for s: Variant in wdata.get("enemies", []) as Array:
+		var spec: Dictionary = s as Dictionary
+		_spawn_enemy(spec, _spawn_xz(spec.get("pos", []), Vector2(0.0, 24.0)))
 	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
 	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0}
 	fighting = true
 	if hud != null and bot_kind == "":
 		hud.show_banner(tr(WAVE_START_KEY).format({"n": wave + 1, "total": wave_count()}), 2.5)
+
+
+## 生一個敵人、接上統計。at＝資料寫的位置（機器人跑的時候每場差一點）。
+func _spawn_enemy(spec: Dictionary, at: Vector3) -> EnemyActor:
+	if bot_kind != "":
+		at.x = clampf(at.x + _rng.randf_range(-0.5, 0.5), -UndergroundMarket.STREET_HALF + 0.4, UndergroundMarket.STREET_HALF - 0.4)
+		at.z += _rng.randf_range(-0.6, 0.6)
+	var e: EnemyActor = _make_enemy(spec)
+	e.name = "ArenaEnemy%d" % enemies.size()
+	e.position = at
+	level.add_child(e)
+	e.set_facing(deg_to_rad(180.0))
+	if e is Undertaker:
+		(e as Undertaker).begin_guardian()
+	_hp_before[e.get_instance_id()] = e.health.hp
+	e.health.damaged.connect(_on_enemy_damaged.bind(e))
+	e.health.status_damaged.connect(_on_enemy_damaged.bind(e))
+	e.brain.braced.connect(_on_enemy_braced)
+	if _brace_early:
+		e.brain.interrupts = maxi(e.brain.brace_after - 1, 0)
+	enemies.append(e)
+	return e
+
+
+## 場上還站著幾個敵人。
+func alive_count() -> int:
+	var n: int = 0
+	for e: EnemyActor in enemies:
+		if is_instance_valid(e) and not e.health.is_dead():
+			n += 1
+	return n
+
+
+## 這一波總共幾個人（含還沒進場的）。
+func wave_total() -> int:
+	var waves: Array = data.get("waves", []) as Array
+	return wave_size(waves[wave] as Dictionary) if wave < waves.size() else 0
+
+
+## 這一波還要打倒幾個（場上站著的＋還沒進場的）。
+func enemies_left() -> int:
+	var n: int = alive_count()
+	for i: int in range(_next_batch, _batches.size()):
+		n += ((_batches[i] as Dictionary).get("enemies", []) as Array).size()
+	return n
+
+
+## 還有沒有還沒進場的批次。
+func has_reinforcements() -> bool:
+	return _next_batch < _batches.size()
+
+
+## 後面幾批（D-242）：場上站著的人剩 when_alive_at_most 個以下，下一批就從街的北邊（諾恩北邊 ahead 公尺）走進來。
+## 一幀最多進一批。回傳這一幀有沒有人進場。
+func _maybe_reinforce() -> bool:
+	if not has_reinforcements():
+		return false
+	var batch: Dictionary = _batches[_next_batch] as Dictionary
+	var early: bool = _reinforce_early and _next_batch == 0 and float(stats.get("time", 0.0)) >= 1.0
+	if alive_count() > int(batch.get("when_alive_at_most", 0)) and not early:
+		return false
+	_next_batch += 1
+	var list: Array = batch.get("enemies", []) as Array
+	for s: Variant in list:
+		var spec: Dictionary = s as Dictionary
+		var x: float = float(spec.get("x", 0.0))
+		var z: float = maxf(player.global_position.z - float(spec.get("ahead", 10.0)), REINFORCE_NORTH_Z)
+		_spawn_enemy(spec, Vector3(x, level.ground_y(Vector3(x, 0.0, z)) + 0.05, z))
+	stats["batches"] = int(stats.get("batches", 0)) + 1
+	if _burst_on == "reinforce":
+		# 開發用：連拍從第一批後援進場的那一刻開始（scripts/burst.sh … 99999 … --burst-on=reinforce）
+		_burst_on = ""
+		App.burst_start_in(1)
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null and bot_kind == "":
+		hud.show_banner(tr(REINFORCE_KEY).format({"n": list.size(), "left": enemies_left()}), REINFORCE_BANNER_SEC)
+	return true
 
 
 func _on_enemy_braced() -> void:
@@ -275,13 +376,11 @@ func _clear_field() -> void:
 			n.queue_free()
 
 
+## 這一波打完了沒：每一批都進場了、而且都倒了。
 func enemies_down() -> bool:
-	if enemies.is_empty():
+	if enemies.is_empty() or has_reinforcements():
 		return false
-	for e: EnemyActor in enemies:
-		if is_instance_valid(e) and not e.health.is_dead():
-			return false
-	return true
+	return alive_count() == 0
 
 
 ## 諾恩造成的傷害占全隊多少（0～1；還沒有人打中＝0）
@@ -294,6 +393,7 @@ func _physics_process(delta: float) -> void:
 	if not fighting or player == null:
 		return
 	stats["time"] = float(stats["time"]) + delta
+	_maybe_reinforce()
 	if enemies_down():
 		_finish("win")
 	elif bot_kind != "" and float(stats["time"]) >= BOT_TIMEOUT_SEC:
@@ -347,6 +447,9 @@ func _finish(result: String) -> void:
 	r["flinches"] = flinches
 	r["interrupts"] = interrupts
 	r["kneels"] = kneels
+	# 這一波總共幾個人、打倒了幾個（輸的時候看得出撐到第幾個，D-242）
+	r["total"] = wave_total()
+	r["downed"] = enemies.size() - alive_count()
 	results.append(r)
 	fight_finished.emit(r)
 	if bot_kind != "":
@@ -383,10 +486,11 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
 		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
-		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0))])
+		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0)),
+		int(r.get("downed", 0)), int(r.get("total", 0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

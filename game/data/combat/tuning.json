@@ -13,7 +13,9 @@
     "weak_stagger_mult": 2.0,
     "lunge_dist": 0.0,
     "lunge_seek": 3.4,
-    "lunge_stop": 1.25
+    "lunge_stop": 1.25,
+    "hurt_stun": 0.0,
+    "hurt_push": 0.0
   },
   "sheila": {
     "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
@@ -102,12 +104,13 @@
   },
   "profiles": {
     "arena": {
-      "noen": {"lunge_dist": 0.6},
+      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7},
       "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
       "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9},
-      "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "moves": {"swing": {"damage": 28}, "thrust": {"damage": 24}}},
-      "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "moves": {"jab": {"damage": 21}}},
-      "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3}
+      "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},
+      "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "brace_armor": 0.25, "moves": {"jab": {"damage": 18}}},
+      "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25},
+      "undertaker": {"_doc": "諾恩一下 6 → 24（D-242）：頭目的生命跟著乘四，要打幾下才倒跟改之前一樣。失衡沒有補（諾恩一下的失衡 20 → 10，牠比以前難跪；把牠的失衡上限減半的話，席菈一個人就能讓牠一直跪，站著不動 120 秒都不會輸）。頭目自己的調整是 NEXT「000」第 2 項的⑤，還沒做。", "guardian_hp": 1920}
     }
   }
 }
