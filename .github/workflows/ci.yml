@@ -28,6 +28,14 @@ jobs:
       - name: 下載角色模型（Git LFS）
         run: git lfs pull --include="art-inbox/characters/**" || echo "沒有角色模型或 LFS 下載失敗，用程序人偶"
 
+      # 自製角色模型（scripts/gen_art.sh，D-249）：bpy 5.3.0 的 wheel 只有 Python 3.13；不改 PATH，只把路徑交給 gen_art.sh
+      - name: Python 3.13（bpy 用）
+        id: py313
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          update-environment: false
+
       - name: Cache Godot 與 export templates
         uses: actions/cache@v4
         with:
@@ -43,6 +51,8 @@ jobs:
           key: assets-${{ hashFiles('scripts/gen_fonts.py') }}
 
       - name: Import、測試、匯出
+        env:
+          ART_PYTHON: ${{ steps.py313.outputs.python-path }}
         run: scripts/check.sh --export
 
       - name: 截圖（軟體 Vulkan）
@@ -130,6 +140,14 @@ jobs:
       - name: 下載角色模型（Git LFS）
         run: git lfs pull --include="art-inbox/characters/**" || echo "沒有角色模型或 LFS 下載失敗，用程序人偶"
 
+      # 自製角色模型（scripts/gen_art.sh，D-249）：bpy 5.3.0 的 wheel 只有 Python 3.13；不改 PATH，只把路徑交給 gen_art.sh
+      - name: Python 3.13（bpy 用）
+        id: py313
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          update-environment: false
+
       - name: Cache Godot 與 export templates
         uses: actions/cache@v4
         with:
@@ -145,6 +163,8 @@ jobs:
           key: assets-${{ hashFiles('scripts/gen_fonts.py') }}
 
       - name: 產生素材與 import
+        env:
+          ART_PYTHON: ${{ steps.py313.outputs.python-path }}
         run: |
           GODOT="$(scripts/get-godot.sh)"
           scripts/gen-assets.sh

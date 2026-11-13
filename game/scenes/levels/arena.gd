@@ -79,7 +79,11 @@ var side_cam: Camera3D
 ## 他愣著的時候鏡頭不跟（看得出他往後退）。場上沒有丟毒瓶的就對著最近的敵人。
 const TELE_CAM_OFFSET: Vector3 = Vector3(-1.9, 1.5, 2.9)
 const TELE_CAM_FOV: float = 42.0
+## 開發用：`--sheila-cam`＝架在席菈斜前方、跟著她轉（看角色模型用的固定鏡頭，第 101 輪；`scripts/shots/char_sheila.txt`）。
+const SHEILA_CAM_OFFSET: Vector3 = Vector3(0.75, 1.3, -2.5)
+const SHEILA_CAM_FOV: float = 40.0
 var tele_cam: bool = false
+var sheila_cam: bool = false
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
 var release_tip_shown: bool = false
@@ -204,6 +208,9 @@ func _ready() -> void:
 	elif App.parse_user_args(OS.get_cmdline_user_args()).has("tele-cam"):
 		tele_cam = true
 		make_side_cam()
+	elif App.parse_user_args(OS.get_cmdline_user_args()).has("sheila-cam"):
+		sheila_cam = true
+		make_side_cam()
 	start_wave(wave)
 
 
@@ -228,11 +235,26 @@ func _aim_side_cam(k: float) -> void:
 	if tele_cam:
 		_aim_tele_cam(k)
 		return
+	if sheila_cam:
+		_aim_sheila_cam()
+		return
 	var foe: EnemyActor = ArenaBot.nearest_enemy(player.global_position, enemies)
 	var mid: Vector3 = player.global_position if foe == null else (player.global_position + foe.global_position) * 0.5
 	var z: float = lerpf(side_cam.global_position.z, mid.z, k)
 	side_cam.global_position = Vector3(SIDE_CAM_X, mid.y + SIDE_CAM_Y, z)
 	side_cam.look_at(Vector3(maxf(mid.x, -0.8), mid.y + 0.9, z), Vector3.UP)
+
+
+func _aim_sheila_cam() -> void:
+	var who: Node3D = level.get_node_or_null("Sheila") as Node3D
+	if who == null:
+		return
+	var body: Node3D = who.find_child("Puppet", true, false) as Node3D
+	var facing: Basis = (body if body != null else who).global_transform.basis.orthonormalized()
+	var at: Vector3 = who.global_position
+	side_cam.fov = SHEILA_CAM_FOV
+	side_cam.global_position = at + facing * SHEILA_CAM_OFFSET
+	side_cam.look_at(at + Vector3(0, 1.0, 0), Vector3.UP)
 
 
 ## 長鏡頭要對著誰：第一個還站著的丟毒瓶的，沒有就最近的敵人。

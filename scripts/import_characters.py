@@ -1,4 +1,7 @@
-"""把 art-inbox/characters/<id>/<id>.glb 收件檢查後複製進 Godot 專案（game/assets/characters/<id>/<id>.glb）。
+"""把角色模型收件檢查後複製進 Godot 專案（game/assets/characters/<id>/<id>.glb）。
+
+來源依序找：art-inbox/characters/<id>/<id>.glb（Jacky 交的，優先）→ build/art/characters/<id>/<id>.glb
+（scripts/gen_art.sh 用 bpy 自製的，D-249）。
 
 - 收件檢查用 scripts/check_character_glb.py（純標準函式庫、不執行模型裡的任何東西）
 - 還沒下載的 Git LFS 指標檔直接略過（雲端 session 沒有 git lfs pull 時）
@@ -15,6 +18,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 INBOX = ROOT / 'art-inbox' / 'characters'
+SELF_MADE = ROOT / 'build' / 'art' / 'characters'
 DEST = ROOT / 'game' / 'assets' / 'characters'
 CHECKER = ROOT / 'scripts' / 'check_character_glb.py'
 KNOWN = ('noen', 'sheila', 'undertaker', 'ashwalker')
@@ -30,10 +34,15 @@ def main():
     for cid in KNOWN:
         src = INBOX / cid / f'{cid}.glb'
         dst = DEST / cid / f'{cid}.glb'
+        source = 'art-inbox'
+        if src.exists() and is_lfs_pointer(src):
+            print(f'[characters] {cid}: art-inbox 的還是 LFS 指標檔（沒有 git lfs pull），略過')
+        if not src.exists() or is_lfs_pointer(src):
+            src = SELF_MADE / cid / f'{cid}.glb'
+            source = '自製'
         if not src.exists():
-            continue
-        if is_lfs_pointer(src):
-            print(f'[characters] {cid}: 還是 LFS 指標檔（沒有 git lfs pull），略過')
+            if dst.exists():  # 來源沒了（例如自製腳本失敗）：不要留著舊的複本
+                dst.unlink()
             continue
         r = subprocess.run([sys.executable, '-I', str(CHECKER), str(src), '--character', cid],
                            capture_output=True, text=True)
@@ -52,7 +61,7 @@ def main():
         if not dst.exists() or not filecmp.cmp(src, dst, shallow=False):
             shutil.copyfile(src, dst)
         imported.append(cid)
-        print(f'[characters] {cid}: 通過收件檢查（{report.get("triangles")} 面），已接入')
+        print(f'[characters] {cid}: 通過收件檢查（{source}，{report.get("triangles")} 面），已接入')
     if not imported:
         print('[characters] 沒有可用的正式模型，全部用程序人偶')
 
