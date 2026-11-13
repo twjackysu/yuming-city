@@ -146,3 +146,8 @@ Jacky 看了 7.4 的試作：「雖然比制服好，但還是很醜」，再貼
 
 第二版的規格在 D-263；預覽在對話裡給他看過（席菈站／跑／出手、諾恩站）。
 
+### 7.6 第二版接進遊戲了（2026-11-14 02:00；第 107 輪，D-264）
+
+- 幾何在 `tools/blender/outfit.py`（從試作搬過來，沒有改形狀）；`vrm_character.py --outfit sheila|noen`；試作檔 `armor_proto.py` 刪掉了，上面幾節提到它的地方指的是現在的 `outfit.py`。預覽：`python3 -I tools/blender/preview.py <glb> <輸出.png> [--pose=run --frame=6]`。
+- 色票（`outfit.PAL`）的數字是 sRGB；重畫貼圖的對照表（`outfit.RECOLOR`）的數字是**線性**的——要兩邊同一個顏色，先把 sRGB 換成線性再寫進對照表（試作沒換，席菈的裙子比下襬淺一截）。
+- 諾恩的法杖：KayKit 的 `staff.gltf`（第 6 節同一包）。這包是大頭的比例，照原尺寸珠子比諾恩的頭大——遊戲裡縮到 0.6；「跟著手」掛會斜在身體前面，改成平常在世界座標裡直立、出手才順著手往前指（`player.gd` 的 `pose_staff()`）。
