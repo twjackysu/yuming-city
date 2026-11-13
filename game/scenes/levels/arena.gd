@@ -34,6 +34,11 @@ const RELEASE_TIP_SEC: float = 5.0
 const RELEASE_TIP_AT: float = 3.0
 ## 後面幾批進場（D-242）：畫面上講一句「又來了幾個、這一波還剩幾個」
 const REINFORCE_KEY: String = "ARENA_REINFORCE"
+## 碎念與旁人的反應（D-246）：一句停多久、諾恩走進霧的碎念最少隔幾秒、各自的顏色
+const BARK_SEC: float = 2.4
+const ENTER_BARK_GAP: float = 6.0
+const BARK_NOEN_COLOR: Color = Color(0.97, 0.94, 0.84)
+const BARK_OTHER_COLOR: Color = Color(0.78, 0.86, 0.95)
 const REINFORCE_BANNER_SEC: float = 2.2
 ## 後面幾批最北生到哪裡（看熱鬧的人退到 z＝12.5～13.4，不要生在他們身上）
 const REINFORCE_NORTH_Z: float = 14.8
@@ -68,6 +73,16 @@ var side_cam: Camera3D
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
 var release_tip_shown: bool = false
+## 諾恩已經連續在毒霧裡站了幾秒（走出來歸零；D-246）
+var mist_stay: float = 0.0
+## 這一波諾恩走進毒霧幾次
+var mist_entries: int = 0
+var _sheila_spoke: bool = false
+## 碎念與旁人的反應：輪到哪一句、最後一句是誰講的什麼、這一波講過哪些（測試用）
+var barks: BarkLines = BarkLines.new()
+var last_bark: Dictionary = {}
+var bark_log: PackedStringArray = PackedStringArray()
+var _next_enter_bark: float = 0.0
 var _burst_on: String = ""
 ## 開發用（連拍）：`--brace-early`＝每個敵人第一次後仰就硬撐。正常打的時候硬撐很少出現（一場 0～2 次、多半在最後），等不到
 var _brace_early: bool = false
@@ -259,7 +274,12 @@ func start_wave(index: int) -> void:
 	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
 	# releases＝這一場放了幾次（D-245）；burst_damage＝毒爆實際扣掉的血；burst_hits＝炸到幾人次；burst_secs＝總共用掉幾秒的毒
 	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0,
-		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0}
+		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0, "gawks": 0}
+	mist_stay = 0.0
+	mist_entries = 0
+	_sheila_spoke = false
+	_next_enter_bark = 0.0
+	bark_log.clear()
 	if _release_early:
 		player.status_effects.apply(PlayerController.RELEASE_STATUS, 5.0, 8.0, "dev")
 	fighting = true
@@ -424,11 +444,74 @@ func _physics_process(delta: float) -> void:
 		_burst_on = ""
 		App.burst_start_in(1)
 	_maybe_release_tip()
+	_update_reactions(delta)
 	_maybe_reinforce()
 	if enemies_down():
 		_finish("win")
 	elif bot_kind != "" and float(stats["time"]) >= BOT_TIMEOUT_SEC:
 		_finish("timeout")
+
+
+## 諾恩現在是不是站在毒霧裡，而且那個毒對他是好東西（反轉中）。
+func player_in_mist() -> bool:
+	if player == null or player.status_effects == null or player.health.is_dead():
+		return false
+	if not player.status_effects.is_reversed(PlayerController.RELEASE_STATUS):
+		return false
+	for n: Node in get_tree().get_nodes_in_group("poison_mist"):
+		var m: PoisonMist = n as PoisonMist
+		if m != null and m.contains(player.global_position):
+			return true
+	return false
+
+
+## 別人躲的東西，他走進去（D-246，design/11 第 0 節）：走進霧的那一刻他碎念一句（最少隔 ENTER_BARK_GAP 秒）；
+## 站滿 gawk_after 秒，丟毒瓶的愣住（DemoGuard.gawk()：往後退、這段時間不丟）、頭上跳一句；
+## 第二次以後走進去而諾恩這次沒講的時候，席菈講一句（每一波一次）。
+func _update_reactions(delta: float) -> void:
+	if not player_in_mist():
+		mist_stay = 0.0
+		return
+	var now: float = float(stats["time"])
+	if mist_stay <= 0.0:
+		mist_entries += 1
+		if now >= _next_enter_bark:
+			_next_enter_bark = now + ENTER_BARK_GAP
+			_bark(player, BarkLines.NOEN_ENTER, BARK_NOEN_COLOR)
+			if _burst_on == "enter":
+				# 開發用：連拍從諾恩第一次站進毒霧的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=enter）
+				_burst_on = ""
+				App.burst_start_in(1)
+		elif not _sheila_spoke and mist_entries >= 2:
+			# 第二次走進去、諾恩自己這次沒講：換席菈講（每一波一次；三個人不要同時講——第 98 輪的連拍三句疊在一起）
+			var sheila: Node3D = level.get_node_or_null("Sheila") as Node3D
+			if sheila != null:
+				_sheila_spoke = true
+				_bark(sheila, BarkLines.SHEILA_WATCH, BARK_OTHER_COLOR)
+	mist_stay += delta
+	if mist_stay < CombatTuning.num("demo_thrower.gawk_after", 0.6):
+		return
+	for e: EnemyActor in enemies:
+		var g: DemoGuard = e as DemoGuard
+		if g == null or not is_instance_valid(g) or not g.gawk():
+			continue
+		stats["gawks"] = int(stats.get("gawks", 0)) + 1
+		_bark(g, BarkLines.THROWER_GAWK, BARK_OTHER_COLOR, 2.1 * g.height)
+		if _burst_on == "gawk":
+			# 開發用：連拍從丟毒瓶的第一次愣住的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=gawk）
+			_burst_on = ""
+			App.burst_start_in(1)
+
+
+func _bark(speaker: Node3D, situation: String, color: Color, head: float = 2.1) -> void:
+	var key: String = barks.next(situation)
+	if key == "":
+		return
+	last_bark = {"speaker": speaker, "situation": situation, "key": key}
+	bark_log.append(key)
+	var hud: Hud = level.get_node_or_null("Hud") as Hud
+	if hud != null:
+		hud.show_bark(speaker, key, BARK_SEC, color, head)
 
 
 func _on_player_damaged(_amount: float, _info: Dictionary) -> void:
@@ -457,6 +540,7 @@ func _on_player_released(info: Dictionary) -> void:
 		stats["releases"] = int(stats.get("releases", 0)) + 1
 		stats["burst_hits"] = int(stats.get("burst_hits", 0)) + int(info.get("hits", 0))
 		stats["burst_secs"] = float(stats.get("burst_secs", 0.0)) + float(info.get("seconds", 0.0))
+	_bark(player, BarkLines.NOEN_RELEASE if int(info.get("hits", 0)) > 0 else BarkLines.NOEN_RELEASE_MISS, BARK_NOEN_COLOR)
 	if _burst_on == "release":
 		# 開發用：連拍從諾恩第一次釋放的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=release）
 		_burst_on = ""
@@ -547,12 +631,12 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f gawks=%d" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
 		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
 		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0)),
 		int(r.get("downed", 0)), int(r.get("total", 0)),
-		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0))])
+		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0)), int(r.get("gawks", 0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

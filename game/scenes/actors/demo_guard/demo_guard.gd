@@ -53,6 +53,13 @@ var toss_count: int = 0
 var last_mist: PoisonMist
 var last_toss_at: Vector3 = Vector3.ZERO
 var _hand_bottle: Node3D
+## 愣住（D-246）：丟毒瓶的看到諾恩站在毒霧裡不出來——手上的事停下來、往後退一小段、這段時間不丟瓶子。
+## gawk_left＝還要愣幾秒；gawk_count＝愣過幾次（測試、統計用）。數值在 tuning.json 的 demo_thrower.gawk_*。
+const GAWK_BACK_SEC: float = 0.5
+var gawk_left: float = 0.0
+var gawk_count: int = 0
+var _gawk_total: float = 0.0
+var _gawk_cooldown: float = 0.0
 
 var _puppet: Puppet
 var _glow_mat: StandardMaterial3D
@@ -154,8 +161,46 @@ func _hit_height() -> float:
 	return 1.1 * height
 
 
-func _held(_delta: float) -> bool:
+func _held(delta: float) -> bool:
+	if gawk_left > 0.0:
+		gawk_left = maxf(gawk_left - delta, 0.0)
+		return true
+	_gawk_cooldown = maxf(_gawk_cooldown - delta, 0.0)
 	return debug_hold or waiting
+
+
+## 愣住的前 GAWK_BACK_SEC 秒往後退 gawk_back 公尺（用自己的腳走，撞到牆就停）。
+func _held_velocity(_delta: float) -> Vector3:
+	if gawk_left > 0.0 and _gawk_total - gawk_left < GAWK_BACK_SEC:
+		return -forward() * (CombatTuning.num("demo_thrower.gawk_back", 1.0) / GAWK_BACK_SEC)
+	return Vector3.ZERO
+
+
+func is_gawking() -> bool:
+	return gawk_left > 0.0
+
+
+## 現在會不會愣住：只有丟毒瓶的；剛愣過（gawk_cooldown 秒內）、正在出手的那一下、跪著、倒下、開打前站著等的時候不會。
+func can_gawk() -> bool:
+	if not is_thrower() or waiting or debug_hold or gawk_left > 0.0 or _gawk_cooldown > 0.0:
+		return false
+	if brain == null or health == null or health.is_dead():
+		return false
+	return brain.state not in [EnemyBrain.State.DEAD, EnemyBrain.State.STAGGERED, EnemyBrain.State.STRIKE]
+
+
+## 愣住 gawk_sec 秒（Arena 在諾恩站進毒霧不出來的時候叫）：正在舉的那一瓶放下來（前兆取消）、往後退、不丟。
+## 回傳有沒有真的愣住。gawk_sec 是 0＝沒有這件事。
+func gawk() -> bool:
+	var sec: float = CombatTuning.num("demo_thrower.gawk_sec", 0.0)
+	if sec <= 0.0 or not can_gawk():
+		return false
+	brain.break_off()
+	gawk_left = sec
+	_gawk_total = sec
+	_gawk_cooldown = CombatTuning.num("demo_thrower.gawk_cooldown", 10.0)
+	gawk_count += 1
+	return true
 
 
 ## 出招：前方扇形裡的心跳（諾恩、席菈）受傷。每一招的距離、角度、傷害在 tuning.json。
@@ -276,6 +321,9 @@ func apply_pose(_delta: float) -> void:
 	if _puppet == null or _puppet.uses_model() or brain == null:
 		return
 	_rot("hand_R", Vector3.ZERO)
+	if gawk_left > 0.0 and brain.state != EnemyBrain.State.DEAD:
+		_pose_gawk(1.0 - gawk_left / maxf(_gawk_total, 0.01))
+		return
 	if is_bracer():
 		# 左手早就麻了：垂著，一次都不動（諾恩在台下看到的就是這個）
 		_rot("shoulder_L", Vector3(0.0, 0.0, -0.04))
@@ -387,6 +435,23 @@ func _pose_flinch(k: float) -> void:
 	_rot("knee_L", Vector3(-0.6 * a, 0.0, 0.0))
 
 
+## 愣住（k＝0 剛看到、1 快回神了）：上身往後縮、頭往前探，兩手舉到臉旁邊攤開（「他在幹嘛？」），一隻腳往後踩。
+## 一下子擺出來（前 12%）、撐著、最後四分之一放下來。
+func _pose_gawk(k: float) -> void:
+	var a: float = minf(ease(clampf(k / 0.12, 0.0, 1.0), 0.4), 1.0 - ease(clampf((k - 0.75) / 0.25, 0.0, 1.0), 1.8))
+	var shake: float = sin(_time * 31.0) * 0.05 * a
+	_rot("spine", Vector3(0.24 * a, 0.0, 0.0))
+	_rot("chest", Vector3(0.12 * a, shake, 0.0))
+	_rot("neck", Vector3(-0.42 * a, shake * 2.0, 0.0))
+	_rot("shoulder_R", Vector3(1.25 * a, 0.0, 0.12 + 0.75 * a))
+	_rot("shoulder_L", Vector3(1.25 * a, 0.0, -0.12 - 0.75 * a))
+	_rot("elbow_R", Vector3(0.25 + 1.45 * a, 0.0, 0.0))
+	_rot("elbow_L", Vector3(0.25 + 1.45 * a, 0.0, 0.0))
+	_rot("thigh_R", Vector3(-0.4 * a, 0.0, 0.0))
+	_rot("knee_R", Vector3(-0.25 * a, 0.0, 0.0))
+	_rot("thigh_L", Vector3(0.22 * a, 0.0, 0.0))
+
+
 ## 失衡跪地：右膝著地、左腳踩在前面，上身往前垮
 func _pose_kneel() -> void:
 	var hips: Node3D = _puppet.joint("hips")
@@ -411,6 +476,7 @@ func _rot(joint_name: String, r: Vector3) -> void:
 ## 倒下：跪 → 往前撲倒 → 躺在原地（不沉下去、不釋放——是人，不是怪物）。倒下的那一刻就不算敵人了
 ## （鎖定、席菈找目標、戰鬥 HUD 都是數「enemies」群組）。
 func _on_died() -> void:
+	gawk_left = 0.0
 	_begin_death()
 	remove_from_group("enemies")
 	if _puppet != null:

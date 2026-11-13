@@ -242,6 +242,16 @@ func flinch() -> bool:
 	return true
 
 
+## 手上的事停下來、回到追人（丟毒瓶的愣住，D-246）：追人／後仰／前兆中才有作用；出招、破綻、跪地、倒下不動。
+## 回傳有沒有真的取消了一個前兆。
+func break_off() -> bool:
+	if state not in [State.CHASE, State.TELEGRAPH, State.FLINCH]:
+		return false
+	var was_windup: bool = state == State.TELEGRAPH
+	_enter(State.CHASE)
+	return was_windup
+
+
 ## 硬撐中：打不斷、不後仰（已經後仰過 brace_after 次），打出一招之後才重新算。
 func is_braced() -> bool:
 	return flinch_sec > 0.0 and interrupts >= brace_after and state != State.DEAD

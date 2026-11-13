@@ -90,6 +90,10 @@
     "telegraph_stagger_mult": 1.0,
     "recover_stagger_mult": 2.0,
     "pattern": ["toss"],
+    "gawk_sec": 1.6,
+    "gawk_back": 1.0,
+    "gawk_after": 0.6,
+    "gawk_cooldown": 10.0,
     "moves": {
       "toss": {"telegraph": 0.9, "active": 0.15, "recover": 2.4, "range": 8.5, "radius": 2.0, "life": 3.0, "flight": 0.55, "damage": 0}
     }

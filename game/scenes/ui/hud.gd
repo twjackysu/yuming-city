@@ -40,6 +40,20 @@ const CENTER_LINE_GAP: float = 0.9
 ## 中央兩行字的暗底比字多出多少（左右、上下）
 const CENTER_BACK_PAD: Vector2 = Vector2(30.0, 12.0)
 const CENTER_LINE2_COLOR: Color = Color(0.55, 0.95, 0.6)
+## 角色頭上的一句話（D-246：諾恩的碎念、旁人的反應）：跟著角色走、不停住遊戲、不是對話框。同一個角色同時只有一句
+const BARK_FADE_IN: float = 0.12
+const BARK_FADE_OUT: float = 0.45
+const BARK_RISE_PX: float = 16.0
+const BARK_MAX: int = 3
+const BARK_EDGE: float = 14.0
+## 頭頂的那一點超出畫面這麼多（px）以內還算在畫面裡
+const BARK_OFFSCREEN: float = 40.0
+const BARK_STACK_GAP: float = 4.0
+## 第一次連拍 24 px 的字在 1280×720 上只有 16 px 高、看不清楚（第 98 輪）——放大到跟中央提示差不多
+const BARK_FONT_SIZE: int = 32
+const BARK_COLOR: Color = Color(0.97, 0.94, 0.84)
+var _bark_root: Control
+var _barks: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -128,6 +142,10 @@ func _build() -> void:
 	anchor.add_child(_banner)
 	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 110)
 	_banner.modulate.a = 0.0
+	_bark_root = Control.new()
+	_bark_root.name = "Barks"
+	_bark_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(_bark_root)
 	_center = VBoxContainer.new()
 	_center.name = "CenterLines"
 	_center.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -185,6 +203,104 @@ func _process(delta: float) -> void:
 	status.position = Vector2(56.0, view_h - 182.0 - status.custom_minimum_size.y)
 	_refresh_potion(pc, view_h, delta)
 	guide.refresh(get_parent(), player, get_viewport().get_camera_3d(), combat.in_combat, delta)
+	_update_barks(delta)
+
+
+## 角色頭上跳一句話（翻譯 key 或已經翻好的字），seconds 秒後淡掉。head＝字浮在腳上面幾公尺。
+## 同一個角色的上一句直接換掉；同時最多 BARK_MAX 句（最舊的先拿掉）。
+func show_bark(speaker: Node3D, key: String, seconds: float = 2.4, color: Color = BARK_COLOR, head: float = 2.1) -> void:
+	if speaker == null or key == "":
+		return
+	var i: int = _barks.size() - 1
+	while i >= 0:
+		if _barks[i]["speaker"] == speaker:
+			(_barks[i]["label"] as Label).queue_free()
+			_barks.remove_at(i)
+		i -= 1
+	while _barks.size() >= BARK_MAX:
+		(_barks[0]["label"] as Label).queue_free()
+		_barks.remove_at(0)
+	var l := Label.new()
+	l.text = key
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", BARK_FONT_SIZE)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04, 0.95))
+	l.add_theme_constant_override("outline_size", 6)
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	l.add_theme_constant_override("shadow_offset_y", 2)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.modulate.a = 0.0
+	_bark_root.add_child(l)
+	_barks.append({"speaker": speaker, "label": l, "key": key, "age": 0.0, "life": maxf(seconds, 0.2), "head": head})
+	_update_barks(0.0)
+
+
+## 現在畫面上有哪幾句（key；測試用）
+func bark_keys() -> PackedStringArray:
+	var out := PackedStringArray()
+	for b: Dictionary in _barks:
+		out.append(str(b["key"]))
+	return out
+
+
+func _update_barks(delta: float) -> void:
+	if _barks.is_empty():
+		return
+	var i: int = _barks.size() - 1
+	while i >= 0:
+		var old: Dictionary = _barks[i]
+		old["age"] = float(old["age"]) + delta
+		if float(old["age"]) >= float(old["life"]) or not is_instance_valid(old["speaker"]):
+			(old["label"] as Label).queue_free()
+			_barks.remove_at(i)
+		i -= 1
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var view: Vector2 = get_viewport().get_visible_rect().size
+	var placed: Array[Rect2] = []
+	for b: Dictionary in _barks:
+		var l: Label = b["label"] as Label
+		var age: float = float(b["age"])
+		var life: float = float(b["life"])
+		l.modulate.a = clampf(minf(age / BARK_FADE_IN, (life - age) / BARK_FADE_OUT), 0.0, 1.0)
+		if cam == null:
+			continue
+		var at: Vector3 = (b["speaker"] as Node3D).global_position + Vector3.UP * float(b["head"])
+		var on: Vector2 = cam.unproject_position(at)
+		# 講話的人不在畫面裡（或在鏡頭後面）就不顯示：貼在畫面邊上的一句話看不出是誰講的（第 98 輪的連拍）
+		l.visible = not cam.is_position_behind(at) and Rect2(Vector2.ZERO, view).grow(BARK_OFFSCREEN).has_point(on)
+		if not l.visible:
+			continue
+		var size: Vector2 = l.get_minimum_size()
+		var p: Vector2 = on - Vector2(size.x * 0.5, size.y + BARK_RISE_PX * age / life)
+		var rect := Rect2(Vector2(clampf(p.x, BARK_EDGE, maxf(view.x - size.x - BARK_EDGE, BARK_EDGE)), clampf(p.y, BARK_EDGE, maxf(view.y - size.y - BARK_EDGE, BARK_EDGE))), size)
+		# 幾個人站得近（或離鏡頭遠）的時候字會疊在一起看不懂（第 98 輪的連拍）：後講的往上讓，上面沒位置就往下
+		var step: float = -(size.y + BARK_STACK_GAP)
+		var tries: int = 0
+		while tries < BARK_MAX * 2 and _bark_blocked(rect, placed):
+			if rect.position.y + step < BARK_EDGE:
+				step = size.y + BARK_STACK_GAP
+			rect.position.y += step
+			tries += 1
+		l.position = rect.position
+		placed.append(rect)
+
+
+func _bark_blocked(rect: Rect2, placed: Array[Rect2]) -> bool:
+	for r: Rect2 in placed:
+		if r.intersects(rect):
+			return true
+	return false
+
+
+## 畫面上看得到的那幾句各佔哪一塊（測試用）
+func bark_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for b: Dictionary in _barks:
+		var l: Label = b["label"] as Label
+		if l.visible:
+			out.append(Rect2(l.position, l.get_minimum_size()))
+	return out
 
 
 ## 可攜藥劑（新版）：數量一格在諾恩生命條的右上方；釘住時生命條也跟著亮（看得到現在滿不滿血）。

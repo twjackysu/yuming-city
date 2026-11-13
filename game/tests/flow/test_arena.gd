@@ -740,3 +740,56 @@ func test_skilled_bot_walks_into_a_mist_it_can_see() -> void:
 	assert_true(float(arena.stats["status_heal"]) > 0.0, "留著的時候慢慢回血")
 	await _close(level)
 
+
+## 別人躲的東西他走進去（D-246）：站進毒霧的那一刻諾恩碎念一句；站著不出來，丟毒瓶的愣住、頭上跳一句；
+## 剛愣過不會一直愣；第二次走進去換席菈講；放掉的那一下諾恩自己有姿勢、再講一句。拿棍子的不會愣。
+func test_standing_in_the_mist_makes_noen_mutter_and_the_thrower_gawk() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var thrower: DemoGuard = arena.enemies[2] as DemoGuard
+	var hud: Hud = level.get_node("Hud") as Hud
+	await _frames(30)
+	assert_false(arena.player_in_mist())
+	assert_eq(arena.bark_log.size(), 0, "沒有霧：沒有人講話")
+	var mist: PoisonMist = PoisonMist.create(2.0, "poison_bottle", 20.0)
+	mist.position = player.global_position
+	level.add_child(mist)
+	await _frames(6)
+	assert_true(arena.player_in_mist(), "站在霧裡")
+	assert_eq(arena.bark_log.size(), 1, "走進去的那一刻講一句")
+	assert_eq(str(arena.last_bark.get("situation", "")), BarkLines.NOEN_ENTER)
+	assert_true(arena.last_bark.get("speaker") == player, "是諾恩講的")
+	assert_true(hud.bark_keys().has(arena.bark_log[0]), "畫面上看得到（%s）" % ", ".join(hud.bark_keys()))
+	assert_eq(thrower.gawk_count, 0, "才剛站進去：還沒有人愣住")
+	await _frames(60)
+	assert_eq(thrower.gawk_count, 1, "站著不出來：丟毒瓶的愣住")
+	assert_eq(int(arena.stats["gawks"]), 1)
+	assert_true(arena.bark_log.has("BARK_THROWER_GAWK_1"), "他頭上跳一句")
+	assert_false(arena.bark_log.has("BARK_SHEILA_WATCH_1"), "席菈這時候不講：三個人不要同時講")
+	for i: int in 2:
+		assert_eq((arena.enemies[i] as DemoGuard).gawk_count, 0, "拿棍子的不會愣")
+	# 敵人是停住的（_freeze）：手動把他的愣住放掉，看「剛愣過不會一直愣」
+	thrower.gawk_left = 0.0
+	await _frames(120)
+	assert_eq(thrower.gawk_count, 1, "還站在裡面：剛愣過，不會一直愣")
+	assert_eq(arena.bark_log.size(), 2, "站著不動的時候不會一直講（%s）" % ", ".join(arena.bark_log))
+	# 這一團散了、下一團又落在腳邊，他還是站在裡面：諾恩剛講過，這次換席菈講（每一波一次）
+	mist.queue_free()
+	await _frames(3)
+	assert_false(arena.player_in_mist(), "霧散了")
+	var again: PoisonMist = PoisonMist.create(2.0, "poison_bottle", 20.0)
+	again.position = player.global_position
+	level.add_child(again)
+	await _frames(6)
+	assert_eq(arena.mist_entries, 2)
+	assert_true(arena.bark_log.has("BARK_SHEILA_WATCH_1"), "第二次走進去：席菈講一句（%s）" % ", ".join(arena.bark_log))
+	assert_true(arena.last_bark.get("speaker") == level.get_node("Sheila"), "是席菈講的")
+	assert_eq(arena.bark_log.size(), 3)
+	assert_true(player.release_power() > 0.0, "身上的毒夠放了")
+	player.release()
+	assert_true(player.puppet().is_releasing(), "放的那一下諾恩自己有姿勢")
+	assert_eq(player.puppet().action, "", "姿勢不佔出手")
+	assert_eq(str(arena.last_bark.get("situation", "")), BarkLines.NOEN_RELEASE_MISS, "旁邊沒人：講的是放空的那一句")
+	assert_eq(arena.bark_log.size(), 4)
+	await _close(level)

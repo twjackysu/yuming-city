@@ -16,6 +16,8 @@ const WALK_MIN_SPEED: float = 0.3
 const RUN_MIN_SPEED: float = 4.6
 const RUN_SPEED: float = 5.8
 const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55}
+## 「釋放」的姿勢播多久（D-246）。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
+const RELEASE_POSE_TIME: float = 0.36
 const HIP_HEIGHT: float = 0.92
 const THIGH_LEN: float = 0.44
 const SHIN_LEN: float = 0.44
@@ -49,6 +51,8 @@ var action: String = ""
 var action_time: float = 0.0
 ## 出手動作播多快（1＝原速）。只影響 "attack"；麻痺被反轉時玩家把它調快（D-234）
 var attack_speed: float = 1.0
+## 「釋放」的姿勢還剩幾秒（0＝沒有在播）
+var release_left: float = 0.0
 var phase: float = 0.0
 var breath: float = 0.0
 
@@ -87,6 +91,15 @@ func play_action(action_name: String) -> void:
 	action_time = 0.0
 
 
+## 釋放的那一下（D-246）：先縮、再把兩手往兩邊甩開。只有程序人偶有這個姿勢；滾到一半不擺（看不出來）。
+func play_release() -> void:
+	release_left = RELEASE_POSE_TIME
+
+
+func is_releasing() -> bool:
+	return release_left > 0.0
+
+
 func current_state() -> String:
 	if action != "":
 		return action
@@ -117,10 +130,14 @@ func advance(delta: float) -> void:
 		if action_time >= float(ACTION_TIME[action]):
 			action = ""
 			action_time = 0.0
+	var release_t: float = 1.0 - release_left / RELEASE_POSE_TIME
+	release_left = maxf(release_left - delta, 0.0)
 	if model != null:
 		_animate_model()
 		return
 	_pose(speed_t)
+	if release_t < 1.0 and action != "dodge" and lying == "" and not sitting:
+		_pose_release(release_t)
 
 
 ## 模型：依狀態換動作；缺的動作退回（閃避＝整個人前滾，其他＝idle）。
@@ -345,6 +362,39 @@ func _pose_attack(t: float) -> void:
 	_rot("thigh_L", Vector3(0.35, 0, 0))
 	_rot("knee_L", Vector3(-0.3, 0, 0))
 	_rot("thigh_R", Vector3(-0.25, 0, 0))
+
+
+## 釋放：縮（0～25%：兩手抱到胸前、膝蓋彎、上身往前捲）→ 炸開（25～55%：兩手往兩邊甩到水平、胸口往後挺、頭抬起來、兩腳踩開）→ 收回。
+## 肩膀 x 正的＝手往前往上、z（右手正、左手負）＝往外張；脊椎 x 負的＝往前彎。
+func _pose_release(t: float) -> void:
+	var gather: float = 0.0
+	var burst: float = 0.0
+	if t < 0.25:
+		gather = ease(t / 0.25, 0.5)
+	elif t < 0.55:
+		burst = ease((t - 0.25) / 0.3, 0.35)
+		gather = 1.0 - burst
+	else:
+		burst = 1.0 - ease((t - 0.55) / 0.45, 1.6)
+	var sink: float = maxf(gather, burst * 0.7)
+	var arm_x: float = 0.9 * gather - 0.3 * burst
+	var arm_z: float = 0.12 - 0.45 * gather + 1.4 * burst
+	_rot("shoulder_R", Vector3(arm_x, 0, arm_z))
+	_rot("shoulder_L", Vector3(arm_x, 0, -arm_z))
+	_rot("elbow_R", Vector3(1.7 * gather + 0.12 * burst, 0, 0))
+	_rot("elbow_L", Vector3(1.7 * gather + 0.12 * burst, 0, 0))
+	_rot("spine", Vector3(-0.38 * gather + 0.2 * burst, 0, 0))
+	_rot("chest", Vector3(-0.2 * gather + 0.22 * burst, 0, 0))
+	_rot("neck", Vector3(-0.25 * gather + 0.35 * burst, 0, 0))
+	_rot("thigh_L", Vector3(0.6 * sink, 0, -0.3 * burst))
+	_rot("thigh_R", Vector3(0.6 * sink, 0, 0.3 * burst))
+	_rot("knee_L", Vector3(-1.2 * sink, 0, 0))
+	_rot("knee_R", Vector3(-1.2 * sink, 0, 0))
+	var hips: Node3D = joint("hips")
+	if hips != null:
+		hips.position.y = HIP_HEIGHT - 0.16 * sink
+	if _coat != null:
+		_coat.rotation.x = -0.25 * gather + 0.15 * burst
 
 
 func _rot(joint_name: String, r: Vector3) -> void:

@@ -665,6 +665,8 @@ func release() -> Dictionary:
 	if hits > 0:
 		Game.hit_stop(CombatTuning.num("feel.hit_stop_kill" if kills > 0 else "feel.hit_stop_weak", 0.08))
 	shake(CombatTuning.num("feel.shake_kill", 0.3))
+	# 諾恩自己的姿勢（D-246）：縮一下、兩手甩開。不是 action，不擋接下來的出手
+	_puppet.play_release()
 	release_count += 1
 	last_release = {"seconds": secs, "damage": damage, "hits": hits, "kills": kills}
 	released.emit(last_release)
