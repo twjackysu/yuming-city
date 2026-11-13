@@ -78,7 +78,7 @@
 
 ### 6.2 授權沒問題、但雲端的 shell 抓不到的
 
-- **Quaternius 的 Fantasy Props MegaKit**（官網那一頁打開看過）：「Free to use in personal, educational and commercial projects. (CC0 License)」；211 個中世紀小物——武器、工具、蔬菜、藥水、**市場攤位**、箱子、家具；有 glTF。造型比 KayKit 細、比例比較正常，跟地下市場最搭。**下載在 itch.io**（shell 連不到；itch 的下載要按按鈕，CI 也不好自動抓）——要用的話請 Jacky 下載 zip 放進 `art-inbox/`（或一個 GitHub release），是他五分鐘能做完的事。同一位作者還有 Medieval Village MegaKit（建築）、Lowpoly Medieval Weapons——搜得到頁面，授權頁這一輪沒有打開（OpenGameArt 擋自動抓取）。
+- **（2026-11-13 22:06 Jacky 下載放進 `art-inbox/props/` 了，縮成 8 MB，D-258；授權的根據與用法看 `art-inbox/props/README.md`。下面是當時查的。）Quaternius 的 Fantasy Props MegaKit**（官網那一頁打開看過）：「Free to use in personal, educational and commercial projects. (CC0 License)」；211 個中世紀小物——武器、工具、蔬菜、藥水、**市場攤位**、箱子、家具；有 glTF。造型比 KayKit 細、比例比較正常，跟地下市場最搭。**下載在 itch.io**（shell 連不到；itch 的下載要按按鈕，CI 也不好自動抓）——要用的話請 Jacky 下載 zip 放進 `art-inbox/`（或一個 GitHub release），是他五分鐘能做完的事。同一位作者還有 Medieval Village MegaKit（建築）、Lowpoly Medieval Weapons——搜得到頁面，授權頁這一輪沒有打開（OpenGameArt 擋自動抓取）。
 - **Kenney 的 Fantasy Town Kit、Castle Kit、Retro Medieval Kit**：搜得到（itch.io、OpenGameArt、kenney.nl），他的素材一向標 CC0，**這一輪沒有打開授權頁確認**。不在 GitHub 上。
 - **Poly Haven**（寫實的 CC0 模型、貼圖、HDRI）：風格是寫實的，跟漫畫風不搭，不用。
 
@@ -87,4 +87,39 @@
 - 劇情專屬的東西：諾恩的鐘錘、席菈的斷劍（現成的雙手劍可以當底，斷口自己切）、護腕、毒瓶、藥店的檢測板、貨梯。
 - 怪物（送葬者、灰巡者）：KayKit 只有骷髏；要嘛改設定用骷髏當一般的雜兵，要嘛照舊自己做。
 - 整條地下市場的街景（招牌鏡頭）：現成的是「零件」，街還是要自己排；現在的街是程式一塊一塊蓋的，可以把攤位、木桶、木箱、瓶子、旗子、火把這些小物換成現成的，牆與地板先不動。
+
+## 7. 男女主角要像一對、要像冒險者（2026-11-13 22:2x；Jacky 問的，D-259）
+
+Jacky 的原話：「另外男女主角有相似一點的模型嗎?衣服好像有點不搭，女生那套太像學生服，有更像冒險者一點的裝扮的現成模型嗎?」
+
+### 7.1 現成、授權乾淨、漫畫風的角色一共就這 8 個（全部算了一張圖給他看）
+
+`madjin/vrm-samples` 的 `vroid/beta/`，8 個檔的 meta 都直接讀過：`licenseName: CC0`、商用 `Allow`。用 `tools/blender/vrm_roster.py` 排成一排算的：
+
+| 檔案 | 樣子 | 身高 |
+|---|---|---|
+| `HairSample_Male`（現在的諾恩） | 男，深色亂髮，白色連帽上衣、深色長褲 | 1.81 m |
+| `Sakurada_Fumiriya` | **男**，橘色短髮，海軍藍針織背心＋白襯衫＋橘領帶＋深色長褲——**跟 Shino 是同一套制服** | 1.92 m（含翹起來的頭髮） |
+| `Sendagaya_Shino`（現在的席菈） | 女，黑長髮，海軍藍背心＋白襯衫＋藍領結＋百褶裙＋及膝襪 | 1.65 m |
+| `Sendagaya_Shibu` | **女**（不是男的），黑短髮，同一套制服、紅領結 | 1.62 m |
+| `Darkness_Shibu` | 女，紅色短髮，深藍花紋的哥德風洋裝 | 1.65 m |
+| `Victoria_Rubin` | 女，金色馬尾，粉白色的偶像裝 | 1.74 m |
+| `Vita` | 女，白色短髮，藍綠色的科幻緊身衣 | 1.71 m |
+| `Vivi` | 女，棕色短髮，綠色圍裙洋裝＋綁帶靴（村姑的感覺；最接近奇幻，但她是 1.41 m 的小個子） | 1.41 m |
+
+**沒有一個穿冒險者的衣服。** 「最像一對」的是 `Sakurada_Fumiriya`＋`Sendagaya_Shino`（同一套制服的男女版），但兩個都是學生服。只改顏色的試作也算了一張（背心乘深褐、襯衫乘麻色、頭髮壓深）：剪裁沒變，還是制服。
+
+### 7.2 別的來源（2026-11-13 查的；授權的句子都是從原頁面讀的）
+
+- **Quaternius：Universal Base Characters＋Modular Character Outfits – Fantasy＋Universal Animation Library**——真的有冒險者服裝的男女一對，跟 `art-inbox/props/` 那包小物是同一位作者、同一種畫風。素材包的頁面寫「Free to use in personal, educational and commercial projects. (CC0 License)」。**但**他的網站現在有一頁「Quaternius Asset License (QAL) v1.0」（Last updated: 8/28/2026）：「You just can't resell or redistribute the assets themselves as assets」，也寫「the version in effect at the time you obtained the Assets governs your use of them」——所以要看下載到的 zip 裡附的授權檔。免費版的內容**沒有在他自己的頁面上確認到**（別人的清單寫：身體是 Superhero 男女各一；服裝是遊俠與平民男女各一，騎士／貴族／法師要付費）。格式有 glTF。下載在 itch.io，要人按按鈕，腳本抓不到；沒有官方的 GitHub 鏡像。動作庫第 1 版的免費版 45 段，OpenGameArt 上也有。**畫風：成年人的英雄比例、臉是簡單的西式卡通臉，不是漫畫風。** 預覽圖：<https://quaternius.com/assets/images/fullres/modularcharacteroutfitsfantasy.jpg>。
+- **KayKit Adventurers 1.0**（GitHub 上、CC0、腳本抓得到）：騎士、野蠻人、法師、盜賊、戴兜帽的盜賊，75 段動作。Q 版大頭、低面數，跟現在的人物差很遠。2.0 與他的動作包只在 itch.io。
+- **VRoid 這條路的其他做法都不乾淨**：官方沒有奇幻服裝的 CC0 範例；VRoid Studio 內建的東西「is not CC0」，可以商用、可以賣匯出的模型，但沒有明說可以放進公開的 repo；BOOTH 上免費的衣服看到的都寫不能轉散布。
+- `M3-org/loot-assets`（GitHub 上，漫畫風的男女身體＋奇幻裝備，VRM）：**沒有授權檔**，不能用。
+- 100Avatars（CC0）、VIPE Heroes（CC-BY）：檔案在 Arweave／IPFS，不是 GitHub；風格沒確認。
+
+### 7.3 決定（D-259）
+
+留著漫畫風的臉與頭髮（Jacky 下午選漫畫風就是因為這個），兩個人加**同一套**自製的冒險者裝備：短斗篷（蓋掉背心與領結）、腰帶與小包、到膝蓋的靴子（蓋掉及膝襪）、護臂；底下的衣服改成皮革與麻布的顏色。先做席菈。做兩輪還不像，再改用 Quaternius 的現成冒險者（要 Jacky 下載，臉不是漫畫風）。
+
+VRoid 的衣服怎麼動（給做的人）：`Tops`／`Bottoms`／`Shoes`／`AccessoryNeck` 各是一個材質（`--tint <名字>=r,g,b` 可以整塊乘顏色）；衣服底下的身體是挖掉的，**不要刪衣服的網格**，新的衣服要蓋在外面；量半徑用 `vrm_character.py` 的 `reach()`，不要用 `radius_from()`（NEXT「0000」第 2 項）。
 
