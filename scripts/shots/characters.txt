@@ -4,6 +4,8 @@
 # （第 1 張看到的是諾恩的背面、敵人在他前面。第 105 輪以前這一張看到的是他的臉——那是 bug：挨打被推開時整個人轉過去背對敵人，D-260。）
 # 用法：改模型之前 scripts/shots.sh characters --save-baseline，改完 scripts/shots.sh characters，先看印出來的數字。
 char-player-view 40 --arena --wave=1 --bot=idle --locale=zh_TW
+char-player-open 12 --arena --wave=1 --bot=idle --locale=zh_TW
+char-player-lock 40 --arena --wave=1 --bot=idle --lock --locale=zh_TW
 char-noen-front 40 --arena --wave=1 --bot=idle --noen-cam --locale=zh_TW
 char-noen-back 40 --arena --wave=1 --bot=idle --noen-cam=back --locale=zh_TW
 char-sheila-front 40 --arena --wave=1 --bot=idle --sheila-cam --locale=zh_TW

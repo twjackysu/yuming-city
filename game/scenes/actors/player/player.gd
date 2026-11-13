@@ -34,9 +34,12 @@ const CAMERA_DIST: float = 3.2
 const CAMERA_DIST_COMBAT: float = 4.2
 const COMBAT_RANGE: float = 20.0
 ## 過肩偏移（D-072）：鏡頭在諾恩右後方，諾恩落在畫面左側、街景留在中間。
-## 戰鬥中／鎖定時收小（敵人在畫面中間、諾恩不擋）；右邊有牆時沿著肩膀那條射線收回，不會穿牆。
+## 戰鬥中／鎖定時再往右放大一點（D-266）：鏡頭的視線跟諾恩面對的方向平行，站在他正前方的敵人在畫面上
+## 只比他偏右「偏移 ×（1 − 鏡頭到他的距離 ÷ 鏡頭到敵人的距離）」——0.55 m 時敵人的身體中線整個在諾恩背後
+## （被打中後仰、變紅都看不到）；1.05 m 時貼身 1.2 m 的敵人中線也露在他右肩外面。
+## 右邊有牆時沿著肩膀那條射線收回，不會穿牆。
 const SHOULDER_OFFSET: float = 0.85
-const SHOULDER_OFFSET_COMBAT: float = 0.55
+const SHOULDER_OFFSET_COMBAT: float = 1.05
 ## 肩膀那條射線離牆至少留這麼多（鏡頭近平面＋SpringArm 的 margin）
 const SHOULDER_MARGIN: float = 0.35
 ## 只擋鏡頭的碰撞層（D-265）：牆面上沒有碰撞的裝飾（櫥窗裡的瓶子、窗台、門邊的燈）前面放一片只在這一層的牆，
@@ -945,7 +948,7 @@ func _follow_rig(delta: float) -> void:
 	_update_shoulder(delta)
 
 
-## 這個時候想要的過肩偏移（還沒扣掉牆）：探索 0.85 m，戰鬥中或鎖定時 0.55 m。
+## 這個時候想要的過肩偏移（還沒扣掉牆）：探索 0.85 m，戰鬥中或鎖定時 1.05 m。
 func shoulder_target() -> float:
 	return SHOULDER_OFFSET_COMBAT if lock_target != null or in_combat() else SHOULDER_OFFSET
 

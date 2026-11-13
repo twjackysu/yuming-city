@@ -87,6 +87,11 @@ var sheila_cam: bool = false
 ## 開發用：`--noen-cam`＝同一個鏡頭改成對著諾恩的正面；`--noen-cam=back`＝架在他斜後方（玩家玩的時候看到的那一面：大衣的背面與下襬）。
 var noen_cam: bool = false
 var noen_cam_back: bool = false
+## 每一波開打時鏡頭往下看的角度（弧度；D-266）：比探索的 −0.18 再低頭一點，鏡頭升高，
+## 走到諾恩面前的敵人腰以上露在他的頭上面（玩家之後照樣可以自己轉）。
+const START_PITCH: float = -0.30
+## 開發用：`--lock`＝一開打就鎖定最近的敵人（拍「鎖定時的鏡頭」用的固定鏡頭 `char-player-lock`，D-266）。
+var dev_lock: bool = false
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
 var release_tip_shown: bool = false
@@ -217,6 +222,7 @@ func _ready() -> void:
 		noen_cam = App.parse_user_args(OS.get_cmdline_user_args()).has("noen-cam")
 		noen_cam_back = str(App.parse_user_args(OS.get_cmdline_user_args()).get("noen-cam", "")) == "back"
 		make_side_cam()
+	dev_lock = App.parse_user_args(OS.get_cmdline_user_args()).has("lock")
 	start_wave(wave)
 
 
@@ -232,6 +238,8 @@ func make_side_cam() -> void:
 func _process(_delta: float) -> void:
 	if side_cam != null:
 		_aim_side_cam(0.15)
+	if dev_lock and player != null and player.lock_target == null:
+		player.toggle_lock()
 
 
 ## 對著諾恩與最近的敵人中間（沿著街跟著走；k＝這一幀跟上幾成）。
@@ -319,7 +327,7 @@ func start_wave(index: int) -> void:
 	player.velocity = Vector3.ZERO
 	player.rotation.y = deg_to_rad(float(pspec.get("facing_deg", 0.0)))
 	player.yaw = player.rotation.y
-	player.pitch = -0.18
+	player.pitch = START_PITCH
 	player.snap_camera()
 	Game.arena_revived()
 	var hud: Hud = level.get_node_or_null("Hud") as Hud
