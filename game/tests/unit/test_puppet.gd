@@ -65,10 +65,10 @@ func test_player_drives_puppet() -> void:
 	tree.root.add_child(player)
 	await tree.physics_frame
 	assert_not_null(player.puppet(), "玩家有人偶")
-	# 武器是法杖（D-264）：掛在右手原本鐘錘的節點底下；原本左手提燈的光搬到杖頭
+	# 武器是法杖（D-264）：掛在右手原本鐘錘的節點底下、平常的位置對到左手（D-267）；原本左手提燈的光搬到杖頭
 	var staff: Node3D = player.staff()
-	assert_not_null(staff, "右手有法杖")
-	assert_eq(staff.get_parent(), player.puppet().hand("R"), "法杖掛在右手")
+	assert_not_null(staff, "有法杖")
+	assert_eq(staff.get_parent(), player.puppet().hand("R"), "法杖的節點掛在右手底下（出手是右手揮）")
 	assert_eq(str(staff.name), "BellHammer", "節點的名字照舊（別的程式用這個名字找右手的武器）")
 	assert_not_null(staff.get_node_or_null("Model"), "是現成的法杖模型")
 	assert_eq(staff.get_child_count(), 2, "程式拼的握柄與錘頭拿掉了，只剩模型與光")
@@ -76,21 +76,36 @@ func test_player_drives_puppet() -> void:
 	assert_not_null(orb, "原本提燈的光在法杖上")
 	assert_true(orb.position.y > 0.6, "光在杖頭（%.2f）" % orb.position.y)
 	assert_not_null(orb.get_node_or_null("LanternLight"), "光還在（場景靠它照亮諾恩周圍）")
-	assert_true(player.puppet().hand("L").get_node_or_null("Lantern") == null, "左手空著")
+	assert_true(player.puppet().hand("L").get_node_or_null("Lantern") == null, "左手沒有提燈")
 	# 平常直直立在身邊（不管手怎麼擺）；出手時跟著手往前指；打完轉回來
 	var hand: Node3D = player.puppet().hand("R")
+	var left: Node3D = player.puppet().hand("L")
+	var body: Node3D = player.get_node("Body") as Node3D
 	player.pose_staff(1.0)
 	assert_true(staff.global_basis.y.normalized().dot(Vector3.UP) > 0.97, "平常杖頭朝上（%.2f）" % staff.global_basis.y.normalized().dot(Vector3.UP))
+	# 平常拿在左手（D-267）：鏡頭在右後方，杖頭的珠子在右邊會擋住被鎖定的敵人
+	var hands_apart: float = left.global_position.distance_to(hand.global_position)
+	assert_true(hands_apart > 0.3, "兩隻手分得開（%.2f）" % hands_apart)
+	assert_true(staff.global_position.distance_to(left.global_position) < 0.1, "平常法杖在左手上（離左手 %.2f m）" % staff.global_position.distance_to(left.global_position))
+	assert_true(body.to_local(staff.global_position).x < -0.15, "平常法杖在身體左邊（%.2f）" % body.to_local(staff.global_position).x)
+	assert_true(body.to_local(orb.global_position).x < -0.15, "杖頭的光也在左邊（%.2f）" % body.to_local(orb.global_position).x)
 	player.puppet().play_action("attack")
+	player.pose_staff(0.06)
+	var swap_right: float = staff.global_position.distance_to(hand.global_position)
+	var swap_left: float = staff.global_position.distance_to(left.global_position)
+	assert_true(swap_right > 0.1 and swap_left > 0.1, "換手是移過去的，不是跳的（離右手 %.2f、離左手 %.2f）" % [swap_right, swap_left])
+	assert_true(body.to_local(staff.global_position).z < minf(body.to_local(left.global_position).z, body.to_local(hand.global_position).z), "換手時從身體前面繞，不穿過身體")
 	player.pose_staff(1.0)
 	var forward: Vector3 = -hand.global_basis.z.normalized()
 	assert_true(staff.global_basis.y.normalized().dot(forward) > 0.99, "出手時杖頭順著手往前指（%.2f）" % staff.global_basis.y.normalized().dot(forward))
+	assert_true(staff.global_position.distance_to(hand.global_position) < 0.1, "出手時法杖在右手上（離右手 %.2f m）" % staff.global_position.distance_to(hand.global_position))
 	player.puppet().action = ""
 	player.pose_staff(0.02)
 	var mid: float = staff.global_basis.y.normalized().dot(forward)
 	assert_true(mid < 0.99 and mid > 0.5, "轉回來是轉的，不是跳的（%.2f）" % mid)
 	player.pose_staff(1.0)
 	assert_true(staff.global_basis.y.normalized().dot(Vector3.UP) > 0.97, "打完轉回來")
+	assert_true(staff.global_position.distance_to(left.global_position) < 0.1, "打完換回左手")
 	player.queue_free()
 	await tree.process_frame
 

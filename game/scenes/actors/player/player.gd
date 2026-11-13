@@ -82,7 +82,8 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 const SELF_LAYER: int = 1 << 11
 const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
 ## 諾恩的武器是法杖（D-264；Jacky 11/14：「武器我希望不是燈籠...可以是法杖」）：現成的 CC0 模型（KayKit）。
-## 掛在右手原本鐘錘的節點（BellHammer）底下；沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
+## 掛在右手原本鐘錘的節點（BellHammer）底下，平常的位置對到左手、出手時才回到右手（D-267，pose_staff）；
+## 沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
 const STAFF_MODEL: String = "kaykit/staff"
 ## 這包素材是大頭的比例（珠子比頭大）：縮到 0.6——全長 1.3 m、珠子直徑 27 cm
 const STAFF_SCALE: float = 0.6
@@ -96,6 +97,15 @@ const STAFF_STRIKE_X: float = -PI * 0.5
 const STAFF_TURN_RATE: float = 8.0
 ## 杖頭那顆珠子在模型裡的高度（縮放前）：原本提燈的光搬到這裡
 const STAFF_ORB_Y: float = 1.02
+## 握的位置（手的座標）：掌心往外一點。出手時在右手
+const STAFF_GRIP_RIGHT: Vector3 = Vector3(0.05, 0.0, -0.02)
+## 平常拿在左手（D-267）：鏡頭在諾恩右後方，敵人是從他的右邊露出來的——杖頭的珠子在右邊會剛好擋住被鎖定的那個人。
+## 這是左手掌心往身體左邊再挪多少（身體的座標，m）：杖身貼著拳頭外側、不穿過大腿與下襬
+const STAFF_LEFT_OUT: Vector3 = Vector3(-0.05, 0.0, -0.02)
+## 出手那一下法杖從左手換到右手：往身體前面繞這麼遠（m），不從身體裡面穿過去
+const STAFF_SWAP_ARC: float = 0.22
+## 拿在左手時杖頭往外（身體左邊）倒這麼多（弧度）：珠子離開頭 7 cm 左右，不貼著頭髮
+const STAFF_CARRY_LEAN: float = 0.10
 
 var _puppet: Puppet
 var _staff: Node3D
@@ -906,7 +916,7 @@ func _build_staff() -> void:
 	model.scale = Vector3.ONE * STAFF_SCALE
 	model.position = Vector3(0, STAFF_GRIP_Y, 0)
 	hammer.add_child(model)
-	hammer.position = Vector3(0.05, 0.0, -0.02)
+	hammer.position = STAFF_GRIP_RIGHT
 	_staff = hammer
 	pose_staff(0.0)
 
@@ -921,9 +931,20 @@ func pose_staff(delta: float) -> void:
 	if hand == null or not hand.is_inside_tree():
 		return
 	# 直立：照身體的朝向算（世界座標），再換回手的座標——手怎麼擺、手臂怎麼晃，杖都是直的
-	var upright: Basis = _body.global_basis.orthonormalized() * Basis(Vector3.RIGHT, STAFF_CARRY_TILT)
+	var upright: Basis = _body.global_basis.orthonormalized() * Basis(Vector3.BACK, STAFF_CARRY_LEAN) * Basis(Vector3.RIGHT, STAFF_CARRY_TILT)
 	var carry: Basis = hand.global_basis.orthonormalized().inverse() * upright
 	_staff.basis = carry.orthonormalized().slerp(Basis(Vector3.RIGHT, STAFF_STRIKE_X), _staff_strike)
+	# 位置：平常對到左手（左手拿著、立在左肩旁邊），出手時繞過身體前面換到右手、打完換回去。
+	# 節點還是掛在右手底下（出手是右手揮；別的程式用 BellHammer 這個名字找它），所以世界座標算好再換回右手的座標。
+	var left_hand: Node3D = _puppet.hand("L")
+	if left_hand == null or not left_hand.is_inside_tree():
+		_staff.position = STAFF_GRIP_RIGHT
+		return
+	var body: Basis = _body.global_basis.orthonormalized()
+	var at_left: Vector3 = left_hand.global_position + body * STAFF_LEFT_OUT
+	var at_right: Vector3 = hand.global_transform * STAFF_GRIP_RIGHT
+	var arc: Vector3 = body * Vector3(0.0, 0.0, -STAFF_SWAP_ARC) * sin(PI * _staff_strike)
+	_staff.position = hand.global_transform.affine_inverse() * (at_left.lerp(at_right, _staff_strike) + arc)
 
 
 func staff() -> Node3D:
