@@ -226,7 +226,10 @@ func test_standing_still_loses_the_first_wave() -> void:
 	if not arena.results.is_empty():
 		var r: Dictionary = arena.results[0]
 		assert_eq(str(r["result"]), "lose", "站著不動會輸")
-		assert_true(int(r["hits_taken"]) >= 3 and int(r["hits_taken"]) <= 6, "幾下就倒（%d 下）" % int(r["hits_taken"]))
+		# 第 100 輪（D-248）：站在他面前的人踩進毒霧會被嗆到跳開，站著不動多撐 1.4 秒（12.4 → 13.8 秒，20 場平均）、
+		# 多回一點血，這一場從 6 下變成 7 下（改之前 20 場裡本來就有 7 下的，平均 6.7）。上限跟著改成 7，並且多驗「15 秒內倒」
+		assert_true(int(r["hits_taken"]) >= 3 and int(r["hits_taken"]) <= 7, "幾下就倒（%d 下）" % int(r["hits_taken"]))
+		assert_true(float(r["time"]) <= 15.0, "站著不動 15 秒內倒（%.1f 秒）：被嗆到跳開不能讓站著變划算" % float(r["time"]))
 		assert_true(float(r["noen_share"]) < 0.01, "他一下都沒打")
 	arena.set_physics_process(false)
 	await _close(level)
@@ -792,4 +795,38 @@ func test_standing_in_the_mist_makes_noen_mutter_and_the_thrower_gawk() -> void:
 	assert_eq(player.puppet().action, "", "姿勢不佔出手")
 	assert_eq(str(arena.last_bark.get("situation", "")), BarkLines.NOEN_RELEASE_MISS, "旁邊沒人：講的是放空的那一句")
 	assert_eq(arena.bark_log.size(), 4)
+	await _close(level)
+
+
+## 毒霧落在諾恩腳邊（D-248）：站在他面前的人被嗆到、跳到霧外面、頭上跳一句；諾恩自己沒事；站得遠的人沒事。
+func test_enemy_in_front_of_noen_chokes_on_the_mist_at_his_feet_and_hops_out() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var near: DemoGuard = arena.enemies[0] as DemoGuard
+	var far: DemoGuard = arena.enemies[1] as DemoGuard
+	await _frames(10)
+	assert_eq(int(arena.stats["chokes"]), 0)
+	near.global_position = player.global_position + Vector3(0.0, 0.0, -1.3)
+	near.brain.state = EnemyBrain.State.CHASE
+	var hp0: float = near.health.hp
+	var php: float = player.health.hp
+	var mist: PoisonMist = PoisonMist.create(2.0, DemoGuard.MIST_SOURCE, 20.0)
+	mist.position = player.global_position
+	level.add_child(mist)
+	await _frames(3)
+	assert_eq(near.choke_count, 1, "站在諾恩面前的人被嗆到")
+	assert_eq(far.choke_count, 0, "站在霧外面的人沒事")
+	assert_eq(int(arena.stats["chokes"]), 1, "這一場記一次（機器人的表會印）")
+	assert_true(near.health.hp < hp0, "扣了一點血")
+	assert_true(float(arena.stats["self_damage"]) > 0.0 and float(arena.stats["noen_damage"]) == 0.0, "記在「被毒嗆掉的血」，不算諾恩打的")
+	assert_true(player.health.hp >= php, "諾恩站在同一團霧裡沒有扣血")
+	assert_true(arena.bark_log.has("BARK_CHOKE_1"), "他頭上跳一句（%s）" % ", ".join(arena.bark_log))
+	near.set_physics_process(true)
+	await _frames(int(near.brain.flinch_sec * 60.0) + 3)
+	near.set_physics_process(false)
+	assert_false(mist.contains(near.global_position), "跳到霧外面（離諾恩 %.2f m）" % near.global_position.distance_to(player.global_position))
+	assert_true(arena.player_in_mist(), "諾恩還站在裡面")
+	await _frames(30)
+	assert_eq(near.choke_count, 1, "同一團霧不會一直嗆")
 	await _close(level)

@@ -49,6 +49,12 @@ const BARK_EDGE: float = 14.0
 ## 頭頂的那一點超出畫面這麼多（px）以內還算在畫面裡
 const BARK_OFFSCREEN: float = 40.0
 const BARK_STACK_GAP: float = 4.0
+## 講的人的臉被比較靠近鏡頭的另一個角色擋住就不顯示（D-248）：第 99 輪的過肩連拍上，站在後面 8 m 的人講的話
+## 畫在前面那個人的頭上，看起來像前面那個人講的。臉＝腳上面 head × BARK_FACE；擋人的身體＝腳到 BARK_BODY_HEIGHT、左右各 BARK_BODY_HALF 公尺。
+const BARK_FACE: float = 0.76
+const BARK_BODY_HEIGHT: float = 1.8
+const BARK_BODY_HALF: float = 0.3
+const BARK_BLOCKER_GROUPS: PackedStringArray = ["player", "heartbeat", "enemies"]
 ## 第一次連拍 24 px 的字在 1280×720 上只有 16 px 高、看不清楚（第 98 輪）——放大到跟中央提示差不多
 const BARK_FONT_SIZE: int = 32
 const BARK_COLOR: Color = Color(0.97, 0.94, 0.84)
@@ -269,6 +275,8 @@ func _update_barks(delta: float) -> void:
 		var on: Vector2 = cam.unproject_position(at)
 		# 講話的人不在畫面裡（或在鏡頭後面）就不顯示：貼在畫面邊上的一句話看不出是誰講的（第 98 輪的連拍）
 		l.visible = not cam.is_position_behind(at) and Rect2(Vector2.ZERO, view).grow(BARK_OFFSCREEN).has_point(on)
+		if l.visible and bark_speaker_hidden(cam, b["speaker"] as Node3D, float(b["head"])):
+			l.visible = false
 		if not l.visible:
 			continue
 		var size: Vector2 = l.get_minimum_size()
@@ -284,6 +292,35 @@ func _update_barks(delta: float) -> void:
 			tries += 1
 		l.position = rect.position
 		placed.append(rect)
+
+
+## 講的人的臉在畫面上是不是被另一個比較靠近鏡頭的角色（諾恩、席菈、還站著的敵人）的身體蓋住。
+func bark_speaker_hidden(cam: Camera3D, speaker: Node3D, head: float) -> bool:
+	if cam == null or speaker == null or not is_inside_tree():
+		return false
+	var face: Vector3 = speaker.global_position + Vector3.UP * head * BARK_FACE
+	var on: Vector2 = cam.unproject_position(face)
+	var far: float = cam.global_position.distance_to(face)
+	var seen: Array[Node] = []
+	for group: String in BARK_BLOCKER_GROUPS:
+		for n: Node in get_tree().get_nodes_in_group(group):
+			var other: Node3D = n as Node3D
+			if other == null or other == speaker or seen.has(other):
+				continue
+			seen.append(other)
+			var foe: EnemyActor = other as EnemyActor
+			if foe != null and (foe.health == null or foe.health.is_dead()):
+				continue
+			var feet: Vector3 = other.global_position
+			var top: Vector3 = feet + Vector3.UP * BARK_BODY_HEIGHT
+			if cam.is_position_behind(feet) or cam.is_position_behind(top) or cam.global_position.distance_to(feet) > far - 0.5:
+				continue
+			var a: Vector2 = cam.unproject_position(top)
+			var b: Vector2 = cam.unproject_position(feet)
+			var half: float = absf(b.y - a.y) * BARK_BODY_HALF / BARK_BODY_HEIGHT
+			if on.y >= minf(a.y, b.y) and on.y <= maxf(a.y, b.y) and absf(on.x - (a.x + b.x) * 0.5) <= half:
+				return true
+	return false
 
 
 func _bark_blocked(rect: Rect2, placed: Array[Rect2]) -> bool:

@@ -9,6 +9,7 @@ const NOEN_RELEASE: String = "release"
 const NOEN_RELEASE_MISS: String = "release_miss"
 const THROWER_GAWK: String = "gawk"
 const SHEILA_WATCH: String = "sheila"
+const ENEMY_CHOKE: String = "choke"
 
 const LINES: Dictionary = {
 	"enter": ["BARK_NOEN_ENTER_1", "BARK_NOEN_ENTER_2", "BARK_NOEN_ENTER_3", "BARK_NOEN_ENTER_4"],
@@ -16,6 +17,7 @@ const LINES: Dictionary = {
 	"release_miss": ["BARK_NOEN_MISS_1", "BARK_NOEN_MISS_2"],
 	"gawk": ["BARK_THROWER_GAWK_1", "BARK_THROWER_GAWK_2", "BARK_THROWER_GAWK_3", "BARK_THROWER_GAWK_4"],
 	"sheila": ["BARK_SHEILA_WATCH_1", "BARK_SHEILA_WATCH_2"],
+	"choke": ["BARK_CHOKE_1", "BARK_CHOKE_2", "BARK_CHOKE_3", "BARK_CHOKE_4"],
 }
 
 var _next: Dictionary = {}

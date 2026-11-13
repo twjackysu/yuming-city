@@ -117,14 +117,15 @@
     "hard": {"enemy_damage": 1.4, "telegraph": 0.85, "command_window": 0.35}
   },
   "crowd": {
-    "_doc": "同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）；別人剛出完招 attack_gap 秒內也算佔著；沒輪到的人停在 attack_range + wait_ring 外面等（D-240）。劇情＝不限。",
-    "attack_slots": 0, "attack_gap": 0.0, "wait_ring": 0.0
+    "_doc": "同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）；別人剛出完招 attack_gap 秒內也算佔著；沒輪到的人停在 attack_range + wait_ring 外面等（D-240）。劇情＝不限。choke_*（D-248）：會走過來打人的敵人站進毒霧（或毒霧落在他身上）的那一刻被嗆到——後仰、往霧外跳（到霧的邊再多 choke_margin 公尺，最多 choke_push_max）、扣 choke_damage（扣到剩 1 為止）；同一個人同一團霧只一次，變紅的人不會。劇情＝choke_enabled 0＝沒有這件事。",
+    "attack_slots": 0, "attack_gap": 0.0, "wait_ring": 0.0,
+    "choke_enabled": 0, "choke_damage": 0, "choke_margin": 0.35, "choke_push_max": 1.4
   },
   "profiles": {
     "arena": {
       "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7, "input_buffer": 0.2, "attack_face_lock": 1, "release_enabled": 1, "status_refresh_gain": 0.75, "reversed_heal_scale": 0.2},
       "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
-      "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9},
+      "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9, "choke_enabled": 1, "choke_damage": 8},
       "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},
       "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "brace_armor": 0.25, "moves": {"jab": {"damage": 18}}},
       "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25},

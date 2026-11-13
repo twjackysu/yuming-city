@@ -44,9 +44,10 @@ names = {"idle": "站著不動", "mash": "亂按", "circle": "繞著按", "skill
 # 最後一欄（D-242）：每場平均打倒幾個／這一波總共幾個（一波的人分批進場；輸的時候看得出撐到第幾個）
 # 再後面兩欄（D-245）：每場平均按了幾次「釋放」、毒爆扣的血占諾恩全部傷害的幾成
 # 再一欄（D-246）：每場平均丟毒瓶的愣住幾次（諾恩站在毒霧裡不出來的時候）
-# 最後一欄（D-247）：他愣住的時候手一滑、被自己的毒嗆到，每場平均扣了多少血（生命 70）
-print("| 波 | 機器人 | 場數 | 勝率 | 打不完 | 贏的平均秒數 | 輸的平均秒數 | 被打中幾下 | 諾恩傷害占比 | 打斷前兆 | 敵人變紅 | 敵人跪下 | 打倒／總共 | 釋放幾次 | 毒爆占諾恩傷害 | 丟毒瓶的愣住 | 他被自己的毒扣的血 |")
-print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+# 再一欄（D-247、D-248）：敵人被毒嗆到扣的血，每場平均（丟毒瓶的手一滑＋拿棍子的／戴護腕的踩進毒霧）
+# 最後一欄（D-248）：每場平均有幾人次踩進毒霧被嗆到、跳開
+print("| 波 | 機器人 | 場數 | 勝率 | 打不完 | 贏的平均秒數 | 輸的平均秒數 | 被打中幾下 | 諾恩傷害占比 | 打斷前兆 | 敵人變紅 | 敵人跪下 | 打倒／總共 | 釋放幾次 | 毒爆占諾恩傷害 | 丟毒瓶的愣住 | 敵人被毒嗆掉的血 | 被嗆到跳開 |")
+print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 for w in waves:
     for b in bots:
         line = [l for l in (out / f"{w}-{b}{tag}.log").read_text(encoding="utf-8").splitlines() if l.startswith("ARENA_SUMMARY")][-1]
@@ -58,5 +59,5 @@ for w in waves:
         wins = float(f["win_rate"])
         win_sec = f["avg_win_sec"] if wins > 0 else "—"
         lose_sec = f["avg_lose_sec"] if wins < 100 and float(f["avg_lose_sec"]) > 0 else "—"
-        print(f"| {w} | {names.get(b, b)} | {f['runs']} | {wins:.0f}% | {f['timeout']} | {win_sec} | {lose_sec} | {f['avg_hits_taken']} | {f['noen_share']}% | {avg('interrupts'):.1f} | {avg('braces'):.1f} | {avg('kneels'):.1f} | {avg('downed'):.1f}／{avg('total'):.0f} | {avg('releases'):.1f} | {burst:.0f}% | {avg('gawks'):.1f} | {avg('self_dmg'):.0f} |")
+        print(f"| {w} | {names.get(b, b)} | {f['runs']} | {wins:.0f}% | {f['timeout']} | {win_sec} | {lose_sec} | {f['avg_hits_taken']} | {f['noen_share']}% | {avg('interrupts'):.1f} | {avg('braces'):.1f} | {avg('kneels'):.1f} | {avg('downed'):.1f}／{avg('total'):.0f} | {avg('releases'):.1f} | {burst:.0f}% | {avg('gawks'):.1f} | {avg('self_dmg'):.0f} | {avg('chokes'):.1f} |")
 PY

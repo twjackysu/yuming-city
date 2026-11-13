@@ -52,7 +52,7 @@ func test_lines_take_turns_and_every_line_is_translated_in_both_languages() -> v
 	for situation: String in [BarkLines.NOEN_ENTER, BarkLines.NOEN_RELEASE]:
 		var n: int = (BarkLines.LINES[situation] as Array).size()
 		assert_true(n >= 3 and n <= 5, "諾恩的碎念每種情境 3～5 句（%s：%d）" % [situation, n])
-	assert_eq(BarkLines.all_keys().size(), 16)
+	assert_eq(BarkLines.all_keys().size(), 20)
 	for locale: String in ["zh_TW", "en"]:
 		var t: Translation = TranslationServer.get_translation_object(locale)
 		assert_not_null(t, "有 %s 的翻譯" % locale)
@@ -262,5 +262,135 @@ func test_hud_bark_is_one_line_per_speaker_at_most_three_and_goes_away() -> void
 	for n: Node3D in who:
 		if is_instance_valid(n):
 			n.queue_free()
+	hud.queue_free()
+	await tree.process_frame
+
+
+## 拿棍子的踩進毒霧被嗆到（D-248）：後仰、往霧外跳、扣一點血；同一團霧只一次；變紅的、出招到一半的、丟毒瓶的、劇情裡的不會。
+func test_club_in_a_poison_mist_chokes_hops_out_once_per_cloud_and_never_dies_of_it() -> void:
+	CombatTuning.set_profile("arena")
+	var root: Node3D = _world()
+	_heart(root, Vector3(0, 0.05, -9.0))
+	var g: DemoGuard = _guard(root, DemoGuard.KIND_CLUB, Vector3(0, 0.05, 0))
+	await tree.process_frame
+	var waited: int = 0
+	while g.brain.state != EnemyBrain.State.CHASE and waited < 120:
+		await tree.physics_frame
+		waited += 1
+	assert_eq(g.brain.state, EnemyBrain.State.CHASE, "他正往前走")
+	var want: float = CombatTuning.num("crowd.choke_damage", 0.0)
+	assert_true(want > 0.0 and want <= 12.0, "嗆到只扣一點血（%.0f）" % want)
+	var mist: PoisonMist = PoisonMist.create(2.0, DemoGuard.MIST_SOURCE, 20.0)
+	mist.position = g.global_position + Vector3(0, 0, -1.0)
+	root.add_child(mist)
+	await tree.physics_frame
+	assert_true(mist.contains(g.global_position), "他站在霧裡")
+	# 出招到一半、破綻中：先不嗆（這一團也還沒算嗆過他）
+	g.brain.state = EnemyBrain.State.RECOVER
+	assert_false(g.choke(mist), "破綻中不嗆")
+	assert_false(g.choked_by(mist))
+	g.brain.state = EnemyBrain.State.CHASE
+	var hp0: float = g.health.hp
+	var z0: float = g.global_position.z
+	assert_true(g.choke(mist), "嗆到")
+	assert_eq(g.brain.state, EnemyBrain.State.FLINCH, "後仰")
+	assert_eq(g.choke_count, 1)
+	assert_eq(g.flinch_count, 1, "算一次後仰（滿了照樣會硬撐）")
+	assert_true(absf((hp0 - g.health.hp) - want) < 0.01, "扣 choke_damage（扣了 %.1f）" % (hp0 - g.health.hp))
+	assert_true(g.choked_by(mist))
+	assert_false(g.choke(mist), "同一團霧只嗆一次")
+	for i: int in int(g.brain.flinch_sec * 60.0) + 2:
+		await tree.physics_frame
+	assert_true(g.global_position.z > z0 + 1.0, "往霧外跳了一大步（%.2f m）" % (g.global_position.z - z0))
+	assert_false(mist.contains(g.global_position), "跳到霧外面")
+	assert_true(g.is_covering_mouth(), "還在咳")
+	await tree.process_frame
+	assert_true(g.puppet().joint("elbow_L").rotation.x > 1.2, "空著的左手摀著嘴（%.2f）" % g.puppet().joint("elbow_L").rotation.x)
+	# 他會走回去（要去打人）：同一團霧不再嗆，摀著嘴走
+	waited = 0
+	while not mist.contains(g.global_position) and waited < 240:
+		await tree.physics_frame
+		waited += 1
+	assert_true(mist.contains(g.global_position), "走回霧裡")
+	g.choke_left = 0.0
+	assert_false(g.choke(mist))
+	assert_true(g.is_covering_mouth(), "待在嗆過他的霧裡：摀著嘴")
+	assert_eq(g.choke_count, 1)
+	# 另一團霧：再嗆一次
+	var second: PoisonMist = PoisonMist.create(2.0, DemoGuard.MIST_SOURCE, 20.0)
+	second.position = g.global_position
+	root.add_child(second)
+	await tree.physics_frame
+	g.brain.state = EnemyBrain.State.CHASE
+	assert_true(g.choke(second), "新的一團會再嗆一次")
+	assert_eq(g.choke_count, 2)
+	# 變紅的人照樣衝進來；之後不紅了，那一團也不會再嗆他
+	var red: DemoGuard = _guard(root, DemoGuard.KIND_CLUB, second.global_position + Vector3(0.5, 0, 0))
+	await tree.process_frame
+	red.brain.state = EnemyBrain.State.CHASE
+	red.brain.interrupts = red.brain.brace_after
+	assert_true(red.brain.is_braced())
+	assert_false(red.choke(second), "變紅的人不會被嗆到")
+	red.brain.interrupts = 0
+	assert_false(red.choke(second), "那一團對他沒有用了")
+	assert_eq(red.choke_count, 0)
+	# 只剩一點血：扣到剩 1，不會被毒死
+	var weak: DemoGuard = _guard(root, DemoGuard.KIND_BRACER, second.global_position + Vector3(-0.5, 0, 0))
+	await tree.process_frame
+	weak.brain.state = EnemyBrain.State.CHASE
+	weak.health.hp = 3.0
+	assert_true(weak.choke(second), "戴護腕的也會")
+	assert_false(weak.health.is_dead(), "不會被毒死")
+	assert_true(absf(weak.health.hp - 1.0) < 0.01, "扣到剩 1（剩 %.2f）" % weak.health.hp)
+	# 丟毒瓶的不會（他有自己的愣住）
+	var thrower: DemoGuard = _guard(root, DemoGuard.KIND_THROWER, second.global_position + Vector3(0, 0, 0.6))
+	await tree.process_frame
+	thrower.brain.state = EnemyBrain.State.CHASE
+	assert_false(thrower.choke(second), "丟毒瓶的不會")
+	# 劇情（沒有套戰鬥場的數字）：沒有這件事
+	CombatTuning.set_profile("")
+	var story: DemoGuard = _guard(root, DemoGuard.KIND_CLUB, second.global_position + Vector3(0, 0, -0.6))
+	await tree.process_frame
+	story.brain.state = EnemyBrain.State.CHASE
+	var story_hp: float = story.health.hp
+	assert_false(story.choke(second), "劇情裡的敵人不會被嗆到")
+	assert_eq(story.health.hp, story_hp)
+	root.queue_free()
+	await tree.process_frame
+
+
+## 講的人的臉被比較靠近鏡頭的人擋住：那一句不顯示（D-248；不然看起來像前面那個人講的）。
+func test_hud_bark_is_hidden_while_someone_nearer_the_camera_covers_the_speaker() -> void:
+	var hud: Hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate() as Hud
+	tree.root.add_child(hud)
+	await tree.process_frame
+	var cam := Camera3D.new()
+	tree.root.add_child(cam)
+	cam.position = Vector3(0, 1.5, 6)
+	cam.make_current()
+	var speaker := Node3D.new()
+	speaker.position = Vector3(0, 0, -6)
+	tree.root.add_child(speaker)
+	speaker.add_to_group("heartbeat")
+	var front := Node3D.new()
+	front.position = Vector3(3.0, 0, 0)
+	tree.root.add_child(front)
+	front.add_to_group("heartbeat")
+	hud.show_bark(speaker, "BARK_CHOKE_1", 5.0)
+	await tree.process_frame
+	assert_false(hud.bark_speaker_hidden(cam, speaker, 2.1), "前面的人站在旁邊：沒擋到")
+	assert_eq(hud.bark_rects().size(), 1, "看得到")
+	front.position = Vector3(0, 0, 0)
+	await tree.process_frame
+	assert_true(hud.bark_speaker_hidden(cam, speaker, 2.1), "前面的人站到鏡頭與他中間：擋住了")
+	assert_eq(hud.bark_rects().size(), 0, "不顯示")
+	assert_eq(hud.bark_keys().size(), 1, "但還算在講")
+	front.position = Vector3(0, 0, -10)
+	await tree.process_frame
+	assert_false(hud.bark_speaker_hidden(cam, speaker, 2.1), "站在他後面的人不算")
+	assert_eq(hud.bark_rects().size(), 1, "讓開了就又看得到")
+	cam.queue_free()
+	speaker.queue_free()
+	front.queue_free()
 	hud.queue_free()
 	await tree.process_frame

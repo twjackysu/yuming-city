@@ -39,6 +39,10 @@ const BARK_SEC: float = 2.4
 const ENTER_BARK_GAP: float = 6.0
 const BARK_NOEN_COLOR: Color = Color(0.97, 0.94, 0.84)
 const BARK_OTHER_COLOR: Color = Color(0.78, 0.86, 0.95)
+## 敵人講的用偏紅的顏色（D-248）：第 99 輪的連拍上，淡藍與米白在縮小的圖上分不出來，看不出哪一句是誰講的
+const BARK_ENEMY_COLOR: Color = Color(1.0, 0.6, 0.5)
+## 被嗆到的人頭上那一句最少隔幾秒（一團霧可以連著嗆到兩三個人，每個人都講就是三行字疊在一起）
+const CHOKE_BARK_GAP: float = 4.0
 const REINFORCE_BANNER_SEC: float = 2.2
 ## 後面幾批最北生到哪裡（看熱鬧的人退到 z＝12.5～13.4，不要生在他們身上）
 const REINFORCE_NORTH_Z: float = 14.8
@@ -89,6 +93,7 @@ var barks: BarkLines = BarkLines.new()
 var last_bark: Dictionary = {}
 var bark_log: PackedStringArray = PackedStringArray()
 var _next_enter_bark: float = 0.0
+var _next_choke_bark: float = 0.0
 var _burst_on: String = ""
 ## 開發用（連拍）：`--brace-early`＝每個敵人第一次後仰就硬撐。正常打的時候硬撐很少出現（一場 0～2 次、多半在最後），等不到
 var _brace_early: bool = false
@@ -308,11 +313,12 @@ func start_wave(index: int) -> void:
 	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
 	# releases＝這一場放了幾次（D-245）；burst_damage＝毒爆實際扣掉的血；burst_hits＝炸到幾人次；burst_secs＝總共用掉幾秒的毒
 	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0,
-		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0, "gawks": 0, "self_damage": 0.0}
+		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0, "gawks": 0, "self_damage": 0.0, "chokes": 0}
 	mist_stay = 0.0
 	mist_entries = 0
 	_sheila_spoke = false
 	_next_enter_bark = 0.0
+	_next_choke_bark = 0.0
 	bark_log.clear()
 	if _release_early:
 		player.status_effects.apply(PlayerController.RELEASE_STATUS, 5.0, 8.0, "dev")
@@ -479,6 +485,7 @@ func _physics_process(delta: float) -> void:
 		_burst_on = ""
 		App.burst_start_in(1)
 	_maybe_release_tip()
+	_update_chokes()
 	_update_reactions(delta)
 	_maybe_reinforce()
 	if enemies_down():
@@ -498,6 +505,32 @@ func player_in_mist() -> bool:
 		if m != null and m.contains(player.global_position):
 			return true
 	return false
+
+
+## 別人躲的東西（D-248）：會走過來打人的敵人站進毒霧（或毒霧落在他身上）就被嗆到、往霧外跳開——
+## 諾恩站在裡面沒事、站在他面前的人一進來就跳開，不用字就看得到。規則在 DemoGuard.choke()；諾恩在不在霧裡都一樣。
+func _update_chokes() -> void:
+	var mists: Array[Node] = get_tree().get_nodes_in_group("poison_mist")
+	if mists.is_empty():
+		return
+	for e: EnemyActor in enemies:
+		var g: DemoGuard = e as DemoGuard
+		if g == null or not is_instance_valid(g) or g.health.is_dead() or not g.uses_attack_slot():
+			continue
+		for n: Node in mists:
+			var m: PoisonMist = n as PoisonMist
+			if m == null or not m.contains(g.global_position) or not g.choke(m):
+				continue
+			stats["chokes"] = int(stats.get("chokes", 0)) + 1
+			var now: float = float(stats["time"])
+			if now >= _next_choke_bark:
+				_next_choke_bark = now + CHOKE_BARK_GAP
+				_bark(g, BarkLines.ENEMY_CHOKE, BARK_ENEMY_COLOR, 2.1 * g.height)
+			if _burst_on == "choke":
+				# 開發用：連拍從第一次有人被嗆到的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=choke）
+				_burst_on = ""
+				App.burst_start_in(1)
+			break
 
 
 ## 別人躲的東西，他走進去（D-246，design/11 第 0 節）：走進霧的那一刻他碎念一句（最少隔 ENTER_BARK_GAP 秒）；
@@ -531,7 +564,7 @@ func _update_reactions(delta: float) -> void:
 		if g == null or not is_instance_valid(g) or not g.gawk():
 			continue
 		stats["gawks"] = int(stats.get("gawks", 0)) + 1
-		_bark(g, BarkLines.THROWER_GAWK, BARK_OTHER_COLOR, 2.1 * g.height)
+		_bark(g, BarkLines.THROWER_GAWK, BARK_ENEMY_COLOR, 2.1 * g.height)
 		if _burst_on == "gawk":
 			# 開發用：連拍從丟毒瓶的第一次愣住的那一刻開始（scripts/burst.sh … 99999 … --bot=skilled --burst-on=gawk）
 			_burst_on = ""
@@ -674,13 +707,13 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f gawks=%d self_dmg=%.0f" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f gawks=%d self_dmg=%.0f chokes=%d" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
 		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
 		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0)),
 		int(r.get("downed", 0)), int(r.get("total", 0)),
 		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0)), int(r.get("gawks", 0)),
-		float(r.get("self_damage", 0.0))])
+		float(r.get("self_damage", 0.0)), int(r.get("chokes", 0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

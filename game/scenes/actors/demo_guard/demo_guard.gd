@@ -63,7 +63,7 @@ var _gawk_cooldown: float = 0.0
 ## 愣住的那一刻手一滑（D-247）：手上的瓶子掉在自己腳邊、碎成一團霧（同一種霧：諾恩走過去也能站），他自己被嗆到——
 ## 愣著的時候每 FUMBLE_TICK 秒扣一次血，總共 demo_thrower.fumble_damage，扣到剩 1 為止（不會被自己毒死：
 ## 他是毒的來源，要不要留著他是玩家決定的）。fumble_damage 是 0＝只愣住、瓶子不掉。
-## 為什麼：他的姿勢在實際的距離看不到（8 m 外、前面還站著拿棍子的，第 99 輪的連拍）；一團綠霧看得到。
+## 玩家的鏡頭裡他被前面拿棍子的擋住，姿勢與這團霧都看不到（只有 --tele-cam 拍得到，第 99 輪）；玩家看得到的是他少了半條血。
 const FUMBLE_TICK: float = 0.4
 const FUMBLE_TICKS: int = 4
 const FUMBLE_DROP_SEC: float = 0.22
@@ -73,6 +73,19 @@ var last_fumble_mist: PoisonMist
 var _fumbling: bool = false
 var _fumble_tick: float = 0.0
 var _fumble_budget: float = 0.0
+## 被毒霧嗆到（D-248）：拿棍子的／戴護腕的踩進毒霧（或毒霧落在他身上）的那一刻——咳、往霧外跳開、扣一點血。
+## 同一個人同一團霧只一次；走的是現成的後仰（brain.flinch()：前兆會被打斷、算一次後仰，滿了照樣硬撐）；
+## 已經變紅的人不會被嗆到（照樣衝進來）；出招、破綻、跪著的時候先不嗆，回到追人的那一幀才嗆。扣血扣到剩 1 為止。
+## 嗆過之後還待在那一團霧裡（走回去找諾恩）的時候，空著的那隻手摀著嘴。
+## 為什麼：「別人躲、諾恩不躲」要發生在玩家的鏡頭正中間——會愣住的丟毒瓶的站在 8 m 外，玩家看不到（第 99 輪）。
+## 數值在 tuning.json 的 crowd.choke_*（劇情的預設 choke_enabled 0＝沒有這件事）。
+const CHOKE_POSE_SEC: float = 0.9
+const CHOKE_HOLD_SEC: float = 0.25
+var choke_count: int = 0
+var choke_dealt: float = 0.0
+var choke_left: float = 0.0
+var _choked_by: Dictionary = {}
+var _breath_hold: float = 0.0
 
 var _puppet: Puppet
 var _glow_mat: StandardMaterial3D
@@ -175,6 +188,8 @@ func _hit_height() -> float:
 
 
 func _held(delta: float) -> bool:
+	choke_left = maxf(choke_left - delta, 0.0)
+	_breath_hold = maxf(_breath_hold - delta, 0.0)
 	if gawk_left > 0.0:
 		gawk_left = maxf(gawk_left - delta, 0.0)
 		if _fumbling:
@@ -219,6 +234,67 @@ func gawk() -> bool:
 	if _fumbling:
 		_fumble()
 	return true
+
+
+## 這一團霧嗆過他了沒（硬撐著衝進去的也算：那一團對他沒有用了）。
+func choked_by(mist: PoisonMist) -> bool:
+	return mist != null and _choked_by.has(mist.get_instance_id())
+
+
+## 摀著嘴（剛嗆到，或嗆過之後還待在那團霧裡）。
+func is_covering_mouth() -> bool:
+	return choke_left > 0.0 or _breath_hold > 0.0
+
+
+## 他站在 mist 裡（Arena 每個物理幀對霧裡的每個人叫一次）。回傳這一幀有沒有被嗆到。
+func choke(mist: PoisonMist) -> bool:
+	if mist == null or not is_instance_valid(mist) or is_thrower() or waiting or debug_hold:
+		return false
+	if brain == null or health == null or health.is_dead() or CombatTuning.num("crowd.choke_enabled", 0.0) <= 0.0:
+		return false
+	var id: int = mist.get_instance_id()
+	if _choked_by.has(id):
+		_breath_hold = CHOKE_HOLD_SEC
+		return false
+	if brain.is_braced():
+		# 變紅的人照樣衝進來：這一團霧對他沒有用
+		_choked_by[id] = true
+		return false
+	var away: Vector3 = global_position - mist.global_position
+	away.y = 0.0
+	var inside: float = away.length()
+	var old_dir: Vector3 = _push_dir
+	_push_dir = away.normalized() if inside > 0.05 else -forward()
+	if not brain.flinch():
+		_push_dir = old_dir
+		return false
+	_choked_by[id] = true
+	# 往霧外跳：到霧的邊再多 choke_margin 公尺，最多 choke_push_max（站在正中間的人跳不出去，那一團也不會再嗆他）
+	var out: float = clampf(mist.radius - inside + CombatTuning.num("crowd.choke_margin", 0.35), 0.3, CombatTuning.num("crowd.choke_push_max", 1.4))
+	_push_speed = out / maxf(brain.flinch_sec, 0.01)
+	choke_count += 1
+	choke_left = CHOKE_POSE_SEC
+	var amount: float = minf(CombatTuning.num("crowd.choke_damage", 0.0), health.hp - 1.0)
+	if amount > 0.0:
+		choke_dealt += health.apply_status_damage(amount, {"source": self, "kind": "poison"})
+	if is_inside_tree():
+		Sfx.play_at(get_parent(), "poison_hiss", global_position + Vector3.UP * 1.45 * height, -9.0, 0.1, 5.0)
+		_cough_puff(9)
+	return true
+
+
+## 嘴邊咳出一小團綠（手一滑的那個人與被嗆到的人共用）。
+func _cough_puff(amount: int) -> void:
+	# 小小的幾顆（預設的粉一顆 25～56 cm，第一版連拍上是一大團白綠的球，把他的臉跟摀嘴的手整個蓋住）
+	var ps: CPUParticles3D = puff_build(Vector3(0.05, 0.04, 0.05), amount, Color(0.62, 0.95, 0.55, 0.6))
+	ps.spread = 30.0
+	ps.direction = forward() + Vector3.UP * 0.15
+	ps.initial_velocity_min = 0.9
+	ps.initial_velocity_max = 1.9
+	ps.lifetime = 0.55
+	ps.scale_amount_min = 0.22
+	ps.scale_amount_max = 0.45
+	puff_start(ps, global_position + forward() * 0.25 + Vector3.UP * 1.45 * height)
 
 
 func is_fumbling() -> bool:
@@ -270,16 +346,7 @@ func _tick_fumble(delta: float) -> void:
 	if amount > 0.0:
 		fumble_dealt += health.apply_status_damage(amount, {"source": self, "kind": "poison"})
 	if is_inside_tree():
-		# 小小的幾顆（預設的粉一顆 25～56 cm，第一版連拍上是一大團白綠的球，把他的臉跟摀嘴的手整個蓋住）
-		var ps: CPUParticles3D = puff_build(Vector3(0.05, 0.04, 0.05), 7, Color(0.62, 0.95, 0.55, 0.6))
-		ps.spread = 30.0
-		ps.direction = forward() + Vector3.UP * 0.15
-		ps.initial_velocity_min = 0.9
-		ps.initial_velocity_max = 1.9
-		ps.lifetime = 0.55
-		ps.scale_amount_min = 0.22
-		ps.scale_amount_max = 0.45
-		puff_start(ps, global_position + forward() * 0.25 + Vector3.UP * 1.45 * height)
+		_cough_puff(7)
 
 
 ## 出招：前方扇形裡的心跳（諾恩、席菈）受傷。每一招的距離、角度、傷害在 tuning.json。
@@ -436,6 +503,31 @@ func apply_pose(_delta: float) -> void:
 			_rot("shoulder_L", Vector3(2.3, 0.0, -0.6))
 			_rot("elbow_L", Vector3(0.7, 0.0, 0.0))
 			_rot("neck", Vector3(-0.3, 0.5, 0.0))
+	if is_covering_mouth() and brain.state in [EnemyBrain.State.CHASE, EnemyBrain.State.FLINCH]:
+		_pose_choke()
+
+
+## 被毒霧嗆到（D-248）：剛嗆到的前 0.1 秒是後仰（往後跳），接著彎腰低頭、空著的那隻手摀嘴、一下一下咳；
+## 之後還待在霧裡就一直摀著。拿棍子的用左手（右手拿棍子），戴護腕的用右手（左手是麻的、垂著）。
+func _pose_choke() -> void:
+	var since: float = CHOKE_POSE_SEC - choke_left
+	var c: float = 1.0
+	if choke_left > 0.0:
+		c = clampf((since - 0.1) / 0.14, 0.0, 1.0)
+	if _breath_hold <= 0.0:
+		c *= clampf(choke_left / 0.2, 0.0, 1.0)
+	if c <= 0.0:
+		return
+	var hack: float = maxf(sin(_time * 15.7), 0.0) * 0.2 if choke_left > 0.0 else 0.0
+	_blend("spine", Vector3(0.34 + hack, 0.0, 0.0), c)
+	_blend("chest", Vector3(0.26 + hack * 0.6, 0.0, 0.0), c)
+	_blend("neck", Vector3(0.36, 0.0, 0.0), c)
+	if is_bracer():
+		_blend("shoulder_R", Vector3(1.5, 0.0, -0.3), c)
+		_blend("elbow_R", Vector3(2.2, 0.0, 0.0), c)
+	else:
+		_blend("shoulder_L", Vector3(1.5, 0.0, 0.3), c)
+		_blend("elbow_L", Vector3(2.2, 0.0, 0.0), c)
 
 
 func _pose_windup(move: String, p: float) -> void:
