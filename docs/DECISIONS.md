@@ -2,6 +2,27 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-249　2026-11-13　美術自己做：bpy 腳本在建置時產生角色模型（不進 git），第一個是席菈；通過收件檢查就取代人偶
+
+- 起因：Jacky 11/13 指示「美術自給自足，不要再等我用 ChatGPT／Tripo 產模型」；他最不滿的是「畫面人物不好看」。
+- 決策：
+  1. **工具**：bpy 5.3.0（Blender 當 Python 模組，需要 Python 3.13）。腳本放 `tools/blender/`，`scripts/gen_art.sh` 在本機與 CI 執行，產物放 `build/art/characters/<id>/<id>.glb`，**不進 git**（單檔 4.5 MB、雲端推不了 LFS）。腳本沒改就沿用上次的產物。
+  2. **人體基底**：MakeHuman 的 `base.obj` 與 `macrodetails` 的 target（**CC0**，固定在 commit a8bc2d5；只抓 5 個檔）。只讀頂點資料，**不用、不複製它的程式碼**（AGPL）。記在 `docs/CREDITS.md`。
+  3. **服裝從身體表面長出來**：衣服的區塊往外擠出一層（邊緣自然變成袖口、靴口、髮際）、披肩與下襬用射線量身體的形狀再往外長、腳換成凸包當靴頭。臉以外都遮住。
+  4. **席菈第一版的樣子**：深色短髮（原本想做兜帽，做出來像白色泳帽，改成頭髮比較像人）、米灰短披肩（`#c8c2b5` 左右，暖燈下不會變成發亮的白塊）、深藍厚布上衣與下襬、皮護臂與手套、深色長褲、皮靴、腰帶。全年齡。左耳銅環、右眉疤、三劍銀徽、大劍還沒做。
+  5. **骨架**：22 根，骨名照 Godot `SkeletonProfileHumanoid`（Hips、Spine、Chest、UpperChest、Neck、Head、Left／Right 的 Shoulder、UpperArm、LowerArm、Hand、UpperLeg、LowerLeg、Foot、Toes）。沒有手指骨頭。權重：先對完整的身體做自動權重，再照最近的三個頂點轉給衣服。
+  6. **貼圖**：程序材質用 Cycles 烘成一個材質的 BaseColor／Normal／ORM（1024²），符合 `check_character_glb.py` 的要求。
+  7. **動作**：`idle`、`walk`、`run`、`light_attack_01`，程式寫的關鍵影格（名稱照 `CharacterModels.ANIM_MAP`）。沒有攻擊動作的話，遊戲會在出手時播待機——所以第一版就要有。
+  8. **來源的優先順序**：Jacky 放進 `art-inbox/characters/` 的優先；沒有才用自製的；收件檢查不過、或自製腳本失敗 → 遊戲用人偶。
+  9. **失敗不擋建置**：裝不了 bpy、抓不到人體基底、腳本出錯，`gen_art.sh` 都印出原因、回傳 0。CI 另外裝一份 Python 3.13（`update-environment: false`，不改其他步驟用的 python）。
+  10. 席菈用模型時，劍照手骨頭的方向握（骨頭的 +Y 朝指尖；人偶的手是 −Y 朝下）。
+  11. `docs/ART_REQUESTS.md` 從「給 Jacky 的需求單」改成「自製進度」。
+- 理由：
+  - 人偶是膠囊拼的，再怎麼調都不像人；有解剖正確的身體與臉之後，剩下的是可以一輪一輪修的細節。
+  - 失敗不擋建置：美術腳本出錯不該讓整個遊戲發不出去；代價是「安靜地退回人偶」，所以 NEXT 寫了要看 CI log 的哪兩行。
+  - 不進 git：repo 不會長大，而且模型永遠跟腳本一致。代價是 CI 每個 job 多 2 分鐘左右。
+- 影響：`tools/blender/sheila.py`、`scripts/gen_art.sh`（新）；`scripts/gen-assets.sh`、`scripts/import_characters.py`、`.github/workflows/ci.yml`、`game/scenes/actors/sheila/sheila.gd`、`game/scenes/levels/arena.gd`（開發旗標 `--sheila-cam`）、`scripts/shots/char_sheila.txt`（新）。測試 374 個不變（有模型時全綠）。**沒有人玩過；第一版的毛病列在 NEXT「0000」。**
+
 ## D-248　2026-11-13　站在諾恩面前的人踩進毒霧會被嗆到、跳開（扣 8、同一團霧只一次、變紅的不會）；敵人講的字偏紅、臉被擋住不顯示；玩家的鏡頭只看得到一半——下一步是鏡頭
 
 - 起因：NEXT「000」第 3 項的 (a‴)（D-247 第 6 點：「旁人的反應」要發生在離諾恩 3 m 以內的人身上）與 (a⁗)（頭上的字看不出是誰講的）。
