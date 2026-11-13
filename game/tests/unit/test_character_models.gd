@@ -111,3 +111,27 @@ func test_model_without_skeleton_is_rejected() -> void:
 	assert_true(p.joint("hips") != null, "退回程序人偶")
 	p.queue_free()
 	await tree.process_frame
+
+
+## D-251：模型有 `release` 這段動作 → 釋放的那 0.36 秒播它，播完回到原本的狀態；滾到一半不播；沒有這段動作就照舊。
+func test_model_plays_release_animation() -> void:
+	var p: Puppet = _puppet(_fake_model(["idle", "run", "light_attack_01", "release"]))
+	p.advance(0.016)
+	assert_eq(p.model_animation, "idle")
+	p.play_release()
+	p.advance(0.016)
+	assert_eq(p.model_animation, "release", "釋放的那一下播 release")
+	p.advance(Puppet.RELEASE_POSE_TIME)
+	p.advance(0.016)
+	assert_eq(p.model_animation, "idle", "播完回到站著")
+	p.play_action("dodge")
+	p.play_release()
+	p.advance(0.016)
+	assert_ne(p.model_animation, "release", "滾到一半不擺釋放的姿勢")
+	p.queue_free()
+	var plain: Puppet = _puppet(_fake_model(["idle", "run"]))
+	plain.play_release()
+	plain.advance(0.016)
+	assert_eq(plain.model_animation, "idle", "模型沒有 release：照舊播原本的動作")
+	plain.queue_free()
+	await tree.process_frame

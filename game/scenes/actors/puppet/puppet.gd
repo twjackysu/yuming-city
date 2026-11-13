@@ -91,7 +91,8 @@ func play_action(action_name: String) -> void:
 	action_time = 0.0
 
 
-## 釋放的那一下（D-246）：先縮、再把兩手往兩邊甩開。只有程序人偶有這個姿勢；滾到一半不擺（看不出來）。
+## 釋放的那一下（D-246）：先縮、再把兩手往兩邊甩開。滾到一半不擺（看不出來）。
+## 程序人偶＝疊在目前姿勢上；模型＝有 `release` 這段動作就播它（D-251；這 0.36 秒蓋過其他動作），沒有就沒有姿勢。
 func play_release() -> void:
 	release_left = RELEASE_POSE_TIME
 
@@ -144,6 +145,11 @@ func advance(delta: float) -> void:
 func _animate_model() -> void:
 	var state: String = current_state()
 	var name_found: String = CharacterModels.find_animation(anim, state)
+	if release_left > 0.0 and state != "dodge":
+		var release_name: String = CharacterModels.find_animation(anim, "release")
+		if release_name != "":
+			name_found = release_name
+			state = "release"
 	_roll.rotation.x = 0.0
 	_roll.position = Vector3.ZERO
 	if name_found == "" and state == "dodge":
@@ -156,7 +162,7 @@ func _animate_model() -> void:
 		return
 	if model_animation != name_found:
 		model_animation = name_found
-		anim.play(name_found, 0.15)
+		anim.play(name_found, 0.05 if state == "release" else 0.15)
 	# 步頻跟速度走（動作表的走路約 1.6 m/s、跑步約 RUN_SPEED）
 	match state:
 		"walk":

@@ -220,6 +220,11 @@ jobs:
           shot 65-rb2-fight 30 --level=market --rb-at=fight --locale=zh_TW
           shot 66-rb2-bracer 30 --level=market --rb-at=bracer_read --locale=zh_TW
           shot 67-rb2-trial 30 --level=market --rb-at=trial_hold --locale=zh_TW
+          # 角色模型（D-250、D-251；跟 scripts/shots/characters.txt 同一組）：戰鬥場裡玩家的鏡頭／諾恩正面／諾恩背面／席菈正面
+          shot 70-char-player-view 40 --arena --wave=1 --bot=idle --locale=zh_TW
+          shot 71-char-noen-front 40 --arena --wave=1 --bot=idle --noen-cam --locale=zh_TW
+          shot 72-char-noen-back 40 --arena --wave=1 --bot=idle --noen-cam=back --locale=zh_TW
+          shot 73-char-sheila-front 40 --arena --wave=1 --bot=idle --sheila-cam --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

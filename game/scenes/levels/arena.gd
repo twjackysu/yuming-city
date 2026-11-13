@@ -84,6 +84,9 @@ const SHEILA_CAM_OFFSET: Vector3 = Vector3(0.75, 1.3, -2.5)
 const SHEILA_CAM_FOV: float = 40.0
 var tele_cam: bool = false
 var sheila_cam: bool = false
+## 開發用：`--noen-cam`＝同一個鏡頭改成對著諾恩的正面；`--noen-cam=back`＝架在他斜後方（玩家玩的時候看到的那一面：大衣的背面與下襬）。
+var noen_cam: bool = false
+var noen_cam_back: bool = false
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
 var release_tip_shown: bool = false
@@ -208,8 +211,11 @@ func _ready() -> void:
 	elif App.parse_user_args(OS.get_cmdline_user_args()).has("tele-cam"):
 		tele_cam = true
 		make_side_cam()
-	elif App.parse_user_args(OS.get_cmdline_user_args()).has("sheila-cam"):
+	elif App.parse_user_args(OS.get_cmdline_user_args()).has("sheila-cam") \
+			or App.parse_user_args(OS.get_cmdline_user_args()).has("noen-cam"):
 		sheila_cam = true
+		noen_cam = App.parse_user_args(OS.get_cmdline_user_args()).has("noen-cam")
+		noen_cam_back = str(App.parse_user_args(OS.get_cmdline_user_args()).get("noen-cam", "")) == "back"
 		make_side_cam()
 	start_wave(wave)
 
@@ -246,14 +252,17 @@ func _aim_side_cam(k: float) -> void:
 
 
 func _aim_sheila_cam() -> void:
-	var who: Node3D = level.get_node_or_null("Sheila") as Node3D
+	var who: Node3D = player if noen_cam else level.get_node_or_null("Sheila") as Node3D
 	if who == null:
 		return
 	var body: Node3D = who.find_child("Puppet", true, false) as Node3D
 	var facing: Basis = (body if body != null else who).global_transform.basis.orthonormalized()
 	var at: Vector3 = who.global_position
 	side_cam.fov = SHEILA_CAM_FOV
-	side_cam.global_position = at + facing * SHEILA_CAM_OFFSET
+	var offset: Vector3 = SHEILA_CAM_OFFSET
+	if noen_cam_back:
+		offset.z = -offset.z
+	side_cam.global_position = at + facing * offset
 	side_cam.look_at(at + Vector3(0, 1.0, 0), Vector3.UP)
 
 

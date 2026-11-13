@@ -1,5 +1,0 @@
-# 席菈角色模型的固定鏡頭組（第 101 輪；D-249）：名稱 幀數 旗標…
-# 1＝架在她斜前方 2.5 m 跟著她（--sheila-cam）；2＝戰鬥場橫的開發鏡頭（她站在東邊、人在動）。
-# 用法：改模型之前 scripts/shots.sh char_sheila --save-baseline，改完 scripts/shots.sh char_sheila，先看印出來的數字。
-char-sheila-front 40 --arena --wave=1 --bot=idle --sheila-cam --locale=zh_TW
-char-sheila-side 40 --arena --wave=1 --bot=idle --side-cam --locale=zh_TW
