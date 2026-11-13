@@ -2,6 +2,29 @@
 
 新的放最上面。時間為台北時間。
 
+## 2026-11-13 21:31–22:15　第 105 輪：席菈的劍換成現成的 CC0 模型（KayKit）；Jacky 回報的「前後方向怪怪的」查到一半
+
+**畫面有變，但只有近照明顯**：席菈手上那把三個基本體拼的灰色薄板，換成 KayKit 的雙手劍（有護手、血槽、纏繩握把）。`char-sheila-front` 差異 2.1%（一眼看得出來）、**玩家的鏡頭 `char-player-view` 只差 0.1%（5218 個像素）**——她在畫面右側、劍只佔幾十個像素，放大兩倍才看得清楚。照 D-250 的規矩，這一輪**不算「玩家的畫面有明顯變化」**。
+
+**做了什麼**
+
+1. **現成素材的接入點 `PropModels`（D-257）**：`game/assets/props/<包名>/<名字>.gltf` 直接進 git（一個 3～20 KB），`scene_for()`／`instance()` 找不到就回傳 null、呼叫的地方退回程式拼的。下一樣（攤位上的小物）用同一個接入點。
+2. **席菈的劍**：`Sheila._build_sword()` 有現成的就掛在原本的 `BrokenSword` 底下（`Model`，0.42 倍、Z 轉 180 度、上移 0.1 m），護手與握法的程式不變。`docs/CREDITS.md` 記了一筆（Kay Lousberg，CC0，commit `672074b`）。
+3. **`.gitattributes` 加一條**：`game/assets/props/** !filter !diff !merge`——`*.png`／`*.gltf` 原本都走 LFS，雲端 session 推不上去（第一次 push 被 `Forbidden` 擋掉）。這些檔都很小，直接進 git。
+4. **Jacky 21:30 在對話裡回報**：「現在前後左右有時候會怪怪的向前面向後面，向後會面向前面，好像有點bug?」——查了，寫在 `docs/NEXT.md` 最上面的「00000」。目前的狀態是**症狀確定、原因還沒找到**：`char-player-view` 裡諾恩臉朝鏡頭、背對敵人；但無頭印出來的數字全部是對的（`body_fwd=(0,0,-1)`、敵人 z=24.9、鏡頭 z=35.1、模型沒有被轉、glb 的 bind 與 rest pose 一致）。下一輪照「00000」的三步查，**先別急著加 180 度**。
+
+**怎麼驗證**
+
+- `scripts/check.sh`：380 個測試、1 個問題 → 那一個（`test_camera_fade::test_characters_fade_near_camera`）是這一輪造成的，已修：測試原本只數 `PrimitiveMesh` 的材質，匯入的劍是 ArrayMesh 的 surface 材質（`CameraFade` 本來就會設它們），把計數補上之後單獨跑 3 個全綠。新測試 `test_prop_models.gd` 3 個全綠。
+- 截圖：`char-sheila-front`、`char-player-view` 的改前｜改後（改前＝CI 的 screens 在 13:12 UTC 更新的那一版，就是這一輪開工時的 main）。本機第一張照例是暖機（亮度 5.6、死黑 92.7%），重拍後正常（34.0／59.4）。
+- CI：`668ce29` 13:52 UTC 推，run 43437414710。
+
+**遇到的問題**
+
+- 雲端推 LFS 被擋（見上面第 3 點）；`git commit --amend` 之前要先改 `.gitattributes` 再 `git rm --cached` 重 add，不然存進去的還是 LFS pointer。
+- `scripts/gen-assets.sh` 裝 bpy 這一輪花了約 5 分鐘（430 MB）。先開背景跑、同時寫程式，不要等它。
+- 新測試裡 `Sheila.new()` 直接加進場景會每一幀噴 `SCRIPT ERROR`（沒有 leader，`_move()` 讀 null）——`check.sh` 把 SCRIPT ERROR 當失敗。只看外觀的測試要 `set_physics_process(false)`。
+
 ## 2026-11-13 20:34–20:58　第 104 輪之後：Jacky 在對話裡選了 B（人物吃場景的光）、問場景與武器有沒有現成的（D-255、D-256）
 
 **不是排程的輪次——Jacky 20:34 在同一個對話裡回的，當場處理。`latest` 的畫面有變：戰鬥場的諾恩與所有場景的席菈改成吃場景的光（被燈和毒霧染色、比之前暗一點、比較融進場景）。** 場景與武器還沒有換，只在本機試接了一張。
