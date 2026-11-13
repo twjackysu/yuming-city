@@ -34,3 +34,6 @@ project.godot text eol=lf
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 # 現成的 CC0 小物與武器（KayKit）檔案都很小（一個 3～20 KB），直接進 git、不走 LFS（雲端 session 推不了 LFS，D-257）
 game/assets/props/** !filter !diff !merge
+# Jacky 放進來的現成小物（Quaternius Fantasy Props MegaKit）：貼圖已經縮成 1024 的 JPEG（scripts/compact_props.py，D-258），
+# 整包 8 MB、單檔最大 0.4 MB，直接進 git、不走 LFS（雲端 session 與 CI 不用另外抓就拿得到）
+art-inbox/props/** !filter !diff !merge
