@@ -70,8 +70,15 @@ func test_characters_fade_near_camera() -> void:
 				mats.append((g as CSGPrimitive3D).get("material") as Material)
 			if (g as GeometryInstance3D).material_override != null:
 				mats.append((g as GeometryInstance3D).material_override)
-			if g is MeshInstance3D and (g as MeshInstance3D).mesh is PrimitiveMesh and ((g as MeshInstance3D).mesh as PrimitiveMesh).material != null:
-				mats.append(((g as MeshInstance3D).mesh as PrimitiveMesh).material)
+			if g is MeshInstance3D and (g as MeshInstance3D).mesh != null:
+				var mesh: Mesh = (g as MeshInstance3D).mesh
+				if mesh is PrimitiveMesh and (mesh as PrimitiveMesh).material != null:
+					mats.append((mesh as PrimitiveMesh).material)
+				# 匯入的模型（席菈的劍是現成的 glb，D-257）材質在每個 surface 上，不是 PrimitiveMesh.material
+				for s: int in mesh.get_surface_count():
+					var sm: Material = mesh.surface_get_material(s)
+					if sm != null:
+						mats.append(sm)
 			for m: Material in mats:
 				if m is BaseMaterial3D:
 					var b := m as BaseMaterial3D

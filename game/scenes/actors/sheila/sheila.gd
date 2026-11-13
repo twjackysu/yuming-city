@@ -9,7 +9,10 @@ const RUN_SPEED: float = 5.6
 const TURN_SPEED: float = 10.0
 const DODGE_SPEED: float = 6.5
 const LINE_SEC: float = 1.6
-## 燃燒劍的火色
+## 她手上的劍：現成的 CC0 模型（KayKit 的雙手劍，CREDITS）；檔案不在就用程式拼的那一把
+const SWORD_MODEL: String = "kaykit/sword_2handed"
+## 現成的劍原本長 2.37 m（KayKit 的尺寸比我們大），縮到配 1.65 m 的她
+const SWORD_MODEL_SCALE: float = 0.42
 const COMMAND_ACTIONS: Dictionary = {
 	"command_weakpoint": "weakpoint",
 	"command_evade": "evade",
@@ -387,10 +390,20 @@ func _build() -> void:
 	add_child(_line)
 
 
-## 寬斷劍：劍身在三分之二處斷掉，斷口斜切。
+## 寬斷劍：有現成的 CC0 模型（KayKit 的雙手劍，D-256）就用它，沒有才用程式拼的那一把。
+## 現成的劍是一個網格一張貼圖（劍身與握把分不開）；斷口之後在 Blender 裡切。
 func _build_sword() -> Node3D:
 	var sword := Node3D.new()
 	sword.name = "BrokenSword"
+	var model: Node3D = PropModels.instance(SWORD_MODEL)
+	if model != null:
+		# 握的位置與方向是在遊戲裡試出來的（劍尖朝下垂在身邊）
+		model.name = "Model"
+		model.scale = Vector3(SWORD_MODEL_SCALE, SWORD_MODEL_SCALE, SWORD_MODEL_SCALE)
+		model.rotation_degrees = Vector3(0, 0, 180)
+		model.position = Vector3(0, 0.1, 0)
+		sword.add_child(model)
+		return sword
 	var steel := StandardMaterial3D.new()
 	steel.albedo_color = Color(0.55, 0.57, 0.6)
 	steel.metallic = 0.8
