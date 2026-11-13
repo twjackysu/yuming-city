@@ -10,7 +10,7 @@
 跟著上胸與脖子的骨頭動；材質跟人物一樣不受光，亮面與暗面是畫在貼圖上的（D-254）。
 
 由 scripts/gen_art.sh 呼叫（D-253；哪個角色用哪個檔、改什麼顏色寫在那裡）。
-材質是「不受光」（KHR_materials_unlit）：在暗的場景裡人物是亮的、不吃場景的光。
+glb 裡的材質照原檔是「不受光」（KHR_materials_unlit）；遊戲載入時由 Puppet.make_lit() 換成吃場景的光、平塗的複本（D-255）。
 """
 import argparse
 import json

@@ -58,9 +58,9 @@ var release_left: float = 0.0
 var phase: float = 0.0
 var breath: float = 0.0
 
-## 開發用（`-- --char-lit`，D-254）：true＝模型改成吃場景的光、平塗（toon 漫射）；false＝照原檔（VRoid 範例角色是「不受光」）。
-## 兩種都拍得出來，給 Jacky 選；他選之前預設不受光。由 Game 讀開發旗標時設。
-static var lit_models: bool = false
+## true＝模型吃場景的光、平塗（toon 漫射）——Jacky 2026-11-13 看了兩種的圖選的（D-255：「會受環境光影響比較好」）。
+## false＝照原檔（VRoid 範例角色是「不受光」：暗的地方人還是亮的）；只剩開發旗標 `-- --char-unlit` 會關（Game 讀）。
+static var lit_models: bool = true
 
 ## 關節名 -> Node3D
 var joints: Dictionary = {}

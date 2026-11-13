@@ -74,8 +74,8 @@ func _ready() -> void:
 		push_error("Game: 對話資料錯誤 " + e)
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	var level: String = str(args.get("level", ""))
-	# 開發用：`-- --char-lit`＝角色模型改成吃場景的光（給 Jacky 選受光方式的對照圖用，D-254）
-	Puppet.lit_models = args.has("char-lit")
+	# 角色模型預設吃場景的光（Jacky 選的，D-255）；開發用：`-- --char-unlit`＝照原檔不受光（要再拍對照圖時用）
+	Puppet.lit_models = not args.has("char-unlit")
 	if args.has("benchmark"):
 		level = "benchmark"
 	if args.has("arena"):

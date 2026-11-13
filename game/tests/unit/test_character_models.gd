@@ -213,7 +213,7 @@ func test_player_uses_model_only_in_arena() -> void:
 	Game.arena_mode = was
 
 
-## D-254：`--char-lit`（Puppet.lit_models）＝模型的材質換成吃場景的光、平塗的複本；預設照原檔不受光，原本的資源不動。
+## D-254、D-255：Puppet.lit_models（預設開，Jacky 選的）＝模型的材質換成吃場景的光、平塗的複本；關掉（`--char-unlit`）就照原檔不受光。原本的資源不動。
 func test_lit_models_override_unlit_materials() -> void:
 	var root := Node3D.new()
 	root.name = "FakeModel"
@@ -236,11 +236,12 @@ func test_lit_models_override_unlit_materials() -> void:
 	scene.pack(root)
 	root.free()
 	var was: bool = Puppet.lit_models
+	assert_true(was, "預設吃場景的光（D-255）")
 	Puppet.lit_models = false
 	var plain: Puppet = _puppet(scene)
 	var plain_mi: MeshInstance3D = plain.model.find_child("Body", true, false) as MeshInstance3D
-	assert_true(plain_mi.get_surface_override_material(0) == null, "預設不動材質")
-	assert_eq((plain_mi.get_active_material(0) as BaseMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "預設照原檔不受光")
+	assert_true(plain_mi.get_surface_override_material(0) == null, "關掉：不動材質")
+	assert_eq((plain_mi.get_active_material(0) as BaseMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "關掉：照原檔不受光")
 	Puppet.lit_models = true
 	var lit: Puppet = _puppet(scene)
 	Puppet.lit_models = was
