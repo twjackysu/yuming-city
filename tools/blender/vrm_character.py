@@ -8,6 +8,8 @@
 → 照 --tint 改色（材質名稱含這個字的，底色乘上這個顏色；可以給很多個）。臉、頭髮、身體、貼圖都照原檔。
 --scarf r,g,b（0～255 的 sRGB）：加一條自製的圍巾——脖子上繞一圈＋背後垂一條尾巴（玩家的鏡頭看的是背面），
 跟著上胸與脖子的骨頭動；材質跟人物一樣不受光，亮面與暗面是畫在貼圖上的（D-254）。
+--cape r,g,b [--cape-trim r,g,b]（0～255 的 sRGB）：加一件自製的短斗篷——領口一圈、搭在肩膀上、背後垂到腰，
+底色＋滾邊；同時把領結（材質 AccessoryNeck）的面拿掉（D-259：冒險者裝備的第一樣）。
 
 由 scripts/gen_art.sh 呼叫（D-253；哪個角色用哪個檔、改什麼顏色寫在那裡）。
 glb 裡的材質照原檔是「不受光」（KHR_materials_unlit）；遊戲載入時由 Puppet.make_lit() 換成吃場景的光、平塗的複本（D-255）。
@@ -29,6 +31,9 @@ from mathutils.bvhtree import BVHTree  # noqa: E402
 import math  # noqa: E402
 
 SCARF_MATERIAL = "Scarf"
+CAPE_MATERIAL = "Cape"
+CAPE_CLASP = (196, 158, 84)  # 胸前扣子的顏色（黃銅）
+CAPE_FOLDS = 9  # 短斗篷一圈有幾道褶子（幾何的波浪與貼圖的陰影同一個相位）
 
 
 def humanoid_map(src: Path):
@@ -165,9 +170,187 @@ def build_scarf(arm, body_meshes, face, tail=0.44, seg=28):
     return ob
 
 
-def patch_materials(path: Path, tints, scarf=None):
+def cape_texture(base, trim, w=256, h=128):
+    """短斗篷的貼圖：u＝繞身體一圈、v＝從領口（最上面一列）到下襬（最下面一列）。
+    底色＋下襬一條寬的滾邊；褶子凹下去的那一半畫暗一點（越往下越明顯）。翻領與扣子用最左上角那一格的顏色（見 build_cape）。"""
+    rows = []
+    for y in range(h):
+        v = (y + 0.5) / h
+        band = v > 0.875  # 下襬一條寬的滾邊（不畫細線：兩條線會像水手服的領子）
+        depth = min(1.0, max(0.0, (v - 0.35) / 0.45))
+        row = []
+        for x in range(w):
+            u = (x + 0.5) / w
+            fold = math.sin(u * math.tau * CAPE_FOLDS + 0.6)
+            tone = 1.0 - 0.16 * max(0.0, -fold) * depth
+            col = CAPE_CLASP if v < 0.035 else trim if band else base  # 最上面那一條壓在翻領底下，借給扣子用
+            row.append(tuple(max(0, min(255, int(ch * tone))) for ch in col))
+        rows.append(row)
+    return _png_rows(rows)
+
+
+def strip_material(obs, key):
+    """把材質名稱含 key 的面刪掉（領結：會從斗篷的領口穿出來）。回傳刪了幾個面。"""
+    import bmesh
+    gone = 0
+    for o in obs:
+        idx = {i for i, m in enumerate(o.data.materials) if m is not None and key.lower() in m.name.lower()}
+        if not idx:
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        doomed = [f for f in bm.faces if f.material_index in idx]
+        gone += len(doomed)
+        bmesh.ops.delete(bm, geom=doomed, context="FACES")
+        bm.to_mesh(o.data)
+        bm.free()
+    return gone
+
+
+def build_cape(arm, body_meshes, face, seg=48, over=5, hang=8):
+    """短斗篷（D-259）：領口一圈 → 搭在肩膀上 → 垂下來。兩側（手臂上面）短、只蓋住肩頭，前面到胸口下面，
+    背後最長、到腰（玩家的鏡頭看的是背面，要比背後的長頭髮長才看得到）。整件跟著上胸與胸的骨頭，不跟手臂——
+    模型的休息姿勢是 T 字站姿，跟著手臂的話手一放下來布就被捲進身體裡。回傳綁在骨架上的網格（材質 CAPE_MATERIAL、有 UV）。"""
+    verts, polys = [], []
+    for o in body_meshes:
+        base = len(verts)
+        verts.extend(o.matrix_world @ v.co for v in o.data.vertices)
+        polys.extend([base + i for i in p.vertices] for p in o.data.polygons)
+    bvh = BVHTree.FromPolygons(verts, polys)
+
+    def head(bone):
+        return arm.matrix_world @ arm.data.bones[bone].head_local
+
+    neck, head_pos, chest = head("Neck"), head("Head"), head("Chest")
+    sh = head("RightUpperArm")
+    face_y = sum((face.matrix_world @ v.co).y for v in face.data.vertices) / max(1, len(face.data.vertices))
+    front = 1.0 if face_y > head_pos.y else -1.0  # 臉朝 +Y 還是 -Y
+    cy = neck.y
+    z_c = neck.z + 0.012                 # 領口
+    z_side = sh.z - 0.115                # 兩側的下襬：肩關節下面一點
+    z_front = chest.z - 0.03             # 前面：胸口下面（中間最低，往兩側斜上去）
+    z_back = chest.z - 0.15              # 背後：過腰（比背後的長頭髮長）
+    a = abs(sh.x) + 0.07                 # 肩膀那一圈的半寬
+
+    def reach(z, d, limit, least=0.0):
+        """從身體的中軸往 d 打出去，限制距離內最遠的一次打中（衣服是單層的面、底下的身體是挖掉的）。"""
+        origin = Vector((0.0, cy, z))
+        far, start, travelled = least, origin.copy(), 0.0
+        for _ in range(10):
+            hit = bvh.ray_cast(start, d, limit - travelled)
+            if hit[0] is None:
+                break
+            travelled += hit[3] + 1e-4
+            far = max(far, travelled)
+            start = origin + d * travelled
+        return far
+
+    def depth(sign):
+        """胸口到肩膀這一段，身體往前（sign=1）或往後（-1）最多凸出多少。"""
+        far, z = 0.05, chest.z + 0.04
+        while z < sh.z + 0.02:
+            for k in range(-3, 4):
+                hit = bvh.ray_cast(Vector((k * 0.03, cy + sign * front * 0.5, z)), Vector((0.0, -sign * front, 0.0)), 0.6)
+                if hit[0] is not None:
+                    far = max(far, (hit[0].y - cy) * sign * front)
+            z += 0.02
+        return far
+
+    b_front, b_back = depth(1.0) + 0.03, depth(-1.0) + 0.032
+    collar = [min(max(reach(z_c, Vector((math.cos(math.tau * i / seg), math.sin(math.tau * i / seg), 0.0)), 0.1), 0.045), 0.085) + 0.016
+              for i in range(seg)]
+    collar = [sum(collar[(i + k) % seg] for k in (-2, -1, 0, 1, 2)) / 5.0 for i in range(seg)]
+    P, F, UV, groups = [], [], [], []
+    cols = over + hang + 1
+    for i in range(seg + 1):
+        th = math.tau * (i % seg) / seg
+        d = Vector((math.cos(th), math.sin(th), 0.0))
+        sy = d.y * front                                   # +1＝正前方、−1＝正後方、0＝兩側
+        b = b_front if sy > 0 else b_back
+        edge = 1.0 / math.sqrt((d.x / a) ** 2 + (d.y / b) ** 2)   # 肩膀那一圈（橢圓）的半徑
+        z_e = z_c - (0.03 + 0.075 * abs(sy) ** 1.2)        # 搭到那一圈時的高度：兩側幾乎是平的，前後往下斜
+        z_h = z_side + ((z_front if sy > 0 else z_back) - z_side) * abs(sy) ** 1.4
+        rc = collar[i % seg]
+        for k in range(over + 1):                          # 搭在肩膀上的那一段：貼著肩膀與上胸，離開 1.2 cm
+            t = k / over
+            r = rc + (edge - rc) * t
+            z = z_c + (z_e - z_c) * t ** 1.3
+            hit = bvh.ray_cast(Vector((d.x * r, cy + d.y * r, neck.z + 0.05)), Vector((0.0, 0.0, -1.0)), 0.4)
+            if hit[0] is not None and t > 0.0:
+                z = max(z, hit[0].z + 0.012)
+            P.append(Vector((d.x * r, cy + d.y * r, z)))
+            groups.append({"Neck": 0.2, "UpperChest": 0.8} if k == 0 else {"UpperChest": 1.0})
+        z_top, clear = P[-1].z, 0.0
+        for k in range(1, hang + 1):                       # 垂下來的那一段：越往下越張開一點、有褶子、不貼進身體
+            t = k / hang
+            z = z_top + (z_h - z_top) * t
+            r = edge * (1.0 + 0.1 * t) * (1.0 + 0.045 * math.sin(th * CAPE_FOLDS + 0.6) * t)
+            if abs(sy) > 0.45 and z < sh.z - 0.07:         # 兩側不量：T 字站姿的手臂會被算成身體
+                clear = max(clear, reach(z, d, 0.26) + 0.022)
+            r = max(r, clear)
+            P.append(Vector((d.x * r, cy + d.y * r, z)))
+            groups.append({"UpperChest": 1.0 - 0.35 * t, "Chest": 0.35 * t})
+    for i in range(seg):
+        for k in range(cols - 1):
+            a0, b0 = i * cols + k, (i + 1) * cols + k
+            F.append([a0, a0 + 1, b0 + 1, b0])
+            u0, u1, v0, v1 = i / seg, (i + 1) / seg, 1.0 - k / (cols - 1), 1.0 - (k + 1) / (cols - 1)
+            UV.append([(u0, v0), (u0, v1), (u1, v1), (u1, v0)])
+    # 翻領：脖子上厚厚的一圈布（像放下來的兜帽），背後比前面厚；顏色用滾邊的（貼圖最下面那一條）
+    ring_n, base = 8, len(P)
+    for i in range(seg + 1):
+        th = math.tau * (i % seg) / seg
+        d = Vector((math.cos(th), math.sin(th), 0.0))
+        sy = d.y * front
+        fat = 1.0 + 0.5 * max(0.0, -sy)                    # 背後堆得比較厚
+        low = -0.022 * max(0.0, sy)                         # 前面低一點，露出脖子
+        for k in range(ring_n + 1):
+            ph = math.tau * (k % ring_n) / ring_n
+            P.append(Vector((0.0, cy, z_c + 0.012 + low + math.sin(ph) * 0.03 * fat))
+                     + d * (collar[i % seg] + 0.012 + math.cos(ph) * 0.024 * fat))
+            groups.append({"Neck": 0.3, "UpperChest": 0.7})
+    rc_cols = ring_n + 1
+    for i in range(seg):
+        for k in range(ring_n):
+            a0, b0 = base + i * rc_cols + k, base + (i + 1) * rc_cols + k
+            F.append([a0, b0, b0 + 1, a0 + 1])
+            UV.append([(i / seg, 0.03)] * 4)
+    # 扣子：胸前一個八角的金屬片（顏色在貼圖最上面那一條——見 cape_texture）
+    base = len(P)
+    mid = Vector((0.0, cy + front * (collar[seg // 4 if front > 0 else 3 * seg // 4] + 0.043), z_c - 0.012))
+    P.append(mid + Vector((0.0, front * 0.008, 0.0)))
+    groups.append({"UpperChest": 1.0})
+    for k in range(8):
+        ph = math.tau * k / 8
+        P.append(mid + Vector((math.cos(ph) * 0.026, 0.0, math.sin(ph) * 0.026)))
+        groups.append({"UpperChest": 1.0})
+    for k in range(8):
+        tri = [base, base + 1 + k, base + 1 + (k + 1) % 8]
+        F.append(tri if front < 0 else tri[::-1])
+        UV.append([(0.5, 0.985)] * 3)
+    ob = c.new_object("Cape", P, F)
+    uv = ob.data.uv_layers.new(name="UVMap")
+    for poly, quad in zip(ob.data.polygons, UV):
+        for loop, st in zip(poly.loop_indices, quad):
+            uv.data[loop].uv = st
+    for poly in ob.data.polygons:
+        poly.use_smooth = True
+    ob.data.materials.append(bpy.data.materials.new(CAPE_MATERIAL))
+    have = {bn.name for bn in arm.data.bones}
+    for i, weights in enumerate(groups):
+        for bone, w in weights.items():
+            name = bone if bone in have else "Chest" if "Chest" in have else "Spine"
+            g = ob.vertex_groups.get(name) or ob.vertex_groups.new(name=name)
+            g.add([i], w, "ADD")
+    ob.parent = arm
+    ob.modifiers.new("Armature", "ARMATURE").object = arm
+    print(f"[vrm] 短斗篷：半寬 {a:.3f}、前 {b_front:.3f}、後 {b_back:.3f}、下襬 前 {z_front:.2f}／側 {z_side:.2f}／後 {z_back:.2f}、{len(F) * 2} 個三角面")
+    return ob
+
+
+def patch_materials(path: Path, tints, scarf=None, cape=None):
     """匯出後直接改 glb：每個材質補平的 Normal 與固定值的 ORM（occlusion 與 metallicRoughness 同一張）、照 tints 改底色；
-    有圍巾的話把它的材質換成畫好的貼圖、設成不受光。回傳 (材質數, 改了色的材質名)。"""
+    有圍巾／短斗篷（cape＝(底色, 滾邊)）的話把它的材質換成畫好的貼圖、設成不受光。回傳 (材質數, 改了色的材質名)。"""
     raw = path.read_bytes()
     jlen = struct.unpack_from("<I", raw, 12)[0]
     data = json.loads(raw[20:20 + jlen])
@@ -191,8 +374,13 @@ def patch_materials(path: Path, tints, scarf=None):
     tinted = []
     for m in data.get("materials", []):
         pbr = m.setdefault("pbrMetallicRoughness", {})
+        made = None
         if scarf is not None and m.get("name") == SCARF_MATERIAL:
-            pbr["baseColorTexture"] = {"index": add_texture("scarf", scarf_texture(scarf))}
+            made = add_texture("scarf", scarf_texture(scarf))
+        elif cape is not None and m.get("name") == CAPE_MATERIAL:
+            made = add_texture("cape", cape_texture(*cape))
+        if made is not None:
+            pbr["baseColorTexture"] = {"index": made}
             pbr["baseColorFactor"] = [1.0, 1.0, 1.0, 1.0]
             m.setdefault("extensions", {})["KHR_materials_unlit"] = {}
             m["doubleSided"] = True
@@ -242,6 +430,8 @@ def main():
     ap.add_argument("--name", default="character")
     ap.add_argument("--tint", type=parse_tint, action="append", default=[])
     ap.add_argument("--scarf", type=parse_rgb255, default=None)
+    ap.add_argument("--cape", type=parse_rgb255, default=None)
+    ap.add_argument("--cape-trim", type=parse_rgb255, default=[88, 112, 146])
     args = ap.parse_args()
     human = humanoid_map(args.src)
 
@@ -280,6 +470,14 @@ def main():
         meshes.append(build_scarf(arm, body, named.get("Face", meshes[0])))
         tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
 
+    if args.cape is not None:
+        named = {o.name.split(".")[0]: o for o in meshes}
+        body = [o for o in meshes if not o.name.startswith(("Face", "Hair"))]
+        gone = strip_material(body, "AccessoryNeck")  # 領結會從斗篷的領口穿出來
+        print(f"[vrm] 拿掉領結：{gone} 個面")
+        meshes.append(build_cape(arm, body, named.get("Face", meshes[0])))
+        tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
+
     a = c.Animator(arm, segs)
     c.standard_actions(a)
     c.release_action(a)
@@ -291,9 +489,10 @@ def main():
     bpy.ops.export_scene.gltf(filepath=str(args.out), export_format="GLB", use_selection=True,
                               export_animations=True, export_animation_mode="NLA_TRACKS", export_skins=True,
                               export_yup=True, export_image_format="AUTO", export_force_sampling=True)
-    count, tinted = patch_materials(args.out, args.tint, args.scarf)
+    count, tinted = patch_materials(args.out, args.tint, args.scarf,
+                                    (args.cape, args.cape_trim) if args.cape is not None else None)
     print(f"[{args.name}] 已匯出 {args.out.name}：{tris} 個三角面、{count} 個材質（補了 Normal／ORM"
-          f"{'；改色 ' + '、'.join(tinted) if tinted else ''}{'；加了圍巾' if args.scarf is not None else ''}）、身高 {height:.2f} m、{args.out.stat().st_size // 1024} KB")
+          f"{'；改色 ' + '、'.join(tinted) if tinted else ''}{'；加了圍巾' if args.scarf is not None else ''}{'；加了短斗篷' if args.cape is not None else ''}）、身高 {height:.2f} m、{args.out.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":
