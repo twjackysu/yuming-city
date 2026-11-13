@@ -23,14 +23,16 @@
 - 標題畫面背景（`game/scenes/boot/title_fog.gdshader`）
 - 遊戲圖示（`game/icon.svg`）
 - 音效與配樂：鈍擊、弱點鈍擊、爪擊、斬擊、閃避風聲、腳步、風雪、毒霧、玻璃瓶、介面音、標題與「待續」的配樂（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
-- 席菈與諾恩的服裝、頭髮、骨架、貼圖與動作（`tools/blender/common.py`、`sheila.py`、`noen.py`；身體是上面「第三方素材」的 MakeHuman CC0 基底；建置時產生、不進 git；產生失敗時用程序人偶）
+- 諾恩與席菈的動作（站、走、跑、出手、釋放；`tools/blender/common.py` 用程式寫的關鍵影格，套在下面「第三方素材」的 VRoid 角色上）
+- 自製的席菈與諾恩（`tools/blender/sheila.py`、`noen.py`：服裝、頭髮、骨架、貼圖；身體是「第三方素材」的 MakeHuman CC0 基底）——**2026-11-13 起不再接進遊戲**（D-252、D-253），腳本留著
 - 角色與敵人外型：諾恩、席菈的斷劍、灰巡者、送葬者（CSG／程序 mesh，霜紋前兆為程序扇形／圓形／直線）
 
 ## 第三方素材
 
 | 名稱 | 作者 | 授權 | 來源 | 用在哪裡 | AI 生成 |
 |---|---|---|---|---|---|
-| MakeHuman 人體基底網格 `base.obj` 與 `targets/macrodetails/` 的 8 個 target（universal／asian／caucasian／african 的 female-young 與 male-young） | MakeHuman Community | **CC0 1.0**（該專案的 `LICENSE.ASSETS.md`；程式碼是 AGPL，本專案沒有使用或複製它的程式碼） | https://github.com/makehumancommunity/makehuman （commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 席菈模型的身體、臉、手（`tools/blender/sheila.py`）；服裝、頭髮、骨架、貼圖、動作是本專案的程式產生的 | 否 |
+| VRoid 範例角色 `HairSample_Male.vrm`（諾恩的底）與 `Sendagaya_Shino.vrm`（席菈的底） | pixiv Inc.（VRoid Studio 的範例角色；檔案裡的作者欄是空的） | **CC0**——根據是 `.vrm` 檔自己的 `extensions.VRM.meta`：`licenseName: "CC0"`、`commercialUssageName: "Allow"`（轉檔工具每次建置都會讀，不是 CC0 就不做）。pixiv 的說明頁（`vroid.pixiv.help/hc/en-us/articles/4402614652569`）**2026-11-13 這一輪打不開，沒有直接確認**——見 `docs/FOR_JACKY.md` | https://github.com/madjin/vrm-samples （commit e16eb187100149a315ad92c3c9968f1d5baa6c7d 的 `vroid/beta/`；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 戰鬥場裡的諾恩、所有場景的席菈：臉、頭髮、身體、衣服、貼圖照原檔（諾恩的上衣改成深褐色）；骨頭改名、動作、Normal／ORM 貼圖是 `tools/blender/vrm_character.py` 加的 | 否 |
+| MakeHuman 人體基底網格 `base.obj` 與 `targets/macrodetails/` 的 8 個 target（universal／asian／caucasian／african 的 female-young 與 male-young） | MakeHuman Community | **CC0 1.0**（該專案的 `LICENSE.ASSETS.md`；程式碼是 AGPL，本專案沒有使用或複製它的程式碼） | https://github.com/makehumancommunity/makehuman （commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 自製的席菈與諾恩的身體、臉、手（`tools/blender/sheila.py`、`noen.py`）——2026-11-13 起不再接進遊戲、建置也不再下載（D-253） | 否 |
 
 ## AI 生成素材
 

@@ -17,13 +17,13 @@
   | `Darkness_Shibu.vrm` | **CC0** | Allow | 20.4 MB | 33,758 |
   | `Victoria_Rubin.vrm`、`Vita.vrm`、`Vivi.vrm`、`HairSample_Male.vrm` | **CC0** | Allow | 14～19 MB | 沒量 |
 
-  該 repo 的 README 引用 pixiv 的說明頁（`vroid.pixiv.help/hc/en-us/articles/4402614652569`）：這幾個是 CC0、放棄著作權、可以修改與商用。**我沒有直接打開 pixiv 那一頁**，授權的根據是檔案裡的 meta 與 README 的引用；正式用之前再開那一頁確認一次，並記進 `docs/CREDITS.md`。
+  該 repo 的 README 引用 pixiv 的說明頁（`vroid.pixiv.help/hc/en-us/articles/4402614652569`）：這幾個是 CC0、放棄著作權、可以修改與商用。**我沒有直接打開 pixiv 那一頁**（第 103 輪 17:35 再試一次：雲端抓網頁的工具要人按同意、沒人在，還是沒打開），授權的根據是檔案裡的 meta 與 README 的引用；正式用之前再開那一頁確認一次，並記進 `docs/CREDITS.md`。
 - **不要用的**：同一個 repo 的 `vroid/stable/AvatarSample_A／B／C.vrm`、`vroid/fem_vroid.vrm`、`vroid/masc_vroid.vrm`——meta 寫的是 `Other`（有另外的使用條件，不是 CC0）。`Seed-san`、`Avatar_Orion`、`meebits`、`cryptovoxels` 沒查。
 - **規格**：VRM 0.x（VRoid Studio 0.8.1 匯出）、T 字站姿、身高 1.62～1.65 m、匯入 Blender 之後面向 +Y（＝glTF 的 −Z，跟遊戲要的一樣）、15～17 個材質、27～30 張貼圖、112～154 個節點（含頭髮與裙子的擺動骨頭）。
 - **試過的**：把 `.vrm` 複製成 `.glb`，`bpy.ops.import_scene.gltf()` 直接讀得進來，貼圖都在；Cycles 算兩張圖 24 秒。對照圖（左＝自製席菈，右＝Shino 與 Shibu）已經在對話裡給 Jacky 看過。匯入時會多一個沒有綁骨架的網格（骨頭的顯示用形狀），算圖與匯出要排除（只留有 Armature modifier 的）。
 - **抓檔的坑**：`git clone --depth 1 --filter=blob:none --no-checkout` 之後用 `git show HEAD:<路徑> > 檔` 一個一個拿。**不要對這個 repo 跑 `git ls-tree -r -l`**——它會把每個檔都下載下來（460 MB）。
 
-## 2. 接進遊戲要做的事（還沒做）
+## 2. 接進遊戲要做的事（第 1、2、5 點第 103 輪做完了，D-253；第 3 點的受光與第 4 點的服裝還沒）
 
 1. **骨名**：VRoid 的骨頭叫 `J_Bip_C_Hips`、`J_Bip_L_UpperArm`…；`extensions.VRM.humanoid.humanBones` 有「人形骨頭 → 節點」的對照表，用它在 bpy 裡改成 Godot 人形骨架的名字（Hips、LeftUpperArm…），`tools/blender/sheila.py` 的 `Animator`（照世界座標的軸轉、手臂垂下的角度從休息姿勢算）就能直接套四段動作。T 字站姿不用另外處理。
 2. **收件檢查**：`check_character_glb.py` 要求每個材質都有 Normal 與 ORM、15k～40k 面。面數過得了；材質要補（每個材質給一張平的 Normal 與固定值的 ORM，或烘成一張圖）。這是 Jacky 寫的收件檢查，不要為了過關把它改鬆——在 bpy 那一步補齊。
