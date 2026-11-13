@@ -367,11 +367,7 @@ func _build() -> void:
 	if hammer != null:
 		hammer.queue_free()
 	var sword: Node3D = _build_sword()
-	_puppet.hand("R").add_child(sword)
-	if _puppet.uses_model():
-		# 模型的手骨頭 +Y 朝指尖（程序人偶的手是 -Y 朝下）：劍轉過來、握在掌心（D-249）
-		sword.rotation.x = PI
-		sword.position = Vector3(0, 0.07, 0)
+	_puppet.hand("R").add_child(sword)  # 模型的手上掛點跟人偶的手同方向、已經在掌心（Puppet._model_joint，D-253），不用另外轉
 	_line = Label3D.new()
 	_line.name = "Line"
 	_line.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED

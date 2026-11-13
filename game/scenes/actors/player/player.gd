@@ -132,7 +132,8 @@ func _ready() -> void:
 	add_to_group("heartbeat")
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
-	_puppet.character_id = "noen"
+	# 模型先只在戰鬥場用（D-253）：劇情關卡換成模型之後流程的測試走不下去（原因還沒查完），先維持程序人偶
+	_puppet.character_id = "noen" if Game.arena_mode else ""
 	_body.add_child(_puppet)
 	ContactShadow.attach(self, 0.55, 0.5)  # D-108
 	# 提燈掛在左手

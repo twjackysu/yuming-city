@@ -26,6 +26,26 @@ const HAND_BONES: Dictionary = {
 }
 
 
+## 程序人偶的關節名 → 模型的骨頭（比對方式跟手一樣）。掛在人偶關節上的東西（護腕掛在 elbow_R…）用模型時改掛在這根骨頭上（D-253）。
+## 前面是 Godot 人形骨架的名字（VRM 轉來的、自製的都用這一套），後面是 Mixamo 的。
+const JOINT_BONES: Dictionary = {
+	"hips": ["hips"], "spine": ["spine"], "chest": ["chest", "upperchest", "spine1"], "neck": ["neck"], "head": ["head"],
+	"shoulder_L": ["leftupperarm", "leftarm"], "shoulder_R": ["rightupperarm", "rightarm"],
+	"elbow_L": ["leftlowerarm", "leftforearm"], "elbow_R": ["rightlowerarm", "rightforearm"],
+	"thigh_L": ["leftupperleg", "leftupleg"], "thigh_R": ["rightupperleg", "rightupleg"],
+	"knee_L": ["leftlowerleg", "leftleg"], "knee_R": ["rightlowerleg", "rightleg"],
+	"foot_L": ["leftfoot"], "foot_R": ["rightfoot"],
+}
+## 手臂與腿的關節沿著哪兩個關節的連線擺（從第一個指向第二個；手＝前臂的延長）。沒寫的（骨盆、胸、頭）跟模型同方向。
+const JOINT_AXIS: Dictionary = {
+	"shoulder_L": ["shoulder_L", "elbow_L"], "shoulder_R": ["shoulder_R", "elbow_R"],
+	"elbow_L": ["elbow_L", "hand_L"], "elbow_R": ["elbow_R", "hand_R"],
+	"hand_L": ["elbow_L", "hand_L"], "hand_R": ["elbow_R", "hand_R"],
+	"thigh_L": ["thigh_L", "knee_L"], "thigh_R": ["thigh_R", "knee_R"],
+	"knee_L": ["knee_L", "foot_L"], "knee_R": ["knee_R", "foot_R"],
+}
+
+
 static func path_for(character_id: String) -> String:
 	return "%s/%s/%s.glb" % [DIR, character_id, character_id]
 
@@ -57,10 +77,21 @@ static func find_animation(anim: AnimationPlayer, state: String) -> String:
 
 ## 掛點骨骼索引；沒有回傳 -1。
 static func find_hand_bone(skeleton: Skeleton3D, side: String) -> int:
-	if skeleton == null:
+	return _find_bone(skeleton, HAND_BONES.get(side, []) as Array)
+
+
+## 人偶的關節名（"elbow_R"、"hand_L"、"hips"…）對應的骨頭索引；沒有回傳 -1。
+static func find_joint_bone(skeleton: Skeleton3D, joint_name: String) -> int:
+	if joint_name.begins_with("hand_"):
+		return find_hand_bone(skeleton, joint_name.trim_prefix("hand_"))
+	return _find_bone(skeleton, JOINT_BONES.get(joint_name, []) as Array)
+
+
+static func _find_bone(skeleton: Skeleton3D, wanted: Array) -> int:
+	if skeleton == null or wanted.is_empty():
 		return -1
 	for i: int in skeleton.get_bone_count():
 		var b: String = skeleton.get_bone_name(i).to_lower().replace("mixamorig:", "").replace("mixamorig_", "")
-		if (HAND_BONES.get(side, []) as Array).has(b):
+		if wanted.has(b):
 			return i
 	return -1

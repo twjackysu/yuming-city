@@ -18,6 +18,8 @@ const RUN_SPEED: float = 5.8
 const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55}
 ## 「釋放」的姿勢播多久（D-246）。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
 const RELEASE_POSE_TIME: float = 0.36
+## 模型的手骨頭在手腕：手上的掛點往指尖移這麼多（掌心）
+const MODEL_PALM_OFFSET: float = 0.07
 const HIP_HEIGHT: float = 0.92
 const THIGH_LEN: float = 0.44
 const SHIN_LEN: float = 0.44
@@ -115,8 +117,52 @@ func hand(side: String) -> Node3D:
 	return joints.get("hand_" + side) as Node3D
 
 
+## 人偶的關節；用模型時是對應骨頭上的掛點（第一次有人要的時候才做，D-253），模型沒有那根骨頭回傳 null。
 func joint(joint_name: String) -> Node3D:
-	return joints.get(joint_name) as Node3D
+	var j: Node3D = joints.get(joint_name) as Node3D
+	if j == null and model != null:
+		j = _model_joint(joint_name)
+	return j
+
+
+## 模型上對應人偶關節的掛點：骨頭上的 BoneAttachment3D 底下再一層 Node3D，轉成跟人偶的關節同一個方向——
+## 手臂、腿、手：−Y 沿著骨頭往下一節（手＝往指尖）、−Z 朝角色的前面；其他（骨盆、胸、頭）跟模型同方向。
+## 這樣掛在上面的東西（護腕、劍、鐘錘、提燈）不用分人偶還是模型。
+## 每個模型骨頭自己的軸不一樣（自製的 +Y 沿著骨頭；VRM 轉來的不是），所以從休息姿勢算，不假設。
+func _model_joint(joint_name: String) -> Node3D:
+	var bone: int = CharacterModels.find_joint_bone(skeleton, joint_name)
+	if bone < 0:
+		return null
+	var rest: Transform3D = skeleton.get_bone_global_rest(bone)
+	var to_bone: Basis = rest.basis.orthonormalized().inverse()
+	var want := Basis.IDENTITY
+	var offset := Vector3.ZERO
+	var axis: Array = CharacterModels.JOINT_AXIS.get(joint_name, []) as Array
+	if axis.size() == 2:
+		var a: int = CharacterModels.find_joint_bone(skeleton, str(axis[0]))
+		var b: int = CharacterModels.find_joint_bone(skeleton, str(axis[1]))
+		if a >= 0 and b >= 0:
+			var dir: Vector3 = skeleton.get_bone_global_rest(b).origin - skeleton.get_bone_global_rest(a).origin
+			if dir.length() > 0.001:
+				dir = dir.normalized()
+				var y: Vector3 = -dir
+				var z: Vector3 = Vector3.BACK - y * y.dot(Vector3.BACK)
+				if z.length() < 0.01:
+					z = Vector3.RIGHT - y * y.dot(Vector3.RIGHT)
+				z = z.normalized()
+				want = Basis(y.cross(z), y, z)
+				if joint_name.begins_with("hand_"):
+					offset = dir * MODEL_PALM_OFFSET  # 手骨頭在手腕：往指尖移到掌心
+	var att := BoneAttachment3D.new()
+	att.name = "Attach_" + joint_name
+	att.bone_name = skeleton.get_bone_name(bone)
+	skeleton.add_child(att)
+	var j := Node3D.new()
+	j.name = joint_name
+	j.transform = Transform3D(to_bone * want, to_bone * offset)
+	att.add_child(j)
+	joints[joint_name] = j
+	return j
 
 
 ## 推進動畫並套用姿勢（_process 會呼叫；測試直接呼叫）。
@@ -197,22 +243,15 @@ func _build_model() -> bool:
 			var n: String = CharacterModels.find_animation(anim, st)
 			if n != "":
 				anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
-	# 掛點：手骨骼上的 BoneAttachment3D；找不到骨骼就放在大約的位置
+	# 掛點：手骨骼上的掛點（方向跟人偶的手一樣，見 _model_joint）；找不到骨骼就放在大約的位置
 	for side: String in ["L", "R"]:
-		var bone: int = CharacterModels.find_hand_bone(skeleton, side)
-		var holder: Node3D
-		if bone >= 0:
-			var att := BoneAttachment3D.new()
-			att.bone_name = skeleton.get_bone_name(bone)
-			skeleton.add_child(att)
-			holder = att
-		else:
+		if _model_joint("hand_" + side) == null:
 			push_warning("Puppet: 模型 %s 找不到 %s 手骨骼，掛點用估計位置" % [character_id, side])
-			holder = Node3D.new()
+			var holder := Node3D.new()
 			holder.position = Vector3(-0.3 if side == "L" else 0.3, 0.95, 0.0)
 			model.add_child(holder)
-		holder.name = "Hand" + side
-		joints["hand_" + side] = holder
+			holder.name = "Hand" + side
+			joints["hand_" + side] = holder
 	_add_hammer()
 	_animate_model()
 	return true
