@@ -21,6 +21,13 @@ var burst_from: int = 60
 var burst_every: int = 6
 var burst_count: int = 8
 var _burst_saved: int = 0
+## 連拍只畫要存的那幾幀（`--burst-lazy`，scripts/burst.sh 的 BURST_LAZY=1；第 99 輪）：軟體算圖一秒只畫一兩幀，
+## 等「第一次愣住」這種開場好幾秒之後才發生的事要等三四分鐘——沒有要存的幀不畫，遊戲照 --fixed-fps 走。
+## 開機的前 BURST_LAZY_BOOT 幀照常畫（載入、編 shader），要存的那一幀與它前面 BURST_LAZY_WARM 幀也畫
+## （體積霧要前幾幀的結果；用 --burst-on 觸發的第一張來不及暖，霧會粗一點）。
+var burst_lazy: bool = false
+const BURST_LAZY_BOOT: int = 20
+const BURST_LAZY_WARM: int = 2
 var _frame: int = 0
 
 
@@ -41,6 +48,7 @@ func _ready() -> void:
 	burst_from = int(args.get("burst-from", burst_from))
 	burst_every = maxi(int(args.get("burst-every", burst_every)), 1)
 	burst_count = maxi(int(args.get("burst-count", burst_count)), 1)
+	burst_lazy = args.has("burst-lazy")
 	set_process(screenshot_path != "" or burst_prefix != "")
 
 
@@ -82,6 +90,8 @@ static func parse_user_args(argv: PackedStringArray) -> Dictionary:
 func burst_start_in(delay: int) -> void:
 	burst_from = _frame + maxi(delay, 1)
 	print("[App] burst from frame %d" % burst_from)
+	if burst_lazy:
+		RenderingServer.render_loop_enabled = true
 
 
 ## 這一幀是不是連拍要存的那一幀。純函式。
@@ -92,9 +102,18 @@ static func burst_index(frame: int, from: int, every: int, count: int) -> int:
 	return i if i < count else -1
 
 
+## 離下一張要存的幀還有幾幀（0＝就是這一幀）。純函式。
+static func burst_wait(frame: int, from: int, every: int) -> int:
+	if frame <= from:
+		return from - frame
+	return (every - (frame - from) % every) % every
+
+
 func _process(_delta: float) -> void:
 	_frame += 1
 	if burst_prefix != "":
+		if burst_lazy and _frame > BURST_LAZY_BOOT:
+			RenderingServer.render_loop_enabled = burst_wait(_frame, burst_from, burst_every) <= BURST_LAZY_WARM
 		var i: int = burst_index(_frame, burst_from, burst_every, burst_count)
 		if i < 0:
 			return

@@ -6,6 +6,7 @@
 #   每張裁中間那一塊、排成 4×2 的一張圖（960 px 寬）。讀圖只讀這一張。
 # 環境變數：BURST_EVERY（幾幀一張，預設 6）、BURST_COUNT（預設 8）、BURST_CROP（裁哪一塊，比例 "x0,y0,x1,y1"，預設 "0.2,0.12,0.8,0.92"）、
 #          BURST_RES（預設 1280x720）、BURST_TIMEOUT（秒，預設 420）。需要 xvfb、mesa-vulkan-drivers。
+#          BURST_LAZY=1：只畫要存的那幾幀（等 --burst-on 觸發的時候不用一幀一幀畫，快很多；每張的霧會粗一點）。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -13,6 +14,7 @@ OUT="$(realpath -m "${1:?需要輸出路徑}")"
 FROM="${2:?需要從第幾幀開始}"
 shift 2
 EXTRA=("$@")
+[[ "${BURST_LAZY:-0}" == "1" ]] && EXTRA+=("--burst-lazy")
 EVERY="${BURST_EVERY:-6}"
 COUNT="${BURST_COUNT:-8}"
 GODOT="$("$ROOT/scripts/get-godot.sh")"

@@ -60,6 +60,19 @@ var gawk_left: float = 0.0
 var gawk_count: int = 0
 var _gawk_total: float = 0.0
 var _gawk_cooldown: float = 0.0
+## 愣住的那一刻手一滑（D-247）：手上的瓶子掉在自己腳邊、碎成一團霧（同一種霧：諾恩走過去也能站），他自己被嗆到——
+## 愣著的時候每 FUMBLE_TICK 秒扣一次血，總共 demo_thrower.fumble_damage，扣到剩 1 為止（不會被自己毒死：
+## 他是毒的來源，要不要留著他是玩家決定的）。fumble_damage 是 0＝只愣住、瓶子不掉。
+## 為什麼：他的姿勢在實際的距離看不到（8 m 外、前面還站著拿棍子的，第 99 輪的連拍）；一團綠霧看得到。
+const FUMBLE_TICK: float = 0.4
+const FUMBLE_TICKS: int = 4
+const FUMBLE_DROP_SEC: float = 0.22
+var fumble_count: int = 0
+var fumble_dealt: float = 0.0
+var last_fumble_mist: PoisonMist
+var _fumbling: bool = false
+var _fumble_tick: float = 0.0
+var _fumble_budget: float = 0.0
 
 var _puppet: Puppet
 var _glow_mat: StandardMaterial3D
@@ -164,6 +177,8 @@ func _hit_height() -> float:
 func _held(delta: float) -> bool:
 	if gawk_left > 0.0:
 		gawk_left = maxf(gawk_left - delta, 0.0)
+		if _fumbling:
+			_tick_fumble(delta)
 		return true
 	_gawk_cooldown = maxf(_gawk_cooldown - delta, 0.0)
 	return debug_hold or waiting
@@ -200,7 +215,71 @@ func gawk() -> bool:
 	_gawk_total = sec
 	_gawk_cooldown = CombatTuning.num("demo_thrower.gawk_cooldown", 10.0)
 	gawk_count += 1
+	_fumbling = CombatTuning.num("demo_thrower.fumble_damage", 0.0) > 0.0
+	if _fumbling:
+		_fumble()
 	return true
+
+
+func is_fumbling() -> bool:
+	return _fumbling and gawk_left > 0.0
+
+
+## 手一滑：瓶子從手上掉到腳前（FUMBLE_DROP_SEC 秒），落地碎成霧。
+func _fumble() -> void:
+	fumble_count += 1
+	_fumble_budget = CombatTuning.num("demo_thrower.fumble_damage", 0.0)
+	_fumble_tick = FUMBLE_DROP_SEC + 0.1
+	var parent: Node = get_parent()
+	if parent == null or not is_inside_tree():
+		return
+	var from: Vector3 = global_position + forward() * 0.3 + Vector3.UP * 1.35 * height
+	var to: Vector3 = global_position + forward() * 0.35
+	var bottle: Node3D = _bottle_node(1.45, BOTTLE_ENERGY * 2.2)
+	bottle.name = "FumbledBottle%d" % fumble_count
+	bottle.position = from
+	parent.add_child(bottle)
+	var fall := func(k: float) -> void:
+		if is_instance_valid(bottle):
+			bottle.global_position = from.lerp(to, k * k)
+			bottle.rotation.x = k * 5.0
+	var t: Tween = bottle.create_tween()
+	t.tween_method(fall, 0.0, 1.0, FUMBLE_DROP_SEC)
+	t.tween_callback(_fumble_landed.bind(bottle, to))
+
+
+func _fumble_landed(bottle: Node3D, at: Vector3) -> void:
+	var parent: Node = bottle.get_parent() if is_instance_valid(bottle) else null
+	if is_instance_valid(bottle):
+		bottle.queue_free()
+	if parent == null:
+		return
+	last_fumble_mist = _break_bottle(parent, at, CombatTuning.num("demo_thrower.fumble_radius", 1.6),
+		CombatTuning.num("demo_thrower.fumble_life", 3.0), "FumbleMist%d_%d" % [get_instance_id() % 1000, fumble_count])
+
+
+## 被自己的毒嗆到：每 FUMBLE_TICK 秒扣一次，嘴邊咳出一小團綠。走的是狀態傷害（不後仰、沒有命中的火花）。
+func _tick_fumble(delta: float) -> void:
+	_fumble_tick -= delta
+	if _fumble_tick > 0.0 or _fumble_budget <= 0.0 or health == null or health.is_dead():
+		return
+	_fumble_tick = FUMBLE_TICK
+	var per: float = CombatTuning.num("demo_thrower.fumble_damage", 0.0) / float(FUMBLE_TICKS)
+	_fumble_budget -= per
+	var amount: float = minf(per, health.hp - 1.0)
+	if amount > 0.0:
+		fumble_dealt += health.apply_status_damage(amount, {"source": self, "kind": "poison"})
+	if is_inside_tree():
+		# 小小的幾顆（預設的粉一顆 25～56 cm，第一版連拍上是一大團白綠的球，把他的臉跟摀嘴的手整個蓋住）
+		var ps: CPUParticles3D = puff_build(Vector3(0.05, 0.04, 0.05), 7, Color(0.62, 0.95, 0.55, 0.6))
+		ps.spread = 30.0
+		ps.direction = forward() + Vector3.UP * 0.15
+		ps.initial_velocity_min = 0.9
+		ps.initial_velocity_max = 1.9
+		ps.lifetime = 0.55
+		ps.scale_amount_min = 0.22
+		ps.scale_amount_max = 0.45
+		puff_start(ps, global_position + forward() * 0.25 + Vector3.UP * 1.45 * height)
 
 
 ## 出招：前方扇形裡的心跳（諾恩、席菈）受傷。每一招的距離、角度、傷害在 tuning.json。
@@ -256,11 +335,16 @@ func _bottle_landed(bottle: Node3D, at: Vector3, n: int) -> void:
 		bottle.queue_free()
 	if parent == null:
 		return
-	var m: PoisonMist = PoisonMist.create(brain.move_num("toss", "radius", 2.0), MIST_SOURCE, brain.move_num("toss", "life", 3.0))
-	m.name = "BottleMist%d_%d" % [get_instance_id() % 1000, n]
+	last_mist = _break_bottle(parent, at, brain.move_num("toss", "radius", 2.0), brain.move_num("toss", "life", 3.0),
+		"BottleMist%d_%d" % [get_instance_id() % 1000, n])
+
+
+## 瓶子碎在 at：一團霧＋嘶一聲＋一小圈往外的粉。丟出去的與手滑掉的共用。
+func _break_bottle(parent: Node, at: Vector3, radius: float, life: float, mist_name: String) -> PoisonMist:
+	var m: PoisonMist = PoisonMist.create(radius, MIST_SOURCE, life)
+	m.name = mist_name
 	m.position = at
 	parent.add_child(m)
-	last_mist = m
 	Sfx.play_at(parent, "poison_hiss", at + Vector3.UP * 0.3, -2.0, 0.06, 8.0)
 	# 碎掉的那一下：一小圈往外的淡綠粉（0.5 秒就散）
 	var ps: CPUParticles3D = puff_build(Vector3(0.25, 0.05, 0.25), 22, Color(0.62, 0.95, 0.55, 0.75))
@@ -268,6 +352,7 @@ func _bottle_landed(bottle: Node3D, at: Vector3, n: int) -> void:
 	ps.initial_velocity_min = 1.4
 	ps.initial_velocity_max = 3.0
 	puff_start(ps, at + Vector3.UP * 0.12)
+	return m
 
 
 func _update_look() -> void:
@@ -281,7 +366,8 @@ func _update_look() -> void:
 	if is_thrower():
 		# 手上的瓶子：前兆越舉越亮；丟出去之後手上是空的，破綻過一半才掏出下一瓶
 		var empty: bool = brain.state == EnemyBrain.State.STRIKE or brain.state == EnemyBrain.State.DEAD \
-			or (brain.state == EnemyBrain.State.RECOVER and brain.time_in_state < brain.recover_sec * 0.55)
+			or (brain.state == EnemyBrain.State.RECOVER and brain.time_in_state < brain.recover_sec * 0.55) \
+			or is_fumbling()
 		if _hand_bottle != null:
 			_hand_bottle.visible = not empty
 		_glow_mat.emission_energy_multiplier = BOTTLE_ENERGY + (p * p * 5.0 if brain.state == EnemyBrain.State.TELEGRAPH else 0.0)
@@ -450,6 +536,24 @@ func _pose_gawk(k: float) -> void:
 	_rot("thigh_R", Vector3(-0.4 * a, 0.0, 0.0))
 	_rot("knee_R", Vector3(-0.25 * a, 0.0, 0.0))
 	_rot("thigh_L", Vector3(0.22 * a, 0.0, 0.0))
+	if not _fumbling:
+		return
+	# 手一滑、被自己的毒嗆到（D-247）：嚇一跳之後（前 18%）彎腰、低頭、右手摀嘴、左手在面前搧，一下一下咳
+	var c: float = clampf((k - 0.18) / 0.14, 0.0, 1.0) * a
+	if c <= 0.0:
+		return
+	var hack: float = maxf(sin(_time * 15.7), 0.0) * 0.24
+	var wave: float = sin(_time * 12.0)
+	_blend("spine", Vector3(0.52 + hack, 0.0, 0.0), c)
+	_blend("chest", Vector3(0.36 + hack * 0.6, 0.0, 0.0), c)
+	_blend("neck", Vector3(0.38, 0.0, 0.0), c)
+	_blend("shoulder_R", Vector3(1.5, 0.0, -0.3), c)
+	_blend("elbow_R", Vector3(2.2, 0.0, 0.0), c)
+	_blend("shoulder_L", Vector3(1.3 + wave * 0.22, 0.0, -0.5 - wave * 0.3), c)
+	_blend("elbow_L", Vector3(1.0 + wave * 0.35, 0.0, 0.0), c)
+	_blend("thigh_L", Vector3(0.4, 0.0, 0.0), c)
+	_blend("knee_L", Vector3(-0.5, 0.0, 0.0), c)
+	_blend("knee_R", Vector3(-0.45, 0.0, 0.0), c)
 
 
 ## 失衡跪地：右膝著地、左腳踩在前面，上身往前垮
@@ -473,10 +577,18 @@ func _rot(joint_name: String, r: Vector3) -> void:
 		j.rotation = r
 
 
+## 從這一幀已經擺好的角度往 r 靠 k 成（兩個姿勢之間的過渡）。
+func _blend(joint_name: String, r: Vector3, k: float) -> void:
+	var j: Node3D = _puppet.joint(joint_name)
+	if j != null:
+		j.rotation = j.rotation.lerp(r, k)
+
+
 ## 倒下：跪 → 往前撲倒 → 躺在原地（不沉下去、不釋放——是人，不是怪物）。倒下的那一刻就不算敵人了
 ## （鎖定、席菈找目標、戰鬥 HUD 都是數「enemies」群組）。
 func _on_died() -> void:
 	gawk_left = 0.0
+	_fumbling = false
 	_begin_death()
 	remove_from_group("enemies")
 	if _puppet != null:

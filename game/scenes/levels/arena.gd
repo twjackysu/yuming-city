@@ -70,6 +70,12 @@ const SIDE_CAM_X: float = -2.4
 const SIDE_CAM_Y: float = 2.5
 const SIDE_CAM_FOV: float = 52.0
 var side_cam: Camera3D
+## 開發用：`--tele-cam`＝架在丟毒瓶的斜前方 3 m 多、對著他（連拍「別人看到他站在毒裡」用，第 99 輪）：看得到他的正面與腳邊。
+## `--side-cam` 裡他在畫面外；過肩鏡頭、或從諾恩背後用長鏡頭拍，他都被前面拿棍子的擋住（第 99 輪第一條連拍）。
+## 他愣著的時候鏡頭不跟（看得出他往後退）。場上沒有丟毒瓶的就對著最近的敵人。
+const TELE_CAM_OFFSET: Vector3 = Vector3(-1.9, 1.5, 2.9)
+const TELE_CAM_FOV: float = 42.0
+var tele_cam: bool = false
 ## 硬撐的提示講過了沒（只講一次）
 var brace_tip_shown: bool = false
 var release_tip_shown: bool = false
@@ -190,6 +196,9 @@ func _ready() -> void:
 	_release_early = App.parse_user_args(OS.get_cmdline_user_args()).has("release-early")
 	if App.parse_user_args(OS.get_cmdline_user_args()).has("side-cam"):
 		make_side_cam()
+	elif App.parse_user_args(OS.get_cmdline_user_args()).has("tele-cam"):
+		tele_cam = true
+		make_side_cam()
 	start_wave(wave)
 
 
@@ -211,11 +220,36 @@ func _process(_delta: float) -> void:
 func _aim_side_cam(k: float) -> void:
 	if player == null:
 		return
+	if tele_cam:
+		_aim_tele_cam(k)
+		return
 	var foe: EnemyActor = ArenaBot.nearest_enemy(player.global_position, enemies)
 	var mid: Vector3 = player.global_position if foe == null else (player.global_position + foe.global_position) * 0.5
 	var z: float = lerpf(side_cam.global_position.z, mid.z, k)
 	side_cam.global_position = Vector3(SIDE_CAM_X, mid.y + SIDE_CAM_Y, z)
 	side_cam.look_at(Vector3(maxf(mid.x, -0.8), mid.y + 0.9, z), Vector3.UP)
+
+
+## 長鏡頭要對著誰：第一個還站著的丟毒瓶的，沒有就最近的敵人。
+func tele_subject() -> EnemyActor:
+	for e: EnemyActor in enemies:
+		var g: DemoGuard = e as DemoGuard
+		if g != null and is_instance_valid(g) and g.is_thrower() and not g.health.is_dead():
+			return g
+	return ArenaBot.nearest_enemy(player.global_position, enemies)
+
+
+func _aim_tele_cam(k: float) -> void:
+	var who: EnemyActor = tele_subject()
+	if who == null:
+		return
+	var g: DemoGuard = who as DemoGuard
+	if g != null and g.is_gawking() and k < 1.0:
+		return
+	var at: Vector3 = who.global_position
+	side_cam.fov = TELE_CAM_FOV
+	side_cam.global_position = side_cam.global_position.lerp(at + TELE_CAM_OFFSET, k)
+	side_cam.look_at(Vector3(at.x, at.y + 0.95, at.z), Vector3.UP)
 
 
 ## 兩格都裝好、護腕戴在右前臂（打中人 → 麻痺重新計時）。
@@ -274,7 +308,7 @@ func start_wave(index: int) -> void:
 	# braces＝這一場敵人「硬撐」（整個人變紅，D-241）了幾次；first_brace＝第一次在開場後幾秒（沒有＝-1）
 	# releases＝這一場放了幾次（D-245）；burst_damage＝毒爆實際扣掉的血；burst_hits＝炸到幾人次；burst_secs＝總共用掉幾秒的毒
 	stats = {"time": 0.0, "hits_taken": 0, "noen_hits": 0, "noen_damage": 0.0, "ally_damage": 0.0, "status_heal": 0.0, "braces": 0, "first_brace": -1.0,
-		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0, "gawks": 0}
+		"releases": 0, "burst_damage": 0.0, "burst_hits": 0, "burst_secs": 0.0, "gawks": 0, "self_damage": 0.0}
 	mist_stay = 0.0
 	mist_entries = 0
 	_sheila_spoke = false
@@ -301,6 +335,7 @@ func _spawn_enemy(spec: Dictionary, at: Vector3) -> EnemyActor:
 		(e as Undertaker).begin_guardian()
 	_hp_before[e.get_instance_id()] = e.health.hp
 	e.health.damaged.connect(_on_enemy_damaged.bind(e))
+	e.health.status_damaged.connect(_on_enemy_status_damaged.bind(e))
 	e.health.status_damaged.connect(_on_enemy_damaged.bind(e))
 	e.brain.braced.connect(_on_enemy_braced)
 	if _brace_early:
@@ -573,6 +608,14 @@ func _on_enemy_damaged(_amount: float, info: Dictionary, e: EnemyActor) -> void:
 		stats["ally_damage"] = float(stats["ally_damage"]) + dealt
 
 
+## 敵人被自己的毒嗆到扣的血（D-247）：不算諾恩的、也不算席菈的，另外記。
+func _on_enemy_status_damaged(dealt: float, _info: Dictionary, e: EnemyActor) -> void:
+	if not fighting or not is_instance_valid(e):
+		return
+	_hp_before[e.get_instance_id()] = e.health.hp
+	stats["self_damage"] = float(stats.get("self_damage", 0.0)) + dealt
+
+
 func _finish(result: String) -> void:
 	fighting = false
 	var r: Dictionary = stats.duplicate()
@@ -631,12 +674,13 @@ func _finish(result: String) -> void:
 
 ## 機器人：印一行、下一場；跑滿就印總結、結束程式。
 func _bot_next(r: Dictionary) -> void:
-	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f gawks=%d" % [
+	print("ARENA wave=%d bot=%s run=%d result=%s time=%.1f hits_taken=%d noen_hits=%d noen_dmg=%.0f ally_dmg=%.0f share=%.2f hp_left=%.0f heal=%.0f braces=%d first_brace=%.1f flinches=%d interrupts=%d kneels=%d downed=%d total=%d releases=%d burst_dmg=%.0f burst_hits=%d burst_secs=%.1f gawks=%d self_dmg=%.0f" % [
 		wave + 1, bot_kind, results.size(), str(r["result"]), float(r["time"]), int(r["hits_taken"]), int(r["noen_hits"]),
 		float(r["noen_damage"]), float(r["ally_damage"]), float(r["noen_share"]), float(r["hp_left"]), float(r["status_heal"]),
 		int(r.get("braces", 0)), float(r.get("first_brace", -1.0)), int(r.get("flinches", 0)), int(r.get("interrupts", 0)), int(r.get("kneels", 0)),
 		int(r.get("downed", 0)), int(r.get("total", 0)),
-		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0)), int(r.get("gawks", 0))])
+		int(r.get("releases", 0)), float(r.get("burst_damage", 0.0)), int(r.get("burst_hits", 0)), float(r.get("burst_secs", 0.0)), int(r.get("gawks", 0)),
+		float(r.get("self_damage", 0.0))])
 	if runs > 0 and results.size() >= runs:
 		print(summary_line(wave + 1, bot_kind, results))
 		if bot != null:

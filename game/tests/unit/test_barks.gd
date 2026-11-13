@@ -146,6 +146,62 @@ func test_thrower_gawks_drops_the_bottle_he_was_raising_and_backs_off_but_not_tw
 	await tree.process_frame
 
 
+## 愣住的那一刻手一滑（D-247）：瓶子掉在自己腳邊變成一團霧、他被自己的毒嗆到扣血——但不會被自己毒死。
+func test_gawking_thrower_fumbles_his_bottle_and_chokes_on_his_own_poison_without_dying() -> void:
+	var root: Node3D = _world()
+	_heart(root, Vector3(0, 0.05, -6.0))
+	var g: DemoGuard = _guard(root, DemoGuard.KIND_THROWER, Vector3(0, 0.05, 0))
+	await tree.process_frame
+	var hp0: float = g.health.hp
+	var want: float = CombatTuning.num("demo_thrower.fumble_damage", 0.0)
+	assert_true(want > 0.0 and want < hp0, "嗆到扣的血比他的生命少（%.0f／%.0f）" % [want, hp0])
+	var at: Vector3 = g.global_position
+	assert_true(g.gawk(), "愣住")
+	assert_true(g.is_fumbling(), "手一滑")
+	assert_eq(g.fumble_count, 1)
+	assert_true(root.get_node_or_null("FumbledBottle1") != null, "瓶子在往下掉")
+	for i: int in 24:
+		await tree.physics_frame
+	assert_not_null(g.last_fumble_mist, "落地變成一團霧")
+	assert_true(g.last_fumble_mist.is_in_group("poison_mist"), "跟丟出去的是同一種霧（諾恩站得進去）")
+	assert_true(g.last_fumble_mist.global_position.distance_to(at) < 1.0, "就在他原本站的地方")
+	assert_true(g.last_fumble_mist.contains(at), "他原本站的地方在霧裡")
+	assert_eq(g.toss_count, 0, "這一瓶不算丟出去的")
+	assert_true(g.last_mist == null, "也不是瞄著諾恩的那一團")
+	var waited: int = 0
+	while g.is_gawking() and waited < 300:
+		await tree.physics_frame
+		waited += 1
+	assert_false(g.is_fumbling(), "愣完就不嗆了")
+	assert_true(absf((hp0 - g.health.hp) - want) < 0.01, "愣著的時候總共扣 fumble_damage（扣了 %.1f）" % (hp0 - g.health.hp))
+	assert_true(absf(g.fumble_dealt - want) < 0.01, "fumble_dealt 記的是同一個數字")
+	assert_eq(g.flinch_count, 0, "被自己嗆到不會後仰")
+	# 只剩一點血的時候再來一次：扣到剩 1，不會倒
+	var weak: DemoGuard = _guard(root, DemoGuard.KIND_THROWER, Vector3(6, 0.05, 0))
+	await tree.process_frame
+	weak.health.hp = 5.0
+	assert_true(weak.gawk())
+	waited = 0
+	while weak.is_gawking() and waited < 300:
+		await tree.physics_frame
+		waited += 1
+	assert_false(weak.health.is_dead(), "不會被自己毒死")
+	assert_true(absf(weak.health.hp - 1.0) < 0.01, "扣到剩 1（剩 %.2f）" % weak.health.hp)
+	# fumble_damage 是 0＝只愣住，瓶子不掉
+	(CombatTuning.value("demo_thrower", {}) as Dictionary)["fumble_damage"] = 0.0
+	var calm: DemoGuard = _guard(root, DemoGuard.KIND_THROWER, Vector3(-6, 0.05, 0))
+	await tree.process_frame
+	var calm_hp: float = calm.health.hp
+	assert_true(calm.gawk())
+	assert_false(calm.is_fumbling())
+	for i: int in 40:
+		await tree.physics_frame
+	assert_true(calm.last_fumble_mist == null, "沒有霧")
+	assert_eq(calm.health.hp, calm_hp, "沒有扣血")
+	root.queue_free()
+	await tree.process_frame
+
+
 func test_break_off_only_cancels_a_windup_or_a_chase() -> void:
 	var brain := EnemyBrain.new().configure("demo_thrower", "standard")
 	brain.state = EnemyBrain.State.TELEGRAPH
