@@ -33,7 +33,8 @@ VRM_DIR="$CACHE/vrm-samples-$VRM_SHA"
 declare -A VRM_SRC=([noen]="vroid/beta/HairSample_Male.vrm" [sheila]="vroid/beta/Sendagaya_Shino.vrm")
 # 角色 id → 給 vrm_character.py 的其他參數（--tint <材質名稱的一部分>=r,g,b：底色乘上這個顏色）
 #   諾恩：白色連帽上衣 → 深褐（他的舊大衣的顏色）。數值是線性的：0.17 拍出來大約是 sRGB 的 0.45
-declare -A VRM_ARGS=([noen]="--tint Tops=0.17,0.115,0.085")
+#   --scarf r,g,b（0～255）：加一條自製的暗紅圍巾（脖子一圈＋背後垂一條；D-254）
+declare -A VRM_ARGS=([noen]="--tint Tops=0.17,0.115,0.085 --scarf 150,34,30")
 # 要做的角色。各自一個 .stamp：只重做腳本有改的（共用的部分在 tools/blender/common.py）。
 CHARACTERS=(sheila noen)
 

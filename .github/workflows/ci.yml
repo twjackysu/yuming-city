@@ -225,6 +225,10 @@ jobs:
           shot 71-char-noen-front 40 --arena --wave=1 --bot=idle --noen-cam --locale=zh_TW
           shot 72-char-noen-back 40 --arena --wave=1 --bot=idle --noen-cam=back --locale=zh_TW
           shot 73-char-sheila-front 40 --arena --wave=1 --bot=idle --sheila-cam --locale=zh_TW
+          # 受光的另一種做法給 Jacky 選（D-254）：跟 70、71、62 同一個鏡頭，只多 --char-lit（角色吃場景的光、平塗）
+          shot 74-char-player-view-lit 40 --arena --wave=1 --bot=idle --char-lit --locale=zh_TW
+          shot 75-char-noen-front-lit 40 --arena --wave=1 --bot=idle --noen-cam --char-lit --locale=zh_TW
+          shot 76-rb2-shop-lit 30 --level=market --rb-at=shop --char-lit --locale=zh_TW
           ls -la build/screens
           test -n "$(ls build/screens/*.png 2>/dev/null)"
           cd build && python3 -c "import shutil; shutil.make_archive('screens', 'zip', 'screens')"

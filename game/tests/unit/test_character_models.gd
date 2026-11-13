@@ -211,3 +211,47 @@ func test_player_uses_model_only_in_arena() -> void:
 		player.queue_free()
 		await tree.process_frame
 	Game.arena_mode = was
+
+
+## D-254：`--char-lit`（Puppet.lit_models）＝模型的材質換成吃場景的光、平塗的複本；預設照原檔不受光，原本的資源不動。
+func test_lit_models_override_unlit_materials() -> void:
+	var root := Node3D.new()
+	root.name = "FakeModel"
+	var sk := Skeleton3D.new()
+	sk.name = "Skeleton3D"
+	root.add_child(sk)
+	sk.owner = root
+	sk.add_bone("Hips")
+	var mi := MeshInstance3D.new()
+	mi.name = "Body"
+	var mesh := BoxMesh.new()
+	var src := StandardMaterial3D.new()
+	src.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	src.albedo_color = Color(0.3, 0.2, 0.1)
+	mesh.material = src
+	mi.mesh = mesh
+	sk.add_child(mi)
+	mi.owner = root
+	var scene := PackedScene.new()
+	scene.pack(root)
+	root.free()
+	var was: bool = Puppet.lit_models
+	Puppet.lit_models = false
+	var plain: Puppet = _puppet(scene)
+	var plain_mi: MeshInstance3D = plain.model.find_child("Body", true, false) as MeshInstance3D
+	assert_true(plain_mi.get_surface_override_material(0) == null, "預設不動材質")
+	assert_eq((plain_mi.get_active_material(0) as BaseMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "預設照原檔不受光")
+	Puppet.lit_models = true
+	var lit: Puppet = _puppet(scene)
+	Puppet.lit_models = was
+	var lit_mi: MeshInstance3D = lit.model.find_child("Body", true, false) as MeshInstance3D
+	var m: BaseMaterial3D = lit_mi.get_surface_override_material(0) as BaseMaterial3D
+	assert_not_null(m, "受光：每個 surface 蓋一份複本")
+	assert_eq(m.shading_mode, BaseMaterial3D.SHADING_MODE_PER_PIXEL)
+	assert_eq(m.diffuse_mode, BaseMaterial3D.DIFFUSE_TOON, "平塗")
+	assert_eq(m.specular_mode, BaseMaterial3D.SPECULAR_DISABLED)
+	assert_eq(m.albedo_color, Color(0.3, 0.2, 0.1), "顏色照原本的")
+	assert_eq((plain_mi.get_active_material(0) as BaseMaterial3D).shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED, "另一個角色不受影響（材質是複本）")
+	plain.queue_free()
+	lit.queue_free()
+	await tree.process_frame

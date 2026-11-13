@@ -58,6 +58,10 @@ var release_left: float = 0.0
 var phase: float = 0.0
 var breath: float = 0.0
 
+## 開發用（`-- --char-lit`，D-254）：true＝模型改成吃場景的光、平塗（toon 漫射）；false＝照原檔（VRoid 範例角色是「不受光」）。
+## 兩種都拍得出來，給 Jacky 選；他選之前預設不受光。由 Game 讀開發旗標時設。
+static var lit_models: bool = false
+
 ## 關節名 -> Node3D
 var joints: Dictionary = {}
 var _roll: Node3D
@@ -236,6 +240,8 @@ func _build_model() -> bool:
 	model.name = "Model"
 	_roll.add_child(model)
 	skeleton = skels[0] as Skeleton3D
+	if lit_models:
+		make_lit(model)
 	var players: Array[Node] = inst.find_children("*", "AnimationPlayer", true, false)
 	anim = players[0] as AnimationPlayer if not players.is_empty() else null
 	if anim != null:
@@ -255,6 +261,31 @@ func _build_model() -> bool:
 	_add_hammer()
 	_animate_model()
 	return true
+
+
+## 把模型每個 surface 的材質換成一份「吃場景的光、平塗」的複本（原本的資源不動，別的角色不受影響）。
+## 回傳換了幾個 surface。光澤、法線、AO 都關掉：漫畫風的人物只要亮面與暗面兩階。
+static func make_lit(root: Node) -> int:
+	var count: int = 0
+	for node: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = node as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for s: int in mi.mesh.get_surface_count():
+			var src: BaseMaterial3D = mi.get_active_material(s) as BaseMaterial3D
+			if src == null:
+				continue
+			var m: BaseMaterial3D = src.duplicate() as BaseMaterial3D
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+			m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+			m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+			m.metallic = 0.0
+			m.roughness = 1.0
+			m.normal_enabled = false
+			m.ao_enabled = false
+			mi.set_surface_override_material(s, m)
+			count += 1
+	return count
 
 
 func _pose(speed_t: float) -> void:
