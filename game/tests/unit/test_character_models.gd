@@ -256,3 +256,97 @@ func test_lit_models_override_unlit_materials() -> void:
 	plain.queue_free()
 	lit.queue_free()
 	await tree.process_frame
+
+
+## 只有骨盆、頭、兩肩的假模型；front_z＝臉朝哪邊（−1＝Godot 的正面，+1＝glTF 的慣例）。
+func _facing_model(front_z: float) -> PackedScene:
+	var root := Node3D.new()
+	root.name = "FacingModel"
+	var sk := Skeleton3D.new()
+	sk.name = "Skeleton3D"
+	root.add_child(sk)
+	sk.owner = root
+	# 臉朝 −Z 的人右手在 +X；臉朝 +Z 的人右手在 −X
+	var right_x: float = -front_z * 0.2
+	var bones: Array = [
+		["Hips", Vector3(0, 0.9, 0)], ["Head", Vector3(0, 0.6, 0)],
+		["LeftUpperArm", Vector3(-right_x, 0.45, 0)], ["RightUpperArm", Vector3(right_x, 0.45, 0)],
+		["LeftLowerArm", Vector3(-right_x, -0.25, 0)], ["RightLowerArm", Vector3(right_x, -0.25, 0)],
+		["LeftHand", Vector3(0, -0.25, 0)], ["RightHand", Vector3(0, -0.25, 0)],
+	]
+	var parents: Dictionary = {"LeftLowerArm": "LeftUpperArm", "RightLowerArm": "RightUpperArm", "LeftHand": "LeftLowerArm", "RightHand": "RightLowerArm"}
+	for b: Array in bones:
+		var i: int = sk.add_bone(str(b[0]))
+		var parent: String = str(parents.get(str(b[0]), "Hips"))
+		if i > 0:
+			sk.set_bone_parent(i, sk.find_bone(parent))
+		var at: Vector3 = b[1] as Vector3
+		if parents.has(str(b[0])) and parent.ends_with("UpperArm"):
+			at.x = 0.0
+		sk.set_bone_rest(i, Transform3D(Basis.IDENTITY, at))
+	sk.reset_bone_poses()
+	var scene := PackedScene.new()
+	scene.pack(root)
+	root.free()
+	return scene
+
+
+## 模型臉朝 +Z（glTF 的慣例）就自動轉半圈（D-260）：身體的正面永遠是 −Z，掛在手上的東西也跟著對。
+func test_backward_model_is_turned_to_face_forward() -> void:
+	var ok: Puppet = _puppet(_facing_model(-1.0))
+	assert_true(ok.uses_model())
+	assert_true(CharacterModels.facing(ok.skeleton, ok.model).z < -0.9, "假模型臉朝 −Z")
+	assert_true(absf(ok.model.rotation.y) < 0.001, "臉朝 −Z 的模型不轉")
+	var flipped: Puppet = _puppet(_facing_model(1.0))
+	assert_true(CharacterModels.facing(flipped.skeleton, flipped.model).z > 0.9, "假模型臉朝 +Z")
+	assert_true(absf(absf(flipped.model.rotation.y) - PI) < 0.001, "臉朝 +Z 的模型轉半圈")
+	await tree.process_frame
+	for p: Puppet in [ok, flipped]:
+		# 掛點的 −Z 朝角色的前面（世界的 −Z）、右手在世界的 +X——兩種模型都一樣
+		var hand: Node3D = p.hand("R")
+		assert_true(hand != null)
+		assert_true((-hand.global_basis.z).dot(Vector3.FORWARD) > 0.9, "手的掛點 −Z 朝前（%s）" % str(-hand.global_basis.z))
+		assert_true(hand.global_position.x > 0.05, "右手在右邊（x=%.2f）" % hand.global_position.x)
+		var hips: Node3D = p.joint("hips")
+		assert_true((-hips.global_basis.z).dot(Vector3.FORWARD) > 0.9, "骨盆的掛點 −Z 朝前")
+		p.queue_free()
+	await tree.process_frame
+	# 量不出來（缺骨頭）就不轉
+	var bare: Puppet = _puppet(_fake_model(["idle"]))
+	assert_eq(CharacterModels.facing(bare.skeleton, bare.model), Vector3.ZERO)
+	assert_true(absf(bare.model.rotation.y) < 0.001)
+	bare.queue_free()
+	await tree.process_frame
+
+
+## 建置出來的模型（有的話）：站著與每一段動作，臉都朝身體的正面（−Z）——走路、跑步、出手不會整個人轉過去（D-260）。
+## 沒有模型（CI 裝不了 bpy）就略過。閃避是整個人滾一圈，不算。
+func test_built_models_face_forward_in_every_clip() -> void:
+	for id: String in ["noen", "sheila"]:
+		var scene: PackedScene = CharacterModels.scene_for(id)
+		if scene == null:
+			continue
+		var p: Puppet = _puppet(scene)
+		assert_true(p.uses_model(), id)
+		await tree.process_frame
+		var rest: Vector3 = p.model.basis * CharacterModels.facing(p.skeleton, p.model)
+		assert_true(rest.z < -0.9, "%s 站著臉朝 −Z（%s）" % [id, str(rest)])
+		if p.anim == null:
+			p.queue_free()
+			continue
+		for clip: String in p.anim.get_animation_list():
+			if clip.to_lower().contains("dodge") or clip == "RESET":
+				continue
+			var worst: float = -1.0
+			var length: float = p.anim.get_animation(clip).length
+			p.anim.play(clip)
+			for k: int in 9:
+				p.anim.seek(length * float(k) / 8.0, true)
+				p.anim.advance(0.0)
+				p.skeleton.force_update_all_bone_transforms()
+				worst = maxf(worst, (p.model.basis * CharacterModels.facing(p.skeleton, p.model, true)).z)
+			print("FACING %s %s: worst z %.2f (−1 = straight ahead)" % [id, clip, worst])
+			assert_true(worst < -0.2, "%s 的 %s：臉沒有轉到背後（z 最大 %.2f）" % [id, clip, worst])
+		p.queue_free()
+		await tree.process_frame
+

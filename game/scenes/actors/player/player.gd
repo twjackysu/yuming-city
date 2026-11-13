@@ -259,9 +259,14 @@ func _physics_process(delta: float) -> void:
 	_update_swing()
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	# 挨打被推開的那一步跟出手的滑步一樣：疊在上面、不算「自己在走」（D-260）。
+	# 以前把它當成走路的速度：「往哪走就面向哪」連被推開也算，挨一下整個人就轉過去背對打他的人、臉朝鏡頭，
+	# 硬直結束後殘留的速度還會再轉幾幀（Jacky 11/13：「向前面向後面」）。
+	var push := Vector3.ZERO
 	if hurt_left > 0.0:
 		hurt_left -= delta
-		horizontal = _hurt_dir * _hurt_speed
+		push = _hurt_dir * _hurt_speed
+		horizontal = Vector3.ZERO
 	elif _dodge_left > 0.0:
 		_dodge_left -= delta
 		invulnerable = _dodge_left > DODGE_TIME - DODGE_INVULN
@@ -275,12 +280,12 @@ func _physics_process(delta: float) -> void:
 	# 出手的那一小步疊在走路上面，但不記進下一幀的速度（不然滑完還會往前溜）
 	var lunge: Vector3 = _lunge_velocity(delta) if _dodge_left <= 0.0 else Vector3.ZERO
 
-	velocity.x = horizontal.x + lunge.x
-	velocity.z = horizontal.z + lunge.z
+	velocity.x = horizontal.x + lunge.x + push.x
+	velocity.z = horizontal.z + lunge.z + push.z
 	_puppet.set_move_speed(horizontal.length())
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
-	if lunge != Vector3.ZERO:
+	if lunge != Vector3.ZERO or push != Vector3.ZERO:
 		velocity.x = horizontal.x
 		velocity.z = horizontal.z
 	footstep_tick(horizontal.length() * delta, sprinting, is_on_floor() and _dodge_left <= 0.0)
@@ -381,9 +386,24 @@ func _on_hurt(_amount: float, info: Dictionary) -> void:
 	_hurt_speed = CombatTuning.num("noen.hurt_push", 0.0) / stun
 	if _hurt_tween != null:
 		_hurt_tween.kill()
+	# 往被推的方向仰（身體不轉，D-260）：正面挨打往後仰、背後挨打往前撲、側面挨打往旁邊倒
+	var lean: Vector2 = hurt_lean(_body.global_rotation.y, _hurt_dir)
 	_hurt_tween = create_tween()
-	_hurt_tween.tween_property(_body, "rotation_degrees:x", HURT_LEAN_DEG, stun * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_hurt_tween.tween_property(_body, "rotation_degrees:x", lean.x, stun * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_hurt_tween.parallel().tween_property(_body, "rotation_degrees:z", lean.y, stun * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_hurt_tween.tween_property(_body, "rotation_degrees:x", 0.0, stun * 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_hurt_tween.parallel().tween_property(_body, "rotation_degrees:z", 0.0, stun * 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+## 挨打時身體往哪邊仰（度；x＝繞自己的 X 軸、y＝繞自己的 Z 軸）。body_yaw＝身體的水平角度，push＝被推的方向（世界座標）。
+## 身體的正面是 −Z：被往背後（+Z）推＝繞 X 正轉＝往後仰；被往右（+X）推＝繞 Z 負轉＝往右倒。純函式，方便測試。
+static func hurt_lean(body_yaw: float, push: Vector3) -> Vector2:
+	var local: Vector3 = Basis(Vector3.UP, body_yaw).inverse() * push
+	local.y = 0.0
+	if local.length() < 0.001:
+		return Vector2(HURT_LEAN_DEG, 0.0)
+	local = local.normalized()
+	return Vector2(local.z, -local.x) * HURT_LEAN_DEG
 
 
 func _on_died() -> void:
@@ -391,6 +411,7 @@ func _on_died() -> void:
 		_hurt_tween.kill()
 		_hurt_tween = null
 	hurt_left = 0.0
+	_body.rotation_degrees.z = 0.0
 	var t := create_tween()
 	_death_tween = t
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -408,6 +429,7 @@ func revive() -> void:
 		_hurt_tween = null
 	hurt_left = 0.0
 	_body.rotation_degrees.x = 0.0
+	_body.rotation_degrees.z = 0.0
 	health.reset()
 	for sid: String in status_effects.ids():
 		status_effects.clear(sid)

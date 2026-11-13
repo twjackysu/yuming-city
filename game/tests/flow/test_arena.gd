@@ -624,6 +624,63 @@ func test_getting_hit_staggers_noen_in_the_arena_only() -> void:
 	assert_eq(CombatTuning.num("noen.hurt_stun"), 0.0, "劇情裡挨打沒有硬直")
 
 
+## 挨打不轉身（D-260；Jacky 11/13：「向前面向後面」）：被推開的那一步不算「自己在走」，身體照舊對著原本的方向，
+## 硬直結束後也不會被殘留的速度轉過去。以前正面挨一下就轉 180 度背對敵人、臉朝鏡頭。
+func test_getting_hit_does_not_turn_noen_around() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var arena: Arena = level.arena
+	var player: PlayerController = arena.player
+	var body: Node3D = player.get_node("Body") as Node3D
+	var e: EnemyActor = arena.enemies[0]
+	var stun: float = CombatTuning.num("noen.hurt_stun")
+	# 敵人在哪一邊（相對於諾恩）：正前方、背後、右邊。諾恩一律面向北（−Z）。
+	var cases: Array = [
+		["正面", Vector3(0.0, 0.0, -1.5)],
+		["背後", Vector3(0.0, 0.0, 1.5)],
+		["右邊", Vector3(1.5, 0.0, 0.0)],
+	]
+	for c: Array in cases:
+		var at: Vector3 = c[1] as Vector3
+		# 街中間（四邊都有空位）；敵人是停住的，直接擺到要的那一邊
+		player.global_position = Vector3(0.0, player.global_position.y, 28.0)
+		e.global_position = player.global_position + at
+		player.velocity = Vector3.ZERO
+		body.rotation.y = 0.0
+		player.yaw = 0.0
+		await _frames(2)
+		var start: Vector3 = player.global_position
+		player.health.apply_damage(5.0, {"source": e})
+		assert_true(player.hurt_left > 0.0, "%s：進硬直" % c[0])
+		var worst: float = 0.0
+		var leaned: float = 0.0
+		for i: int in int(stun * 60.0) + 30:
+			await tree.physics_frame
+			worst = maxf(worst, absf(angle_difference(body.rotation.y, 0.0)))
+			leaned = maxf(leaned, absf(body.rotation_degrees.x) + absf(body.rotation_degrees.z))
+		assert_true(worst < deg_to_rad(2.0), "%s挨打：身體沒有轉（最多偏 %.1f 度）" % [c[0], rad_to_deg(worst)])
+		assert_true(leaned > PlayerController.HURT_LEAN_DEG * 0.6, "%s挨打：看得出被打（仰 %.1f 度）" % [c[0], leaned])
+		assert_true(absf(body.rotation_degrees.x) < 0.5 and absf(body.rotation_degrees.z) < 0.5, "%s挨打：硬直結束後站直" % c[0])
+		var moved: Vector3 = player.global_position - start
+		moved.y = 0.0
+		assert_true(moved.dot(-at.normalized()) > 0.3 and moved.length() < 1.0, "%s挨打：被往反方向推開一步（%.2f m）、之後不再滑" % [c[0], moved.length()])
+		assert_true(Vector2(player.velocity.x, player.velocity.z).length() < 0.05, "%s挨打：推完就停，沒有殘留的速度" % c[0])
+	arena.set_physics_process(false)
+	await _close(level)
+	_game().set("arena_mode", false)
+
+
+func test_hurt_lean_follows_the_push_direction() -> void:
+	var deg: float = PlayerController.HURT_LEAN_DEG
+	# 面向北（−Z）：被往南推＝往後仰（繞 X 正轉）；被往北推＝往前撲；被往東（右）推＝往右倒（繞 Z 負轉）
+	assert_true(PlayerController.hurt_lean(0.0, Vector3(0, 0, 1)).is_equal_approx(Vector2(deg, 0.0)))
+	assert_true(PlayerController.hurt_lean(0.0, Vector3(0, 0, -1)).is_equal_approx(Vector2(-deg, 0.0)))
+	assert_true(PlayerController.hurt_lean(0.0, Vector3(1, 0, 0)).is_equal_approx(Vector2(0.0, -deg)))
+	# 轉過身（面向南）之後被往南推＝往前撲
+	assert_true(PlayerController.hurt_lean(PI, Vector3(0, 0, 1)).is_equal_approx(Vector2(-deg, 0.0)))
+	# 沒有方向（來源不見了）＝照舊往後仰
+	assert_true(PlayerController.hurt_lean(0.0, Vector3.ZERO).is_equal_approx(Vector2(deg, 0.0)))
+
+
 func test_summary_line_counts_wins_losses_and_timeouts() -> void:
 	var rs: Array[Dictionary] = [
 		{"result": "win", "time": 10.0, "hits_taken": 2, "noen_share": 0.5},

@@ -65,6 +65,8 @@ static var lit_models: bool = true
 ## 關節名 -> Node3D
 var joints: Dictionary = {}
 var _roll: Node3D
+## 骨架座標裡角色的背後是哪邊：正常 +Z；模型臉朝 +Z、被轉了半圈的話是 −Z（D-260）
+var _model_back: Vector3 = Vector3.BACK
 var _coat: MeshInstance3D
 
 
@@ -139,7 +141,8 @@ func _model_joint(joint_name: String) -> Node3D:
 		return null
 	var rest: Transform3D = skeleton.get_bone_global_rest(bone)
 	var to_bone: Basis = rest.basis.orthonormalized().inverse()
-	var want := Basis.IDENTITY
+	# 模型被轉了半圈（_build_model）的話，骨架座標裡角色的背後是 −Z
+	var want: Basis = Basis.IDENTITY if _model_back.z > 0.0 else Basis(Vector3.UP, PI)
 	var offset := Vector3.ZERO
 	var axis: Array = CharacterModels.JOINT_AXIS.get(joint_name, []) as Array
 	if axis.size() == 2:
@@ -150,9 +153,10 @@ func _model_joint(joint_name: String) -> Node3D:
 			if dir.length() > 0.001:
 				dir = dir.normalized()
 				var y: Vector3 = -dir
-				var z: Vector3 = Vector3.BACK - y * y.dot(Vector3.BACK)
+				var z: Vector3 = _model_back - y * y.dot(_model_back)
 				if z.length() < 0.01:
-					z = Vector3.RIGHT - y * y.dot(Vector3.RIGHT)
+					var right: Vector3 = Vector3.UP.cross(_model_back)
+					z = right - y * y.dot(right)
 				z = z.normalized()
 				want = Basis(y.cross(z), y, z)
 				if joint_name.begins_with("hand_"):
@@ -240,6 +244,11 @@ func _build_model() -> bool:
 	model.name = "Model"
 	_roll.add_child(model)
 	skeleton = skels[0] as Skeleton3D
+	# 模型自己臉朝 +Z（glTF 的慣例；Godot 與人偶的正面是 −Z）就轉半圈（D-260）：不然往前走看到的是臉、往後走看到的是背
+	_model_back = Vector3.BACK
+	if CharacterModels.facing(skeleton, inst).z > 0.3:
+		model.rotation.y = PI
+		_model_back = Vector3.FORWARD
 	if lit_models:
 		make_lit(model)
 	var players: Array[Node] = inst.find_children("*", "AnimationPlayer", true, false)

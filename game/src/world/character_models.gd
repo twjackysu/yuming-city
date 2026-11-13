@@ -76,6 +76,27 @@ static func find_animation(anim: AnimationPlayer, state: String) -> String:
 
 
 ## 掛點骨骼索引；沒有回傳 -1。
+## 模型的臉朝哪邊（模型根節點 root 的座標）：上（骨盆→頭）× 右（左肩→右肩）。Godot 的正面是 −Z，所以正常是 (0, 0, −1) 左右；
+## glTF 的慣例是臉朝 +Z，別人做的模型常常是反的（D-260）。posed＝用目前動作的姿勢，否則用休息姿勢。量不出來（缺骨頭）回傳 Vector3.ZERO。
+static func facing(skeleton: Skeleton3D, root: Node3D, posed: bool = false) -> Vector3:
+	if skeleton == null:
+		return Vector3.ZERO
+	var to_root := Transform3D.IDENTITY
+	var n: Node3D = skeleton
+	while n != null and n != root:
+		to_root = n.transform * to_root
+		n = n.get_parent() as Node3D
+	var at: Array[Vector3] = []
+	for j: String in ["hips", "head", "shoulder_L", "shoulder_R"]:
+		var b: int = find_joint_bone(skeleton, j)
+		if b < 0:
+			return Vector3.ZERO
+		var t: Transform3D = skeleton.get_bone_global_pose(b) if posed else skeleton.get_bone_global_rest(b)
+		at.append(to_root * t.origin)
+	var f: Vector3 = (at[1] - at[0]).cross(at[3] - at[2])
+	return f.normalized() if f.length() > 0.0001 else Vector3.ZERO
+
+
 static func find_hand_bone(skeleton: Skeleton3D, side: String) -> int:
 	return _find_bone(skeleton, HAND_BONES.get(side, []) as Array)
 
