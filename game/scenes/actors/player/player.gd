@@ -39,6 +39,9 @@ const SHOULDER_OFFSET: float = 0.85
 const SHOULDER_OFFSET_COMBAT: float = 0.55
 ## 肩膀那條射線離牆至少留這麼多（鏡頭近平面＋SpringArm 的 margin）
 const SHOULDER_MARGIN: float = 0.35
+## 只擋鏡頭的碰撞層（D-265）：牆面上沒有碰撞的裝飾（櫥窗裡的瓶子、窗台、門邊的燈）前面放一片只在這一層的牆，
+## 鏡頭的 SpringArm 與肩膀的射線會被它擋住，人、敵人、鎖定的視線都不會（他們只看第 1 層）。
+const CAMERA_WALL_LAYER: int = 2
 ## 放回去的速度（m/s）；收回是立即的（被牆擋住時不能慢慢穿過去）
 const SHOULDER_EASE: float = 1.6
 
@@ -169,6 +172,7 @@ func _ready() -> void:
 	var lantern_light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
 	lantern_light.shadow_caster_mask = LANTERN_SHADOW_CASTERS
 	_arm.add_excluded_object(get_rid())
+	_arm.collision_mask |= CAMERA_WALL_LAYER
 	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則（D-085）。
 	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
 	get_tree().node_added.connect(_on_node_added_for_camera)
@@ -543,6 +547,7 @@ func lock_line_blocked(target: Node3D) -> bool:
 	var from: Vector3 = global_position + Vector3.UP * 1.3
 	var to: Vector3 = target.global_position + Vector3.UP * 1.2
 	var q := PhysicsRayQueryParameters3D.create(from, to)
+	q.collision_mask &= ~CAMERA_WALL_LAYER
 	var ex: Array[RID] = [get_rid()]
 	if target is CollisionObject3D:
 		ex.append((target as CollisionObject3D).get_rid())

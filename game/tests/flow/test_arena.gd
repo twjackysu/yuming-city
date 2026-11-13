@@ -887,3 +887,46 @@ func test_enemy_in_front_of_noen_chokes_on_the_mist_at_his_feet_and_hops_out() -
 	await _frames(30)
 	assert_eq(near.choke_count, 1, "同一團霧不會一直嗆")
 	await _close(level)
+
+
+## 諾恩背對藥店的門面被逼退時，鏡頭不會鑽進櫥窗（D-265）。以前門面的碰撞只到牆面，櫥窗的玻璃、架上的瓶子、窗台都凸在外面：
+## 鏡頭停在牆面前幾公分，一個瓶子貼在鏡頭上，畫面右下角三分之一是一根全黑的柱子（戰鬥場每一波挨打退後都看得到）。
+func test_camera_stays_out_of_the_shop_window_when_noen_backs_into_it() -> void:
+	var level: UndergroundMarket = await _open(0)
+	var player: PlayerController = level.arena.player
+	var cam: Camera3D = player.get_node("CameraRig/Pitch/SpringArm3D/Camera3D") as Camera3D
+	var wall: StaticBody3D = level.get_node_or_null("ShopFrontCameraWall") as StaticBody3D
+	assert_true(wall != null, "門面前有一片只擋鏡頭的牆")
+	if wall == null:
+		await _close(level)
+		return
+	assert_eq(wall.collision_layer, PlayerController.CAMERA_WALL_LAYER, "只在擋鏡頭的那一層")
+	assert_eq(wall.collision_layer & player.collision_mask, 0, "諾恩不會撞到它")
+	for e: EnemyActor in level.arena.enemies:
+		assert_eq(wall.collision_layer & e.collision_mask, 0, "敵人不會撞到它")
+	# 凸出來的東西最前面是窗台（牆面前 0.27 m）；鏡頭至少要在那之前
+	var limit: float = UndergroundMarket.SHOP_Z - 0.3
+	# 主窗（瓶子那一排）前、東邊的窄窗前、門西邊的燈前：面向北（−Z），鏡頭在背後
+	for x: float in [0.0, 1.8, 4.2, -3.6]:
+		for back: float in [3.0, 1.2]:
+			player.global_position = Vector3(x, player.global_position.y, UndergroundMarket.SHOP_Z - back)
+			player.velocity = Vector3.ZERO
+			player.rotation.y = 0.0
+			player.yaw = 0.0
+			player.pitch = -0.18
+			player.snap_camera()
+			await _frames(20)
+			assert_true(cam.global_position.z < limit, "x=%.1f、離門面 %.1f m：鏡頭在櫥窗前面（z=%.2f，要小於 %.2f）" % [x, back, cam.global_position.z, limit])
+			assert_true(cam.global_position.z > player.global_position.z, "鏡頭還在諾恩背後（z=%.2f）" % cam.global_position.z)
+	# 人照樣走得到牆邊：站在那片牆的厚度裡面不會被推出來
+	var close: float = UndergroundMarket.SHOP_Z - 0.37
+	player.global_position = Vector3(1.8, player.global_position.y, close)
+	player.velocity = Vector3.ZERO
+	await _frames(10)
+	assert_true(absf(player.global_position.z - close) < 0.02, "諾恩站在牆邊沒有被推開（z=%.2f）" % player.global_position.z)
+	# 離門面遠的地方鏡頭照舊放到原本的距離
+	player.global_position = Vector3(0.0, player.global_position.y, 28.0)
+	player.snap_camera()
+	await _frames(20)
+	assert_true(cam.global_position.z - player.global_position.z > 2.8, "街中間鏡頭沒有被拉近（%.2f m）" % (cam.global_position.z - player.global_position.z))
+	await _close(level)

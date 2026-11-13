@@ -246,6 +246,7 @@ func _ready() -> void:
 	_build_wall_lamps()
 	_build_demo_stage()
 	var market: Node3D = _batch.build(self, "Market")
+	_build_shop_camera_wall()
 	_build_paper_lanterns()
 	_build_probes(market)
 	_build_test_board()
@@ -1044,6 +1045,29 @@ func _build_shop() -> void:
 	door_marker.name = "MishaShopDoor"
 	door_marker.position = SHOP_DOOR + Vector3(0.0, 1.0, 0.0)
 	add_child(door_marker)
+
+
+## 門面前只擋鏡頭的牆（D-265）。門面的碰撞在牆面（z＝SHOP_Z），但櫥窗的玻璃、架上的瓶子、窗台、門邊的燈都比牆面凸出來、
+## 沒有碰撞：諾恩背對門面被逼退時，鏡頭剛好停在牆面前幾公分——整個鑽進瓶子那一排，右下角一根全黑的粗柱子（＝一個 10 cm 的瓶子貼在鏡頭上）。
+## 在凸出來的東西前面放一片只在 `PlayerController.CAMERA_WALL_LAYER` 的牆：鏡頭被它擋住，人照樣能走到牆邊。門洞那一段不放（要走進店裡）。
+const SHOP_CAMERA_WALL_DEPTH: float = 0.4
+
+func _build_shop_camera_wall() -> void:
+	var body := StaticBody3D.new()
+	body.name = "ShopFrontCameraWall"
+	body.collision_layer = PlayerController.CAMERA_WALL_LAYER
+	body.collision_mask = 0
+	# 門框外緣（門洞兩邊各讓 0.1 m，比真的牆離門洞遠：不會讓走進店裡的鏡頭多撞一樣東西）
+	var door_w: float = SHOP_DOOR.x - SHOP_DOOR_W * 0.5 - 0.1
+	var door_e: float = SHOP_DOOR.x + SHOP_DOOR_W * 0.5 + 0.1
+	for span: Vector2 in [Vector2(-WALL_X, door_w), Vector2(door_e, WALL_X)]:
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(span.y - span.x, 4.4, SHOP_CAMERA_WALL_DEPTH)
+		var col := CollisionShape3D.new()
+		col.shape = shape
+		col.position = Vector3((span.x + span.y) * 0.5, 2.2, SHOP_Z - SHOP_CAMERA_WALL_DEPTH * 0.5)
+		body.add_child(col)
+	add_child(body)
 
 
 # ---------------------------------------------------------------- 店內（D-231）：櫃台、藥架、彌夏、測試板
