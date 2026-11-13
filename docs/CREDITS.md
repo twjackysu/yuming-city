@@ -23,14 +23,14 @@
 - 標題畫面背景（`game/scenes/boot/title_fog.gdshader`）
 - 遊戲圖示（`game/icon.svg`）
 - 音效與配樂：鈍擊、弱點鈍擊、爪擊、斬擊、閃避風聲、腳步、風雪、毒霧、玻璃瓶、介面音、標題與「待續」的配樂（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
-- 席菈的服裝、頭髮、骨架、貼圖與動作（`tools/blender/sheila.py`；身體是上面「第三方素材」的 MakeHuman CC0 基底；建置時產生、不進 git；產生失敗時用程序人偶）
+- 席菈與諾恩的服裝、頭髮、骨架、貼圖與動作（`tools/blender/common.py`、`sheila.py`、`noen.py`；身體是上面「第三方素材」的 MakeHuman CC0 基底；建置時產生、不進 git；產生失敗時用程序人偶）
 - 角色與敵人外型：諾恩、席菈的斷劍、灰巡者、送葬者（CSG／程序 mesh，霜紋前兆為程序扇形／圓形／直線）
 
 ## 第三方素材
 
 | 名稱 | 作者 | 授權 | 來源 | 用在哪裡 | AI 生成 |
 |---|---|---|---|---|---|
-| MakeHuman 人體基底網格 `base.obj` 與 `targets/macrodetails/` 的 4 個 target（universal／asian／caucasian／african 的 female-young） | MakeHuman Community | **CC0 1.0**（該專案的 `LICENSE.ASSETS.md`；程式碼是 AGPL，本專案沒有使用或複製它的程式碼） | https://github.com/makehumancommunity/makehuman （commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 席菈模型的身體、臉、手（`tools/blender/sheila.py`）；服裝、頭髮、骨架、貼圖、動作是本專案的程式產生的 | 否 |
+| MakeHuman 人體基底網格 `base.obj` 與 `targets/macrodetails/` 的 8 個 target（universal／asian／caucasian／african 的 female-young 與 male-young） | MakeHuman Community | **CC0 1.0**（該專案的 `LICENSE.ASSETS.md`；程式碼是 AGPL，本專案沒有使用或複製它的程式碼） | https://github.com/makehumancommunity/makehuman （commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 席菈模型的身體、臉、手（`tools/blender/sheila.py`）；服裝、頭髮、骨架、貼圖、動作是本專案的程式產生的 | 否 |
 
 ## AI 生成素材
 
