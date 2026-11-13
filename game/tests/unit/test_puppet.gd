@@ -65,7 +65,32 @@ func test_player_drives_puppet() -> void:
 	tree.root.add_child(player)
 	await tree.physics_frame
 	assert_not_null(player.puppet(), "玩家有人偶")
-	assert_not_null(player.puppet().hand("L").get_node_or_null("Lantern"), "提燈在左手")
+	# 武器是法杖（D-264）：掛在右手原本鐘錘的節點底下；原本左手提燈的光搬到杖頭
+	var staff: Node3D = player.staff()
+	assert_not_null(staff, "右手有法杖")
+	assert_eq(staff.get_parent(), player.puppet().hand("R"), "法杖掛在右手")
+	assert_eq(str(staff.name), "BellHammer", "節點的名字照舊（別的程式用這個名字找右手的武器）")
+	assert_not_null(staff.get_node_or_null("Model"), "是現成的法杖模型")
+	assert_eq(staff.get_child_count(), 2, "程式拼的握柄與錘頭拿掉了，只剩模型與光")
+	var orb: Node3D = staff.get_node_or_null("Lantern") as Node3D
+	assert_not_null(orb, "原本提燈的光在法杖上")
+	assert_true(orb.position.y > 0.6, "光在杖頭（%.2f）" % orb.position.y)
+	assert_not_null(orb.get_node_or_null("LanternLight"), "光還在（場景靠它照亮諾恩周圍）")
+	assert_true(player.puppet().hand("L").get_node_or_null("Lantern") == null, "左手空著")
+	# 平常直直立在身邊（不管手怎麼擺）；出手時跟著手往前指；打完轉回來
+	var hand: Node3D = player.puppet().hand("R")
+	player.pose_staff(1.0)
+	assert_true(staff.global_basis.y.normalized().dot(Vector3.UP) > 0.97, "平常杖頭朝上（%.2f）" % staff.global_basis.y.normalized().dot(Vector3.UP))
+	player.puppet().play_action("attack")
+	player.pose_staff(1.0)
+	var forward: Vector3 = -hand.global_basis.z.normalized()
+	assert_true(staff.global_basis.y.normalized().dot(forward) > 0.99, "出手時杖頭順著手往前指（%.2f）" % staff.global_basis.y.normalized().dot(forward))
+	player.puppet().action = ""
+	player.pose_staff(0.02)
+	var mid: float = staff.global_basis.y.normalized().dot(forward)
+	assert_true(mid < 0.99 and mid > 0.5, "轉回來是轉的，不是跳的（%.2f）" % mid)
+	player.pose_staff(1.0)
+	assert_true(staff.global_basis.y.normalized().dot(Vector3.UP) > 0.97, "打完轉回來")
 	player.queue_free()
 	await tree.process_frame
 

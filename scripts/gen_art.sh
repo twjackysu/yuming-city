@@ -36,7 +36,9 @@ declare -A VRM_SRC=([noen]="vroid/beta/HairSample_Male.vrm" [sheila]="vroid/beta
 #   --scarf r,g,b（0～255）：加一條自製的暗紅圍巾（脖子一圈＋背後垂一條；D-254）
 #   --cape r,g,b [--cape-trim r,g,b]（0～255）：加一件自製的短斗篷（翻領、扣子、下襬的滾邊；同時拿掉領結；D-259、D-261）
 #   席菈：白底、灰藍滾邊（design/03 她原本的設定）
-declare -A VRM_ARGS=([noen]="--tint Tops=0.17,0.115,0.085 --scarf 150,34,30" [sheila]="--cape 238,236,230 --cape-trim 88,112,146")
+#   --outfit sheila|noen：冒險者服裝第二版（D-263、D-264；tools/blender/outfit.py）——布為主、甲片是點綴、大色塊＋金邊；
+#   底下原本的衣服照明暗重畫貼圖（所以諾恩不再用 --tint Tops=…，席菈不再用 --cape）
+declare -A VRM_ARGS=([noen]="--outfit noen --scarf 150,34,30" [sheila]="--outfit sheila")
 # 要做的角色。各自一個 .stamp：只重做腳本有改的（共用的部分在 tools/blender/common.py）。
 CHARACTERS=(sheila noen)
 
@@ -60,7 +62,7 @@ fetch_vrm() {
 todo=()
 declare -A stamps
 for id in "${CHARACTERS[@]}"; do
-  stamps[$id]="$(cat "$ROOT/tools/blender/common.py" "$(script_for "$id")" "${BASH_SOURCE[0]}" | sha256sum | cut -d' ' -f1)"
+  stamps[$id]="$(cat "$ROOT/tools/blender/common.py" "$ROOT/tools/blender/outfit.py" "$(script_for "$id")" "${BASH_SOURCE[0]}" | sha256sum | cut -d' ' -f1)"
   [[ -n "${ART_ONLY:-}" && "${ART_ONLY}" != "$id" ]] && continue
   if [[ "${ART_FORCE:-0}" != "1" && -s "$OUT/$id/$id.glb" && "$(cat "$OUT/$id/.stamp" 2>/dev/null)" == "${stamps[$id]}" ]]; then
     echo "[art] $id：腳本沒改，沿用 build/art/characters/$id/$id.glb"

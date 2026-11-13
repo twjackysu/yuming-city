@@ -75,8 +75,26 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 ## 諾恩自己的幾何多一層（第 12 層）；提燈的影子不算這一層（D-118）。第 11 層是水窪倒影（frostbridge.gd 的 REFLECT_LAYER）。
 const SELF_LAYER: int = 1 << 11
 const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
+## 諾恩的武器是法杖（D-264；Jacky 11/14：「武器我希望不是燈籠...可以是法杖」）：現成的 CC0 模型（KayKit）。
+## 掛在右手原本鐘錘的節點（BellHammer）底下；沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
+const STAFF_MODEL: String = "kaykit/staff"
+## 這包素材是大頭的比例（珠子比頭大）：縮到 0.6——全長 1.3 m、珠子直徑 27 cm
+const STAFF_SCALE: float = 0.6
+## 握在握把下面一點（模型往上挪），杖頭才會在頭旁邊、不擋身體
+const STAFF_GRIP_Y: float = 0.12
+## 平常直直立在身邊：不管手怎麼擺，杖都是直的（世界座標）、杖頭往前斜這麼多（弧度）
+const STAFF_CARRY_TILT: float = -0.12
+## 出手時轉成跟著手往前指（原本鐘錘的方向），打完轉回來
+const STAFF_STRIKE_X: float = -PI * 0.5
+## 一秒轉幾次「直立 ↔ 往前指」（8＝0.125 秒轉完）
+const STAFF_TURN_RATE: float = 8.0
+## 杖頭那顆珠子在模型裡的高度（縮放前）：原本提燈的光搬到這裡
+const STAFF_ORB_Y: float = 1.02
 
 var _puppet: Puppet
+var _staff: Node3D
+## 0＝直立在身邊、1＝往前指
+var _staff_strike: float = 0.0
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
 ## 新版（劇情重寫，D-202）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
@@ -136,9 +154,16 @@ func _ready() -> void:
 	_puppet.character_id = "noen" if Game.arena_mode else ""
 	_body.add_child(_puppet)
 	ContactShadow.attach(self, 0.55, 0.5)  # D-108
-	# 提燈掛在左手
-	_lantern.reparent(_puppet.hand("L"), false)
-	_lantern.position = Vector3(0, -0.12, 0)
+	_build_staff()
+	if _staff != null:
+		# 原本左手提燈的光搬到杖頭的珠子裡（光是場景的光源，不能拿掉）；那顆發光的小球不要了
+		_lantern.reparent(_staff, false)
+		_lantern.position = Vector3(0, STAFF_ORB_Y * STAFF_SCALE + STAFF_GRIP_Y, 0)
+		(_lantern as MeshInstance3D).mesh = null
+	else:
+		# 沒有法杖的模型：提燈照舊掛在左手
+		_lantern.reparent(_puppet.hand("L"), false)
+		_lantern.position = Vector3(0, -0.12, 0)
 	# 提燈照不出諾恩自己的影子（D-118）：牆、席菈、敵人照樣有提燈的影子
 	_mark_self_layer(_body)
 	var lantern_light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
@@ -857,7 +882,48 @@ func shake_amount() -> float:
 	return _shake
 
 
+## 右手的鐘錘換成法杖的模型。BellHammer 這個節點留著（別的程式與測試用這個名字找右手的武器），裡面程式拼的握柄與錘頭拿掉。
+func _build_staff() -> void:
+	var hand: Node3D = _puppet.hand("R")
+	var hammer: Node3D = hand.get_node_or_null("BellHammer") as Node3D if hand != null else null
+	if hammer == null:
+		return
+	var model: Node3D = PropModels.instance(STAFF_MODEL)
+	if model == null:
+		return
+	for c: Node in hammer.get_children():
+		hammer.remove_child(c)
+		c.queue_free()
+	model.name = "Model"
+	model.scale = Vector3.ONE * STAFF_SCALE
+	model.position = Vector3(0, STAFF_GRIP_Y, 0)
+	hammer.add_child(model)
+	hammer.position = Vector3(0.05, 0.0, -0.02)
+	_staff = hammer
+	pose_staff(0.0)
+
+
+## 法杖的拿法跟著動作轉（_process 會呼叫；測試直接呼叫）。
+func pose_staff(delta: float) -> void:
+	if _staff == null or _puppet == null:
+		return
+	var striking: bool = _puppet.current_state() == "attack"
+	_staff_strike = move_toward(_staff_strike, 1.0 if striking else 0.0, STAFF_TURN_RATE * delta)
+	var hand: Node3D = _staff.get_parent() as Node3D
+	if hand == null or not hand.is_inside_tree():
+		return
+	# 直立：照身體的朝向算（世界座標），再換回手的座標——手怎麼擺、手臂怎麼晃，杖都是直的
+	var upright: Basis = _body.global_basis.orthonormalized() * Basis(Vector3.RIGHT, STAFF_CARRY_TILT)
+	var carry: Basis = hand.global_basis.orthonormalized().inverse() * upright
+	_staff.basis = carry.orthonormalized().slerp(Basis(Vector3.RIGHT, STAFF_STRIKE_X), _staff_strike)
+
+
+func staff() -> Node3D:
+	return _staff
+
+
 func _process(delta: float) -> void:
+	pose_staff(delta)
 	if _shake <= 0.0:
 		return
 	_shake = maxf(_shake - 2.5 * delta, 0.0)

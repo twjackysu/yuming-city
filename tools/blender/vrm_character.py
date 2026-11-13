@@ -9,7 +9,9 @@
 --scarf r,g,b（0～255 的 sRGB）：加一條自製的圍巾——脖子上繞一圈＋背後垂一條尾巴（玩家的鏡頭看的是背面），
 跟著上胸與脖子的骨頭動；材質跟人物一樣不受光，亮面與暗面是畫在貼圖上的（D-254）。
 --cape r,g,b [--cape-trim r,g,b]（0～255 的 sRGB）：加一件自製的短斗篷——領口一圈、搭在肩膀上、背後垂到腰，
-底色＋滾邊；同時把領結（材質 AccessoryNeck）的面拿掉（D-259：冒險者裝備的第一樣）。
+底色＋滾邊；同時把領結（材質 AccessoryNeck）的面拿掉（D-259：冒險者裝備的第一樣；第 107 輪起席菈不用了，留給之後的披風）。
+--outfit sheila|noen：冒險者服裝第二版（D-263、D-264；幾何、色票與重新上色的對照表在 outfit.py）——長出胸甲／肩甲／護臂／
+長靴／皮帶／長下襬，底下原本的衣服照明暗重畫貼圖；席菈同時拿掉領結。
 
 由 scripts/gen_art.sh 呼叫（D-253；哪個角色用哪個檔、改什麼顏色寫在那裡）。
 glb 裡的材質照原檔是「不受光」（KHR_materials_unlit）；遊戲載入時由 Puppet.make_lit() 換成吃場景的光、平塗的複本（D-255）。
@@ -25,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common as c  # noqa: E402  （common 會先 import bpy）
+import outfit  # noqa: E402
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 from mathutils.bvhtree import BVHTree  # noqa: E402
@@ -348,7 +351,7 @@ def build_cape(arm, body_meshes, face, seg=48, over=5, hang=8):
     return ob
 
 
-def patch_materials(path: Path, tints, scarf=None, cape=None):
+def patch_materials(path: Path, tints, scarf=None, cape=None, with_outfit=False):
     """匯出後直接改 glb：每個材質補平的 Normal 與固定值的 ORM（occlusion 與 metallicRoughness 同一張）、照 tints 改底色；
     有圍巾／短斗篷（cape＝(底色, 滾邊)）的話把它的材質換成畫好的貼圖、設成不受光。回傳 (材質數, 改了色的材質名)。"""
     raw = path.read_bytes()
@@ -379,6 +382,8 @@ def patch_materials(path: Path, tints, scarf=None, cape=None):
             made = add_texture("scarf", scarf_texture(scarf))
         elif cape is not None and m.get("name") == CAPE_MATERIAL:
             made = add_texture("cape", cape_texture(*cape))
+        elif with_outfit and m.get("name") == outfit.MATERIAL:
+            made = add_texture("outfit", _png_rows(outfit.texture_rows()))
         if made is not None:
             pbr["baseColorTexture"] = {"index": made}
             pbr["baseColorFactor"] = [1.0, 1.0, 1.0, 1.0]
@@ -432,6 +437,7 @@ def main():
     ap.add_argument("--scarf", type=parse_rgb255, default=None)
     ap.add_argument("--cape", type=parse_rgb255, default=None)
     ap.add_argument("--cape-trim", type=parse_rgb255, default=[88, 112, 146])
+    ap.add_argument("--outfit", choices=sorted(outfit.RECOLOR), default=None)
     args = ap.parse_args()
     human = humanoid_map(args.src)
 
@@ -464,6 +470,15 @@ def main():
     tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
     print(f"[vrm] {len(meshes)} 個網格、{tris} 個三角面、{len(arm.data.bones)} 根骨頭、身高 {height:.2f} m")
 
+    recolored = []
+    if args.outfit is not None:  # 先做（量的時候只看身體，不含圍巾與斗篷）
+        body = [o for o in meshes if not o.name.startswith(("Face", "Hair"))]
+        if args.outfit == "sheila":
+            print(f"[vrm] 拿掉領結：{strip_material(body, 'AccessoryNeck')} 個面")
+        made = outfit.build_outfit(arm, body, args.outfit)
+        recolored = outfit.recolor(args.outfit)
+        print(f"[vrm] 重畫貼圖：{'、'.join(recolored) or '（沒有對到材質）'}")
+
     if args.scarf is not None:
         named = {o.name.split(".")[0]: o for o in meshes}
         body = [o for o in meshes if not o.name.startswith(("Face", "Hair"))]
@@ -478,6 +493,10 @@ def main():
         meshes.append(build_cape(arm, body, named.get("Face", meshes[0])))
         tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
 
+    if args.outfit is not None:
+        meshes.append(made)
+        tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
+
     a = c.Animator(arm, segs)
     c.standard_actions(a)
     c.release_action(a)
@@ -490,9 +509,10 @@ def main():
                               export_animations=True, export_animation_mode="NLA_TRACKS", export_skins=True,
                               export_yup=True, export_image_format="AUTO", export_force_sampling=True)
     count, tinted = patch_materials(args.out, args.tint, args.scarf,
-                                    (args.cape, args.cape_trim) if args.cape is not None else None)
+                                    (args.cape, args.cape_trim) if args.cape is not None else None,
+                                    args.outfit is not None)
     print(f"[{args.name}] 已匯出 {args.out.name}：{tris} 個三角面、{count} 個材質（補了 Normal／ORM"
-          f"{'；改色 ' + '、'.join(tinted) if tinted else ''}{'；加了圍巾' if args.scarf is not None else ''}{'；加了短斗篷' if args.cape is not None else ''}）、身高 {height:.2f} m、{args.out.stat().st_size // 1024} KB")
+          f"{'；改色 ' + '、'.join(tinted) if tinted else ''}{'；加了圍巾' if args.scarf is not None else ''}{'；加了短斗篷' if args.cape is not None else ''}{'；服裝 ' + args.outfit + '（重畫 ' + str(len(recolored)) + ' 張貼圖）' if args.outfit is not None else ''}）、身高 {height:.2f} m、{args.out.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":
