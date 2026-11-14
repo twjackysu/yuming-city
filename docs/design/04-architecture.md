@@ -17,7 +17,7 @@
 | `autoload/settings.gd`、`perf.gd` | 設定（音量、畫質、難度、語言、按鍵）；效能 overlay（F3） |
 | `src/core/game_state.gd`、`save_codec.gd`、`game_session.gd` | 可存檔的狀態；JSON＋版本號＋`.bak` 回復；一局遊戲（任務、自動存檔、重試） |
 | `src/core/story_logic.gd`、`quest_db.gd`、`quest_runner.gd`、`dialogue_db.gd`、`dialogue_runner.gd` | 條件與效果、任務與對話的資料驗證與推進 |
-| `src/core/status_rules.gd`、`status_effects.gd`、`reversal_slots.gd`、`reversal_cue.gd`、`potion_belt.gd`、`mist_zone.gd` | 異常狀態、反轉欄位、反轉回饋的時間軸（紫紅 → 碎裂 → 金光；畫面、圖示、聲音都照它）、身上的藥、狀態區（瘴氣）的規則 |
+| `src/core/status_rules.gd`、`status_effects.gd`、`reversal_cue.gd`、`potion_belt.gd`、`mist_zone.gd` | 異常狀態（`reverses`＝這個人身上的全部反轉，只有諾恩是）、反轉回饋的時間軸（紫紅 → 碎裂 → 金光；畫面、圖示、聲音都照它）、身上的藥、狀態區（瘴氣）的規則 |
 | `src/core/health.gd`、`combat_tuning.gd`、`enemy_brain.gd`、`sera_brain.gd` | 生命、戰鬥數值（`data/combat/tuning.json`，F5 重讀、`user://tuning.json` 可覆寫）、敵人狀態機、席菈要做什麼（跟隨距離、射藥節奏） |
 | `src/core/input_setup.gd`、`sfx.gd`、`ambience.gd`、`footsteps.gd`、`quality_preset.gd`、`frame_stats.gd`、`benchmark_run.gd` | 按鍵、音效、環境音與配樂、腳步、畫質三級、效能統計 |
 | `src/ui/` | 字型與主題、按鍵圖示（`GlyphLine`、`PadGlyph`）、狀態列（`StatusHud`，圖示會翻面）、反轉的畫面那一層（`ReversalOverlay`＋`reversal_overlay.gdshader`）、藥劑格、目標指引、章節卡（`ChapterCard`，還沒用到）、設定頁的小元件 |
@@ -31,8 +31,8 @@
 | `scenes/world/poison_mist.gd` | 瘴氣／毒霧的節點（`MistZone`＋霧盤＋體積霧） |
 | `scenes/ui/` | `Hud`（目標、橫幅、存檔提示）、`CombatHud`（生命條）、對話框、暫停、設定、按鍵設定、互動提示 |
 | `scenes/bench/` | `--benchmark`：鏡頭飛過關卡、把統計寫到 `user://benchmark/` |
-| `data/` | `quests/`、`dialogue/`、`status/statuses.json`、`combat/tuning.json` |
-| `tests/` | 自製測試框架（`framework/test_case.gd`）；`unit/`、`flow/test_chapter1.gd`（新遊戲 → 瘴氣 → 對話 → 席菈跟隨與射藥 → 史萊姆） |
+| `data/` | `quests/`、`dialogue/`（`ch1_forest_gate`、`ch1_after_slimes`）、`status/statuses.json`、`combat/tuning.json` |
+| `tests/` | 自製測試框架（`framework/test_case.gd`）；`unit/`、`flow/test_chapter1.gd`（新遊戲 → 瘴氣 → 對話 → 席菈跟隨 → 拿錯的那一瓶 → 清場要幾秒 → 戰後對話的兩個回答 → 讀檔） |
 
 **加東西的做法**
 
@@ -43,12 +43,14 @@
 - 新角色模型：`scripts/gen_art.sh` 的 `SRC`／`ARGS` 加一行、`scripts/import_characters.py` 的 `KNOWN` 加 id，場景裡 `Puppet.character_id = "<id>"`。
 - 新的人物動作：`tools/blender/common.py` 的 `standard_actions` 加一段（每個角色都會有）、`CharacterModels.ANIM_MAP` 與 `Puppet.ACTION_TIME`／`STATES` 加名字、程式人偶補一個最簡單的姿勢（看 `shoot`）。
 - 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。模型自帶一圈亮色草皮底座的（樹）加 `--moss-below <高度> --sink <公尺>`：草皮改塗成地面的苔色、底座邊緣埋進地面；苔色在 `tripo_prop.py` 的 `MOSS` 與 `forest_ground.gdshader` 的 `moss`，兩邊要一樣。
-- 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試。
+- 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試（現在 v4；看 `test_save.gd` 的 v3 → v4）。
+- 新狀態：`statuses.json` 加一筆（種類 dot／action／guard）＋翻譯 key＋`StatusHud._draw` 的圖示；一樣東西要帶兩種狀態就在來源寫 `also`。反轉的回饋不用接。
+- 關卡裡要有人喊一句（不停下遊戲）：`Hud.show_bark(講的人, 翻譯 key)`；要玩家選擇的才用對話（`Game.start_dialogue`），對話要改旗標寫在對話資料的 `do`。
+- 量戰鬥的手感有沒有變：`test_chapter1.gd` 的 `_mash_until_clear`（像玩家那樣一直按出手，回傳清場要幾幀；測試會印數字）。
 
 ## 還沒整理的舊東西（改到那個檔的時候順手清）
 
 - `Puppet` 的程式人偶還帶著以前的躺、坐的姿勢；模型都到位之後可以把程式人偶縮成最簡單的替身。
-- `ReversalSlots`（反轉欄位）：跟劇本不合，要拿掉（NEXT ★1）。
 - 部分註解還提到舊劇情的東西（霜橋、送葬者、守衛、提燈）。
 - 標題畫面的背景還是舊的鐘樓剪影（`scenes/boot/title_fog.gdshader`）。
 - `scripts/gen_sfx.py` 還會產幾個沒在用的音效（市場底噪、「待續」配樂等）。
