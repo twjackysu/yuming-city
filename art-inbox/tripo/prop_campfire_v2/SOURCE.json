@@ -1,0 +1,30 @@
+{
+  "id": "prop_campfire_v2",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "stylized anime fantasy game environment prop, bright colors, vibrant hand-painted textures, game-ready, isolated single object on plain background, object only, nobody present. A small campfire: a ring of grey stones around a pile of burning wooden logs with orange flames, a small iron cooking pot hanging on a simple wooden tripod above the fire, one short log lying beside it as a seat.",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "a8f381ea-1226-430c-adef-762790d6b6b0"
+  },
+  "files": [
+    {
+      "file": "prop_campfire_v2_model_preview.jpg"
+    },
+    {
+      "file": "prop_campfire_v2_model.glb",
+      "bytes_raw": 2816320,
+      "bytes": 683816
+    }
+  ],
+  "generated_at": "2026-11-14T15:20:15+08:00",
+  "requested_by": "營火（休息事件）（v2：第一版把小人也做進模型裡，重產）"
+}

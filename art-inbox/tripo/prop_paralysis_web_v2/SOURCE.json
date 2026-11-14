@@ -1,0 +1,30 @@
+{
+  "id": "prop_paralysis_web_v2",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "stylized anime fantasy game environment prop, bright colors, vibrant hand-painted textures, game-ready, isolated single object on plain background, object only, nobody present. A large flat spider web stretched between two bare dead wooden branches stuck in the ground like a gate, thick pale silk strands with small glowing yellow lightning sparks on them, empty web with nothing caught in it.",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "aaa8a72b-e2b3-428a-bfb2-a5485dfc0b22"
+  },
+  "files": [
+    {
+      "file": "prop_paralysis_web_v2_model_preview.jpg"
+    },
+    {
+      "file": "prop_paralysis_web_v2_model.glb",
+      "bytes_raw": 2648364,
+      "bytes": 808624
+    }
+  ],
+  "generated_at": "2026-11-14T15:22:28+08:00",
+  "requested_by": "麻痺蜘蛛網（v2：第一版把小人也做進模型裡，重產）"
+}

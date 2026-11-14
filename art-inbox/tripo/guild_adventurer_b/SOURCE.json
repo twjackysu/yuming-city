@@ -1,0 +1,38 @@
+{
+  "id": "guild_adventurer_b",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, youthful anime proportions about 5.5 heads tall, slightly large head, sturdy legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An ordinary young woman about 20, archer adventurer. Short bob light brown hair, bright hazel eyes. Forest green short hooded mantle with hood down, cream tunic, leather corset belt, brown shorts over dark leggings, tall leather boots, empty quiver on the back.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "ff94bfc9-a36f-4d1a-ae38-769abc80a58c",
+    "rig": "65928c89-1501-4a4a-8591-f27e2994bf23"
+  },
+  "files": [
+    {
+      "file": "guild_adventurer_b_model_preview.jpg"
+    },
+    {
+      "file": "guild_adventurer_b_rig.glb",
+      "bytes_raw": 9353892,
+      "bytes": 2113784
+    },
+    {
+      "file": "guild_adventurer_b_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T15:14:45+08:00",
+  "requested_by": "公會大廳的路人冒險者 B"
+}

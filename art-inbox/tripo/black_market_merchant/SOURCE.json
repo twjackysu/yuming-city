@@ -1,0 +1,38 @@
+{
+  "id": "black_market_merchant",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, youthful anime proportions about 5.5 heads tall, slightly large head, sturdy legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A lean middle-aged man about 45, shady black market merchant. Messy grey-streaked dark hair, stubble, narrow sly eyes, crooked grin. Patched dark brown hooded cloak with the hood down, open at the front so the arms are free, layered vest full of pockets, many small pouches, keys and trinket charms on the belt, fingerless gloves, worn boots.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "f047d6a7-2a16-437b-a950-a66d6ac52721",
+    "rig": "5953877f-b183-44d6-91cc-4da2e6013d2d"
+  },
+  "files": [
+    {
+      "file": "black_market_merchant_model_preview.jpg"
+    },
+    {
+      "file": "black_market_merchant_rig.glb",
+      "bytes_raw": 8808824,
+      "bytes": 2147296
+    },
+    {
+      "file": "black_market_merchant_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T15:06:48+08:00",
+  "requested_by": "黑市商人／倉庫大叔（賣詛咒飾品）"
+}

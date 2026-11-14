@@ -1,0 +1,46 @@
+{
+  "id": "enemy_miasma_wolf",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A corrupted forest wolf standing on four legs in a neutral standing pose, dark charcoal fur, glowing purple veins along the body, small glowing teal mushrooms growing on its back, yellow eyes, mouth closed.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 20000
+  },
+  "rig": {
+    "type": "quadruped",
+    "spec": "tripo"
+  },
+  "animations": [
+    "preset:quadruped:walk"
+  ],
+  "tasks": {
+    "generate": "67f19817-31f2-4afd-a397-a3ebf1b64999",
+    "rig": "e2ba57c9-6bbe-4542-a659-c9fdd5ed506f",
+    "retarget": "d5f7dc0b-7be7-41e5-ac79-9f3626356fe6"
+  },
+  "files": [
+    {
+      "file": "enemy_miasma_wolf_anim.glb",
+      "bytes_raw": 7208168,
+      "bytes": 1197996
+    },
+    {
+      "file": "enemy_miasma_wolf_model_preview.jpg"
+    },
+    {
+      "file": "enemy_miasma_wolf_rig.glb",
+      "bytes_raw": 7181520,
+      "bytes": 1171344
+    },
+    {
+      "file": "enemy_miasma_wolf_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T15:15:16+08:00",
+  "requested_by": "腐敗之森的一般敵人（四足）"
+}

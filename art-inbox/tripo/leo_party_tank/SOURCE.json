@@ -1,0 +1,38 @@
+{
+  "id": "leo_party_tank",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, youthful anime proportions about 5.5 heads tall, slightly large head, sturdy legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A tall broad-shouldered young man about 26, party shield warrior. Very short dark hair, square jaw, stern look. Heavy steel plate armor on chest, shoulders and legs with a red cloth tabard, no helmet, thick leather belt, large gauntlets, sturdy boots.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "b087e47c-d8a7-4c33-a9cf-f3a876a609fb",
+    "rig": "b3d32f70-5e56-4cad-9d23-8713b3e9c2e6"
+  },
+  "files": [
+    {
+      "file": "leo_party_tank_model_preview.jpg"
+    },
+    {
+      "file": "leo_party_tank_rig.glb",
+      "bytes_raw": 12901600,
+      "bytes": 2343104
+    },
+    {
+      "file": "leo_party_tank_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T15:00:18+08:00",
+  "requested_by": "雷歐小隊的隊員（盾戰）"
+}
