@@ -2,7 +2,7 @@
 
 只放需要你處理或想聽你意見的事，處理完就刪。沒回的意見題照預設做。
 
-1. **已經重新開始了**（11/14）：舊劇情的程式與文件都砍了，新起點是「腐敗之森入口」的最小版——諾恩拿鏽劍、走進瘴氣會中毒變回血、空地上三隻劇毒史萊姆。還很陽春（地面是平的、席菈還沒進場），loop 接下來照 `NEXT.md` 把它做成好玩的 3 分鐘。舊的東西都在分支 `archive/pre-restart-2026-11-14`。
+1. **反轉的回饋做好了，想聽你的感覺**（11/14）：新遊戲往前走進紫色的瘴氣——畫面邊緣閃紫紅 → 0.3 秒 → 像玻璃一樣碎掉 → 金光，左下的圖示從紅翻金，劍會亮。想知道：①夠不夠爽、會不會太閃 ②碎裂的聲音對不對（雲端聽不到聲音，兩個音效是程式算出來的，我沒聽過）。其他還很陽春：地面是平的、席菈還沒進場，接下來照 `NEXT.md` 做。
 2. **怎麼玩**：[latest](https://github.com/twjackysu/curses-too-useful/releases/tag/latest) 下載 → 「新遊戲」。WASD 移動、滑鼠左鍵砍、空白鍵閃、右鍵把身上的毒炸出去。
 3. **Tripo 餘額約 1985 點**（≈19.85 美元），第二批 28 個都產完了，目前不用再儲值。要新模型時 loop 會排進佇列並在這裡寫一行。
 4. **改名了**（11/14）：repo `curses-too-useful`、執行檔 `CursesTooUseful.exe`、存檔在 `%APPDATA%\CursesTooUseful\`（舊的 `YumingCity` 資料夾可以刪）。你本機的 clone 要跑一次 `git remote set-url origin https://github.com/twjackysu/curses-too-useful.git`。
