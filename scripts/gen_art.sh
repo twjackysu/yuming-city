@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # 角色模型（D-249、D-252、D-253）：用 bpy（Blender 當 Python 模組）跑 tools/blender/*.py，
 # 產物放在 build/art/characters/<id>/<id>.glb（不進 git），再由 scripts/import_characters.py 收件檢查後接進遊戲。
+#   - 寫在 TRIPO_SRC、檔案也在的角色（優先）：Jacky 用 Tripo 產的（art-inbox/tripo/），用 tools/blender/tripo_character.py 轉（D-271）
 #   - 寫在 VRM_SRC 的角色：抓現成的 CC0 漫畫風角色（VRoid 的範例），用 tools/blender/vrm_character.py 轉成遊戲用的 glb
 #   - 其他角色：自製的 tools/blender/<id>.py（MakeHuman 人體基底）
 # scripts/gen-assets.sh 會呼叫；本機與 CI 都跑。
 #   - 產物已經有、腳本沒改 → 跳過
 #   - 裝不了 bpy、抓不到來源檔、腳本失敗 → 印出原因、回傳 0（沿用上一次做好的；沒有的話遊戲用程序人偶，不擋測試）
 # 環境變數：ART_PYTHON（預設 python3；bpy 5.3.0 的 wheel 只有 Python 3.13）、ART_CACHE、ART_FORCE=1 強制重做、
+#           ART_NO_TRIPO=1 不用 Tripo 的角色（退回現成的 VRM／自製的；拍改前的對照用）、
 #           ART_ONLY=<id> 只做一個角色、ART_PREVIEW=<x.png> 另外用 Cycles 算三張預覽圖（<x>_<id>_0～2.png：正面、背面、臉）。
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,10 +42,16 @@ declare -A VRM_SRC=([noen]="vroid/beta/HairSample_Male.vrm" [sheila]="vroid/beta
 #   底下原本的衣服照明暗重畫貼圖（所以諾恩不再用 --tint Tops=…，席菈不再用 --cape）
 #   --attack thrust：出手的動作改成往前戳（諾恩拿法杖；沒寫＝往下劈，席菈的大劍；D-268）
 declare -A VRM_ARGS=([noen]="--outfit noen --scarf 150,34,30 --attack thrust" [sheila]="--outfit sheila")
+# Tripo 產的角色（art-inbox/tripo/<id>/，Jacky 本機跑佇列產的，D-270）：寫在這裡、檔案也在的，優先於上面兩種（D-271）。
+# 用 tools/blender/tripo_character.py 轉（Mixamo 骨名 → Godot 人形骨架、轉向、縮到指定身高、做同一套動作）。
+#   諾恩的第一版（noen_rank_f）是三頭身的 Q 版，跟席菈站在一起比例不搭，先不接（重排了 noen_rank_f_v2）。
+declare -A TRIPO_SRC=([sheila]="art-inbox/tripo/sheila_rank_f/sheila_rank_f_rig.glb")
+declare -A TRIPO_ARGS=([sheila]="--height 1.65")
+use_tripo() { [[ "${ART_NO_TRIPO:-0}" != "1" && -n "${TRIPO_SRC[$1]:-}" && -s "$ROOT/${TRIPO_SRC[$1]}" ]]; }
 # 要做的角色。各自一個 .stamp：只重做腳本有改的（共用的部分在 tools/blender/common.py）。
 CHARACTERS=(sheila noen)
 
-script_for() { if [[ -n "${VRM_SRC[$1]:-}" ]]; then echo "$ROOT/tools/blender/vrm_character.py"; else echo "$ROOT/tools/blender/$1.py"; fi; }
+script_for() { if use_tripo "$1"; then echo "$ROOT/tools/blender/tripo_character.py"; elif [[ -n "${VRM_SRC[$1]:-}" ]]; then echo "$ROOT/tools/blender/vrm_character.py"; else echo "$ROOT/tools/blender/$1.py"; fi; }
 
 # 把 repo 裡的一個檔抓到 $VRM_DIR/files/（一個一個拿；不要對這個 repo 跑 ls-tree -l，會把 460 MB 全部抓下來）
 fetch_vrm() {
@@ -63,7 +71,9 @@ fetch_vrm() {
 todo=()
 declare -A stamps
 for id in "${CHARACTERS[@]}"; do
-  stamps[$id]="$(cat "$ROOT/tools/blender/common.py" "$ROOT/tools/blender/outfit.py" "$(script_for "$id")" "${BASH_SOURCE[0]}" | sha256sum | cut -d' ' -f1)"
+  src_file=/dev/null
+  use_tripo "$id" && src_file="$ROOT/${TRIPO_SRC[$id]}"
+  stamps[$id]="$(cat "$ROOT/tools/blender/common.py" "$ROOT/tools/blender/outfit.py" "$(script_for "$id")" "${BASH_SOURCE[0]}" "$src_file" | sha256sum | cut -d' ' -f1)"
   [[ -n "${ART_ONLY:-}" && "${ART_ONLY}" != "$id" ]] && continue
   if [[ "${ART_FORCE:-0}" != "1" && -s "$OUT/$id/$id.glb" && "$(cat "$OUT/$id/.stamp" 2>/dev/null)" == "${stamps[$id]}" ]]; then
     echo "[art] $id：腳本沒改，沿用 build/art/characters/$id/$id.glb"
@@ -81,7 +91,7 @@ if ! "$PY" -I -c "import bpy" 2>/dev/null; then
 fi
 
 need_mh=0  # 只有自製的角色才需要 MakeHuman 的人體基底
-for id in "${todo[@]}"; do [[ -z "${VRM_SRC[$id]:-}" ]] && need_mh=1; done
+for id in "${todo[@]}"; do [[ -z "${VRM_SRC[$id]:-}" ]] && ! use_tripo "$id" && need_mh=1; done
 have_all=1
 for f in "${MH_FILES[@]}"; do [[ -s "$MH_DIR/$f" ]] || have_all=0; done
 if [[ "$need_mh" == "1" && "$have_all" != "1" ]]; then
@@ -100,7 +110,10 @@ fi
 # .stamp 對不上，下一次會再試。
 for id in "${todo[@]}"; do
   mkdir -p "$OUT/$id/new"
-  if [[ -n "${VRM_SRC[$id]:-}" ]]; then
+  if use_tripo "$id"; then
+    # shellcheck disable=SC2206
+    args=(--src "$ROOT/${TRIPO_SRC[$id]}" --out "$OUT/$id/new/$id.glb" --name "$id" ${TRIPO_ARGS[$id]:-})
+  elif [[ -n "${VRM_SRC[$id]:-}" ]]; then
     if ! fetch_vrm "${VRM_SRC[$id]}"; then
       echo "[art] 抓不到 ${VRM_SRC[$id]}：沿用上一次做好的 $id（沒有的話用程序人偶）"
       continue
