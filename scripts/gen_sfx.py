@@ -581,6 +581,50 @@ def brace_warn(seconds=0.6, seed=139):
     return out
 
 
+def curse_sting(seconds=0.32, seed=151):
+    """吃到異常狀態的那一下（反轉回饋的前半）：一聲往下沉、越來越大的暗「嗚」，尾巴突然收掉——接著就是碎裂聲。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    air = onepole_lp(hp(noise(n, rng), 300), 1800)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        k = i / n
+        f = 190.0 - 110.0 * k
+        phase += 2 * math.pi * f / RATE
+        swell = k * k * (1.0 - max(0.0, (k - 0.93) / 0.07))
+        trem = 0.75 + 0.25 * math.sin(2 * math.pi * 31.0 * i / RATE)
+        out.append(swell * (0.8 * trem * (math.sin(phase) + 0.4 * math.sin(phase * 1.5)) + 0.5 * air[i]))
+    return out
+
+
+def reversal_shatter(seconds=1.25, seed=157):
+    """反轉成立的那一下：玻璃碎裂（一聲乾的爆裂＋十幾片碎片的高音「叮」散開）→ 往上走的三聲金色鐘音（D、A、D）。"""
+    rng = random.Random(seed)
+    n = int(seconds * RATE)
+    out = [0.0] * n
+    burst = hp(noise(int(0.09 * RATE), rng), 2800)
+    for i, v in enumerate(burst):
+        out[i] += 0.9 * v * math.exp(-i / RATE * 55)
+    for k in range(14):
+        start = int(rng.uniform(0.0, 0.3) * RATE)
+        f = rng.uniform(2600.0, 7200.0)
+        gain = 0.5 * (1.0 - k / 20.0)
+        decay = rng.uniform(32.0, 60.0)
+        for j in range(int(0.16 * RATE)):
+            if start + j >= n:
+                break
+            t = j / RATE
+            out[start + j] += gain * math.exp(-t * decay) * (math.sin(2 * math.pi * f * t) + 0.5 * math.sin(2 * math.pi * f * 2.32 * t))
+    for at, f, gain in [(0.04, 1174.7, 0.5), (0.11, 1760.0, 0.45), (0.18, 2349.3, 0.55)]:
+        start = int(at * RATE)
+        for j in range(n - start):
+            t = j / RATE
+            env = min(1.0, t / 0.004) * math.exp(-t * 4.2)
+            out[start + j] += gain * env * (math.sin(2 * math.pi * f * t) + 0.3 * math.sin(2 * math.pi * f * 2.0 * t) + 0.12 * math.sin(2 * math.pi * f * 3.01 * t))
+    return out
+
+
 def main():
     made = [
         write("blunt", thump(0.3, 140, 55, seed=2)),
@@ -605,6 +649,8 @@ def main():
         write("interrupt", interrupt_crack()),
         write("brace_warn", brace_warn()),
         write("poison_burst", poison_burst()),
+        write("curse_sting", curse_sting()),
+        write("reversal_shatter", reversal_shatter()),
     ]
     for p in made:
         print(f"{p.name}: {p.stat().st_size // 1024} KB")

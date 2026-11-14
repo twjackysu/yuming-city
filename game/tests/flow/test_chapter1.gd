@@ -112,6 +112,9 @@ func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
 		await tree.physics_frame
 	assert_true(player.status_effects.has("poison"), "站在瘴氣裡中毒了")
 	assert_true(player.reversal.awakened_once, "第一次中毒就覺醒")
+	assert_true(player.reversal_cue.is_playing() and player.reversal_cue.reversed, "反轉的回饋在播（紫紅 → 碎裂 → 金光）")
+	assert_true(player.heal_fx.bursts >= 1, "0.3 秒後碎成金光")
+	assert_true((level.get_node("Hud") as Hud).reversal.visible, "畫面邊緣那一層亮著")
 	assert_true(player.status_effects.is_reversed("poison"))
 	assert_true(player.health.hp > 40.0, "中毒變成回血（%.1f）" % player.health.hp)
 	var s: GameSession = _session()

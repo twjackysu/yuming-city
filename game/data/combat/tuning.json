@@ -53,6 +53,7 @@
     "hit_stop_time_scale": 0.05,
     "shake_hit": 0.22,
     "shake_kill": 0.4,
+    "reversal_shake": 0.12,
     "reduced_shake_scale": 0.25
   },
   "difficulty": {

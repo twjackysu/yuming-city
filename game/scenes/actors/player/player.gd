@@ -83,17 +83,28 @@ const SWORD_GRIP: Vector3 = Vector3(0.0, 0.1, 0.0)
 
 var _puppet: Puppet
 var _weapon: Node3D
+var _sword_glow_mat: ShaderMaterial
+var _sword_glow: float = 0.0
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
 ## 新版（劇情重寫）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
 var reversal: ReversalSlots = ReversalSlots.new()
 var status_effects: StatusEffects
+## 吃到狀態那一下的回饋時間軸（紫紅 → 碎裂 → 金光）；Hud 的 ReversalOverlay 每幀讀這個
+var reversal_cue: ReversalCue = ReversalCue.new()
 ## 回血的畫面回饋：回血期間身邊往上飄的綠色光點、喝藥那一下的一小團
 var heal_fx: HealMotes
 ## 可攜藥劑滿血時要先問（PotionBelt 回傳 confirm_full）：UI 接這個訊號跳「還是要喝嗎？」
 signal potion_needs_confirm(item_id: String)
 ## 釋放：把身上反轉中的中毒一次用掉＝毒爆。info：{"seconds" 用掉幾秒, "damage" 每個人扣多少, "hits" 炸到幾個, "kills" 炸倒幾個}
 signal released(info: Dictionary)
+## 反轉成立時身上那團光的顏色（跟 StatusHud 的金色同一個）
+const REVERSAL_GOLD: Color = Color(1.0, 0.82, 0.36)
+## 劍的金光：身上有反轉中的狀態時，劍蓋一層金色的光（跟敵人硬撐的紅光同一個 shader）；碎裂那一下最亮，跟著金光一起退回平常的亮度
+const SWORD_GLOW_SHADER: Shader = preload("res://src/world/brace_glow.gdshader")
+const SWORD_GLOW: float = 0.5
+const SWORD_GLOW_FLARE: float = 1.3
+const SWORD_GLOW_FADE: float = 3.0
 const RELEASE_STATUS: String = "poison"
 const RELEASE_SFX: String = "poison_burst"
 const RELEASE_DB: float = -1.0
@@ -158,6 +169,8 @@ func _ready() -> void:
 	health.damaged.connect(_on_hurt)
 	add_child(health)
 	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
+	status_effects.changed.connect(_on_status_changed)
+	reversal_cue.shattered.connect(_on_reversal_shattered)
 	heal_fx = HealMotes.attach(self, health)
 	if Game.session.in_story():
 		_restore_vitals(Game.session.state)
@@ -220,6 +233,8 @@ func _physics_process(delta: float) -> void:
 	status_effects.reversed_scale = CombatTuning.num("noen.reversed_heal_scale", 1.0)
 	if not Game.is_player_locked():
 		status_effects.tick(delta, health)
+	reversal_cue.step(delta)
+	_update_sword_glow(delta)
 	# 麻痺被反轉＝出手變快（只有出手，不是整個人變快）；沒反轉的麻痺＝這段時間不能出手
 	_puppet.attack_speed = status_effects.attack_speed()
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -846,6 +861,22 @@ static func in_strike_arc(origin: Vector3, forward: Vector3, target: Vector3, re
 	return f.angle_to(d) <= deg_to_rad(arc_deg * 0.5)
 
 
+## 狀態剛上身（每一種都走這裡）：開始播回饋。會反轉的 ReversalCue.CURSE_SEC 秒後碎成金光；不會反轉的只有紫紅。
+func _on_status_changed(status_id: String, event: String) -> void:
+	if event != "start":
+		return
+	reversal_cue.start(status_effects.is_reversed(status_id))
+	Sfx.play_at(self, "curse_sting", global_position + Vector3.UP, -5.0, 0.03)
+
+
+## 碎裂的那一刻：碎裂聲＋身上一團金色光點與金光＋鏡頭輕輕震一下
+func _on_reversal_shattered() -> void:
+	Sfx.play_at(self, "reversal_shatter", global_position + Vector3.UP, -1.0, 0.03, 8.0)
+	if heal_fx != null:
+		heal_fx.burst(REVERSAL_GOLD, 48)
+	shake(CombatTuning.num("feel.reversal_shake", 0.12))
+
+
 ## 鏡頭震動（減少晃動開啟時縮到 reduced_shake_scale）。
 func shake(amount: float) -> void:
 	var k: float = CombatTuning.num("feel.reduced_shake_scale", 0.25) if Settings.reduce_camera_shake else 1.0
@@ -876,6 +907,36 @@ func _build_weapon() -> void:
 	model.position = SWORD_GRIP
 	_weapon.add_child(model)
 	hand.add_child(_weapon)
+	_sword_glow_mat = ShaderMaterial.new()
+	_sword_glow_mat.shader = SWORD_GLOW_SHADER
+	_sword_glow_mat.set_shader_parameter("glow_color", REVERSAL_GOLD)
+	_sword_glow_mat.set_shader_parameter("fill", 0.4)
+	_sword_glow_mat.set_shader_parameter("strength", 0.0)
+	for n: Node in model.find_children("*", "GeometryInstance3D", true, false):
+		(n as GeometryInstance3D).material_overlay = _sword_glow_mat
+
+
+## 身上有沒有反轉中的狀態（任何一種）
+func has_reversed_status() -> bool:
+	for id: String in status_effects.ids():
+		if status_effects.is_reversed(id):
+			return true
+	return false
+
+
+## 劍上的金光現在多亮（0＝沒亮；測試用）
+func sword_glow() -> float:
+	return float(_sword_glow_mat.get_shader_parameter("strength")) if _sword_glow_mat != null else 0.0
+
+
+func _update_sword_glow(delta: float) -> void:
+	if _sword_glow_mat == null:
+		return
+	# 還在紫紅那 0.3 秒的時候先不亮：碎裂那一刻才亮起來
+	var cursing: bool = reversal_cue.is_playing() and reversal_cue.reversed and reversal_cue.t < ReversalCue.CURSE_SEC
+	var want: float = SWORD_GLOW if has_reversed_status() and not cursing else 0.0
+	_sword_glow = move_toward(_sword_glow, want, delta * SWORD_GLOW_FADE)
+	_sword_glow_mat.set_shader_parameter("strength", _sword_glow + SWORD_GLOW_FLARE * reversal_cue.gold())
 
 
 func weapon() -> Node3D:

@@ -24,8 +24,10 @@ var combat: CombatHud
 var guide: ObjectiveGuide
 ## 互動提示（下方中央：拿藥瓶、拉起席菈）
 var interact: InteractPrompt
-## 新版的狀態圖示（左下、諾恩生命條上方）；舊版沒有狀態，永遠是空的
+## 狀態圖示（左下、諾恩生命條上方）
 var status: StatusHud
+## 反轉的畫面回饋（整個畫面邊緣：紫紅 → 碎裂 → 金光），墊在所有 HUD 文字下面
+var reversal: ReversalOverlay
 ## 新版：可攜藥劑的數量（生命條右上方）與滿血時的確認框
 var potion: PotionHud
 var potion_confirm: PotionConfirm
@@ -39,7 +41,7 @@ var _center_back: StyleBoxFlat
 const CENTER_LINE_GAP: float = 0.9
 ## 中央兩行字的暗底比字多出多少（左右、上下）
 const CENTER_BACK_PAD: Vector2 = Vector2(30.0, 12.0)
-const CENTER_LINE2_COLOR: Color = Color(0.55, 0.95, 0.6)
+const CENTER_LINE2_COLOR: Color = Color(1.0, 0.84, 0.4)
 ## 角色頭上的一句話（諾恩的碎念、旁人的反應）：跟著角色走、不停住遊戲、不是對話框。同一個角色同時只有一句
 const BARK_FADE_IN: float = 0.12
 const BARK_FADE_OUT: float = 0.45
@@ -95,6 +97,8 @@ func saved_label() -> Label:
 
 
 func _build() -> void:
+	reversal = ReversalOverlay.new()
+	add_child(reversal)
 	_objective_box = VBoxContainer.new()
 	_objective_box.name = "Objective"
 	_objective_box.position = Vector2(56, 44)
@@ -204,6 +208,7 @@ func _process(delta: float) -> void:
 	if power > 0.0:
 		hint = tr(RELEASE_HINT_KEY).format({"key": InputGlyphs.label_for_action("release", App.last_device), "dmg": int(power)})
 	status.refresh(pc.status_effects if pc != null else null, PlayerController.RELEASE_STATUS, hint)
+	reversal.refresh(pc.reversal_cue if pc != null else null)
 	# 戰鬥 HUD 的諾恩名字在 size.y-174；狀態一列 34，往上長
 	var view_h: float = get_viewport().get_visible_rect().size.y
 	status.position = Vector2(56.0, view_h - 182.0 - status.custom_minimum_size.y)

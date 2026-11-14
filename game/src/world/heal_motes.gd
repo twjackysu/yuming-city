@@ -82,13 +82,14 @@ func light() -> OmniLight3D:
 
 
 ## 喝下去的那一下：胸口一小團光點往上散開＋一下綠光。一次性粒子先建好、擺好位置才開始噴。
-func burst() -> CPUParticles3D:
+## 反轉成立的那一下也用這個，換成金色、多一點（PlayerController）。
+func burst(color: Color = BURST_COLOR, amount: int = 30) -> CPUParticles3D:
 	bursts += 1
 	var ps := CPUParticles3D.new()
 	ps.name = "HealBurst"
 	ps.emitting = false
 	ps.one_shot = true
-	ps.amount = 30
+	ps.amount = amount
 	ps.lifetime = 1.15
 	ps.explosiveness = 0.88
 	ps.local_coords = false
@@ -103,13 +104,14 @@ func burst() -> CPUParticles3D:
 	ps.damping_max = 2.0
 	ps.scale_amount_min = 0.6
 	ps.scale_amount_max = 1.3
-	ps.mesh = _dot_mesh(0.11, BURST_COLOR)
+	ps.mesh = _dot_mesh(0.11, color)
 	ps.color_ramp = _fade_ramp(0.08)
 	add_child(ps)
 	ps.position = Vector3(0.0, CHEST_Y, 0.0)
 	ps.emitting = true
 	get_tree().create_timer(2.4).timeout.connect(ps.queue_free)
 	_light_t = 0.0
+	_light.light_color = LIGHT_COLOR if color == BURST_COLOR else color
 	_light.visible = true
 	return ps
 

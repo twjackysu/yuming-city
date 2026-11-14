@@ -43,6 +43,11 @@ func _ready() -> void:
 	if args.has("cam-yaw"):
 		_player.yaw = deg_to_rad(float(str(args["cam-yaw"])))
 	_player.snap_camera()
+	# 連拍用：`--burst-on=reversal` 進場 1.5 秒後讓諾恩吸到瘴氣，從那一刻開始拍（scripts/burst.sh）
+	if str(args.get("burst-on", "")) == "reversal":
+		get_tree().create_timer(1.5).timeout.connect(func() -> void:
+			App.burst_start_in(1)
+			_player.status_effects.apply_source("miasma"))
 	if not bool(Game.session.state.get_flag(FLAG_SLIMES, false)):
 		_spawn_slimes()
 	QualityPreset.apply_tree(self, Settings.quality as QualityPreset.Level)
