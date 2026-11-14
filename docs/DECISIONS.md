@@ -2,6 +2,16 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
+## D-268　2026-11-14　Tripo 改走「loop 排佇列、Jacky 本機產」
+
+- 決策：
+  1. Jacky 決定用 Tripo（付費 API／帳號）產角色、怪物與雕刻感重的道具。雲端 session 連不到 Tripo（proxy 403），憑證也不放雲端，所以 loop 只寫 `art-inbox/tripo/queue.json`；Jacky 在本機跑 `python scripts/tripo_queue.py --run --push`（用已安裝的 tripo-cli，先 dry-run 估點、每次有點數上限）。
+  2. 產物（生成／綁骨／動作三個 GLB、預覽、SOURCE.json）放 `art-inbox/tripo/<id>/`；貼圖先縮成 1024 JPEG、單檔 ≤ 6 MB，**不走 LFS**（`.gitattributes`），雲端 loop 與 CI 都拿得到。原始下載留在被忽略的 `art-work/tripo/`。
+  3. 推翻 D-249 裡「不要叫 Jacky 用 Tripo」的那一句：可以排，但只透過佇列、一輪最多加 5 個、預算由 Jacky 定；bpy 自製流程照舊，Tripo 是加上去的選項，不是替代。
+  4. Tripo 產物不是 CC0：記進 CREDITS 時寫「AI 生成（Tripo），商用權依 Jacky 的付費帳號」，上架時要在 Steam 申報 Pre-Generated AI content。
+- 理由：Jacky 11/14 問別人用 Fable 5.2 做出的高品質模型是不是用 Tripo；查過 Tripo 有文字／圖片轉 3D（PBR GLB）、自動綁骨（mixamo 命名）與預設動作，v3.1 一個模型約 20 點（≈0.2 美元）。他選「在本機產」。
+- 影響：新檔 `scripts/tripo_queue.py`、`art-inbox/tripo/README.md`、`art-inbox/tripo/queue.json`；`docs/NEXT.md`、`docs/ART_REQUESTS.md` 改掉「不要用 Tripo」的說法。
+
 ## D-267　2026-11-14　法杖平常拿在左手，出手時換到右手（節點照舊掛在右手底下）
 
 - 決策：

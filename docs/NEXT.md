@@ -97,7 +97,7 @@
   3. **（排在第 4 點之後）一般敵人**（拿棍子的、戴護腕的、丟毒瓶的）：同一套身體換服裝與配色——他們是畫面上數量最多的人。
   4. **席菈的臉與頭髮排在諾恩之後、敵人之前**（Jacky 15:08 看了近照：「還是很醜，之後會打磨? 變成美女嗎」——他在意她好不好看）。目標：在遊戲的鏡頭距離好看、近看不嚇人；偏動漫一點的比例。做法照便宜到貴：①MakeHuman 的臉部 target（repo 裡 `makehuman/data/targets/` 有 `eyes`、`nose`、`mouth`、`chin`、`cheek`、`head`、`eyebrows`——先 `git ls-tree` 看檔名，眼睛放大、鼻子與下巴收小、臉頰收一點；`gen_art.sh` 的 `MH_FILES` 要加）；②皮膚不要單一顏色：嘴唇、臉頰的紅、眼窩的陰影、眉毛用物件座標的遮罩畫進貼圖；③眼睛：眼白壓暗、虹膜放大加一圈深色、睫毛（`helper-*-eyelashes-*`）；④頭髮：不要把耳朵包進去，瀏海與髮尾做成幾片有厚度的髮束；⑤臉的貼圖解析度不夠——臉單獨一張 512² 或把臉的 UV 放大。**每修一次都拍近照（`--sheila-cam`）的改前｜改後放進 FOR_JACKY 讓他判斷；不要自己宣稱「變好看了」。** 純程式做不到手工雕的近看美女——修兩三輪臉還是不行的話，改走更明顯的動漫風（卡通著色＋畫上去的五官）或用兜帽、圍巾遮掉下半張臉，並照實告訴他。
   5. 席菈其他的毛病（下面那八項裡臉與頭髮以外的）排到諾恩與敵人換完之後；只有第 6 項「整個人偏暗」跟諾恩同一輪先修（改回畫面裡最亮的人形：上衣改淺、披肩加長）。
-- **不要等 Jacky 產模型，也不要叫他去用 ChatGPT／Tripo／Meshy。** 進度表在 `docs/ART_REQUESTS.md`（已經改成「自製進度」）。
+- **不要等 Jacky 產模型，也不要叫他去用 ChatGPT／Meshy。** 進度表在 `docs/ART_REQUESTS.md`（已經改成「自製進度」）。**Tripo 例外（D-268）**：角色、怪物、雕刻感重的道具可以寫進 `art-inbox/tripo/queue.json` 讓 Jacky 在本機產（一輪最多加 5 個、寫法見 `art-inbox/tripo/README.md`）；不要因為排了佇列就停下自製流程，產物回來再接。
 - **東西在哪**：`tools/blender/sheila.py`（一支腳本做完：讀 MakeHuman CC0 人體 → 穿衣服 → 骨架與權重 → 烘貼圖 → 四段動作 → 匯出 glb）；`scripts/gen_art.sh`（裝 bpy、抓人體基底到 `~/.cache/yuming-art/`、產物放 `build/art/characters/sheila/`，腳本沒改就跳過；`scripts/gen-assets.sh` 會叫它，所以 `check.sh` 與 CI 都會跑）；`scripts/import_characters.py`（Jacky 的 `art-inbox/characters/` 優先，沒有才用自製的；收件檢查不過就退回人偶）。
 - **改模型的一圈（約 5 分鐘）**：
   1. 改之前：`scripts/shots.sh characters --save-baseline`（兩張約 2 分鐘；**這一輪的基準是「人偶」，已經存過，下一輪要先重存成「第一版模型」**——基準在 `build/shots-baseline/`，不進 git、新的 session 沒有，所以每輪開頭都要重拍一次）。
