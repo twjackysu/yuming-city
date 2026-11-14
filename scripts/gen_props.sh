@@ -17,9 +17,7 @@ declare -A ARGS=(
   [weapon_hammer]="--kind weapon --head wide --length 0.85 --grip 0.15"
   [weapon_bow]="--kind weapon --head keep --length 1.20 --grip 0.50"
   [prop_poison_barrel]="--kind prop --height 1.05"
-  [prop_broken_lamppost]="--kind prop --height 2.30"
   [prop_guild_quest_board]="--kind prop --height 2.30"
-  [prop_supply_cart]="--kind prop --height 1.25"
 )
 mkdir -p "$OUT" "$DEST"
 have_bpy=""

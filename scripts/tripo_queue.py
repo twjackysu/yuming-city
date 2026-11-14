@@ -89,7 +89,8 @@ def load_queue() -> dict:
 
 
 def is_done(item_id: str) -> bool:
-    return os.path.exists(os.path.join(INBOX, item_id, "SOURCE.json"))
+    # _unused/：產過但暫時沒用到的（不重產、不刪）
+    return any(os.path.exists(os.path.join(INBOX, sub, item_id, "SOURCE.json")) for sub in ("", "_unused"))
 
 
 def make_args(item: dict, *, dry: bool) -> list[str]:
@@ -309,6 +310,8 @@ def produce(cli, item: dict) -> dict:
             rel_parts = os.path.relpath(dirpath, work).split(os.sep)
             stage = "anim" if rel_parts[0] == "anim" else "rig" if rel_parts[0] == "rig" else "model"
             if low.endswith(".glb"):
+                if rig and stage == "model":
+                    continue  # 有綁骨的只留綁好的那一個（遊戲用的是它），省 repo 的空間（design/14）
                 out = os.path.join(dst, "%s_%s.glb" % (iid, stage))
                 shutil.copyfile(src, out)
                 before, after = compact_glb(out)
