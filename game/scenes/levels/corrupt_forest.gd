@@ -42,6 +42,7 @@ func _ready() -> void:
 	_build_forest()
 	_build_ground()
 	_build_miasma()
+	_build_spores()
 	_mark("MiasmaEdge", MIASMA_POS + Vector3(0, 0, MIASMA_RADIUS))
 	_mark("SlimeGlade", GLADE_POS)
 	var spawn: Marker3D = $Spawn
@@ -315,6 +316,35 @@ static func _self_lit(model: Node3D, energy: float) -> void:
 			mat.emission_texture = mat.albedo_texture
 			mat.emission_energy_multiplier = energy
 			mi.set_surface_override_material(surface, mat)
+
+
+## 飄在林子裡的孢子：慢慢往上飄的紫色亮點，淡入淡出。只是氣氛。
+func _build_spores() -> void:
+	var spores := CPUParticles3D.new()
+	spores.name = "Spores"
+	spores.amount = 520
+	spores.lifetime = 10.0
+	spores.preprocess = 10.0
+	spores.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	spores.emission_box_extents = Vector3(15.0, 1.5, 30.0)
+	spores.position = Vector3(0.0, 1.5, -6.0)
+	spores.direction = Vector3.UP
+	spores.spread = 60.0
+	spores.gravity = Vector3.ZERO
+	spores.initial_velocity_min = 0.05
+	spores.initial_velocity_max = 0.25
+	spores.scale_amount_min = 0.5
+	spores.scale_amount_max = 1.3
+	var fade := Gradient.new()
+	fade.offsets = PackedFloat32Array([0.0, 0.2, 0.8, 1.0])
+	fade.colors = PackedColorArray([Color(1, 1, 1, 0), Color.WHITE, Color.WHITE, Color(1, 1, 1, 0)])
+	spores.color_ramp = fade
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.13, 0.13)
+	quad.material = ParticleLook.material(Color(0.85, 0.6, 1.0, 1.0), true)
+	spores.mesh = quad
+	spores.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(spores)
 
 
 func _build_miasma() -> void:
