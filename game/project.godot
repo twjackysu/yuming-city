@@ -1,19 +1,19 @@
 ; Engine configuration file.
-; 餘命城 Yuming City — Godot 4.7.2-stable（版本固定於 scripts/get-godot.sh）
+; 這些詛咒對我太有用了 These Curses Are Far Too Useful to Me — Godot 4.7.2-stable（版本固定於 scripts/get-godot.sh）
 
 config_version=5
 
 [application]
 
-config/name="Yuming City"
+config/name="These Curses Are Far Too Useful to Me"
 config/name_localized={
-"en": "Yuming City",
-"zh_TW": "餘命城"
+"en": "These Curses Are Far Too Useful to Me",
+"zh_TW": "這些詛咒對我太有用了"
 }
-config/description="A chapter-based narrative action RPG."
+config/description="An anime-style action RPG where every curse turns into a boon."
 config/version="0.0.1"
 config/use_custom_user_dir=true
-config/custom_user_dir_name="YumingCity"
+config/custom_user_dir_name="CursesTooUseful"
 run/main_scene="res://scenes/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"

@@ -57,14 +57,14 @@ fi
 if [[ "$DO_EXPORT" == "1" ]]; then
   echo "== export"
   mkdir -p build/windows build/linux
-  "$GODOT" --headless --path game --export-release "Windows Desktop" ../build/windows/YumingCity.exe 2>&1 | tee "$LOG_DIR/export-windows.log"
-  "$GODOT" --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64 2>&1 | tee "$LOG_DIR/export-linux.log"
-  test -s build/windows/YumingCity.exe || { echo "Windows 匯出失敗" >&2; exit 1; }
-  test -s build/linux/YumingCity.x86_64 || { echo "Linux 匯出失敗" >&2; exit 1; }
+  "$GODOT" --headless --path game --export-release "Windows Desktop" ../build/windows/CursesTooUseful.exe 2>&1 | tee "$LOG_DIR/export-windows.log"
+  "$GODOT" --headless --path game --export-release "Linux" ../build/linux/CursesTooUseful.x86_64 2>&1 | tee "$LOG_DIR/export-linux.log"
+  test -s build/windows/CursesTooUseful.exe || { echo "Windows 匯出失敗" >&2; exit 1; }
+  test -s build/linux/CursesTooUseful.x86_64 || { echo "Linux 匯出失敗" >&2; exit 1; }
   echo "== package"
   # 打包驗證：.pck 裡有場景、翻譯、資料、字型子集與全部程序音效（M1.4）
-  python3 -I scripts/verify_package.py build/windows --exe YumingCity.exe
-  python3 -I scripts/verify_package.py build/linux --exe YumingCity.x86_64
+  python3 -I scripts/verify_package.py build/windows --exe CursesTooUseful.exe
+  python3 -I scripts/verify_package.py build/linux --exe CursesTooUseful.x86_64
   ls -la build/windows build/linux
 fi
 

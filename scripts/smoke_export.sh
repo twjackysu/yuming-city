@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 匯出版 smoke test（M1.4）：用「匯出的 Linux 執行檔」（不是編輯器）在 xvfb 裡開到腐敗之森並截圖。
 # 確認匯出版本身能啟動、載入 PCK、進到關卡、畫出東西，而且沒有 SCRIPT ERROR。
-# 用法：scripts/smoke_export.sh [執行檔，預設 build/linux/YumingCity.x86_64] [輸出.png]
+# 用法：scripts/smoke_export.sh [執行檔，預設 build/linux/CursesTooUseful.x86_64] [輸出.png]
 # 需要：xvfb、mesa-vulkan-drivers（apt）。Vulkan 不行時改用 opengl3。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN="$(realpath -m "${1:-$ROOT/build/linux/YumingCity.x86_64}")"
+BIN="$(realpath -m "${1:-$ROOT/build/linux/CursesTooUseful.x86_64}")"
 OUT="$(realpath -m "${2:-$ROOT/build/smoke-export.png}")"
 LOG="${OUT%.png}.log"
 # 均勻一片（黑畫面、只有清除色）的 1280x720 PNG 壓縮後只有幾 KB；關卡的畫面遠大於這個

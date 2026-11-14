@@ -1,7 +1,7 @@
 extends Node3D
 ## Benchmark：載入腐敗之森入口，鏡頭沿固定路徑從出生點飛過瘴氣到林間空地，結束後把統計寫到 user://benchmark/*.json。
-## 用法：YumingCity.exe ++ --benchmark [--bench-seconds=30]（`++` 與 `--` 相同，但 PowerShell 不會吃掉）
-## 結果檔路徑會印在主控台與畫面上；Windows 在 %APPDATA%\YumingCity\benchmark\。
+## 用法：CursesTooUseful.exe ++ --benchmark [--bench-seconds=30]（`++` 與 `--` 相同，但 PowerShell 不會吃掉）
+## 結果檔路徑會印在主控台與畫面上；Windows 在 %APPDATA%\CursesTooUseful\benchmark\。
 
 const LEVEL: String = "res://scenes/levels/corrupt_forest.tscn"
 const OUT_DIR: String = "user://benchmark"

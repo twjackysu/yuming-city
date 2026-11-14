@@ -2,7 +2,7 @@
 """打包驗證（M1.4）：檢查匯出的資料夾裡有遊戲需要的東西。
 
 用法：python3 scripts/verify_package.py <匯出資料夾> [--exe 檔名]
-  例：python3 scripts/verify_package.py build/windows --exe YumingCity.exe
+  例：python3 scripts/verify_package.py build/windows --exe CursesTooUseful.exe
 
 檢查：執行檔存在、PCK（獨立的 .pck，或 embed_pck 嵌在執行檔尾端）讀得到目錄（Godot 4.7 PCK 格式 v3／v4），
 目錄裡有：專案設定、主選單與霜橋鎮場景、繁中與英文翻譯、任務／對話／日記資料、

@@ -69,21 +69,21 @@ jobs:
       - name: 匯出版 smoke test
         run: |
           command -v xvfb-run > /dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq xvfb mesa-vulkan-drivers > /dev/null; }
-          scripts/smoke_export.sh build/linux/YumingCity.x86_64 build/smoke-export.png
+          scripts/smoke_export.sh build/linux/CursesTooUseful.x86_64 build/smoke-export.png
 
       - name: 打包
         run: |
           SHORT_SHA="${GITHUB_SHA::7}"
           echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
           cd build
-          python3 -c "import shutil; shutil.make_archive('YumingCity-windows-x64-$SHORT_SHA', 'zip', 'windows')"
-          python3 -c "import shutil; shutil.make_archive('YumingCity-linux-x64-$SHORT_SHA', 'zip', 'linux')"
+          python3 -c "import shutil; shutil.make_archive('CursesTooUseful-windows-x64-$SHORT_SHA', 'zip', 'windows')"
+          python3 -c "import shutil; shutil.make_archive('CursesTooUseful-linux-x64-$SHORT_SHA', 'zip', 'linux')"
           ls -la
 
       - name: 上傳 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yuming-city-${{ env.SHORT_SHA }}
+          name: curses-too-useful-${{ env.SHORT_SHA }}
           path: |
             build/*.zip
             build/title.png
@@ -116,7 +116,7 @@ jobs:
               --prerelease \
               --target "$GITHUB_SHA" \
               --title "最新開發版 / Latest dev build (${SHORT_SHA})" \
-              --notes "main 分支 ${SHORT_SHA} 自動建置。Windows：解壓後執行 YumingCity.exe。原型版本，非最終內容。 / Automated build from main ${SHORT_SHA}. Prototype, not final content."; then
+              --notes "main 分支 ${SHORT_SHA} 自動建置。Windows：解壓後執行 CursesTooUseful.exe。原型版本，非最終內容。 / Automated build from main ${SHORT_SHA}. Prototype, not final content."; then
               exit 0
             fi
             echo "建立 release 失敗（第 $attempt 次），20 秒後重試" >&2

@@ -5,7 +5,7 @@
 1. **已經重新開始了**（11/14）：舊劇情的程式與文件都砍了，新起點是「腐敗之森入口」的最小版——諾恩拿鏽劍、走進瘴氣會中毒變回血、空地上三隻劇毒史萊姆。還很陽春（地面是平的、席菈還沒進場），loop 接下來照 `NEXT.md` 把它做成好玩的 3 分鐘。舊的東西都在分支 `archive/pre-restart-2026-11-14`。
 2. **怎麼玩**：[latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 → 「新遊戲」。WASD 移動、滑鼠左鍵砍、空白鍵閃、右鍵把身上的毒炸出去。
 3. **Tripo 餘額約 1985 點**（≈19.85 美元），第二批 28 個都產完了，目前不用再儲值。要新模型時 loop 會排進佇列並在這裡寫一行。
-4. **專案名稱還是 Yuming City**（執行檔 `YumingCity.exe`、視窗標題）：要不要改成新名字？改了以後存檔位置會跟著換。沒回就先不改。
+4. **改名了**（11/14）：執行檔 `CursesTooUseful.exe`、視窗標題「這些詛咒對我太有用了」、存檔在 `%APPDATA%\CursesTooUseful\`（舊的 `YumingCity` 資料夾可以刪）。GitHub 的 repo 名稱 `yuming-city` 只有你能改（Settings → General → Repository name）；改不改都不影響遊戲。
 5. **之後才需要的**：Steamworks 帳號／App ID／商店頁；實機效能測試。
 
 ---
