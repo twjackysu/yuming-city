@@ -17,7 +17,7 @@
 | 諾恩 F 級 | Tripo `noen_rank_f_v2` | 已接進遊戲（戰鬥場與劇情） |
 | 席菈 F 級 | Tripo `sheila_rank_f` | 已接進遊戲；之後用 bpy 在腰間加藥瓶 |
 | 第一批武器（長劍、短劍、斧、槌、法杖、弓） | Tripo `weapon_*` | 已擺正（`scripts/gen_props.sh`）；長劍、法杖在用 |
-| **第二批 28 個**：三把新武器（瘴氣生鏽鐵劍、鍊金藥瓶手弩、不祥的裂刃）、8 個人物（莉莉絲、雷歐、兩個隊員、黑市商人、巡察官、兩個路人）、5 種敵人（劇毒史萊姆、發霉史萊姆、瘴氣狼、孢子樹人、疫病魔像）、12 個物件（水晶、櫃檯、夜光毒蕈、詛咒寶箱、營火、毒氣口、蜘蛛網、野果、祭壇、樹、招牌、戒指） | Tripo 佇列 | **已排、等 Jacky 儲值後產**（約 955 點≈10 美元） |
+| **第二批 28 個**（2026-11-14 全部產完，在 `art-inbox/tripo/`）：三把新武器（`weapon_rusty_miasma_sword`、`weapon_alchemy_crossbow`、`weapon_ominous_split_blade`）、8 個人物（`lilith`、`leo`、`leo_party_mage`、`leo_party_tank`、`black_market_merchant`、`royal_inspector`、`guild_adventurer_a/b`，都有 mixamo 骨架）、5 種敵人（`enemy_poison_slime`、`enemy_mold_slime`、`enemy_miasma_wolf`〔四足骨架＋走路〕、`enemy_spore_treant`、`boss_plague_golem`〔雙足骨架〕）、12 個物件（`prop_*`；營火、蜘蛛網、櫃檯用 `_v2`，第一版混進小人在 `_unused/`） | Tripo | **已產、還沒接進遊戲**：照 NEXT ★ 的垂直切片順序接（`scripts/gen_art.sh`／`gen_props.sh` 加條目）。莉莉絲、雷歐約 7.5 頭身，比主角（5.5～6）高瘦，接的時候用 `--height` 拉齊，Jacky 看過再決定要不要重產。`prop_poison_vent` 的毒煙是實心模型且帶兩顆眼睛，可能只取底座、煙用粒子 |
 | 森林的地形、樹叢、岩石；公會與城鎮的牆、地板、家具 | CC0 模組化套件＋現有霜橋鎮 | 還沒選；先看 KayKit（GitHub 抓得到）、Quaternius Medieval Village（要 Jacky 下載） |
 | 之後：服裝等級（D／B／S）、更多敵人與 NPC | Tripo 或 bpy 改色加甲 | 第一章做完再排 |
 | 舊劇情的模型（送葬者、毒藥桶、斷街燈、推車） | Tripo 第一批 | 不再接（舊劇情）；毒藥桶已在舊試玩裡 |
