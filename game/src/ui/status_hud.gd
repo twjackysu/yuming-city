@@ -3,7 +3,7 @@ extends Control
 ## 狀態圖示：生命條上方一列，每種狀態一格。
 ## 一格＝原類型的圖示（中毒：瓶子＋骷髏點）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
 ## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。
-## **翻面**：狀態剛上身時先是紅的；會反轉的在 ReversalCue.CURSE_SEC 秒後翻成金的（跟畫面碎裂同一刻），旁邊彈一圈金光。
+## **翻面**：狀態剛上身時先是紅的；會反轉的人（StatusEffects.reverses）ReversalCue.CURSE_SEC 秒後翻成金的（跟畫面碎裂同一刻），旁邊彈一圈金光。
 ## 純顯示：refresh(effects) 每幀從玩家的 StatusEffects 讀。
 
 const ICON: float = 26.0
@@ -48,7 +48,7 @@ func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") ->
 		if not _age.has(id):
 			_age[id] = 0.0 if watching else SETTLED
 		var def: Dictionary = effects.rules.statuses.get(id, {}) as Dictionary
-		var reversed: bool = effects.is_reversed(id)
+		var reversed: bool = effects.reverses
 		var age: float = float(_age[id])
 		var face: float = ReversalCue.icon_face(age) if reversed else 1.0
 		var key: String = str(def.get("reversed_key" if face < 0.0 else "name_key", id))

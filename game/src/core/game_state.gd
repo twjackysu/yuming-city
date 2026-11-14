@@ -16,8 +16,6 @@ const STORY_MODE: String = "story"
 var mode: String = ""
 ## 身上還在的狀態（StatusEffects.to_array()），檢查點存的照原樣恢復
 var statuses: Array = []
-## 反轉欄位（ReversalSlots.to_dict()）；空＝還沒覺醒、兩個空格
-var reversal: Dictionary = {}
 ## 道具數量：item_id -> int
 var items: Dictionary = {}
 ## 已經發放過的一次性東西（寶箱、獎勵），讀檔重試不重複領
@@ -51,7 +49,6 @@ func to_dict() -> Dictionary:
 		"quests": quests.duplicate(true),
 		"mode": mode,
 		"statuses": statuses.duplicate(true),
-		"reversal": reversal.duplicate(true),
 		"items": items.duplicate(true),
 		"grants": Array(grants),
 		"vitals": vitals.duplicate(true),
@@ -73,9 +70,6 @@ static func from_dict(d: Dictionary) -> GameState:
 	var st: Variant = d.get("statuses", [])
 	if st is Array:
 		s.statuses = (st as Array).duplicate(true)
-	var rv: Variant = d.get("reversal", {})
-	if rv is Dictionary:
-		s.reversal = (rv as Dictionary).duplicate(true)
 	var it: Variant = d.get("items", {})
 	if it is Dictionary:
 		for k: Variant in (it as Dictionary):

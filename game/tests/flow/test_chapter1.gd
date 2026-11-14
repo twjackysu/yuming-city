@@ -124,16 +124,13 @@ func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	player.health.hp = 40.0
-	assert_false(player.reversal.awakened_once)
 	player.global_position = CorruptForest.MIASMA_POS + Vector3(0, 0.05, 0)
 	for i: int in 30:
 		await tree.physics_frame
 	assert_true(player.status_effects.has("poison"), "站在瘴氣裡中毒了")
-	assert_true(player.reversal.awakened_once, "第一次中毒就覺醒")
-	assert_true(player.reversal_cue.is_playing() and player.reversal_cue.reversed, "反轉的回饋在播（紫紅 → 碎裂 → 金光）")
+	assert_true(player.reversal_cue.is_playing(), "反轉的回饋在播（紫紅 → 碎裂 → 金光）")
 	assert_true(player.heal_fx.bursts >= 1, "0.3 秒後碎成金光")
 	assert_true((level.get_node("Hud") as Hud).reversal.visible, "畫面邊緣那一層亮著")
-	assert_true(player.status_effects.is_reversed("poison"))
 	assert_true(player.health.hp > 40.0, "中毒變成回血（%.1f）" % player.health.hp)
 	var s: GameSession = _session()
 	assert_eq(s.state.get_flag(CorruptForest.FLAG_REVERSAL), true)
@@ -223,10 +220,9 @@ func test_in_a_fight_sera_shoots_a_vial_that_reverses_into_faster_attacks() -> v
 	assert_true(vial.landed, "藥瓶砸在諾恩身上")
 	assert_true(player.status_effects.has("paralysis"), "麻痺上身")
 	assert_eq(player.status_effects.source_of("paralysis"), Sera.VIAL_SOURCE)
-	assert_true(player.status_effects.is_reversed("paralysis"), "而且是反轉的")
 	assert_false(player.status_effects.blocks_attack(), "不會被麻痺定住")
 	assert_true(player.status_effects.attack_speed() > 1.2, "出手變快（×%.2f）" % player.status_effects.attack_speed())
-	assert_true(player.reversal_cue.is_playing() and player.reversal_cue.reversed, "反轉的回饋自己播了（不用另外接）")
+	assert_true(player.reversal_cue.is_playing(), "反轉的回饋自己播了（不用另外接）")
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:
@@ -249,8 +245,7 @@ func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:
 			struck = true
 			break
 	assert_true(struck, "史萊姆撞到諾恩")
-	assert_true(player.status_effects.has("poison"), "撞到會中毒")
-	assert_true(player.status_effects.is_reversed("poison"), "而且是反轉的（回血）")
+	assert_true(player.status_effects.has("poison"), "撞到會中毒（對諾恩是回血）")
 
 
 func test_clearing_the_slimes_finishes_the_slice() -> void:

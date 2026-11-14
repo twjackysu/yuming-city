@@ -44,7 +44,7 @@ var potion: PotionHud
 var potion_confirm: PotionConfirm
 var _potion_player: PlayerController
 var _banner_tween: Tween
-## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」）
+## 畫面中間的兩行字（第一次反轉：「中毒 → 回血」「落在你身上的異常狀態，全都會反轉成增益。」）
 var _center: VBoxContainer
 var _center_tween: Tween
 var _text_back: StyleBoxFlat  # 中央兩行字與左上目標共用的暗底

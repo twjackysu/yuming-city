@@ -71,12 +71,7 @@ func _physics_process(delta: float) -> void:
 ## 砸在諾恩身上：上狀態、玻璃聲、一團紫色的藥水往外濺。
 func _land() -> void:
 	landed = true
-	var fx: StatusEffects = target.status_effects
-	var status_id: String = str(fx.rules.source(source).get("status", ""))
-	# 劇本：落在諾恩身上的異常狀態全部會反轉。反轉欄位（ReversalSlots）是重新開始前的設計，還沒拿掉——先把這一種裝進去
-	target.reversal.unlock(status_id)
-	target.reversal.equip(status_id)
-	fx.apply_source(source)
+	target.status_effects.apply_source(source)
 	Sfx.play_at(target, "glass_clink", global_position, -2.0)
 	_bottle.visible = false
 	_trail.emitting = false

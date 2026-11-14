@@ -11,10 +11,7 @@ func after_each() -> void:
 
 
 func _effects() -> StatusEffects:
-	var slots := ReversalSlots.new()
-	slots.unlock("poison")
-	slots.equip("poison")
-	return StatusEffects.new(StatusRules.load_default(), slots)
+	return StatusEffects.new(StatusRules.load_default(), true)
 
 
 func test_refresh_gain_grows_poison_up_to_the_cap_and_zero_keeps_the_old_rule() -> void:
@@ -33,8 +30,6 @@ func test_refresh_gain_grows_poison_up_to_the_cap_and_zero_keeps_the_old_rule() 
 	assert_eq(fx.remaining("poison"), fx.rules.max_duration("poison"), "疊不過上限（30 秒）")
 	assert_eq(fx.ids().size(), 1, "同一種狀態還是只有一份")
 	# 麻痺（不是持續傷害那一類）不會跟著越疊越久
-	fx.reversal.unlock(StatusEffects.PARALYSIS)
-	fx.reversal.equip(StatusEffects.PARALYSIS)
 	for i: int in 30:
 		fx.apply_source("paralysis_on_hit")
 	assert_eq(fx.remaining(StatusEffects.PARALYSIS), 6.0, "麻痺照舊：每次命中只是重新計時")
@@ -51,26 +46,6 @@ func test_consume_returns_the_seconds_and_removes_the_status() -> void:
 	assert_false(fx.has("poison"), "用掉就沒有了")
 	assert_eq(events, ["poison:clear"] as Array[String], "發一次 clear")
 	assert_eq(fx.consume("poison"), 0.0, "不能用第二次")
-
-
-func _target(parent: Node3D, at: Vector3) -> Health:
-	var body := Node3D.new()
-	body.add_to_group("damageable")
-	var h := Health.new(200.0)
-	h.name = "Health"
-	body.add_child(h)
-	parent.add_child(body)
-	body.global_position = at
-	return h
-
-
-func _player(root: Node3D, reversed: bool = true) -> PlayerController:
-	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
-	root.add_child(player)
-	if reversed:
-		player.reversal.unlock("poison")
-		player.reversal.equip("poison")
-	return player
 
 
 func test_status_row_shows_the_release_hint_only_for_that_status() -> void:

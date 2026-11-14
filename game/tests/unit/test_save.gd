@@ -40,22 +40,35 @@ func test_round_trip() -> void:
 	assert_eq(s.quests.get("ch1_main"), "guardian")
 
 
-## v3 的存檔裡還有舊欄位（memories_paid、guide；值一定是空的）：讀得進來、欄位丟掉，再存就沒有了。
-func test_v3_save_with_removed_fields_still_loads() -> void:
-	var v3: Dictionary = {"version": 3, "saved_at": "2026-11-11T00:00:00", "state": {
-		"chapter": "ch1", "checkpoint": "ch1_mist", "mode": "story", "flags": {"ch1.sheila_met": true},
-		"quests": {"ch1_main": "mist"}, "memories_paid": [], "guide": {}, "items": {"sera_poison_vial": 1},
-		"statuses": [], "reversal": {}, "grants": ["ch1.guardian_crate"], "vitals": {"hp": 40.0}}}
+## v3 → v4：v3 的存檔有反轉欄位（兩格、要解鎖；這一份只裝了中毒，麻痺在身上但沒裝）。
+## v4 沒有欄位了——讀得進來、`reversal` 丟掉、其他照原樣；身上的麻痺讀回諾恩身上就是反轉的。
+func test_v3_save_with_reversal_slots_migrates_to_v4() -> void:
+	var v3: Dictionary = {"version": 3, "saved_at": "2026-11-14T20:00:00", "state": {
+		"chapter": "ch1", "checkpoint": "ch1_slimes", "mode": "story", "flags": {"ch1.reversal_seen": true},
+		"quests": {"ch1_main": "slimes"}, "items": {"sera_poison_vial": 1},
+		"statuses": [{"id": "poison", "rate": 6.0, "remaining": 3.5, "source": "miasma"},
+			{"id": "paralysis", "rate": 1.35, "remaining": 8.0, "source": "sera_paralysis_vial"}],
+		"reversal": {"slots": 2, "unlocked": ["poison"], "equipped": ["poison", ""], "awakened_once": true},
+		"grants": ["ch1.crate"], "vitals": {"hp": 40.0}}}
+	var migrated: Dictionary = SaveCodec.migrate(v3)
+	assert_eq(int(migrated["version"]), SaveCodec.CURRENT_VERSION)
+	assert_false((migrated["state"] as Dictionary).has("reversal"), "反轉欄位丟掉")
+	assert_true((v3["state"] as Dictionary).has("reversal"), "遷移不改到輸入")
 	var r: Dictionary = SaveCodec.decode(JSON.stringify(v3))
 	assert_eq(r["status"], SaveCodec.Status.OK)
+	assert_eq(r["from_version"], 3)
 	var s: GameState = r["state"]
-	assert_eq(s.checkpoint, "ch1_mist")
-	assert_eq(s.quests.get("ch1_main"), "mist")
+	assert_eq(s.checkpoint, "ch1_slimes")
+	assert_eq(s.quests.get("ch1_main"), "slimes")
 	assert_eq(int(s.items["sera_poison_vial"]), 1)
-	assert_false(s.grant_once("ch1.guardian_crate"), "領過的還是領過")
+	assert_false(s.grant_once("ch1.crate"), "領過的還是領過")
 	assert_eq(float(s.vitals["hp"]), 40.0)
-	var again: Dictionary = s.to_dict()
-	assert_false(again.has("memories_paid") or again.has("guide"), "再存一次就沒有舊欄位了")
+	assert_eq(s.statuses.size(), 2, "身上的狀態照原樣")
+	assert_false(s.to_dict().has("reversal"), "再存一次就沒有這一欄了")
+	var fx := StatusEffects.new(StatusRules.load_default(), true)
+	fx.load_array(s.statuses)
+	assert_false(fx.blocks_attack(), "以前沒裝進欄位的麻痺，現在一樣反轉")
+	assert_true(fx.attack_speed() > 1.0)
 
 
 ## v0～v2 是已經刪掉的舊劇情的存檔：不遷移，回 TOO_OLD（呼叫端當成沒有存檔），也不會當成壞檔去翻備份。
@@ -115,11 +128,10 @@ func test_file_write_and_backup_recovery() -> void:
 	assert_eq((r["state"] as GameState).checkpoint, "ch1_guardian")
 
 
-func test_v3_story_fields_round_trip() -> void:
+func test_story_fields_round_trip() -> void:
 	var s := GameState.new()
 	s.mode = "story"
 	s.statuses = [{"id": "poison", "rate": 3.0, "remaining": 12.5, "source": "sera_poison_vial"}]
-	s.reversal = {"slots": 2, "unlocked": ["poison"], "equipped": ["poison", ""], "awakened_once": true}
 	s.items["sera_poison_vial"] = 1
 	assert_true(s.grant_once("ch1.guardian_crate"))
 	s.vitals["hp"] = 55.0
@@ -129,4 +141,3 @@ func test_v3_story_fields_round_trip() -> void:
 	assert_eq(int(back.items["sera_poison_vial"]), 1)
 	assert_false(back.grant_once("ch1.guardian_crate"))
 	assert_eq(float(back.vitals["hp"]), 55.0, "生命照原樣，不補滿")
-	assert_true(ReversalSlots.from_dict(back.reversal).is_reversed("poison"))

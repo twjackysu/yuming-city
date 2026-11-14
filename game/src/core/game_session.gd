@@ -8,7 +8,7 @@ extends RefCounted
 signal checkpoint_reached(checkpoint_id: String)
 signal stage_changed(quest_id: String, from_stage: String, to_stage: String)
 signal quest_completed(quest_id: String)
-## 要寫存檔之前（玩家把生命、狀態、反轉欄位寫回 state）
+## 要寫存檔之前（玩家把生命、狀態寫回 state）
 signal saving(state: GameState)
 
 const AUTO_SLOT: String = "auto"

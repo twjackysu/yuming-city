@@ -4,8 +4,9 @@ extends RefCounted
 ## 每次改格式：CURRENT_VERSION +1，並在 _migrate_step 加一段舊版 → 新版的轉換與測試。
 ## 寫檔先寫 .tmp 再改名，舊檔保留為 .bak，避免當機時毀掉存檔。
 ## v3 以前（v0～v2）是已經刪掉的舊劇情的存檔：不遷移、不刪檔，讀到回 TOO_OLD（當成沒有存檔）。
+## v4：拿掉 state.reversal（反轉欄位；現在落在諾恩身上的狀態全部反轉，沒有東西要記）。
 
-const CURRENT_VERSION: int = 3
+const CURRENT_VERSION: int = 4
 ## 還讀得懂的最舊版本
 const MIN_VERSION: int = 3
 
@@ -53,8 +54,13 @@ static func migrate(root: Dictionary) -> Dictionary:
 	return data
 
 
-## 一版一段：`match from_version:` 裡加 `3:`（v3 → v4）……。現在只有一個版本，沒有東西要轉。
-static func _migrate_step(_from_version: int, data: Dictionary) -> Dictionary:
+## 一版一段：`match from_version:` 裡加 `4:`（v4 → v5）……
+static func _migrate_step(from_version: int, data: Dictionary) -> Dictionary:
+	match from_version:
+		3:
+			var state: Variant = data.get("state", null)
+			if state is Dictionary:
+				(state as Dictionary).erase("reversal")
 	return data
 
 

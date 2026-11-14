@@ -90,7 +90,7 @@ func _physics_process(delta: float) -> void:
 	if not Game.session.in_story():
 		return
 	var st: GameState = Game.session.state
-	if not bool(st.get_flag(FLAG_REVERSAL, false)) and _player.status_effects.is_reversed("poison") and _player.status_effects.has("poison"):
+	if not bool(st.get_flag(FLAG_REVERSAL, false)) and _player.status_effects.has("poison"):
 		Game.session.set_flag(FLAG_REVERSAL, true)
 		_hud.show_center_lines("CH1_REVERSAL_LINE1", "CH1_REVERSAL_LINE2")
 		# 在瘴氣裡反轉的才講那段話（先被史萊姆撞到中毒的話，正在打架，不打斷）

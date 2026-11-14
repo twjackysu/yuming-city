@@ -53,7 +53,7 @@ var pitch: float = -0.18
 var invulnerable: bool = false
 ## 上一次揮擊打中弱點的數量（測試與音效用）
 var last_weak_hits: int = 0
-## 出手打中人時給自己的狀態來源（data/reboot/statuses.json 的 sources；空的＝沒有）。戴上護腕時劇情設成 "bracer_hit"
+## 出手打中人時給自己的狀態來源（data/status/statuses.json 的 sources；空的＝沒有）
 var on_hit_source: String = ""
 ## 這樣給過幾次（測試用）
 var on_hit_applied: int = 0
@@ -87,8 +87,7 @@ var _sword_glow_mat: ShaderMaterial
 var _sword_glow: float = 0.0
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
-## 新版（劇情重寫）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
-var reversal: ReversalSlots = ReversalSlots.new()
+## 身上的持續狀態。【逆理之器】：落在諾恩身上的全部反轉成增益（StatusEffects.reverses）
 var status_effects: StatusEffects
 ## 吃到狀態那一下的回饋時間軸（紫紅 → 碎裂 → 金光）；Hud 的 ReversalOverlay 每幀讀這個
 var reversal_cue: ReversalCue = ReversalCue.new()
@@ -123,9 +122,8 @@ var _lunge_dir: Vector3 = Vector3.ZERO
 var _lunge_target: Node3D
 ## 滑過幾公尺（測試用）
 var lunge_moved: float = 0.0
-var _death_tween: Tween
 ## 挨打的硬直：被直接打中（不是狀態扣血）的那一下，出到一半的招沒了、`noen.hurt_stun` 秒內不能出手也不能閃、
-## 被往打他的人的反方向推 `noen.hurt_push` 公尺、上半身往後仰一下。0＝沒有（劇情那 20 分鐘；戰鬥場在 profiles.arena 打開）。
+## 被往打他的人的反方向推 `noen.hurt_push` 公尺、上半身往後仰一下。0＝沒有。
 ## 沒有這個的話，挨打除了扣血沒有任何代價：站在原地一直按出手，被打中的同一瞬間還在打人。
 const HURT_LEAN_DEG: float = 13.0
 var hurt_left: float = 0.0
@@ -157,7 +155,7 @@ func _ready() -> void:
 	_arm.add_excluded_object(get_rid())
 	_arm.collision_mask |= CAMERA_WALL_LAYER
 	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則。
-	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
+	# 之後才生成的角色（席菈、史萊姆）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
 	get_tree().node_added.connect(_on_node_added_for_camera)
 	for n: Node in get_tree().root.find_children("*", "CharacterBody3D", true, false):
 		_exclude_from_camera(n)
@@ -169,7 +167,7 @@ func _ready() -> void:
 	health.died.connect(_on_died)
 	health.damaged.connect(_on_hurt)
 	add_child(health)
-	status_effects = StatusEffects.new(StatusRules.load_default(), reversal)
+	status_effects = StatusEffects.new(StatusRules.load_default(), true)
 	status_effects.changed.connect(_on_status_changed)
 	reversal_cue.shattered.connect(_on_reversal_shattered)
 	heal_fx = HealMotes.attach(self, health)
@@ -229,7 +227,7 @@ func _physics_process(delta: float) -> void:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 	_update_camera_distance(delta)
 	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進
-	# 戰鬥場的兩個數字：站在霧裡越站越多秒、留著毒的回血打幾折。劇情是 0 與 1＝照舊
+	# 站在瘴氣裡越站越多秒、留著毒的回血打幾折（tuning.json 的 noen）
 	status_effects.refresh_gain = CombatTuning.num("noen.status_refresh_gain", 0.0)
 	status_effects.reversed_scale = CombatTuning.num("noen.reversed_heal_scale", 1.0)
 	if not Game.is_player_locked():
@@ -362,10 +360,8 @@ func use_potion(confirmed: bool = false) -> String:
 	return result
 
 
-## 讀檔、死亡重試時從存檔拿回生命、狀態、反轉欄位（不補滿、不清掉負面狀態；生命至少一半）
+## 讀檔、死亡重試時從存檔拿回生命與狀態（不補滿、不清掉身上的狀態；生命至少一半）
 func _restore_vitals(st: GameState) -> void:
-	reversal = ReversalSlots.from_dict(st.reversal)
-	status_effects.reversal = reversal
 	status_effects.load_array(st.statuses)
 	health.hp = restored_hp(st.vitals.get("hp", null), health.max_hp)
 
@@ -379,7 +375,6 @@ static func restored_hp(saved: Variant, max_hp: float) -> float:
 func _write_vitals(st: GameState) -> void:
 	st.vitals["hp"] = health.hp
 	st.statuses = status_effects.to_array()
-	st.reversal = reversal.to_dict()
 
 
 ## 被直接打中。狀態扣血（中毒）不走這裡。死的那一下不算（倒下的動作接手）。
@@ -429,34 +424,8 @@ func _on_died() -> void:
 	hurt_left = 0.0
 	_body.rotation_degrees.z = 0.0
 	var t := create_tween()
-	_death_tween = t
 	t.tween_property(_body, "rotation_degrees:x", -85.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	Game.on_player_died()
-
-
-## 原地站起來（戰鬥場倒下重來、每一波開始）：生命補滿、身上的狀態清掉、動作歸零。反轉欄位與身上戴的東西不動。
-## 劇情的倒下重試不走這裡（那是重讀檢查點、不補滿血）。
-func revive() -> void:
-	if _death_tween != null:
-		_death_tween.kill()
-		_death_tween = null
-	if _hurt_tween != null:
-		_hurt_tween.kill()
-		_hurt_tween = null
-	hurt_left = 0.0
-	_body.rotation_degrees.x = 0.0
-	_body.rotation_degrees.z = 0.0
-	health.reset()
-	for sid: String in status_effects.ids():
-		status_effects.clear(sid)
-	_puppet.action = ""
-	_puppet.action_time = 0.0
-	_swing_resolved = true
-	_dodge_left = 0.0
-	_dodge_cooldown = 0.0
-	invulnerable = false
-	velocity = Vector3.ZERO
-	lock_target = null
 
 
 ## 鎖定／解除。回傳鎖定後的目標（解除或找不到時為 null）。
@@ -654,17 +623,16 @@ func swing_holds_facing() -> bool:
 	return CombatTuning.num("noen.attack_face_lock", 0.0) > 0.0
 
 
-## 「釋放」這個鍵有沒有作用（`noen.release_enabled`：戰鬥場 1、劇情 0＝按了沒有反應）
+## 「釋放」這個鍵有沒有作用（`noen.release_enabled`：0＝按了沒有反應）
 func release_enabled() -> bool:
 	return CombatTuning.num("noen.release_enabled", 0.0) > 0.0
 
 
-## 現在放出去每個人扣多少（0＝不能放）：身上要有**反轉中的**中毒，而且至少剩 burst_min_sec 秒。
-## 沒裝進反轉欄位的毒不能放（那是在扣他的血，不是他的東西）。
+## 現在放出去每個人扣多少（0＝不能放）：身上要有中毒，而且至少剩 burst_min_sec 秒。
 func release_power() -> float:
 	if not release_enabled() or health == null or health.is_dead() or status_effects == null:
 		return 0.0
-	if not status_effects.has(RELEASE_STATUS) or not status_effects.is_reversed(RELEASE_STATUS):
+	if not status_effects.has(RELEASE_STATUS):
 		return 0.0
 	var secs: float = status_effects.remaining(RELEASE_STATUS)
 	if secs < CombatTuning.num("noen.burst_min_sec", 0.5):
@@ -838,16 +806,12 @@ func strike() -> int:
 	return hits
 
 
-## 打中人的那一刻，身上戴的東西給的狀態（護腕 → 麻痺）。只有那個狀態已經裝在反轉欄位裡才給：
-## 沒反轉的麻痺會讓他不能出手，打中一下就把自己鎖住不是這個遊戲要的。同一個來源只有一份，每次命中只是重新計時。
+## 打中人的那一刻，手上、身上的東西給自己的狀態。同一種狀態只有一份，每次命中只是重新計時。
 func _apply_on_hit_source() -> void:
 	if on_hit_source == "" or status_effects == null:
 		return
-	var status_id: String = str(status_effects.rules.source(on_hit_source).get("status", ""))
-	if status_id == "" or not status_effects.is_reversed(status_id):
-		return
-	status_effects.apply_source(on_hit_source)
-	on_hit_applied += 1
+	if status_effects.apply_source(on_hit_source) != "ignored":
+		on_hit_applied += 1
 
 
 ## 水平面上的扇形判定（不看高度）。純函式。
@@ -864,11 +828,11 @@ static func in_strike_arc(origin: Vector3, forward: Vector3, target: Vector3, re
 	return f.angle_to(d) <= deg_to_rad(arc_deg * 0.5)
 
 
-## 狀態剛上身（每一種都走這裡）：開始播回饋。會反轉的 ReversalCue.CURSE_SEC 秒後碎成金光；不會反轉的只有紫紅。
-func _on_status_changed(status_id: String, event: String) -> void:
+## 狀態剛上身（每一種都走這裡）：開始播回饋，ReversalCue.CURSE_SEC 秒後碎成金光。
+func _on_status_changed(_status_id: String, event: String) -> void:
 	if event != "start":
 		return
-	reversal_cue.start(status_effects.is_reversed(status_id))
+	reversal_cue.start()
 	Sfx.play_at(self, "curse_sting", global_position + Vector3.UP, -5.0, 0.03)
 
 
@@ -917,10 +881,7 @@ func _build_weapon() -> void:
 
 ## 身上有沒有反轉中的狀態（任何一種）
 func has_reversed_status() -> bool:
-	for id: String in status_effects.ids():
-		if status_effects.is_reversed(id):
-			return true
-	return false
+	return not status_effects.ids().is_empty()
 
 
 ## 劍上的金光現在多亮（0＝沒亮；測試用）
@@ -932,7 +893,7 @@ func _update_sword_glow(delta: float) -> void:
 	if _sword_glow_mat == null:
 		return
 	# 還在紫紅那 0.3 秒的時候先不亮：碎裂那一刻才亮起來
-	var cursing: bool = reversal_cue.is_playing() and reversal_cue.reversed and reversal_cue.t < ReversalCue.CURSE_SEC
+	var cursing: bool = reversal_cue.is_playing() and reversal_cue.t < ReversalCue.CURSE_SEC
 	var want: float = SWORD_GLOW if has_reversed_status() and not cursing else 0.0
 	_sword_glow = move_toward(_sword_glow, want, delta * SWORD_GLOW_FADE)
 	_sword_glow_mat.set_shader_parameter("strength", _sword_glow + SWORD_GLOW_FLARE * reversal_cue.gold())

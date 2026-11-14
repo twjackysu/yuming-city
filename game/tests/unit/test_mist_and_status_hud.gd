@@ -3,10 +3,7 @@ extends TestCase
 
 
 func _fx(reversed: bool) -> StatusEffects:
-	var rev: ReversalSlots = null
-	if reversed:
-		rev = ReversalSlots.new()
-	return StatusEffects.new(StatusRules.load_default(), rev)
+	return StatusEffects.new(StatusRules.load_default(), reversed)
 
 
 func test_mist_applies_while_inside_and_lingers_after_leaving() -> void:
@@ -14,7 +11,6 @@ func test_mist_applies_while_inside_and_lingers_after_leaving() -> void:
 	var fx := _fx(true)
 	assert_true(zone.expose(1, Vector3(1, 0, 1), fx, 0.016), "一進來就上狀態")
 	assert_true(fx.has("poison"))
-	assert_true(fx.reversal.is_reversed("poison"), "第一次中毒自動覺醒")
 	for i: int in 60:  # 在霧裡待 1 秒
 		zone.expose(1, Vector3(1, 0, 1), fx, 1.0 / 60.0)
 		fx.tick(1.0 / 60.0, null)
@@ -44,7 +40,7 @@ func test_npc_in_mist_gets_hurt_not_healed() -> void:
 	for i: int in 30:
 		zone.expose(7, Vector3.ZERO, fx, 1.0 / 30.0)
 		fx.tick(1.0 / 30.0, h)
-	assert_true(h.hp < 100.0, "NPC 沒有反轉欄位，不會跟著免疫：%s" % h.hp)
+	assert_true(h.hp < 100.0, "其他人不會反轉，照樣掉血：%s" % h.hp)
 
 
 func test_status_hud_shows_original_type_and_reversal() -> void:

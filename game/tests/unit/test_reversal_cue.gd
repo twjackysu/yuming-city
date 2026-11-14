@@ -2,13 +2,13 @@ extends TestCase
 ## 反轉的回饋：時間軸（ReversalCue，純邏輯）、畫面那一層（ReversalOverlay）、狀態圖示翻面（StatusHud）、諾恩身上的接線。
 
 
-func test_reversed_cue_goes_curse_then_shatter_once_then_gold() -> void:
+func test_cue_goes_curse_then_shatter_once_then_gold() -> void:
 	var cue := ReversalCue.new()
 	var count: Array[int] = [0]
 	cue.shattered.connect(func() -> void: count[0] += 1)
 	assert_false(cue.is_playing(), "沒開始＝沒在播")
 	assert_eq(cue.curse(), 0.0)
-	cue.start(true)
+	cue.start()
 	cue.step(ReversalCue.CURSE_RISE_SEC)
 	assert_eq(cue.curse(), 1.0, "紫紅很快亮滿")
 	assert_eq(cue.gold(), 0.0, "還沒碎之前沒有金光")
@@ -26,20 +26,6 @@ func test_reversed_cue_goes_curse_then_shatter_once_then_gold() -> void:
 	assert_eq(count[0], 1, "只碎一次")
 
 
-func test_unreversed_cue_only_flashes_and_fades() -> void:
-	var cue := ReversalCue.new()
-	var count: Array[int] = [0]
-	cue.shattered.connect(func() -> void: count[0] += 1)
-	cue.start(false)
-	cue.step(ReversalCue.CURSE_SEC + 0.2)
-	assert_true(cue.curse() > 0.0 and cue.curse() < 1.0, "紫紅在退：%.2f" % cue.curse())
-	assert_eq(cue.shatter(), 0.0, "不會反轉的不碎")
-	assert_eq(cue.gold(), 0.0, "也沒有金光")
-	cue.step(ReversalCue.HARM_FADE_SEC)
-	assert_false(cue.is_playing())
-	assert_eq(count[0], 0)
-
-
 func test_icon_face_flips_at_the_shatter_moment() -> void:
 	assert_eq(ReversalCue.icon_face(0.0), 1.0, "剛上身：紅的那一面")
 	assert_eq(ReversalCue.icon_face(ReversalCue.CURSE_SEC - 0.01), 1.0)
@@ -53,7 +39,7 @@ func test_overlay_hidden_until_a_cue_plays() -> void:
 	var cue := ReversalCue.new()
 	overlay.refresh(cue)
 	assert_false(overlay.visible, "沒在播就不畫")
-	cue.start(true)
+	cue.start()
 	cue.step(0.2)
 	overlay.refresh(cue)
 	assert_true(overlay.visible)
@@ -70,7 +56,7 @@ func test_overlay_hidden_until_a_cue_plays() -> void:
 func test_status_icon_already_on_body_when_hud_attaches_is_settled() -> void:
 	var hud := StatusHud.new()
 	tree.root.add_child(hud)
-	var fx := StatusEffects.new(StatusRules.load_default(), ReversalSlots.new())
+	var fx := StatusEffects.new(StatusRules.load_default(), true)
 	fx.apply_source("miasma")
 	hud.refresh(fx)
 	assert_true(float(hud.rows[0]["face"]) < 0.0, "讀檔、換關卡接上時身上已經有的：直接是金的，不再演一次翻面")
@@ -85,7 +71,6 @@ func test_player_starts_the_cue_on_a_new_status_and_bursts_gold_on_shatter() -> 
 	assert_false(player.reversal_cue.is_playing())
 	player.status_effects.apply_source("miasma")
 	assert_true(player.reversal_cue.is_playing(), "中毒上身就開始播")
-	assert_true(player.reversal_cue.reversed, "第一次中毒自動覺醒＝會反轉")
 	var bursts: int = player.heal_fx.bursts
 	player.reversal_cue.step(ReversalCue.CURSE_SEC + 0.01)
 	assert_eq(player.heal_fx.bursts, bursts + 1, "碎裂那一刻身上噴一團金光")
@@ -100,9 +85,12 @@ func test_player_starts_the_cue_on_a_new_status_and_bursts_gold_on_shatter() -> 
 	player.reversal_cue.step(5.0)
 	player.status_effects.apply_source("miasma")
 	assert_false(player.reversal_cue.is_playing(), "刷新不重播")
-	# 沒裝進反轉欄位的狀態：只有紫紅
+	# 另一種狀態新上身：同一套回饋再播一次，一樣會碎成金光（沒有哪一種要先解鎖）
+	bursts = player.heal_fx.bursts
 	player.status_effects.apply_source("sera_paralysis_vial")
-	assert_true(player.reversal_cue.is_playing())
-	assert_false(player.reversal_cue.reversed, "麻痺還沒裝進欄位＝不會反轉")
+	assert_true(player.reversal_cue.is_playing(), "麻痺上身也播")
+	player.reversal_cue.step(ReversalCue.CURSE_SEC + 0.01)
+	assert_eq(player.heal_fx.bursts, bursts + 1, "麻痺一樣碎成金光")
+	assert_true(player.status_effects.attack_speed() > 1.0, "而且第一瓶就是出手加速")
 	player.queue_free()
 	await tree.process_frame
