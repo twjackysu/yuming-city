@@ -36,6 +36,12 @@ func _session() -> GameSession:
 	return _game().get("session") as GameSession
 
 
+## 新遊戲並直接跳到結伴之後（席菈在旁邊）：開場相遇以外的測試從這裡開始
+func _new_game_joined() -> void:
+	_game().call("new_game", false)
+	_session().set_flag(CorruptForest.FLAG_JOINED, true)
+
+
 func _load_level() -> CorruptForest:
 	_level = (load(LEVEL) as PackedScene).instantiate() as CorruptForest
 	tree.root.add_child(_level)
@@ -50,17 +56,23 @@ func test_new_game_starts_chapter_one_and_autosaves() -> void:
 	assert_true(s.in_story())
 	assert_eq(s.state.chapter, "ch1")
 	assert_eq(s.main_quest(), "ch1_main")
-	assert_eq(s.quests.stage_of("ch1_main"), "enter_miasma")
-	assert_eq(s.objective_key(), "Q_CH1_OBJ_MIASMA")
+	assert_eq(s.quests.stage_of("ch1_main"), "meet_sera")
+	assert_eq(s.objective_key(), "Q_CH1_OBJ_SET_OUT")
 	assert_eq(s.state.checkpoint, "ch1_forest_gate")
 	assert_true(s.has_save(), "進第一個檢查點就自動存檔")
 	assert_true(bool(_game().call("has_continue")), "標題的「繼續」找得到")
 	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "corrupt_forest")
 
 
-func test_quest_follows_the_three_flags_and_continue_restores_it() -> void:
+func test_quest_follows_the_four_flags_and_continue_restores_it() -> void:
 	_game().call("new_game", false)
 	var s: GameSession = _session()
+	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
+	assert_eq(s.quests.stage_of("ch1_main"), "meet_sera", "還沒結伴：先中毒也不會跳過相遇")
+	s.set_flag(CorruptForest.FLAG_REVERSAL, false)
+	s.set_flag(CorruptForest.FLAG_JOINED, true)
+	assert_eq(s.quests.stage_of("ch1_main"), "enter_miasma")
+	assert_eq(s.state.checkpoint, "ch1_with_sera")
 	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
 	assert_eq(s.quests.stage_of("ch1_main"), "slimes")
 	assert_eq(s.state.checkpoint, "ch1_slimes")
@@ -84,7 +96,8 @@ func test_quest_and_dialogue_data_are_valid() -> void:
 	assert_true(db.errors.is_empty(), "任務資料：%s" % ", ".join(db.errors))
 	var dlg := DialogueDB.load_default()
 	assert_true(dlg.errors.is_empty(), "對話資料：%s" % ", ".join(dlg.errors))
-	assert_true(dlg.has_dialogue("ch1_forest_gate") and dlg.has_dialogue("ch1_after_slimes"))
+	for id: String in ["ch1_sera_joins", "ch1_forest_gate", "ch1_after_slimes"]:
+		assert_true(dlg.has_dialogue(id), "有對話 %s" % id)
 	assert_true(StatusRules.load_default().errors.is_empty(), "狀態資料")
 
 
@@ -100,7 +113,7 @@ func test_moss_mask_is_white_under_trees_and_black_elsewhere() -> void:
 
 
 func test_level_builds_with_markers_miasma_slimes_and_a_clear_path() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	for marker: String in ["MiasmaEdge", "SlimeGlade", "Spawn", "Player", "Hud", "Miasma", "Forest", "Sera"]:
@@ -124,8 +137,100 @@ func test_level_builds_with_markers_miasma_slimes_and_a_clear_path() -> void:
 	assert_true(player.puppet().hand("R").has_node("Weapon"), "劍在右手")
 
 
-func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
+## Jacky 11/14：「一開始應該要先只有男主角，後面遇到女主角才結伴」「她沒有免疫，經過毒物卻也沒事？」
+## 開場諾恩一個人從森林口走進來；席菈等在瘴氣前面（沒戴面具、不跟、不射）；走近她先出聲，再近就開口問能不能一起去；
+## 答應之後她才跟上來，靠近瘴氣就把防毒面具戴上。
+func test_noen_starts_alone_meets_sera_at_the_miasma_and_she_joins_with_her_mask() -> void:
 	_game().call("new_game", false)
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var s: GameSession = _session()
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sera: Sera = level.sera
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_true(player.global_position.distance_to(CorruptForest.ENTRANCE_POS) < 0.5, "從森林口開始")
+	assert_true(sera.global_position.distance_to(player.global_position) > 15.0, "開場身邊沒有人（席菈在 %.0f m 外）" % sera.global_position.distance_to(player.global_position))
+	assert_false(sera.joined)
+	assert_false(sera.masked, "她等在瘴氣外面，沒戴面具（看得到臉）")
+	for i: int in 90:
+		await tree.physics_frame
+	assert_true(sera.global_position.distance_to(CorruptForest.SERA_WAIT_POS) < 0.3, "還沒結伴不會跟過來")
+	assert_eq(sera.vials_fired, 0)
+	assert_false(bool(_game().call("is_in_dialogue")), "離得遠不會開口")
+	# 走近：她先出聲、轉過來
+	player.global_position = CorruptForest.SERA_WAIT_POS + Vector3(0.6, 0.05, 7.0)
+	for i: int in 40:
+		await tree.physics_frame
+	assert_true(hud.bark_keys().has("BARK_SERA_NOTICE"), "看到諾恩先出聲")
+	var to_noen: Vector3 = (player.global_position - sera.global_position).normalized()
+	assert_true((-sera.global_basis.z).dot(to_noen) > 0.8, "轉過來面向諾恩")
+	assert_false(bool(_game().call("is_in_dialogue")))
+	# 再近一點：開口
+	player.global_position = CorruptForest.SERA_WAIT_POS + Vector3(0.6, 0.05, 2.5)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(bool(_game().call("is_in_dialogue")), "走到她面前就開口")
+	var runner: DialogueRunner = _game().get("dialogue") as DialogueRunner
+	assert_eq(runner.current_text(), "DLG_CH1_JOIN_001")
+	runner.advance()
+	runner.advance()
+	runner.advance()
+	assert_eq(runner.current_text(), "DLG_CH1_JOIN_004", "劇本那一句：能讓我跟你一起去嗎？")
+	assert_eq(runner.visible_choices.size(), 2)
+	assert_false(sera.joined, "還沒答應")
+	assert_true(runner.choose(1))
+	runner.advance()
+	assert_false(bool(_game().call("is_in_dialogue")))
+	assert_eq(s.state.get_flag(CorruptForest.FLAG_JOINED), true)
+	assert_eq(int(s.state.get_flag("sera.affinity", 0)), 10)
+	assert_eq(s.quests.stage_of("ch1_main"), "enter_miasma", "結伴之後才是「走進瘴氣裡」")
+	assert_eq(s.state.checkpoint, "ch1_with_sera")
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(sera.joined, "答應了才結伴")
+	assert_false(bool(_game().call("is_in_dialogue")), "只問一次")
+	# 諾恩走進瘴氣，她跟上來：到邊上先戴面具
+	player.global_position = CorruptForest.MIASMA_POS + Vector3(0, 0.05, -3.0)
+	var frames: int = 0
+	while not sera.masked and frames < 360:
+		await tree.physics_frame
+		frames += 1
+	assert_true(sera.masked, "靠近瘴氣就戴上面具")
+	assert_true(sera.near_miasma())
+	if sera.mask() != null:
+		assert_true(sera.mask().visible, "面具看得到")
+	assert_true(hud.bark_keys().has("BARK_SERA_MASK"), "第一次戴的時候講一句")
+	# 離開瘴氣一下子才拿下來
+	var runner2: DialogueRunner = _game().get("dialogue") as DialogueRunner
+	if runner2 != null:
+		while runner2.advance():
+			pass
+	sera.global_position = CorruptForest.ENTRANCE_POS
+	player.global_position = CorruptForest.ENTRANCE_POS + Vector3(0, 0.05, -3.0)
+	for i: int in 30:
+		await tree.physics_frame
+	assert_true(sera.masked, "剛離開還戴著")
+	for i: int in int(Sera.MASK_OFF_DELAY * 60.0) + 20:
+		await tree.physics_frame
+	assert_false(sera.masked, "離開一下子就拿下來")
+
+
+## 結伴之後讀檔（或倒下重來）：從原本的出生點開始，席菈在旁邊，不會再問一次。
+func test_continue_after_joining_starts_with_sera_beside_noen() -> void:
+	_new_game_joined()
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	assert_true(player.global_position.distance_to((level.get_node("Spawn") as Marker3D).global_position) < 0.5)
+	assert_true(level.sera.joined)
+	assert_true(level.sera.global_position.distance_to(player.global_position) < 4.0)
+	for i: int in 30:
+		await tree.physics_frame
+	assert_false(bool(_game().call("is_in_dialogue")))
+
+
+func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
+	_new_game_joined()
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
@@ -144,7 +249,7 @@ func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
 
 
 func test_after_the_first_reversal_sera_and_noen_talk_once() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
@@ -173,7 +278,7 @@ func test_after_the_first_reversal_sera_and_noen_talk_once() -> void:
 
 
 func test_sera_starts_in_view_and_follows_behind_noen() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
@@ -199,7 +304,7 @@ func test_sera_starts_in_view_and_follows_behind_noen() -> void:
 
 ## 教學戰照劇本：席菈慌了，第一瓶拿錯成【重度麻痺＋防禦歸零】→ 落在諾恩身上變成出手快 150%＋受傷少 80%；之後她射平常的那一瓶。
 func test_in_a_fight_sera_panics_and_her_wrong_vial_reverses_into_two_boons() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
@@ -269,7 +374,7 @@ func _mash_until_clear(level: CorruptForest, player: PlayerController, max_frame
 func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
 	var frames: Array[int] = []
 	for buffed: bool in [false, true]:
-		_game().call("new_game", false)
+		_new_game_joined()
 		_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
 		_session().set_flag(CorruptForest.FLAG_MISFIRE, true)  # 席菈不插手：這裡只量諾恩自己
 		var level: CorruptForest = _load_level()
@@ -290,7 +395,7 @@ func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	var player: PlayerController = level.get_node("Player") as PlayerController
@@ -313,7 +418,7 @@ func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:
 
 
 func test_clearing_the_slimes_finishes_the_slice() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	var s: GameSession = _session()
 	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
 	var level: CorruptForest = _load_level()
@@ -364,10 +469,13 @@ func test_objective_stays_on_screen_with_a_controls_hint() -> void:
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	var hud: Hud = level.get_node("Hud") as Hud
-	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_MIASMA")
+	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_SET_OUT")
 	assert_eq(s.hint_key(), "Q_CH1_HINT_MOVE")
 	assert_true(hud.hint_text().contains("[WASD]"), "移動的提示寫 WASD：%s" % hud.hint_text())
 	assert_false(hud.hint_text().contains("{"), "動作名都換成按鍵了：%s" % hud.hint_text())
+	s.set_flag(CorruptForest.FLAG_JOINED, true)
+	await tree.physics_frame
+	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_MIASMA")
 	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
 	await tree.physics_frame
 	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_SLIMES")
@@ -377,7 +485,7 @@ func test_objective_stays_on_screen_with_a_controls_hint() -> void:
 
 
 func test_cleared_glade_stays_cleared_after_reload() -> void:
-	_game().call("new_game", false)
+	_new_game_joined()
 	_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
 	_session().set_flag(CorruptForest.FLAG_SLIMES, true)
 	var level: CorruptForest = _load_level()

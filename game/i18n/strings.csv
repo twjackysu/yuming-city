@@ -102,6 +102,7 @@ DIFF_STANDARD,Standard,標準
 DIFF_HARD,Hard,困難
 SPK_NOEN,Norn,諾恩
 SPK_SHEILA,Sera,席菈
+SPK_UNKNOWN,???,？？？
 Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
 STATUS_POISON,Poisoned,中毒
 STATUS_POISON_REVERSED,Poisoned → Regenerating,中毒 → 回血
@@ -117,6 +118,7 @@ GAME_SUBTITLE,"My ""infection-prone"" body turned out to be the cheat that flips
 SPK_LILITH,Lilith,莉莉絲
 SPK_LEO,Leo,雷歐
 Q_CH1_MAIN_TITLE,Chapter 1: The Tumor and the Junk,第一章　毒瘤與破爛的共鳴
+Q_CH1_OBJ_SET_OUT,Head deeper into the forest,往森林深處走
 Q_CH1_OBJ_MIASMA,Walk into the miasma,走進瘴氣裡
 Q_CH1_OBJ_SLIMES,Defeat the poison slimes in the glade,打倒空地上的劇毒史萊姆
 Q_CH1_OBJ_AFTER,Hear Sera out,聽席菈說完
@@ -127,12 +129,22 @@ CH1_REVERSAL_LINE2,Every ailment on you flips into a boon.,落在你身上的異
 CH1_SLIMES_CLEARED,The glade is clear.,空地清乾淨了。
 BARK_SERA_PANIC,"S-slimes! H-hang on, I will back you up!",史、史萊姆！等、等一下，我來幫你——
 BARK_SERA_MISFIRE,"No no no! Norn, I am so sorry, I messed up again!",完了完了！諾恩，對不起我又搞砸了！
+BARK_SERA_NOTICE,"Ah... u-um, excuse me!",啊……那、那個！
+BARK_SERA_MASK,"Mask, mask... okay, it is on!",面具、面具……好，戴好了！
 CH1_MISFIRE_LINE1,Paralyzed → Faster attacks　Defense zero → Less damage taken,麻痺 → 出手加速　防禦歸零 → 受傷減少
 CH1_MISFIRE_LINE2,"You attack 150% faster and take 80% less damage. Cut them down!",出手快 150%，受到的傷害少 80%。趁現在砍！
-DLG_CH1_GATE_001,"W-wait, that is miasma! Normal people collapse in ten minutes!",等、等一下，那是瘴氣！普通人進去十分鐘就會倒下的！
+DLG_CH1_GATE_001,"W-wait, that is miasma! Without a mask, normal people collapse in ten minutes!",等、等一下，那是瘴氣！沒戴面具進去，普通人十分鐘就會倒下的！
 DLG_CH1_GATE_002,Funny. I feel better than I have all week.,奇怪。我覺得這是我這禮拜精神最好的一次。
 DLG_CH1_GATE_003,"...Y-you are glowing gold. Does poison just... not work on you?",……你、你身上在發金光耶。毒對你……沒有用嗎？
-DLG_CH1_GATE_004,"Looks like it does more than nothing. Come on, stay behind me.",好像不只是沒用。走吧，妳跟在我後面就好。
+DLG_CH1_GATE_004,"Looks like it does more than nothing. Come on. Keep that mask on and stay behind me.",好像不只是沒用。走吧，妳面具戴好，跟在我後面。
+DLG_CH1_JOIN_001,"U-um! You are the one who took the toxic mushroom request at the guild... right?",那、那個！你是在公會接下毒蕈委託的人……對吧？
+DLG_CH1_JOIN_002,That is me. And you are?,是我。妳是？
+DLG_CH1_JOIN_003,"I-I am Sera, an apprentice alchemist. ...The one everybody avoids. The side effects of my potions are stronger than the potions.",我、我叫席菈，見習鍊金術師。……就是大家在躲的那個。我做的藥，副作用都比藥效還強。
+DLG_CH1_JOIN_004,"Um... my potions do have side effects, but in a place full of poison mist, they might actually be useful... Could I come with you?",那個……雖然我的藥水有副作用，但如果是去毒霧區，說不定能派上用場……能讓我跟你一起去嗎？
+DLG_CH1_JOIN_CHOICE_A,Sure. Walking alone is boring anyway.,好啊。一個人走也無聊。
+DLG_CH1_JOIN_CHOICE_B,Side effects stronger than the potion? Now I want to try one.,副作用比藥效還強？我反而想試試看。
+DLG_CH1_JOIN_A,"R-really!? Thank you! I have a gas mask, so I can handle the miasma. I will not slow you down!",真、真的可以嗎！？謝謝你！我有防毒面具，瘴氣我撐得住，不會拖累你的！
+DLG_CH1_JOIN_B,"Y-you want to try one!? People usually run when they hear that...! I have a gas mask for the miasma, and you can have all the potions you want!",咦、你想試！？大家聽到都是用跑的耶……！我有防毒面具，瘴氣我撐得住——藥要多少有多少！
 DLG_CH1_AFTER_001,"I-I am so sorry! I grabbed the wrong vial again... Huh? You are... fine?",對、對不起！我又拿錯瓶了……咦？你……沒事？
 DLG_CH1_AFTER_002,Fine? That was the best thing anyone has ever shot at me.,沒事。應該說，那是我這輩子挨過最棒的一發。
 DLG_CH1_AFTER_003,Norn... you really do not get hurt by what I make?,諾恩……你真的不會因為我的能力而受傷嗎？

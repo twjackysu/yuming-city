@@ -3,10 +3,20 @@
   "title": "Q_CH1_MAIN_TITLE",
   "stages": [
     {
+      "id": "meet_sera",
+      "objective": "Q_CH1_OBJ_SET_OUT",
+      "hint": "Q_CH1_HINT_MOVE",
+      "checkpoint": "ch1_forest_gate",
+      "marker": "node:MiasmaEdge",
+      "done_when": {
+        "flag": "ch1.sera_joined"
+      }
+    },
+    {
       "id": "enter_miasma",
       "objective": "Q_CH1_OBJ_MIASMA",
       "hint": "Q_CH1_HINT_MOVE",
-      "checkpoint": "ch1_forest_gate",
+      "checkpoint": "ch1_with_sera",
       "marker": "node:MiasmaEdge",
       "done_when": {
         "flag": "ch1.reversal_seen"

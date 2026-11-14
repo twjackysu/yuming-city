@@ -1,13 +1,14 @@
 class_name CorruptForest
 extends StoryLevel
 ## 腐敗之森入口（第一章的起點，docs/story/chapter-1.md 節點 2；計畫在 docs/design/13-chapter-1-plan.md）。
-## 現在是最小的一塊：出生點（席菈站在旁邊）→ 一團瘴氣（走進去中毒 → 反轉成回血 → 兩人講幾句）→ 林間空地的三隻劇毒史萊姆
-## （席菈跟在後面，開打後往諾恩背上射藥：scenes/actors/sera/）。
+## 現在是最小的一塊：諾恩一個人走進來 → 席菈等在瘴氣前面，問能不能一起去（答應了才結伴）→ 一團瘴氣（她戴上防毒面具；
+## 諾恩走進去中毒 → 反轉成回血 → 兩人講幾句）→ 林間空地的三隻劇毒史萊姆（席菈跟在後面，開打後往諾恩背上射藥：scenes/actors/sera/）。
+## 劇本裡兩人是在公會大廳認識的（節點 1）；公會還沒做，先讓她在森林口開口（D-280）。
 ## 地面是一片平面（顏色、路與空地的邊緣、落葉都在 forest_ground.gdshader 裡算），上面長一團一團的草（GrassTufts）。
 ## 樹、毒蕈、灌木是 Tripo 的模型（scripts/gen_props.sh 擺正後放 assets/props/tripo/，不進 git）；檔案不在就用程式拼的替身。
 ## 教學戰照劇本：席菈慌了，第一瓶拿錯成【重度麻痺＋防禦歸零】（對諾恩＝出手快 150%＋受傷少 80%）→ 打完兩人講話（兩個選項）。
-## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）、ch1.after_slimes_talked（戰後那段話講完，
-## 對話資料自己設）——任務 data/quests/ch1_main.json 看這三個；ch1.gate_talked＝瘴氣裡那段對話講過了；
+## 劇情旗標：ch1.sera_joined（結伴了，對話資料自己設）、ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）、ch1.after_slimes_talked（戰後那段話講完，
+## 對話資料自己設）——任務 data/quests/ch1_main.json 看這四個；ch1.gate_talked＝瘴氣裡那段對話講過了；
 ## ch1.misfire_seen＝拿錯的那一瓶射過了。
 
 const GROUND_SIZE: float = 140.0
@@ -27,11 +28,13 @@ const TREE_MOSS_RADIUS: float = 4.4
 const MOSS_MASK_SIZE: int = 256
 ## 路（x 在這個寬度內）與空地不種樹
 const PATH_HALF_WIDTH: float = 4.0
+const FLAG_JOINED: String = "ch1.sera_joined"
 const FLAG_REVERSAL: String = "ch1.reversal_seen"
 const FLAG_SLIMES: String = "ch1.slimes_cleared"
 const FLAG_GATE_TALK: String = "ch1.gate_talked"
 const FLAG_MISFIRE: String = "ch1.misfire_seen"
 const FLAG_AFTER_TALK: String = "ch1.after_slimes_talked"
+const JOIN_DIALOGUE: String = "ch1_sera_joins"
 const GATE_DIALOGUE: String = "ch1_forest_gate"
 const AFTER_DIALOGUE: String = "ch1_after_slimes"
 ## 教學戰席菈拿錯的那一瓶（statuses.json 的來源）
@@ -40,7 +43,13 @@ const PANIC_VIAL: String = "sera_panic_vial"
 const AFTER_TALK_DELAY: float = 1.6
 ## 第一次反轉之後隔多久席菈才開口（等碎裂與金光演完）
 const GATE_TALK_DELAY: float = 1.2
-## 席菈一開始站在諾恩的左前方（玩家的鏡頭一開場就看得到她），之後自己跟在後面
+## 開場（還沒結伴）諾恩一個人從這裡走進來；結伴之後的檢查點從場景裡的 Spawn 開始
+const ENTRANCE_POS: Vector3 = Vector3(0, 0.05, 30)
+## 還沒結伴時席菈等在這裡：瘴氣前面、路的左邊，看著那團紫霧
+const SERA_WAIT_POS: Vector3 = Vector3(-1.4, 0, 9.5)
+## 諾恩走到這麼近（或走過她身邊）她就開口
+const SERA_MEET_DIST: float = 3.4
+## 結伴之後讀檔：席菈站在諾恩的左前方（玩家的鏡頭一進場就看得到她），之後自己跟在後面
 const SERA_START_OFFSET: Vector3 = Vector3(-1.7, 0.0, -2.6)
 
 var slimes: Array[Slime] = []
@@ -52,6 +61,8 @@ var _gate_talk_in: float = -1.0
 var _after_talk_in: float = -1.0
 ## 拿錯的那一瓶演到哪：0＝還沒舉弩、1＝舉弩喊過了，等藥瓶砸中
 var _misfire_step: int = 0
+## 還沒結伴：她看到諾恩、出聲叫過了沒
+var _sera_called: bool = false
 var _rng := RandomNumberGenerator.new()
 ## 每棵樹：x、z＝位置，y＝大小（地面的苔與草叢照這個長）
 var _trees := PackedVector3Array()
@@ -70,9 +81,12 @@ func _ready() -> void:
 	_mark("MiasmaEdge", MIASMA_POS + Vector3(0, 0, MIASMA_RADIUS))
 	_mark("SlimeGlade", GLADE_POS)
 	var spawn: Marker3D = $Spawn
-	_player.global_position = spawn.global_position
-	# 截圖用：`-- --level=corrupt_forest --cam-yaw=90` 鏡頭繞到諾恩的側面（180＝正面）
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
+	# 截圖用：`--joined` 直接從結伴之後開始（席菈在旁邊）；`--burst-on=vial` 要她射藥，也要加這個
+	if args.has("joined"):
+		Game.session.set_flag(FLAG_JOINED, true)
+	_player.global_position = spawn.global_position if bool(Game.session.state.get_flag(FLAG_JOINED, false)) else ENTRANCE_POS
+	# 截圖用：`-- --level=corrupt_forest --cam-yaw=90` 鏡頭繞到諾恩的側面（180＝正面）
 	if args.has("cam-yaw"):
 		_player.yaw = deg_to_rad(float(str(args["cam-yaw"])))
 	# 截圖用：`--at=x,z` 把諾恩放到別的地方（空地前面＝--at=0,-5）
@@ -105,6 +119,7 @@ func _physics_process(delta: float) -> void:
 	if not Game.session.in_story():
 		return
 	var st: GameState = Game.session.state
+	_tick_meeting(st)
 	if not bool(st.get_flag(FLAG_REVERSAL, false)) and _player.status_effects.has("poison"):
 		Game.session.set_flag(FLAG_REVERSAL, true)
 		_hud.show_center_lines("CH1_REVERSAL_LINE1", "CH1_REVERSAL_LINE2")
@@ -124,6 +139,27 @@ func _physics_process(delta: float) -> void:
 		_after_talk_in -= delta
 		if _after_talk_in < 0.0 and not Game.start_dialogue(AFTER_DIALOGUE):
 			_after_talk_in = 0.2  # 別的對話還沒講完：等一下再試
+
+
+## 還沒結伴：席菈等在瘴氣前面。諾恩走近她先出聲，再近一點（或從旁邊走過去）就開口問能不能一起去；
+## 對話最後一句把 ch1.sera_joined 設起來，她才開始跟。
+func _tick_meeting(st: GameState) -> void:
+	if sera.joined:
+		return
+	if bool(st.get_flag(FLAG_JOINED, false)):
+		sera.joined = true
+		return
+	var dist: float = sera.global_position.distance_to(_player.global_position)
+	if not _sera_called and dist < Sera.NOTICE_DIST:
+		_sera_called = true
+		_hud.show_bark(sera, "BARK_SERA_NOTICE", 2.6)
+	if dist < SERA_MEET_DIST or _player.global_position.z < SERA_WAIT_POS.z + 1.0:
+		Game.start_dialogue(JOIN_DIALOGUE)
+
+
+func _on_sera_mask_changed(on: bool) -> void:
+	if on and sera.joined and Game.session.state.grant_once("ch1.sera_mask_bark"):
+		_hud.show_bark(sera, "BARK_SERA_MASK", 2.8)
 
 
 ## 教學戰的誤射（劇本節點 2）：舉弩的時候喊一句；藥瓶砸中之後抱頭道歉，畫面中間寫這兩種狀態反轉成什麼。
@@ -154,9 +190,14 @@ func _spawn_sera() -> void:
 	sera = Sera.new()
 	sera.name = "Sera"
 	sera.target = _player
-	sera.position = _player.global_position + SERA_START_OFFSET
-	# 面向諾恩（開場看得到她的臉）
-	sera.rotation.y = atan2(SERA_START_OFFSET.x, SERA_START_OFFSET.z)
+	sera.mask_changed.connect(_on_sera_mask_changed)
+	if bool(Game.session.state.get_flag(FLAG_JOINED, false)):
+		sera.position = _player.global_position + SERA_START_OFFSET
+		# 面向諾恩（一進場看得到她的臉）
+		sera.rotation.y = atan2(SERA_START_OFFSET.x, SERA_START_OFFSET.z)
+	else:
+		sera.joined = false
+		sera.position = SERA_WAIT_POS  # 面向 −Z：看著瘴氣
 	if not bool(Game.session.state.get_flag(FLAG_MISFIRE, false)):
 		sera.vial_source = PANIC_VIAL
 	add_child(sera)

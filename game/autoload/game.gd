@@ -23,6 +23,7 @@ const LEVELS: Dictionary = {
 ## 檢查點 -> 關卡 id（沒列的都在 DEFAULT_LEVEL）
 const CHECKPOINT_LEVELS: Dictionary = {
 	"ch1_forest_gate": "corrupt_forest",
+	"ch1_with_sera": "corrupt_forest",
 	"ch1_slimes": "corrupt_forest",
 	"ch1_after_slimes": "corrupt_forest",
 }

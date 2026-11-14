@@ -1,0 +1,63 @@
+{
+  "id": "ch1_sera_joins",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_UNKNOWN",
+      "text": "DLG_CH1_JOIN_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_JOIN_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_JOIN_003",
+      "next": "ask"
+    },
+    "ask": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_JOIN_004",
+      "choices": [
+        {
+          "text": "DLG_CH1_JOIN_CHOICE_A",
+          "next": "a",
+          "do": {
+            "add": {
+              "sera.affinity": 5
+            }
+          }
+        },
+        {
+          "text": "DLG_CH1_JOIN_CHOICE_B",
+          "next": "b",
+          "do": {
+            "add": {
+              "sera.affinity": 10
+            }
+          }
+        }
+      ]
+    },
+    "a": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_JOIN_A",
+      "do": {
+        "set": {
+          "ch1.sera_joined": true
+        }
+      }
+    },
+    "b": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_JOIN_B",
+      "do": {
+        "set": {
+          "ch1.sera_joined": true
+        }
+      }
+    }
+  }
+}
