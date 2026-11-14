@@ -1,0 +1,30 @@
+{
+  "id": "weapon_staff",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. Wooden mage staff about 1.6 meters long, twisted gnarled wood top holding a small glowing teal crystal, leather wraps",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "8964c779-670e-4ac9-b5e9-2413d6fd4c31"
+  },
+  "files": [
+    {
+      "file": "weapon_staff_model_preview.jpg"
+    },
+    {
+      "file": "weapon_staff_model.glb",
+      "bytes_raw": 3737456,
+      "bytes": 824864
+    }
+  ],
+  "generated_at": "2026-11-14T10:37:03+08:00",
+  "requested_by": "可換裝備：法杖（諾恩現在用法杖，D-263）"
+}

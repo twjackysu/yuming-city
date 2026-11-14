@@ -1,0 +1,30 @@
+{
+  "id": "prop_poison_barrel",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Cracked wooden barrel with iron hoops leaking glowing green poison liquid, a painted skull warning symbol on the side",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "58cb8a99-2495-4b10-91c5-563355a5f7ae"
+  },
+  "files": [
+    {
+      "file": "prop_poison_barrel_model_preview.jpg"
+    },
+    {
+      "file": "prop_poison_barrel_model.glb",
+      "bytes_raw": 3219068,
+      "bytes": 754832
+    }
+  ],
+  "generated_at": "2026-11-14T10:42:03+08:00",
+  "requested_by": "開場：被砸裂、冒綠霧的毒藥桶（主角第一次中毒的地方）"
+}

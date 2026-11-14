@@ -1,0 +1,30 @@
+{
+  "id": "weapon_axe",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. One-handed battle axe, wooden handle, single iron axe head with worn edge, leather grip",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "48bb57ab-5e0b-409f-a2d4-bbdc43467581"
+  },
+  "files": [
+    {
+      "file": "weapon_axe_model_preview.jpg"
+    },
+    {
+      "file": "weapon_axe_model.glb",
+      "bytes_raw": 3595576,
+      "bytes": 817076
+    }
+  ],
+  "generated_at": "2026-11-14T10:32:35+08:00",
+  "requested_by": "可換裝備：斧頭"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "prop_broken_lamppost",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Old cast-iron fantasy street lamp post snapped in half and bent, broken glass lantern head with a warm flame, cobblestone chunks at the base",
+  "image": null,
+  "params": {
+    "face_limit": 8000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "3693ad67-7e73-4276-9f1b-92029d30177d"
+  },
+  "files": [
+    {
+      "file": "prop_broken_lamppost_model_preview.jpg"
+    },
+    {
+      "file": "prop_broken_lamppost_model.glb",
+      "bytes_raw": 2996320,
+      "bytes": 749092
+    }
+  ],
+  "generated_at": "2026-11-14T10:43:46+08:00",
+  "requested_by": "開場：被怪物打斷的街燈"
+}

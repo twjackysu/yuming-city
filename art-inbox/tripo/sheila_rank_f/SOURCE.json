@@ -1,0 +1,53 @@
+{
+  "id": "sheila_rank_f",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Beautiful and cute young woman, 25 years old, anime heroine look, F-rank swordswoman adventurer, confident expression, long silver-white hair in a high ponytail, small scar over right eyebrow, short worn white cloak over the shoulders, faded blue tunic, light brown leather chest guard, leather belt with pouches, dark leggings, knee-high worn leather boots, leather bracers, modest full coverage clothing, shabby but practical rookie adventurer gear",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [
+    "preset:idle",
+    "preset:walk",
+    "preset:run"
+  ],
+  "tasks": {
+    "generate": "5de93112-b564-4ceb-91dc-f77e4466b289",
+    "rig": "d6005144-f541-4210-9dcf-99981cf3a27e",
+    "retarget": "fbd4ce01-82be-47b5-8d3f-fae2525161f8"
+  },
+  "files": [
+    {
+      "file": "sheila_rank_f_anim.glb",
+      "bytes_raw": 9791784,
+      "bytes": 2695244
+    },
+    {
+      "file": "sheila_rank_f_model_preview.jpg"
+    },
+    {
+      "file": "sheila_rank_f_model.glb",
+      "bytes_raw": 8959908,
+      "bytes": 1863364
+    },
+    {
+      "file": "sheila_rank_f_rig.glb",
+      "bytes_raw": 9228324,
+      "bytes": 2131780
+    },
+    {
+      "file": "sheila_rank_f_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T10:23:47+08:00",
+  "requested_by": "女主角席菈 F 級（巡邏劍士剛入公會）。武器另外做、可換。"
+}

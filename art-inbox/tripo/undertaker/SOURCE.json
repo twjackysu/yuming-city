@@ -1,0 +1,52 @@
+{
+  "id": "undertaker",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "anime manga style dark fantasy monster, cool and menacing design, 2.6 meter tall hunched gaunt undertaker creature, carrying a huge rusty iron frame strapped on its back with two vertical posts and three crossbars, heavy iron chains hanging from the frame and wrists, tattered black funeral coat, long arms, faceless pale mask, glowing weak point at the iron frame joints, full body, T-pose, vibrant hand-painted textures, game-ready",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 50000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [
+    "preset:walk",
+    "preset:slash"
+  ],
+  "tasks": {
+    "generate": "1f92265d-461c-487f-b33d-20b4c820f155",
+    "rig": "4b638691-34d2-46ef-a894-a4e10dee69cb",
+    "retarget": "33bfa93d-04a7-407d-bc92-882713842bac"
+  },
+  "files": [
+    {
+      "file": "undertaker_anim.glb",
+      "bytes_raw": 9708668,
+      "bytes": 2765924
+    },
+    {
+      "file": "undertaker_model_preview.jpg"
+    },
+    {
+      "file": "undertaker_model.glb",
+      "bytes_raw": 9116200,
+      "bytes": 2173460
+    },
+    {
+      "file": "undertaker_rig.glb",
+      "bytes_raw": 9468952,
+      "bytes": 2526212
+    },
+    {
+      "file": "undertaker_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T10:26:50+08:00",
+  "requested_by": "開場追著諾恩的怪物（背鐵架的送葬者）。開場第一個大型敵人，最影響第一眼質感。"
+}
