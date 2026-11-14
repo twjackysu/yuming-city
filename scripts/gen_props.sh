@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Tripo 產的武器與物件（art-inbox/tripo/，D-270）：用 tools/blender/tripo_prop.py 擺正、縮到實際大小，
+# Tripo 產的武器、物件與沒有骨架的怪物（art-inbox/tripo/<名字>/<名字>_model.glb）：用 tools/blender/tripo_prop.py 擺正、縮到實際大小，
 # 產物放 build/art/props/<名字>.glb，再複製到 game/assets/props/tripo/（不進 git）。scripts/gen-assets.sh 會呼叫。
-# 來源或腳本沒改就跳過；裝不了 bpy 或失敗：印出原因、回傳 0（遊戲退回 KayKit 的模型或程式拼的）。
+# 來源或腳本沒改就跳過；裝不了 bpy 或失敗：印出原因、回傳 0（遊戲退回程式拼的替身）。
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PY="${ART_PYTHON:-python3}"
@@ -10,14 +10,26 @@ DEST="$ROOT/game/assets/props/tripo"
 TOOL="$ROOT/tools/blender/tripo_prop.py"
 # 名字 → 給 tripo_prop.py 的參數
 declare -A ARGS=(
-  [weapon_staff]="--kind weapon --like staff --head wide"
+  [weapon_rusty_miasma_sword]="--kind weapon --like sword --head far_from_wide"
+  [weapon_ominous_split_blade]="--kind weapon --like sword --head far_from_wide"
   [weapon_longsword]="--kind weapon --like sword --head far_from_wide"
+  [weapon_staff]="--kind weapon --like staff --head wide"
   [weapon_shortsword]="--kind weapon --head far_from_wide --length 0.60 --grip 0.14"
   [weapon_axe]="--kind weapon --head wide --length 0.85 --grip 0.15"
   [weapon_hammer]="--kind weapon --head wide --length 0.85 --grip 0.15"
   [weapon_bow]="--kind weapon --head keep --length 1.20 --grip 0.50"
-  [prop_poison_barrel]="--kind prop --height 1.05"
+  [enemy_poison_slime]="--kind prop --height 0.80"
+  [enemy_mold_slime]="--kind prop --height 0.80"
+  [prop_corrupt_tree]="--kind prop --height 6.50"
+  [prop_glow_toxic_mushroom]="--kind prop --height 1.10"
+  [prop_rotten_fruit_bush]="--kind prop --height 1.60"
+  [prop_cursed_chest]="--kind prop --height 0.75"
+  [prop_campfire_v2]="--kind prop --height 1.10"
+  [prop_ruined_altar]="--kind prop --height 1.40"
   [prop_guild_quest_board]="--kind prop --height 2.30"
+  [prop_guild_signboard]="--kind prop --height 2.40"
+  [prop_guild_counter_v2]="--kind prop --height 1.15"
+  [prop_aptitude_crystal]="--kind prop --height 0.60"
 )
 mkdir -p "$OUT" "$DEST"
 have_bpy=""

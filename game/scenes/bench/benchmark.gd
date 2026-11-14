@@ -1,14 +1,14 @@
 extends Node3D
-## Benchmark：載入霜橋鎮，鏡頭沿固定路徑從廣場飛過主街、北街，結束後把統計寫到 user://benchmark/*.json。
+## Benchmark：載入腐敗之森入口，鏡頭沿固定路徑從出生點飛過瘴氣到林間空地，結束後把統計寫到 user://benchmark/*.json。
 ## 用法：YumingCity.exe ++ --benchmark [--bench-seconds=30]（`++` 與 `--` 相同，但 PowerShell 不會吃掉）
 ## 結果檔路徑會印在主控台與畫面上；Windows 在 %APPDATA%\YumingCity\benchmark\。
 
-const LEVEL: String = "res://scenes/levels/frostbridge.tscn"
+const LEVEL: String = "res://scenes/levels/corrupt_forest.tscn"
 const OUT_DIR: String = "user://benchmark"
-## 鏡頭路徑（世界座標）：從廣場南邊穿過廣場、沿主街與北街走到鐘樓前，再抬頭看鐘樓
+## 鏡頭路徑（世界座標）：沿著路從出生點到空地後面
 const PATH_POINTS: Array[Vector3] = [
-	Vector3(0.0, 1.8, 8.0), Vector3(-3.0, 1.7, -1.0), Vector3(1.5, 2.2, -14.0),
-	Vector3(-1.0, 2.4, -26.0), Vector3(0.8, 2.8, -38.0), Vector3(0.0, 3.5, -44.0),
+	Vector3(0.0, 1.8, 18.0), Vector3(-2.0, 1.7, 9.0), Vector3(1.5, 2.2, 0.0),
+	Vector3(-1.0, 2.4, -8.0), Vector3(0.8, 2.8, -16.0), Vector3(0.0, 3.5, -24.0),
 ]
 const LOOK_AHEAD: float = 0.06
 
@@ -56,7 +56,7 @@ func _place_camera(t: float) -> void:
 	var pos: Vector3 = sample_path(t)
 	var ahead: Vector3 = sample_path(minf(t + LOOK_AHEAD, 1.0))
 	if t + LOOK_AHEAD >= 1.0:
-		ahead = Vector3(0.0, 14.0, -50.0)  # 最後抬頭看鐘樓燈
+		ahead = Vector3(0.0, 8.0, -50.0)  # 最後抬頭看樹梢
 	_camera.global_position = pos
 	if not pos.is_equal_approx(ahead):
 		_camera.look_at(ahead, Vector3.UP)

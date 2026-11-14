@@ -13,7 +13,7 @@ var _root: Control
 var _menu: VBoxContainer
 var _resume: Button
 var _settings: SettingsMenu
-## 左下：目前目標（暫停時 HUD 被暗幕蓋住，這裡再寫一次）＋按鍵提示（D-093）
+## 左下：目前目標（暫停時 HUD 被暗幕蓋住，這裡再寫一次）＋按鍵提示
 var _objective_box: VBoxContainer
 var _objective: Label
 var _hint: GlyphLine
@@ -133,7 +133,7 @@ func _build() -> void:
 	shade.color = Color(0.01, 0.015, 0.025, 0.6)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(shade)
-	# 左側一條由深到透明的直向暗帶（第二輪盤點第 5 項，D-090）：選單有個「底」，右邊的場景照舊看得到
+	# 左側一條由深到透明的直向暗帶（第二輪盤點第 5 項）：選單有個「底」，右邊的場景照舊看得到
 	var band := TextureRect.new()
 	band.name = "Band"
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -158,10 +158,10 @@ func _build() -> void:
 	_menu.add_theme_constant_override("separation", 10)
 	_root.add_child(_menu)
 
-	# 標題上方一行小字：劇情的名字（這些詛咒對我太有用了，D-220），淡藍灰、字距拉開
+	# 標題上方一行小字：劇情的名字（這些詛咒對我太有用了），淡藍灰、字距拉開
 	var chapter := Label.new()
 	chapter.name = "Chapter"
-	chapter.text = "RB_GAME_SUBTITLE"
+	chapter.text = "GAME_SUBTITLE"
 	chapter.add_theme_font_size_override("font_size", 18)
 	chapter.add_theme_color_override("font_color", Color(0.62, 0.68, 0.78, 0.85))
 	_menu.add_child(chapter)
@@ -174,7 +174,7 @@ func _build() -> void:
 	if serif != null:
 		title.add_theme_font_override("font", serif)
 	_menu.add_child(title)
-	# 標題下一條暖金細線（跟設定頁的分組線同一個語彙，D-076），左邊實、往右淡出
+	# 標題下一條暖金細線（跟設定頁的分組線同一個語彙），左邊實、往右淡出
 	var rule := TextureRect.new()
 	rule.name = "Rule"
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE

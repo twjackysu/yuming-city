@@ -1,6 +1,6 @@
 class_name Ambience
 extends RefCounted
-## 關卡的循環環境音（D-180）：霜橋鎮的風雪、酒館的壁爐、白晝城的鐘擺、乾運河的低風。
+## 關卡的循環環境音：霜橋鎮的風雪、酒館的壁爐、白晝城的鐘擺、乾運河的低風。
 ## 音檔是 `scripts/gen_sfx.py` 產生的 wav（頭尾已經交叉淡化），這裡複製一份並設成整段循環；
 ## 環境音走 SFX 匯流排（跟著「音效」音量），配樂走 Music 匯流排；缺檔時安靜回傳 null。
 
@@ -38,7 +38,7 @@ static func play(parent: Node, sfx_name: String, volume_db: float, node_name: St
 	return p
 
 
-## 配樂（D-181）：走 Music 匯流排（跟著「音樂」音量）；fade_in 秒內從無聲慢慢漲到 volume_db。
+## 配樂：走 Music 匯流排（跟著「音樂」音量）；fade_in 秒內從無聲慢慢漲到 volume_db。
 static func music(parent: Node, sfx_name: String, volume_db: float, fade_in: float, node_name: String) -> AudioStreamPlayer:
 	var p: AudioStreamPlayer = play(parent, sfx_name, MUTED_DB if fade_in > 0.0 else volume_db, node_name, &"Music")
 	if p != null and fade_in > 0.0:

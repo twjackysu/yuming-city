@@ -4,15 +4,13 @@ extends Control
 @onready var _menu: VBoxContainer = %Menu
 @onready var _new_game: Button = %NewGame
 @onready var _continue: Button = %Continue
-## 戰鬥場（D-238）：不開劇情、不碰存檔，按下去直接開打
-@onready var _arena: Button = %Arena
 @onready var _settings_button: Button = %Settings
 ## 測試設成 false：按下去只重設／讀取狀態，不換場景
 var load_levels: bool = true
 
 var _settings_menu: SettingsMenu
 @onready var _quit: Button = %Quit
-## 標題的配樂（D-181）：長音鋪底＋霧裡遠遠的鐘聲，2.5 秒淡入；走 Music 匯流排，設定頁的「音樂」音量即時生效。
+## 標題的配樂：長音鋪底＋霧裡遠遠的鐘聲，2.5 秒淡入；走 Music 匯流排，設定頁的「音樂」音量即時生效。
 const MUSIC_DB: float = -4.0
 const MUSIC_FADE_IN: float = 2.5
 var music: AudioStreamPlayer
@@ -23,11 +21,9 @@ func _ready() -> void:
 	if serif != null:
 		(%Title as Label).add_theme_font_override("font", serif)
 		(%Subtitle as Label).add_theme_font_override("font", serif)
-	# 新遊戲／繼續＝《這些詛咒對我太有用了》（唯一的劇情；舊版的入口第 76 輪拿掉了，D-220）
 	_continue.disabled = not Game.has_continue()
 	_new_game.pressed.connect(_on_new_game)
 	_continue.pressed.connect(_on_continue)
-	_arena.pressed.connect(_on_arena)
 	_settings_button.pressed.connect(_on_settings)
 	_quit.pressed.connect(func() -> void: get_tree().quit())
 	_focus_first.call_deferred()
@@ -48,10 +44,6 @@ func _focus_first() -> void:
 
 func _on_new_game() -> void:
 	Game.new_game(load_levels)
-
-
-func _on_arena() -> void:
-	Game.start_arena(load_levels)
 
 
 func _on_continue() -> void:

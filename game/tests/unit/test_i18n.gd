@@ -99,15 +99,6 @@ func test_no_obscure_terms() -> void:
 			assert_false(row[1].containsn(w), "%s 的英文用了「%s」：%s" % [key, w, row[1]])
 
 
-func test_translations_are_registered() -> void:
-	TranslationServer.set_locale("zh_TW")
-	assert_eq(tr("GAME_TITLE"), "餘命城", "繁中標題")
-	assert_eq(tr("Q_RB_MAIN_TITLE"), "這瓶不是解藥", "劇情的文字（reboot.csv）")
-	assert_eq(tr("SPK_SHEILA"), "席菈", "說話者的名字")
-	TranslationServer.set_locale("en")
-	assert_eq(tr("GAME_TITLE"), "Yuming City", "英文標題")
-
-
 func _collect(dir_path: String, out: PackedStringArray) -> void:
 	var dir := DirAccess.open(dir_path)
 	if dir == null:

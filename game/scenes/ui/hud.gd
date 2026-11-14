@@ -8,8 +8,8 @@ const OBJECTIVE_FADE_SEC: float = 0.6
 const OBJECTIVE_HOLD_SEC: float = 8.0
 const OBJECTIVE_PEEK_SEC: float = 4.0
 const SAVED_SHOW_SEC: float = 2.2
-## 狀態列後面的「可以釋放」提示（D-245）
-const RELEASE_HINT_KEY: String = "ARENA_RELEASE_HINT"
+## 狀態列後面的「可以釋放」提示
+const RELEASE_HINT_KEY: String = "HUD_RELEASE_HINT"
 
 var _objective: Label
 var _objective_box: VBoxContainer
@@ -22,16 +22,16 @@ var _banner: Label
 var combat: CombatHud
 ## 目標指引（指向目前目標的小菱形＋距離）
 var guide: ObjectiveGuide
-## 互動提示（下方中央：拿藥瓶、拉起席菈，D-065）
+## 互動提示（下方中央：拿藥瓶、拉起席菈）
 var interact: InteractPrompt
-## 新版的狀態圖示（左下、諾恩生命條上方，D-202）；舊版沒有狀態，永遠是空的
+## 新版的狀態圖示（左下、諾恩生命條上方）；舊版沒有狀態，永遠是空的
 var status: StatusHud
-## 新版：可攜藥劑的數量（生命條右上方）與滿血時的確認框（D-209）
+## 新版：可攜藥劑的數量（生命條右上方）與滿血時的確認框
 var potion: PotionHud
 var potion_confirm: PotionConfirm
 var _potion_player: PlayerController
 var _banner_tween: Tween
-## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」，D-204）
+## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」）
 var _center: VBoxContainer
 var _center_tween: Tween
 var _center_back: StyleBoxFlat
@@ -40,7 +40,7 @@ const CENTER_LINE_GAP: float = 0.9
 ## 中央兩行字的暗底比字多出多少（左右、上下）
 const CENTER_BACK_PAD: Vector2 = Vector2(30.0, 12.0)
 const CENTER_LINE2_COLOR: Color = Color(0.55, 0.95, 0.6)
-## 角色頭上的一句話（D-246：諾恩的碎念、旁人的反應）：跟著角色走、不停住遊戲、不是對話框。同一個角色同時只有一句
+## 角色頭上的一句話（諾恩的碎念、旁人的反應）：跟著角色走、不停住遊戲、不是對話框。同一個角色同時只有一句
 const BARK_FADE_IN: float = 0.12
 const BARK_FADE_OUT: float = 0.45
 const BARK_RISE_PX: float = 16.0
@@ -49,7 +49,7 @@ const BARK_EDGE: float = 14.0
 ## 頭頂的那一點超出畫面這麼多（px）以內還算在畫面裡
 const BARK_OFFSCREEN: float = 40.0
 const BARK_STACK_GAP: float = 4.0
-## 講的人的臉被比較靠近鏡頭的另一個角色擋住就不顯示（D-248）：第 99 輪的過肩連拍上，站在後面 8 m 的人講的話
+## 講的人的臉被比較靠近鏡頭的另一個角色擋住就不顯示：第 99 輪的過肩連拍上，站在後面 8 m 的人講的話
 ## 畫在前面那個人的頭上，看起來像前面那個人講的。臉＝腳上面 head × BARK_FACE；擋人的身體＝腳到 BARK_BODY_HEIGHT、左右各 BARK_BODY_HALF 公尺。
 const BARK_FACE: float = 0.76
 const BARK_BODY_HEIGHT: float = 1.8
@@ -64,7 +64,7 @@ var _barks: Array[Dictionary] = []
 
 func _ready() -> void:
 	layer = 10
-	add_to_group(PauseMenu.HIDE_GROUP)  # 暫停時藏起來（D-093）
+	add_to_group(PauseMenu.HIDE_GROUP)  # 暫停時藏起來
 	_build()
 	var s: GameSession = Game.session
 	s.stage_changed.connect(_on_stage_changed)
@@ -72,7 +72,7 @@ func _ready() -> void:
 	_set_objective(s.objective_key(), false)
 	_saved.modulate.a = 0.0
 	Game.player_died.connect(_on_player_died)
-	# 截圖用：`--nohud` 整個 HUD 不顯示（Steam 膠囊圖替代版的背景、宣傳截圖，D-064）
+	# 截圖用：`--nohud` 整個 HUD 不顯示（Steam 膠囊圖替代版的背景、宣傳截圖）
 	if App.parse_user_args(OS.get_cmdline_user_args()).has("nohud"):
 		visible = false
 
@@ -157,7 +157,7 @@ func _build() -> void:
 	_center.alignment = BoxContainer.ALIGNMENT_CENTER
 	_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor.add_child(_center)
-	# 兩行字後面一塊邊緣柔和的暗底：背景很亮、很花的時候（藥店那一排發光的瓶子）字才讀得出來（D-234）
+	# 兩行字後面一塊邊緣柔和的暗底：背景很亮、很花的時候（藥店那一排發光的瓶子）字才讀得出來
 	_center_back = StyleBoxFlat.new()
 	_center_back.bg_color = Color(0.02, 0.03, 0.04, 0.5)
 	_center_back.set_corner_radius_all(20)
@@ -198,7 +198,7 @@ func _process(delta: float) -> void:
 	guide.emphasized = is_objective_shown()
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	var pc: PlayerController = player as PlayerController
-	# 身上的毒可以放出去的時候（戰鬥場，D-245），那一列後面寫按哪個鍵、會扣多少
+	# 身上的毒可以放出去的時候（戰鬥場），那一列後面寫按哪個鍵、會扣多少
 	var power: float = pc.release_power() if pc != null else 0.0
 	var hint: String = ""
 	if power > 0.0:
@@ -357,13 +357,11 @@ func _on_potion_needs_confirm(_item_id: String) -> void:
 	potion_confirm.open()
 
 
-## 確認框選完：喝＝帶 confirmed 再喝一次；先收著＝記下來（試用毒劑那一段可以這樣完成，09 第 5 節）
+## 確認框選完：喝＝帶 confirmed 再喝一次；先收著＝什麼都不做
 func _on_potion_decided(drink: bool) -> void:
 	if drink:
 		if _potion_player != null and is_instance_valid(_potion_player):
 			_potion_player.use_potion(true)
-	elif Game.session != null and Game.session.in_story():
-		Game.session.set_flag("rb.potion_kept", true)
 
 
 func _set_objective(key: String, animate: bool) -> void:
@@ -409,7 +407,7 @@ func is_death_shown() -> bool:
 	return _died.visible
 
 
-## 「你倒下了」收掉（戰鬥場原地重來，D-238）
+## 「你倒下了」收掉（戰鬥場原地重來）
 func hide_death() -> void:
 	_died.hide()
 

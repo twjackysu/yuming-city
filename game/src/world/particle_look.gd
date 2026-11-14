@@ -1,6 +1,6 @@
 class_name ParticleLook
 extends RefCounted
-## 粒子共用的外觀（D-056）：所有 CPUParticles3D 的面片都要有圓形貼圖。
+## 粒子共用的外觀：所有 CPUParticles3D 的面片都要有圓形貼圖。
 ## 沒有貼圖的 QuadMesh 粒子是硬邊方塊，一眼就看得出是方形面片（第 13 輪在倒地粉塵發現）。
 ## - soft_dot()：中心白、往外慢慢透明——雪粉、灰粉、石粉、化灰的灰燼。
 ## - hot_dot()：中心一小塊全亮、邊緣很快淡掉——火星；搭配加法混色，疊在一起會更亮（有 glow 時會發光）。

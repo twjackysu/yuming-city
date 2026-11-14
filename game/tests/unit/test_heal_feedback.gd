@@ -1,5 +1,5 @@
 extends TestCase
-## 回血的畫面回饋（D-213）：生命條的綠色段／紅色段（BarTrail，純邏輯）＋身邊的綠色光點（HealMotes）。
+## 回血的畫面回饋：生命條的綠色段／紅色段（BarTrail，純邏輯）＋身邊的綠色光點（HealMotes）。
 
 
 func _steps(t: BarTrail, ratio: float, seconds: float) -> void:

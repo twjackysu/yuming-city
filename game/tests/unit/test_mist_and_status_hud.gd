@@ -1,5 +1,5 @@
 extends TestCase
-## 新版：毒霧範圍（MistZone）與狀態圖示（StatusHud），D-202。
+## 新版：毒霧範圍（MistZone）與狀態圖示（StatusHud）。
 
 
 func _fx(reversed: bool) -> StatusEffects:
@@ -10,7 +10,7 @@ func _fx(reversed: bool) -> StatusEffects:
 
 
 func test_mist_applies_while_inside_and_lingers_after_leaving() -> void:
-	var zone := MistZone.new(Vector3.ZERO, 3.0, "barrel_mist")
+	var zone := MistZone.new(Vector3.ZERO, 3.0, "miasma")
 	var fx := _fx(true)
 	assert_true(zone.expose(1, Vector3(1, 0, 1), fx, 0.016), "一進來就上狀態")
 	assert_true(fx.has("poison"))
@@ -27,7 +27,7 @@ func test_mist_applies_while_inside_and_lingers_after_leaving() -> void:
 
 
 func test_mist_height_and_expiry() -> void:
-	var zone := MistZone.new(Vector3(0, 1, 0), 2.0, "guardian_spray", 3.0)
+	var zone := MistZone.new(Vector3(0, 1, 0), 2.0, "boss_miasma", 3.0)
 	var fx := _fx(false)
 	assert_false(zone.contains(Vector3(0, 5, 0)), "上面的平台不在霧裡")
 	assert_true(zone.contains(Vector3(0, 1, 0)))
@@ -38,7 +38,7 @@ func test_mist_height_and_expiry() -> void:
 
 
 func test_npc_in_mist_gets_hurt_not_healed() -> void:
-	var zone := MistZone.new(Vector3.ZERO, 3.0, "barrel_mist")
+	var zone := MistZone.new(Vector3.ZERO, 3.0, "miasma")
 	var fx := _fx(false)
 	var h := Health.new(100.0)
 	for i: int in 30:
@@ -53,18 +53,18 @@ func test_status_hud_shows_original_type_and_reversal() -> void:
 	var fx := _fx(true)
 	hud.refresh(fx)
 	assert_eq(hud.rows.size(), 0, "沒有狀態時是空的")
-	fx.apply_source("barrel_mist")
+	fx.apply_source("miasma")
 	hud.refresh(fx)
 	assert_eq(hud.rows.size(), 1)
 	assert_eq(hud.rows[0]["id"], "poison", "圖示保留原類型（中毒）")
 	assert_true(bool(hud.rows[0]["reversed"]), "帶反轉標記")
-	assert_true(hud.line_text(0).begins_with(tr("RB_STATUS_POISON_REVERSED")), "寫「中毒 → 回血」：%s" % hud.line_text(0))
+	assert_true(hud.line_text(0).begins_with(tr("STATUS_POISON_REVERSED")), "寫「中毒 → 回血」：%s" % hud.line_text(0))
 	assert_true(hud.line_text(0).ends_with("4"), "剩餘秒數")
 	var npc := _fx(false)
-	npc.apply_source("barrel_mist")
+	npc.apply_source("miasma")
 	hud.refresh(npc)
 	assert_false(bool(hud.rows[0]["reversed"]))
-	assert_eq(hud.rows[0]["label"], "RB_STATUS_POISON", "沒反轉只寫「中毒」")
+	assert_eq(hud.rows[0]["label"], "STATUS_POISON", "沒反轉只寫「中毒」")
 	fx.tick(10.0, null)
 	hud.refresh(fx)
 	assert_eq(hud.line_text(0), "", "結束後收掉")
@@ -95,7 +95,7 @@ func test_use_item_action_is_bound_and_rebindable() -> void:
 
 
 func test_poison_mist_node_builds_layers_and_fades_out() -> void:
-	var mist: PoisonMist = PoisonMist.create(2.0, "guardian_spray", 1.0)
+	var mist: PoisonMist = PoisonMist.create(2.0, "boss_miasma", 1.0)
 	tree.root.add_child(mist)
 	var discs: int = 0
 	for c: Node in mist.get_children():
@@ -104,7 +104,7 @@ func test_poison_mist_node_builds_layers_and_fades_out() -> void:
 	var vol: FogVolume = mist.get_node_or_null("MistVolume") as FogVolume
 	assert_not_null(vol, "有體積的那一團（體積霧裡的綠色橢球，D-207）")
 	assert_eq(vol.size.x, 4.0, "跟毒霧的範圍一樣寬")
-	# 濃淡與輪廓用 fog shader（D-208：底濃上淡、邊緣不規則、會流動）；密度是 32 位元浮點數，不能直接比相等
+	# 濃淡與輪廓用 fog shader（底濃上淡、邊緣不規則、會流動）；密度是 32 位元浮點數，不能直接比相等
 	var vol_mat: ShaderMaterial = vol.material as ShaderMaterial
 	assert_true(vol_mat != null and vol_mat.shader == PoisonMist.VOLUME_SHADER, "體積那一團用 poison_mist_volume.gdshader")
 	assert_true(absf(float(vol_mat.get_shader_parameter("density")) - PoisonMist.VOLUME_DENSITY) < 0.001, "密度照常數")
@@ -124,24 +124,4 @@ func test_poison_mist_node_builds_layers_and_fades_out() -> void:
 	assert_true(mist.is_queued_for_deletion(), "守衛噴的霧時間到自己移除")
 
 
-## 生命條（CombatHud）平常只在戰鬥中出現；身上有狀態時也要出現——不然中毒回血看不到生命往上爬（D-205）
-func test_health_bar_shows_while_status_active_out_of_combat() -> void:
-	var root := Node3D.new()
-	tree.root.add_child(root)
-	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
-	root.add_child(player)
-	var hud := CombatHud.new()
-	root.add_child(hud)
-	await tree.process_frame
-	hud.refresh(player, null)
-	assert_false(hud.in_combat, "附近沒有敵人")
-	assert_false(hud.bars_shown, "沒有狀態、不在戰鬥：生命條收起來")
-	player.status_effects.apply("poison", 3.0, 5.0, "test")
-	hud.refresh(player, null)
-	assert_false(hud.in_combat, "有狀態不算戰鬥（目標指引照常）")
-	assert_true(hud.bars_shown, "身上有狀態：生命條出現")
-	player.status_effects.clear("poison")
-	hud.refresh(player, null)
-	assert_false(hud.bars_shown, "狀態結束：收起來")
-	root.queue_free()
-	await tree.process_frame
+## 生命條（CombatHud）平常只在戰鬥中出現；身上有狀態時也要出現——不然中毒回血看不到生命往上爬

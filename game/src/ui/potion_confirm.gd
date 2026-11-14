@@ -1,6 +1,6 @@
 class_name PotionConfirm
 extends Control
-## 滿血時按「使用道具」的小確認框（D-209，09 第 5 節）：「現在滿血，看不出效果。還是要喝嗎？」＋「喝」／「先收著」。
+## 滿血時按「使用道具」的小確認框（09 第 5 節）：「現在滿血，看不出效果。還是要喝嗎？」＋「喝」／「先收著」。
 ## 不強迫自殘、也不浪費：預設停在「先收著」，Esc／B／暫停鍵＝先收著。
 ## 開著的時候遊戲暫停（get_tree().paused）：敵人不會趁機打人、身上狀態的秒數也不走。選完發 decided(drink)。
 
@@ -47,7 +47,7 @@ func _ready() -> void:
 	_panel.add_child(col)
 	var ask := Label.new()
 	ask.name = "Ask"
-	ask.text = "RB_POTION_FULL_ASK"
+	ask.text = "POTION_FULL_ASK"
 	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ask.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ask.custom_minimum_size = Vector2(520, 0)
@@ -58,9 +58,9 @@ func _ready() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 36)
 	col.add_child(row)
-	_drink = _button("Drink", "RB_POTION_DRINK", true)
+	_drink = _button("Drink", "POTION_DRINK", true)
 	row.add_child(_drink)
-	_keep = _button("Keep", "RB_POTION_KEEP", false)
+	_keep = _button("Keep", "POTION_KEEP", false)
 	row.add_child(_keep)
 	visible = false
 

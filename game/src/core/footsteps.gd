@@ -1,8 +1,8 @@
 class_name Footsteps
 extends RefCounted
-## 腳步聲（D-182；席菈 D-184）：每走 stride 公尺（跑步 sprint_stride）踏一步，聲音照關卡的地面
+## 腳步聲（席菈）：每走 stride 公尺（跑步 sprint_stride）踏一步，聲音照關卡的地面
 ## （關卡的 `footstep_surface(位置)`：雪、石、木；沒有就當石頭）。騰空時不算步。諾恩、席菈、敵人共用這一份
-## （D-187：灰巡者音高壓低；送葬者固定用很重的拖步 `step_heavy`，不分地面）。
+## （灰巡者音高壓低；送葬者固定用很重的拖步 `step_heavy`，不分地面）。
 
 const SURFACES: PackedStringArray = ["snow", "stone", "wood"]
 
@@ -33,7 +33,7 @@ func _init(p_stride: float, p_sprint_stride: float, p_step_db: float, p_sprint_d
 
 ## 這一幀走了 moved 公尺。回傳這一幀有沒有踏一步（有就已經播了聲音）。
 ## sound_parent：聲音掛在哪個節點底下（預設 owner 的父節點＝關卡：人停掉 process_mode、倒下被釋放時，
-## 正在播的那一步照樣播完，不會卡在半路；D-187）。
+## 正在播的那一步照樣播完，不會卡在半路）。
 func tick(owner: Node3D, moved: float, sprinting: bool, grounded: bool, sound_parent: Node = null) -> bool:
 	if not grounded or moved <= 0.0:
 		return false

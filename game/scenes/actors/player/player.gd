@@ -33,8 +33,8 @@ const LOCK_FLICK_MOUSE: float = 0.12
 const CAMERA_DIST: float = 3.2
 const CAMERA_DIST_COMBAT: float = 4.2
 const COMBAT_RANGE: float = 20.0
-## 過肩偏移（D-072）：鏡頭在諾恩右後方，諾恩落在畫面左側、街景留在中間。
-## 戰鬥中／鎖定時再往右放大一點（D-266）：鏡頭的視線跟諾恩面對的方向平行，站在他正前方的敵人在畫面上
+## 過肩偏移：鏡頭在諾恩右後方，諾恩落在畫面左側、街景留在中間。
+## 戰鬥中／鎖定時再往右放大一點：鏡頭的視線跟諾恩面對的方向平行，站在他正前方的敵人在畫面上
 ## 只比他偏右「偏移 ×（1 − 鏡頭到他的距離 ÷ 鏡頭到敵人的距離）」——0.55 m 時敵人的身體中線整個在諾恩背後
 ## （被打中後仰、變紅都看不到）；1.05 m 時貼身 1.2 m 的敵人中線也露在他右肩外面。
 ## 右邊有牆時沿著肩膀那條射線收回，不會穿牆。
@@ -42,7 +42,7 @@ const SHOULDER_OFFSET: float = 0.85
 const SHOULDER_OFFSET_COMBAT: float = 1.05
 ## 肩膀那條射線離牆至少留這麼多（鏡頭近平面＋SpringArm 的 margin）
 const SHOULDER_MARGIN: float = 0.35
-## 只擋鏡頭的碰撞層（D-265）：牆面上沒有碰撞的裝飾（櫥窗裡的瓶子、窗台、門邊的燈）前面放一片只在這一層的牆，
+## 只擋鏡頭的碰撞層：牆面上沒有碰撞的裝飾（櫥窗裡的瓶子、窗台、門邊的燈）前面放一片只在這一層的牆，
 ## 鏡頭的 SpringArm 與肩膀的射線會被它擋住，人、敵人、鎖定的視線都不會（他們只看第 1 層）。
 const CAMERA_WALL_LAYER: int = 2
 ## 放回去的速度（m/s）；收回是立即的（被牆擋住時不能慢慢穿過去）
@@ -51,11 +51,9 @@ const SHOULDER_EASE: float = 1.6
 var yaw: float = 0.0
 var pitch: float = -0.18
 var invulnerable: bool = false
-## 按住看穿（insight）中；敵人自己讀這個值決定要不要顯示已知資訊（02-gameplay「看穿」：不放慢時間）
-var insight_active: bool = false
 ## 上一次揮擊打中弱點的數量（測試與音效用）
 var last_weak_hits: int = 0
-## 出手打中人時給自己的狀態來源（data/reboot/statuses.json 的 sources；空的＝沒有）。戴上護腕時劇情設成 "bracer_hit"（D-235）
+## 出手打中人時給自己的狀態來源（data/reboot/statuses.json 的 sources；空的＝沒有）。戴上護腕時劇情設成 "bracer_hit"
 var on_hit_source: String = ""
 ## 這樣給過幾次（測試用）
 var on_hit_applied: int = 0
@@ -77,59 +75,24 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 @onready var _arm: SpringArm3D = $CameraRig/Pitch/SpringArm3D
 @onready var _camera: Camera3D = $CameraRig/Pitch/SpringArm3D/Camera3D
 @onready var _body: Node3D = $Body
-@onready var _lantern: Node3D = $Body/Lantern
-## 諾恩自己的幾何多一層（第 12 層）；提燈的影子不算這一層（D-118）。第 11 層是水窪倒影（frostbridge.gd 的 REFLECT_LAYER）。
-const SELF_LAYER: int = 1 << 11
-const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
-## 諾恩的武器是法杖（D-264；Jacky 11/14：「武器我希望不是燈籠...可以是法杖」）：現成的 CC0 模型（KayKit）。
-## 掛在右手原本鐘錘的節點（BellHammer）底下，平常的位置對到左手、出手時才回到右手往前戳（D-267、D-268，pose_staff）；
-## 沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
-const STAFF_MODEL: String = "kaykit/staff"
-## Tripo 產的法杖（建置時由 scripts/gen_props.sh 擺成跟 KayKit 那把一樣的大小與原點）；有就優先用
-const STAFF_MODEL_TRIPO: String = "tripo/weapon_staff"
-## 這包素材是大頭的比例（珠子比頭大）：縮到 0.6——全長 1.3 m、珠子直徑 27 cm
-const STAFF_SCALE: float = 0.6
-## 握在握把下面一點（模型往上挪），杖頭才會在頭旁邊、不擋身體
-const STAFF_GRIP_Y: float = 0.12
-## 平常直直立在身邊：不管手怎麼擺，杖都是直的（世界座標）、杖頭往前斜這麼多（弧度）
-const STAFF_CARRY_TILT: float = -0.12
-## 出手時轉成順著右前臂往前指（手的 −Y＝往指尖），打完轉回來。D-268：出手是往前戳——
-## 以前是 −PI/2（順著手的 −Z，拿鐘錘的握法）：手往前伸直時杖朝天，沒有一幀指著敵人
-const STAFF_STRIKE_X: float = PI
-## 出手時握的位置（右手的座標）：握的地方往杖尾滑 15 cm（−Y＝往指尖，杖頭多伸出去這麼多）、
-## 杖身在前臂下面 4.5 cm（手往前伸直時 +Z 朝下）——杖尾夾在手臂下面，不從手臂裡面穿過去
-const STAFF_GRIP_STRIKE: Vector3 = Vector3(0.0, -0.15, 0.045)
-## 出手的動作播到這個比例（0.72 × 0.55 秒＝0.4 秒）法杖就開始收回左手、轉回直立——手還伸著的時候收。
-## 等動作整個播完才收的話，右手已經放下來了，杖頭會跟著前臂垂到地上再甩回去（第 111 輪連拍看到的）
-const STAFF_RETURN_AT: float = 0.72
-## 一秒轉幾次「直立 ↔ 往前指」（8＝0.125 秒轉完）
-const STAFF_TURN_RATE: float = 8.0
-## 杖頭那顆珠子在模型裡的高度（縮放前）：原本提燈的光搬到這裡
-const STAFF_ORB_Y: float = 1.02
-## 握的位置（手的座標）：掌心往外一點。出手時在右手
-const STAFF_GRIP_RIGHT: Vector3 = Vector3(0.05, 0.0, -0.02)
-## 平常拿在左手（D-267）：鏡頭在諾恩右後方，敵人是從他的右邊露出來的——杖頭的珠子在右邊會剛好擋住被鎖定的那個人。
-## 這是左手掌心往身體左邊再挪多少（身體的座標，m）：杖身貼著拳頭外側、不穿過大腿與下襬
-const STAFF_LEFT_OUT: Vector3 = Vector3(-0.05, 0.0, -0.02)
-## 出手那一下法杖從左手換到右手：往身體前面繞這麼遠（m），不從身體裡面穿過去
-const STAFF_SWAP_ARC: float = 0.22
-## 拿在左手時杖頭往外（身體左邊）倒這麼多（弧度）：珠子離開頭 7 cm 左右，不貼著頭髮
-const STAFF_CARRY_LEAN: float = 0.10
+## 諾恩的武器【瘴氣生鏽鐵劍】（docs/story/chapter-1.md）：Tripo 的模型，建置時由 scripts/gen_props.sh 擺成
+## 跟 KayKit 雙手劍一樣的大小與原點；Tripo 的檔不在就退回 KayKit 那把（在 git 裡）。握在右手、劍尖朝下垂在身邊。
+const SWORD_MODELS: Array[String] = ["tripo/weapon_rusty_miasma_sword", "tripo/weapon_longsword", "kaykit/sword_2handed"]
+const SWORD_SCALE: float = 0.42
+const SWORD_GRIP: Vector3 = Vector3(0.0, 0.1, 0.0)
 
 var _puppet: Puppet
-var _staff: Node3D
-## 0＝直立在身邊、1＝往前指
-var _staff_strike: float = 0.0
+var _weapon: Node3D
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
-## 新版（劇情重寫，D-202）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
+## 新版（劇情重寫）：身上的持續狀態與反轉欄位。舊版流程沒有任何來源會上狀態，所以不影響舊版。
 var reversal: ReversalSlots = ReversalSlots.new()
 var status_effects: StatusEffects
-## 回血的畫面回饋（D-213）：回血期間身邊往上飄的綠色光點、喝藥那一下的一小團
+## 回血的畫面回饋：回血期間身邊往上飄的綠色光點、喝藥那一下的一小團
 var heal_fx: HealMotes
 ## 可攜藥劑滿血時要先問（PotionBelt 回傳 confirm_full）：UI 接這個訊號跳「還是要喝嗎？」
 signal potion_needs_confirm(item_id: String)
-## 釋放（D-245）：把身上反轉中的中毒一次用掉＝毒爆。info：{"seconds" 用掉幾秒, "damage" 每個人扣多少, "hits" 炸到幾個, "kills" 炸倒幾個}
+## 釋放：把身上反轉中的中毒一次用掉＝毒爆。info：{"seconds" 用掉幾秒, "damage" 每個人扣多少, "hits" 炸到幾個, "kills" 炸倒幾個}
 signal released(info: Dictionary)
 const RELEASE_STATUS: String = "poison"
 const RELEASE_SFX: String = "poison_burst"
@@ -141,16 +104,16 @@ var last_release_fx: PoisonBurst
 ## 讀檔／死亡重試：生命照檢查點存的，但至少這個比例（09 第 3 節）
 const RESTORE_MIN_HP_RATIO: float = 0.5
 ## 新版可攜藥劑（快捷鍵 use_item）
-const PORTABLE_ITEM: String = "mist_serpent_poison"
+const PORTABLE_ITEM: String = "sera_poison_vial"
 var _swing_resolved: bool = true
-## 出手往前滑一小步（D-240；noen.lunge_dist，0＝不滑）：還剩多遠沒滑、往哪邊、這一次有沒有對準某個敵人
+## 出手往前滑一小步（noen.lunge_dist，0＝不滑）：還剩多遠沒滑、往哪邊、這一次有沒有對準某個敵人
 var _lunge_left: float = 0.0
 var _lunge_dir: Vector3 = Vector3.ZERO
 var _lunge_target: Node3D
 ## 滑過幾公尺（測試用）
 var lunge_moved: float = 0.0
 var _death_tween: Tween
-## 挨打的硬直（D-242）：被直接打中（不是狀態扣血）的那一下，出到一半的招沒了、`noen.hurt_stun` 秒內不能出手也不能閃、
+## 挨打的硬直：被直接打中（不是狀態扣血）的那一下，出到一半的招沒了、`noen.hurt_stun` 秒內不能出手也不能閃、
 ## 被往打他的人的反方向推 `noen.hurt_push` 公尺、上半身往後仰一下。0＝沒有（劇情那 20 分鐘；戰鬥場在 profiles.arena 打開）。
 ## 沒有這個的話，挨打除了扣血沒有任何代價：站在原地一直按出手，被打中的同一瞬間還在打人。
 const HURT_LEAN_DEG: float = 13.0
@@ -160,7 +123,7 @@ var hurt_count: int = 0
 var _hurt_dir: Vector3 = Vector3.ZERO
 var _hurt_speed: float = 0.0
 var _hurt_tween: Tween
-## 提早按也算（D-244；`noen.input_buffer` 秒，0＝不記＝劇情那 20 分鐘）：收招、閃避、挨打硬直還沒結束的時候按出手或閃避，
+## 提早按也算（`noen.input_buffer` 秒，0＝不記＝劇情那 20 分鐘）：收招、閃避、挨打硬直還沒結束的時候按出手或閃避，
 ## 記住這麼久，能動的第一幀就出；後按的蓋掉先按的。沒有這個的話，這些時候按的鍵全部被吃掉
 ## （第 96 輪量到：收招時按的出手、閃到一半按的出手、硬直快結束時按的閃避，三種都沒有反應）。
 var _buffered: String = ""
@@ -175,27 +138,13 @@ func _ready() -> void:
 	add_to_group("heartbeat")
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
-	# 模型先只在戰鬥場用（D-253）：劇情關卡換成模型之後流程的測試走不下去（原因還沒查完），先維持程序人偶
 	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
-	ContactShadow.attach(self, 0.55, 0.5)  # D-108
-	_build_staff()
-	if _staff != null:
-		# 原本左手提燈的光搬到杖頭的珠子裡（光是場景的光源，不能拿掉）；那顆發光的小球不要了
-		_lantern.reparent(_staff, false)
-		_lantern.position = Vector3(0, STAFF_ORB_Y * STAFF_SCALE + STAFF_GRIP_Y, 0)
-		(_lantern as MeshInstance3D).mesh = null
-	else:
-		# 沒有法杖的模型：提燈照舊掛在左手
-		_lantern.reparent(_puppet.hand("L"), false)
-		_lantern.position = Vector3(0, -0.12, 0)
-	# 提燈照不出諾恩自己的影子（D-118）：牆、席菈、敵人照樣有提燈的影子
-	_mark_self_layer(_body)
-	var lantern_light: OmniLight3D = _lantern.get_node("LanternLight") as OmniLight3D
-	lantern_light.shadow_caster_mask = LANTERN_SHADOW_CASTERS
+	ContactShadow.attach(self, 0.55, 0.5)
+	_build_weapon()
 	_arm.add_excluded_object(get_rid())
 	_arm.collision_mask |= CAMERA_WALL_LAYER
-	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則（D-085）。
+	# 角色（席菈、敵人）不推鏡頭：SpringArm 只撞場景，跟 shoulder_room 同一個規則。
 	# 之後才生成的角色（送葬者、席菈登場）靠 node_added 補上；用方法連線，玩家釋放時自動斷開
 	get_tree().node_added.connect(_on_node_added_for_camera)
 	for n: Node in get_tree().root.find_children("*", "CharacterBody3D", true, false):
@@ -265,19 +214,18 @@ func _physics_process(delta: float) -> void:
 	if pad.length() > PAD_DEADZONE:
 		_add_look(-pad * PAD_LOOK_SPEED * delta)
 	_update_camera_distance(delta)
-	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進（D-202）
-	# 戰鬥場的兩個數字（D-245）：站在霧裡越站越多秒、留著毒的回血打幾折。劇情是 0 與 1＝照舊
+	# 狀態只在遊戲時間推進時計時：暫停時整個 physics 停、對話與過場中不推進
+	# 戰鬥場的兩個數字：站在霧裡越站越多秒、留著毒的回血打幾折。劇情是 0 與 1＝照舊
 	status_effects.refresh_gain = CombatTuning.num("noen.status_refresh_gain", 0.0)
 	status_effects.reversed_scale = CombatTuning.num("noen.reversed_heal_scale", 1.0)
 	if not Game.is_player_locked():
 		status_effects.tick(delta, health)
-	# 麻痺被反轉＝出手變快（只有出手，不是整個人變快）；沒反轉的麻痺＝這段時間不能出手（D-234）
+	# 麻痺被反轉＝出手變快（只有出手，不是整個人變快）；沒反轉的麻痺＝這段時間不能出手
 	_puppet.attack_speed = status_effects.attack_speed()
 	var input: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var talking: bool = Game.is_player_locked()
 	if talking:
 		input = Vector2.ZERO
-	insight_active = Input.is_action_pressed("insight") and not talking and not health.is_dead()
 	var dir: Vector3 = move_direction(input, yaw)
 	var sprinting: bool = Input.is_action_pressed("sprint") and input.length() > 0.1
 
@@ -288,7 +236,7 @@ func _physics_process(delta: float) -> void:
 	if talking:
 		pass
 	elif hurt_left > 0.0:
-		# 挨打的硬直：不能出手、不能閃（D-242）
+		# 挨打的硬直：不能出手、不能閃
 		pass
 	elif want == "dodge" and _dodge_left <= 0.0 and _dodge_cooldown <= 0.0:
 		_buffered = ""
@@ -310,7 +258,7 @@ func _physics_process(delta: float) -> void:
 	_update_swing()
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	# 挨打被推開的那一步跟出手的滑步一樣：疊在上面、不算「自己在走」（D-260）。
+	# 挨打被推開的那一步跟出手的滑步一樣：疊在上面、不算「自己在走」。
 	# 以前把它當成走路的速度：「往哪走就面向哪」連被推開也算，挨一下整個人就轉過去背對打他的人、臉朝鏡頭，
 	# 硬直結束後殘留的速度還會再轉幾幀（Jacky 11/13：「向前面向後面」）。
 	var push := Vector3.ZERO
@@ -345,7 +293,7 @@ func _physics_process(delta: float) -> void:
 		var to_t: Vector3 = lock_target.global_position - global_position
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(-to_t.x, -to_t.z), clampf(TURN_SPEED * delta, 0.0, 1.0))
 	elif swing_holds_facing():
-		# 出手到判定之前對著這一下瞄的人，不跟著走路的方向轉（D-244）
+		# 出手到判定之前對著這一下瞄的人，不跟著走路的方向轉
 		var to_s: Vector3 = _lunge_target.global_position - global_position
 		if Vector2(to_s.x, to_s.z).length() > 0.05:
 			_body.rotation.y = atan2(-to_s.x, -to_s.z)
@@ -358,7 +306,7 @@ func _physics_process(delta: float) -> void:
 	_follow_rig(delta)
 
 
-## 腳步聲（D-182）：每走 STRIDE 公尺（跑步 SPRINT_STRIDE）踏一步，聲音照關卡的地面
+## 腳步聲：每走 STRIDE 公尺（跑步 SPRINT_STRIDE）踏一步，聲音照關卡的地面
 ## （關卡的 `footstep_surface(位置)`：雪、石、木；沒有就當石頭）。閃避、騰空時不算步。邏輯在 Footsteps（席菈共用）。
 const STRIDE: float = 0.8
 const SPRINT_STRIDE: float = 1.1
@@ -391,7 +339,6 @@ func use_potion(confirmed: bool = false) -> String:
 			Sfx.play_at(self, "glass_clink", global_position + Vector3.UP * 1.3, -7.0)
 			if heal_fx != null:
 				heal_fx.burst()
-			Game.session.set_flag("rb.potion_tried", true)
 		"confirm_full":
 			potion_needs_confirm.emit(PORTABLE_ITEM)
 	return result
@@ -417,7 +364,7 @@ func _write_vitals(st: GameState) -> void:
 	st.reversal = reversal.to_dict()
 
 
-## 被直接打中（D-242）。狀態扣血（中毒）不走這裡。死的那一下不算（倒下的動作接手）。
+## 被直接打中。狀態扣血（中毒）不走這裡。死的那一下不算（倒下的動作接手）。
 func _on_hurt(_amount: float, info: Dictionary) -> void:
 	var stun: float = CombatTuning.num("noen.hurt_stun", 0.0)
 	if stun <= 0.0 or health.is_dead():
@@ -437,7 +384,7 @@ func _on_hurt(_amount: float, info: Dictionary) -> void:
 	_hurt_speed = CombatTuning.num("noen.hurt_push", 0.0) / stun
 	if _hurt_tween != null:
 		_hurt_tween.kill()
-	# 往被推的方向仰（身體不轉，D-260）：正面挨打往後仰、背後挨打往前撲、側面挨打往旁邊倒
+	# 往被推的方向仰（身體不轉）：正面挨打往後仰、背後挨打往前撲、側面挨打往旁邊倒
 	var lean: Vector2 = hurt_lean(_body.global_rotation.y, _hurt_dir)
 	_hurt_tween = create_tween()
 	_hurt_tween.tween_property(_body, "rotation_degrees:x", lean.x, stun * 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -469,7 +416,7 @@ func _on_died() -> void:
 	Game.on_player_died()
 
 
-## 原地站起來（戰鬥場倒下重來、每一波開始，D-238）：生命補滿、身上的狀態清掉、動作歸零。反轉欄位與身上戴的東西不動。
+## 原地站起來（戰鬥場倒下重來、每一波開始）：生命補滿、身上的狀態清掉、動作歸零。反轉欄位與身上戴的東西不動。
 ## 劇情的倒下重試不走這裡（那是重讀檢查點、不補滿血）。
 func revive() -> void:
 	if _death_tween != null:
@@ -680,8 +627,8 @@ func buffered_action() -> String:
 	return _buffered
 
 
-## 出手到判定之前，身體對著這一下瞄的那個人，不跟著走路的方向轉（D-244；`noen.attack_face_lock`，0＝照舊＝劇情）。
-## 沒有這個的話：出手的那一刻身體轉向敵人（D-240 的滑步），接著 0.19 秒內又被「往哪走就面向哪」轉回去——
+## 出手到判定之前，身體對著這一下瞄的那個人，不跟著走路的方向轉（`noen.attack_face_lock`，0＝照舊＝劇情）。
+## 沒有這個的話：出手的那一刻身體轉向敵人（的滑步），接著 0.19 秒內又被「往哪走就面向哪」轉回去——
 ## 按著左右或後退出手，判定的時候身體已經偏了 108～173 度，貼著的敵人也打不到（第 96 輪量到）。
 func swing_holds_facing() -> bool:
 	if _swing_resolved or _puppet.action != "attack" or _lunge_target == null or not is_instance_valid(_lunge_target):
@@ -689,7 +636,7 @@ func swing_holds_facing() -> bool:
 	return CombatTuning.num("noen.attack_face_lock", 0.0) > 0.0
 
 
-## 「釋放」這個鍵有沒有作用（`noen.release_enabled`：戰鬥場 1、劇情 0＝按了沒有反應，D-245）
+## 「釋放」這個鍵有沒有作用（`noen.release_enabled`：戰鬥場 1、劇情 0＝按了沒有反應）
 func release_enabled() -> bool:
 	return CombatTuning.num("noen.release_enabled", 0.0) > 0.0
 
@@ -740,7 +687,7 @@ func release() -> Dictionary:
 	if hits > 0:
 		Game.hit_stop(CombatTuning.num("feel.hit_stop_kill" if kills > 0 else "feel.hit_stop_weak", 0.08))
 	shake(CombatTuning.num("feel.shake_kill", 0.3))
-	# 諾恩自己的姿勢（D-246）：縮一下、兩手甩開。不是 action，不擋接下來的出手
+	# 諾恩自己的姿勢：縮一下、兩手甩開。不是 action，不擋接下來的出手
 	_puppet.play_release()
 	release_count += 1
 	last_release = {"seconds": secs, "damage": damage, "hits": hits, "kills": kills}
@@ -766,7 +713,7 @@ func _begin_lunge() -> void:
 	var foes: Array = get_tree().get_nodes_in_group("enemies")
 	var foe: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else lunge_pick(global_position, -_body.global_basis.z, seek, foes)
 	if foe == null:
-		# 身體前面沒有人（例如正在往後退）：改看鏡頭前面——玩家看著誰就打誰（D-244）
+		# 身體前面沒有人（例如正在往後退）：改看鏡頭前面——玩家看著誰就打誰
 		foe = lunge_pick(global_position, Basis(Vector3.UP, yaw) * Vector3.FORWARD, seek, foes)
 	if foe == null:
 		return
@@ -844,7 +791,6 @@ func strike() -> int:
 	var weak_stagger: float = CombatTuning.num("noen.weak_stagger_mult", 2.0)
 	var hits: int = 0
 	var killed: bool = false
-	var struck: Array[Node] = []
 	last_weak_hits = 0
 	for n: Node in get_tree().get_nodes_in_group("damageable"):
 		var target: Node3D = n as Node3D
@@ -861,12 +807,10 @@ func strike() -> int:
 		var k_dmg: float = weak_damage if weak != "" else 1.0
 		var k_stg: float = weak_stagger if weak != "" else 1.0
 		if h.apply_damage(damage * k_dmg, {"source": self, "stagger": stagger * k_stg, "kind": "blunt", "weak": weak}):
-			struck.append(target)
 			hits += 1
 			if weak != "":
 				last_weak_hits += 1
 			killed = killed or h.is_dead()
-	_cast_fireball(forward, damage, stagger, struck)
 	if hits > 0:
 		_apply_on_hit_source()
 		Sfx.play_at(self, "blunt_weak" if last_weak_hits > 0 else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
@@ -876,31 +820,7 @@ func strike() -> int:
 	return hits
 
 
-## 拿法杖的普通攻擊是射火球（Jacky 2026-11-14）：每次出手從杖頭往瞄的方向射一顆，飛到第一個敵人炸開。
-## 近身扇形那一下已經打到的人（struck）不會再被這一顆打到；身邊沒人的時候它就是遠距離攻擊。沒有法杖（程式拼的鐘錘）不射。
-var last_fireball: Fireball
-var fireballs_cast: int = 0
-
-
-func _cast_fireball(forward: Vector3, damage: float, stagger: float, struck: Array[Node]) -> void:
-	if _staff == null or not is_inside_tree():
-		return
-	var aim: Vector3 = forward
-	var at: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else _lunge_target
-	if at != null and is_instance_valid(at):
-		var to_t := Vector3(at.global_position.x - global_position.x, 0.0, at.global_position.z - global_position.z)
-		if to_t.length() > 0.3:
-			aim = to_t.normalized()
-	var ball: Fireball = Fireball.create(self, aim, damage, stagger, struck)
-	var parent: Node = get_parent() if get_parent() != null else get_tree().root
-	parent.add_child(ball)
-	var from: Vector3 = _lantern.global_position if _lantern != null and _lantern.is_inside_tree() else global_position + Vector3.UP * 1.2
-	ball.global_position = Vector3(global_position.x, 0.0, global_position.z) + aim * 0.7 + Vector3.UP * clampf(from.y, global_position.y + 0.9, global_position.y + 1.5)
-	last_fireball = ball
-	fireballs_cast += 1
-
-
-## 打中人的那一刻，身上戴的東西給的狀態（護腕 → 麻痺，D-235）。只有那個狀態已經裝在反轉欄位裡才給：
+## 打中人的那一刻，身上戴的東西給的狀態（護腕 → 麻痺）。只有那個狀態已經裝在反轉欄位裡才給：
 ## 沒反轉的麻痺會讓他不能出手，打中一下就把自己鎖住不是這個遊戲要的。同一個來源只有一份，每次命中只是重新計時。
 func _apply_on_hit_source() -> void:
 	if on_hit_source == "" or status_effects == null:
@@ -936,60 +856,33 @@ func shake_amount() -> float:
 	return _shake
 
 
-## 右手的鐘錘換成法杖的模型。BellHammer 這個節點留著（別的程式與測試用這個名字找右手的武器），裡面程式拼的握柄與錘頭拿掉。
-func _build_staff() -> void:
+## 右手拿劍：程序人偶右手上程式拼的那一把拿掉，換成模型。沒有任何模型檔＝維持人偶原本的。
+func _build_weapon() -> void:
 	var hand: Node3D = _puppet.hand("R")
-	var hammer: Node3D = hand.get_node_or_null("BellHammer") as Node3D if hand != null else null
-	if hammer == null:
+	if hand == null:
 		return
-	var model: Node3D = PropModels.instance_first([STAFF_MODEL_TRIPO, STAFF_MODEL])
+	var model: Node3D = PropModels.instance_first(SWORD_MODELS)
 	if model == null:
 		return
-	for c: Node in hammer.get_children():
-		hammer.remove_child(c)
-		c.queue_free()
+	var old: Node = hand.get_node_or_null("BellHammer")
+	if old != null:
+		hand.remove_child(old)
+		old.queue_free()
+	_weapon = Node3D.new()
+	_weapon.name = "Weapon"
 	model.name = "Model"
-	model.scale = Vector3.ONE * STAFF_SCALE
-	model.position = Vector3(0, STAFF_GRIP_Y, 0)
-	hammer.add_child(model)
-	hammer.position = STAFF_GRIP_RIGHT
-	_staff = hammer
-	_puppet.attack_style = "thrust"
-	pose_staff(0.0)
+	model.scale = Vector3.ONE * SWORD_SCALE
+	model.rotation_degrees = Vector3(0, 0, 180)
+	model.position = SWORD_GRIP
+	_weapon.add_child(model)
+	hand.add_child(_weapon)
 
 
-## 法杖的拿法跟著動作轉（_process 會呼叫；測試直接呼叫）。
-func pose_staff(delta: float) -> void:
-	if _staff == null or _puppet == null:
-		return
-	var striking: bool = _puppet.current_state() == "attack" and _puppet.action_time < float(Puppet.ACTION_TIME["attack"]) * STAFF_RETURN_AT
-	_staff_strike = move_toward(_staff_strike, 1.0 if striking else 0.0, STAFF_TURN_RATE * delta)
-	var hand: Node3D = _staff.get_parent() as Node3D
-	if hand == null or not hand.is_inside_tree():
-		return
-	# 直立：照身體的朝向算（世界座標），再換回手的座標——手怎麼擺、手臂怎麼晃，杖都是直的
-	var upright: Basis = _body.global_basis.orthonormalized() * Basis(Vector3.BACK, STAFF_CARRY_LEAN) * Basis(Vector3.RIGHT, STAFF_CARRY_TILT)
-	var carry: Basis = hand.global_basis.orthonormalized().inverse() * upright
-	_staff.basis = carry.orthonormalized().slerp(Basis(Vector3.RIGHT, STAFF_STRIKE_X), _staff_strike)
-	# 位置：平常對到左手（左手拿著、立在左肩旁邊），出手時繞過身體前面換到右手、打完換回去。
-	# 節點還是掛在右手底下（出手是右手揮；別的程式用 BellHammer 這個名字找它），所以世界座標算好再換回右手的座標。
-	var left_hand: Node3D = _puppet.hand("L")
-	if left_hand == null or not left_hand.is_inside_tree():
-		_staff.position = STAFF_GRIP_RIGHT
-		return
-	var body: Basis = _body.global_basis.orthonormalized()
-	var at_left: Vector3 = left_hand.global_position + body * STAFF_LEFT_OUT
-	var at_right: Vector3 = hand.global_transform * STAFF_GRIP_STRIKE
-	var arc: Vector3 = body * Vector3(0.0, 0.0, -STAFF_SWAP_ARC) * sin(PI * _staff_strike)
-	_staff.position = hand.global_transform.affine_inverse() * (at_left.lerp(at_right, _staff_strike) + arc)
-
-
-func staff() -> Node3D:
-	return _staff
+func weapon() -> Node3D:
+	return _weapon
 
 
 func _process(delta: float) -> void:
-	pose_staff(delta)
 	if _shake <= 0.0:
 		return
 	_shake = maxf(_shake - 2.5 * delta, 0.0)
@@ -1026,20 +919,9 @@ func _update_shoulder(delta: float) -> void:
 
 func _on_node_added_for_camera(n: Node) -> void:
 	_exclude_from_camera(n)
-	# 之後才加到身上的東西（夾板、換上的角色模型）也不投提燈的影子
-	if n is GeometryInstance3D and _body != null and _body.is_ancestor_of(n):
-		(n as GeometryInstance3D).layers = SELF_LAYER
 
 
-## 諾恩身上所有的幾何**只放**在 SELF_LAYER（鏡頭、燈光、月光的遮罩預設全部 20 層，照舊看得到、照得到、投月光的影子）。
-## 不能同時留在第 1 層：shadow_caster_mask 是「任何一層在遮罩裡就投影」，留著第 1 層等於提燈照樣被諾恩擋住
-## （第 44 輪查到：樓梯那條黑帶、內室右半邊很暗都是這個）。
-func _mark_self_layer(root: Node) -> void:
-	for g: Node in root.find_children("*", "GeometryInstance3D", true, false):
-		(g as GeometryInstance3D).layers = SELF_LAYER
-
-
-## 角色（CharacterBody3D／RigidBody3D）不讓鏡頭的 SpringArm 撞到：站在諾恩身後時鏡頭不會被拉到他後腦（D-085）。
+## 角色（CharacterBody3D／RigidBody3D）不讓鏡頭的 SpringArm 撞到：站在諾恩身後時鏡頭不會被拉到他後腦。
 func _exclude_from_camera(n: Node) -> void:
 	if n == self or _arm == null:
 		return

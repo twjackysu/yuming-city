@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 連拍：會動的東西（出手、命中、受擊、閃避）不能用停住姿勢的單張圖驗收（docs/design/11-combat-first.md 第 4 節，D-238）。
 # 用法：scripts/burst.sh <輸出.png> <從第幾幀> [額外 user 參數…]
-#   scripts/burst.sh build/burst/arena-w1.png 100 --arena --wave=1 --bot=mash --locale=zh_TW
+#   scripts/burst.sh build/burst/forest.png 100 --level=corrupt_forest --locale=zh_TW
 # → 第 N 幀起每 0.1 秒一張、共 8 張（--fixed-fps 60：遊戲裡的時間固定，跟這台機器畫得多慢無關），
 #   每張裁中間那一塊、排成 4×2 的一張圖（960 px 寬）。讀圖只讀這一張。
 # 環境變數：BURST_EVERY（幾幀一張，預設 6）、BURST_COUNT（預設 8）、BURST_CROP（裁哪一塊，比例 "x0,y0,x1,y1"，預設 "0.2,0.12,0.8,0.92"）、

@@ -1,36 +1,7 @@
 keys,en,zh_TW
-GAME_TITLE,Yuming City,餘命城
 MENU_NEW_GAME,New Game,新遊戲
 MENU_CONTINUE,Continue,繼續
-MENU_ARENA,Combat Arena,戰鬥場
-ARENA_WAVE_START,Wave {n} of {total},第 {n} 波／共 {total} 波
-ARENA_WAVE_DONE,"Wave {n} cleared: {sec} s, hit {hits} times",第 {n} 波打完：{sec} 秒，被打中 {hits} 下
-ARENA_ALL_DONE,"All waves cleared: {sec} s, hit {hits} times. Back to wave 1.",全部打完：共 {sec} 秒，被打中 {hits} 下。從第一波再來
-ARENA_RETRY,Down. Same wave again.,倒下了。這一波重來
-ARENA_REINFORCE,"{n} more coming. {left} left in this wave.",又來了 {n} 個。這一波還剩 {left} 個
-ARENA_TIP_BRACE,"Glowing red: can't be interrupted and barely feels your hits. Dodge, then hit back.",他發紅了：打不斷、也打不痛。閃開，等他打完再打
-ARENA_TIP_RELEASE,"You're poisoned, and for you that heals. Press {key} to burst it: the more seconds, the harder it hits.",你中毒了——對你是回血。按 {key} 把毒炸出去：身上的毒越多秒，炸得越痛
-ARENA_RELEASE_HINT,{key}: burst {dmg},{key}：炸出去 {dmg}
-BARK_NOEN_ENTER_1,Everyone else runs out. I walk in.,別人往外跑，我往裡面站。
-BARK_NOEN_ENTER_2,Smells like medicine gone bad. My kind of medicine.,聞起來像壞掉的藥。剛好，我就吃這個。
-BARK_NOEN_ENTER_3,Good aim. Thanks.,丟得真準。謝了。
-BARK_NOEN_ENTER_4,Better than breakfast. I skipped breakfast.,這口比早餐好。我今天沒吃早餐。
-BARK_NOEN_RELEASE_1,Here. Have it back.,還你。
-BARK_NOEN_RELEASE_2,More than I can use. Share it.,吸不完，分你們一點。
-BARK_NOEN_RELEASE_3,You picked where to stand.,站這麼近，是你們自己選的。
-BARK_NOEN_RELEASE_4,"That bottle, with interest.",剛才那瓶，連本帶利。
-BARK_NOEN_MISS_1,...Nobody in reach. Wasted.,……旁邊沒人。白放了。
-BARK_NOEN_MISS_2,Right. Nobody saw that.,好，剛剛那下當作沒人看到。
-BARK_THROWER_GAWK_1,Why... isn't he coming out?,他……怎麼不出來？
-BARK_THROWER_GAWK_2,That's poison! Why are you standing in it?!,那是毒！你站在裡面幹嘛！
-BARK_THROWER_GAWK_3,Hold on. Does he look... better?,等一下，他臉色怎麼變好了？
-BARK_THROWER_GAWK_4,Did I grab the wrong bottle...?,我是不是拿錯瓶了……
-BARK_SHEILA_WATCH_1,Why did you walk back in?!,你為什麼又走回去了！
-BARK_SHEILA_WATCH_2,...I'm done asking.,……我不問了。
-BARK_CHOKE_1,Kh-- what IS this?!,咳——這什麼鬼！
-BARK_CHOKE_2,Kkh... my eyes!,咳、咳……我的眼睛！
-BARK_CHOKE_3,Who threw that?! Watch where you aim!,誰丟的！看準一點啦！
-BARK_CHOKE_4,How is he... just standing in there?,他、他怎麼站得住？
+HUD_RELEASE_HINT,{key}: burst {dmg},{key}：炸出去 {dmg}
 MENU_SETTINGS,Settings,設定
 MENU_QUIT,Quit,離開
 MENU_LANGUAGE,Language,語言
@@ -84,10 +55,6 @@ ACT_DODGE,Dodge,閃避
 ACT_ATTACK,Attack,攻擊
 ACT_RELEASE,Release (burst your poison),釋放（把身上的毒炸出去）
 ACT_LOCK_ON,Lock On,鎖定
-ACT_INSIGHT,Insight,看穿
-ACT_COMMAND_WEAKPOINT,Command: Strike Weak Point,指令：打弱點
-ACT_COMMAND_EVADE,Command: Evade,指令：閃開
-ACT_COMMAND_GUARD,Command: Hold,指令：守住
 ACT_INTERACT,Interact,互動
 ACT_JOURNAL,Show objective,看目前的目標
 ACT_USE_ITEM,Use item,使用道具
@@ -124,42 +91,31 @@ GLYPH_PAD_LEFT,D-pad ←,十字鍵 ←
 GLYPH_PAD_RIGHT,D-pad →,十字鍵 →
 GLYPH_PAD_LSTICK,Left Stick,左搖桿
 GLYPH_PAD_RSTICK,Right Stick,右搖桿
-INSIGHT_UNKNOWN,Unknown — nothing in the walkthrough,未知——攻略沒寫
-INSIGHT_WEAK,Weak point: {0},弱點：{0}
-INSIGHT_MOVE,Move: {0},招式：{0}
-INSIGHT_VERIFIED," (confirmed)",（已證實）
-INSIGHT_UNVERIFIED," (unconfirmed?)",（未證實？）
-ENEMY_ASHWALKER,Ashwalker,灰巡者
-WEAK_LEFT_KNEE,Left knee,左膝
-MOVE_CLAW,Claw swipe,爪擊
-INSIGHT_CURRENT,▶ {0},▶ {0}
-INSIGHT_SEC_WEAK,Weak point,弱點
-INSIGHT_SEC_MOVES,Moves,招式
-SHEILA_ACK_WEAKPOINT,The knee — mine.,膝蓋——交給我。
-SHEILA_ACK_EVADE,Seen it.,看到了。
-SHEILA_ACK_GUARD,I'll hold here.,我守著。
-SHEILA_ACK_UNGUARD,Moving.,我過去。
-SHEILA_MISTIMED_WEAKPOINT,Too soon—!,太早了——！
-SHEILA_MISTIMED_EVADE,It hasn't moved yet!,牠還沒出手！
-SHEILA_REFUSE_NO_TARGET,Hit what?,打誰？
-SHEILA_REFUSE_STAMINA,Let me breathe — one second.,喘口氣……等我一下。
-SHEILA_REFUSE_DOWN,(Sheila is down),（席菈倒下了）
-SHEILA_REFUSE_UNKNOWN,What?,什麼？
-SHEILA_REFUSE_WOUNDED,"If I dodge, it lands on the wounded. I'm staying.",我一閃開，砸到的就是車上的傷者。我不走。
-SHEILA_BUSY,I heard you!,聽到了！
 SET_DIFFICULTY,Difficulty,難度
 DIFF_STORY,Story,故事
 DIFF_STANDARD,Standard,標準
 DIFF_HARD,Hard,困難
-ENEMY_UNDERTAKER,Undertaker,送葬者
-WEAK_FRAME_JOINT,Frame joint,鐵架關節
-MOVE_SWEEP,Frame sweep,鐵架橫掃
-MOVE_SLAM,Frame slam,鐵架下砸
-MOVE_CHARGE,Charge (follows heartbeats),衝撞（追著心跳）
-SHEILA_REVIVE_HINT,{key} Pull Sheila up,{key} 拉起席菈
-SHEILA_REVIVED,Still breathing. Thanks.,還有氣。謝了。
-HUD_CMD_WEAKPOINT,Weak point,打弱點
-HUD_CMD_EVADE,Evade,閃開
-HUD_CMD_GUARD,Hold,守住
-HUD_SHEILA_DOWN,Sheila is down — {0}s to pull her up,席菈倒下——{0} 秒內拉起
-HUD_SHEILA_DOWN_WAIT,Sheila is down — she'll get up when it's over,席菈倒下——戰鬥結束後會起來
+SPK_NOEN,Noen,諾恩
+SPK_SHEILA,Sheila,席菈
+Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
+STATUS_POISON,Poisoned,中毒
+STATUS_POISON_REVERSED,Poisoned → Regenerating,中毒 → 回血
+POTION_FULL_ASK,"You're at full health, so you won't see any effect. Drink it anyway?",現在滿血，看不出效果。還是要喝嗎？
+POTION_DRINK,Drink,喝
+POTION_KEEP,Keep it for now,先收著
+STATUS_PARALYSIS,Paralyzed,麻痺
+STATUS_PARALYSIS_REVERSED,Paralyzed → Faster attacks,麻痺 → 出手加速
+GAME_TITLE,These Curses Are Far Too Useful to Me,這些詛咒對我太有用了
+GAME_SUBTITLE,"My ""infection-prone"" body turned out to be the cheat that flips everything",被嫌棄的易感染體質，其實是逆轉一切的外掛
+SPK_LILITH,Lilith,莉莉絲
+SPK_LEO,Leo,雷歐
+Q_CH1_MAIN_TITLE,Chapter 1: The Tumor and the Junk,第一章　毒瘤與破爛的共鳴
+Q_CH1_OBJ_MIASMA,Walk into the miasma,走進瘴氣裡
+Q_CH1_OBJ_SLIMES,Defeat the poison slimes in the glade,打倒空地上的劇毒史萊姆
+CH1_REVERSAL_LINE1,Poisoned → Regenerating,中毒 → 回血
+CH1_REVERSAL_LINE2,Every ailment on you flips into a boon.,落在你身上的異常狀態，全都會反轉成增益。
+CH1_SLIMES_CLEARED,The glade is clear.,空地清乾淨了。
+DLG_CH1_GATE_001,"W-wait, that is miasma! Normal people collapse in ten minutes!",等、等一下，那是瘴氣！普通人進去十分鐘就會倒下的！
+DLG_CH1_GATE_002,Funny. I feel better than I have all week.,奇怪。我覺得這是我這禮拜精神最好的一次。
+ITEM_SERA_POISON,Sera's Failed Potion (Poison),席菈的失敗作（劇毒）
+ITEM_SERA_POISON_DESC,Poisons whoever drinks it for 20 seconds.,喝下去會中毒 20 秒。

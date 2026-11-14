@@ -1,9 +1,9 @@
 class_name StatusRules
 extends RefCounted
-## 新版（劇情重寫）狀態規則的資料：狀態定義、來源（毒霧、守衛噴毒）、可攜藥劑（D-202）。
-## 資料在 res://data/reboot/statuses.json；數值說明見 docs/design/09-reboot-first-ten-minutes.md。
+## 新版（劇情重寫）狀態規則的資料：狀態定義、來源（毒霧、守衛噴毒）、可攜藥劑。
+## 資料在 res://data/status/statuses.json；數值說明見 docs/design/13-chapter-1-plan.md。
 
-const DEFAULT_PATH: String = "res://data/reboot/statuses.json"
+const DEFAULT_PATH: String = "res://data/status/statuses.json"
 
 static var _default: StatusRules = null
 
@@ -37,7 +37,7 @@ static func load_file(path: String) -> StatusRules:
 	return r
 
 
-## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺，D-234）
+## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺）
 func kind(status_id: String) -> String:
 	return str((statuses.get(status_id, {}) as Dictionary).get("kind", "dot"))
 

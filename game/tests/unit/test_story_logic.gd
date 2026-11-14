@@ -38,9 +38,9 @@ func test_compound_conditions() -> void:
 func test_json_float_compares_as_number() -> void:
 	# 存讀檔後整數會變成 float（JSON），比較結果不能改變。
 	var s := GameState.new()
-	s.set_flag("rb.barrels_hit", 9.0)
-	assert_true(StoryLogic.check({"flag": "rb.barrels_hit", "gte": 9}, s))
-	assert_true(StoryLogic.check({"flag": "rb.barrels_hit", "eq": 9}, s))
+	s.set_flag("ch1.barrels_hit", 9.0)
+	assert_true(StoryLogic.check({"flag": "ch1.barrels_hit", "gte": 9}, s))
+	assert_true(StoryLogic.check({"flag": "ch1.barrels_hit", "eq": 9}, s))
 
 
 func test_effects() -> void:

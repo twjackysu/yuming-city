@@ -1,23 +1,22 @@
 class_name EnemyBrain
 extends RefCounted
-## 敵人的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地；被諾恩打中會後仰（flinch，D-240）。
+## 敵人的純邏輯狀態機：追 → 前兆 → 出招 → 破綻 → 追；失衡滿了跪地；被諾恩打中會後仰（flinch）。
 ## 不碰場景，只吃「離目標多遠」與時間；出招那一刻回傳 true，由角色節點判定命中。
 ## 數值來自 CombatTuning（<prefix>.*、difficulty.*.telegraph）。
 ## 一般敵人只有一招（attack_range 內就出）；精英敵人在 <prefix>.moves 定義多招，依 <prefix>.pattern 輪流，
 ## 每招有自己的距離（min_range～range）、前兆、出招、破綻時間（送葬者：橫掃／下砸／衝撞）。
-## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻）。現在沒有招式用，留給之後的頭目（D-225）。
-## 讀不懂的招（unreadable[id] = true）：席菈的「閃開」對它一律算失敗，直到諾恩看過一次（看穿變已證實）。
+## 連段：某招有 "chain": "<下一招 id>" 時，出招結束直接進下一招的前兆（不經破綻）。現在沒有招式用，留給之後的頭目。
 
-## FLINCH＝被諾恩打中往後仰的那一下（D-240）。加在最後面：前面幾個的數值不變。
+## FLINCH＝被諾恩打中往後仰的那一下。加在最後面：前面幾個的數值不變。
 enum State { IDLE, CHASE, TELEGRAPH, STRIKE, RECOVER, STAGGERED, DEAD, FLINCH }
 
-## 跪下的那一刻（失衡滿了、撞牆）：角色節點播「膝蓋落地」的重音（D-191）。已經跪著再被逼跪不算。
+## 跪下的那一刻（失衡滿了、撞牆）：角色節點播「膝蓋落地」的重音。已經跪著再被逼跪不算。
 signal knelt
 
 ## 被打中、往後仰的那一刻（角色節點往後退一小步）。interrupted＝這一下把正在擺的前兆打斷了。
 signal flinched(interrupted: bool)
 
-## 進入硬撐的那一刻（後仰滿 brace_after 次的那一下）：角色節點整個人變紅、播警告音（D-241）。
+## 進入硬撐的那一刻（後仰滿 brace_after 次的那一下）：角色節點整個人變紅、播警告音。
 signal braced
 
 const STATE_NAMES: PackedStringArray = ["idle", "chase", "telegraph", "strike", "recover", "staggered", "dead", "flinch"]
@@ -41,26 +40,24 @@ var move_id: String = "claw"
 ## 多招敵人：id → {telegraph, active, recover, min_range, range, ...}；空的＝一般敵人單招
 var moves: Dictionary = {}
 var pattern: PackedStringArray = []
-## 照順序出招（D-243）。false（劇情裡的敵人）＝跟以前一樣：輪到的那一招打不到，就換下一個打得到的。
+## 照順序出招。false（劇情裡的敵人）＝跟以前一樣：輪到的那一招打不到，就換下一個打得到的。
 ## true（戰鬥場的頭目）＝輪到的那一招只是「目標還太遠」的時候不換招，等角色走近再出；
 ## 太近（小於 min_range）的招照舊跳過。沒有這個的話，射程最長的那一招（噴毒 3.4 m）會一直頂替別的招：
 ## 諾恩被打退到 3.9 m，牠走到 3.4 m 就停下來噴毒，噴完還是只有噴毒打得到——六次噴毒才輪到一次橫掃。
 var pattern_strict: bool = false
-## 讀不懂的招：id → true（看穿未證實、席菈抓不到時機）
-var unreadable: Dictionary = {}
-## 挨打後仰（D-240）。flinch_sec＝仰多久（0＝這種敵人不會後仰：劇情裡的敵人、頭目）。
+## 挨打後仰。flinch_sec＝仰多久（0＝這種敵人不會後仰：劇情裡的敵人、頭目）。
 ## 後仰過 brace_after 次之後「硬撐」：不再後仰、前兆打不斷（還是會扣血），下一招一定打得出來——
 ## 不然一直按出手就能把人鎖到死。出完一招（進破綻）或跪完起來就重新算。招式資料寫 "unstoppable": true＝這一招永遠打不斷。
 var flinch_sec: float = 0.0
 var brace_after: int = 2
-## 硬撐中挨打只扣幾成（1＝照扣，D-242）。沒有這個的話，諾恩一下 24 點、前兆 0.75 秒裡還能再打兩下——
+## 硬撐中挨打只扣幾成（1＝照扣）。沒有這個的話，諾恩一下 24 點、前兆 0.75 秒裡還能再打兩下——
 ## 他變紅之後那一招還沒打出來人就倒了，「變紅 → 閃」等於不存在，一直按就贏。
 var brace_armor: float = 1.0
 ## 後仰的時候被往後推多遠（公尺；角色節點在 flinch_sec 內走完）
 var flinch_push: float = 0.4
 ## 這一輪已經後仰了幾次（出完一招歸零）；畫面（硬撐的顏色）與測試用 is_braced()
 var interrupts: int = 0
-## 這一幀可不可以開始擺前兆（角色節點每幀設：同時只有幾個人可以對同一個目標出手，D-240）
+## 這一幀可不可以開始擺前兆（角色節點每幀設：同時只有幾個人可以對同一個目標出手）
 var may_attack: bool = true
 var _pattern_i: int = 0
 var _telegraph_mult: float = 1.0
@@ -192,20 +189,6 @@ func set_pattern(p: PackedStringArray) -> void:
 		move_id = pattern[0]
 
 
-## 看穿用的招式 id：連段的後續招（"intel": "<第一招 id>"）對回同一條資訊。
-func intel_move() -> String:
-	var cur: String = current_move()
-	if cur == "":
-		return ""
-	var m: Variant = moves.get(cur, {})
-	return str((m as Dictionary).get("intel", cur)) if m is Dictionary else cur
-
-
-## 目前這招讀得懂嗎（席菈「閃開」的前提）。
-func is_readable() -> bool:
-	return not bool(unreadable.get(move_id, false))
-
-
 ## 前兆進度 0..1（畫面上的霜紋亮度用）。
 func telegraph_progress() -> float:
 	return clampf(time_in_state / telegraph_sec, 0.0, 1.0) if state == State.TELEGRAPH else 0.0
@@ -242,7 +225,7 @@ func flinch() -> bool:
 	return true
 
 
-## 手上的事停下來、回到追人（丟毒瓶的愣住，D-246）：追人／後仰／前兆中才有作用；出招、破綻、跪地、倒下不動。
+## 手上的事停下來、回到追人（丟毒瓶的愣住）：追人／後仰／前兆中才有作用；出招、破綻、跪地、倒下不動。
 ## 回傳有沒有真的取消了一個前兆。
 func break_off() -> bool:
 	if state not in [State.CHASE, State.TELEGRAPH, State.FLINCH]:
@@ -292,7 +275,7 @@ func current_move() -> String:
 	return move_id if state in [State.TELEGRAPH, State.STRIKE] else ""
 
 
-## 破綻中（攻擊後或跪地）：席菈「打弱點」的時機。
+## 破綻中（攻擊後或跪地）。
 func is_open() -> bool:
 	return state == State.RECOVER or state == State.STAGGERED
 

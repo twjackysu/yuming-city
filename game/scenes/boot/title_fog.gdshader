@@ -1,6 +1,6 @@
 shader_type canvas_item;
 // 標題背景：冬夜的霜橋鎮剪影（兩層屋頂＋鐘樓）、鐘樓上的一盞暖燈（鐘室裡鐘的剪影）、在屋頂之間流動的霧堤、暗角。
-// 全部程序生成，不依賴貼圖。霧要「看得出在動」：用 smoothstep 把 fbm 壓成一塊一塊的霧堤（D-061）。
+// 全部程序生成，不依賴貼圖。霧要「看得出在動」：用 smoothstep 把 fbm 壓成一塊一塊的霧堤。
 
 uniform vec3 sky_top : source_color = vec3(0.02, 0.03, 0.06);
 uniform vec3 sky_bottom : source_color = vec3(0.09, 0.12, 0.18);
@@ -87,7 +87,7 @@ void fragment() {
 	float course = step(fract((uv.y - glow_pos.y) / 0.014), 0.09) * body * (1.0 - belfry) * step(glow_pos.y + 0.04, uv.y);
 	col = mix(col, near_color * 1.4, tower);
 	col += vec3(0.012, 0.014, 0.02) * course;
-	// 鐘室開口裡是燈前的鐘：深色的鐘形剪影（肩、細腰、外翻的鐘口）＋上面的橫梁，燈光從後面透出來（D-092）
+	// 鐘室開口裡是燈前的鐘：深色的鐘形剪影（肩、細腰、外翻的鐘口）＋上面的橫梁，燈光從後面透出來
 	float by0 = glow_pos.y - 0.017;
 	float by1 = glow_pos.y + 0.013;
 	float yn = clamp((uv.y - by0) / (by1 - by0), 0.0, 1.0);
@@ -116,7 +116,7 @@ void fragment() {
 	// 近的一排屋頂（最暗）＋幾扇亮著的窗
 	float near_h = roofline(ax, 0.13, 0.84, 0.08, 5.0);
 	float near_mask = smoothstep(near_h - 0.0015, near_h + 0.0015, uv.y);
-	// 亮窗（D-092）：十字窗櫺、每扇亮度與色溫不同、少數幾扇極慢地明暗（像燭火），周圍一圈很淡的暖光
+	// 亮窗：十字窗櫺、每扇亮度與色溫不同、少數幾扇極慢地明暗（像燭火），周圍一圈很淡的暖光
 	vec2 wcell = vec2(ax / 0.032, uv.y / 0.045);
 	vec2 wid = floor(wcell);
 	vec2 wf = fract(wcell);

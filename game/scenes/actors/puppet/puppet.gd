@@ -16,7 +16,7 @@ const WALK_MIN_SPEED: float = 0.3
 const RUN_MIN_SPEED: float = 4.6
 const RUN_SPEED: float = 5.8
 const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55}
-## 「釋放」的姿勢播多久（D-246）。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
+## 「釋放」的姿勢播多久。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
 const RELEASE_POSE_TIME: float = 0.36
 ## 模型的手骨頭在手腕：手上的掛點往指尖移這麼多（掌心）
 const MODEL_PALM_OFFSET: float = 0.07
@@ -51,9 +51,9 @@ var model_animation: String = ""
 var move_speed: float = 0.0
 var action: String = ""
 var action_time: float = 0.0
-## 出手動作播多快（1＝原速）。只影響 "attack"；麻痺被反轉時玩家把它調快（D-234）
+## 出手動作播多快（1＝原速）。只影響 "attack"；麻痺被反轉時玩家把它調快
 var attack_speed: float = 1.0
-## 程序人偶出手的打法："swing"＝舉過頭往下劈（預設；敵人、席菈）、"thrust"＝從腰邊往前戳（諾恩拿法杖，D-268）。
+## 程序人偶出手的打法："swing"＝舉過頭往下劈（預設；敵人、席菈）、"thrust"＝從腰邊往前戳（諾恩拿法杖）。
 ## 用模型時打法在模型的動作裡（tools/blender/common.py 的 standard_actions），這個值不管。
 var attack_style: String = "swing"
 ## 「釋放」的姿勢還剩幾秒（0＝沒有在播）
@@ -61,14 +61,14 @@ var release_left: float = 0.0
 var phase: float = 0.0
 var breath: float = 0.0
 
-## true＝模型吃場景的光、平塗（toon 漫射）——Jacky 2026-11-13 看了兩種的圖選的（D-255：「會受環境光影響比較好」）。
+## true＝模型吃場景的光、平塗（toon 漫射）——Jacky 2026-11-13 看了兩種的圖選的（「會受環境光影響比較好」）。
 ## false＝照原檔（VRoid 範例角色是「不受光」：暗的地方人還是亮的）；只剩開發旗標 `-- --char-unlit` 會關（Game 讀）。
 static var lit_models: bool = true
 
 ## 關節名 -> Node3D
 var joints: Dictionary = {}
 var _roll: Node3D
-## 骨架座標裡角色的背後是哪邊：正常 +Z；模型臉朝 +Z、被轉了半圈的話是 −Z（D-260）
+## 骨架座標裡角色的背後是哪邊：正常 +Z；模型臉朝 +Z、被轉了半圈的話是 −Z
 var _model_back: Vector3 = Vector3.BACK
 var _coat: MeshInstance3D
 
@@ -102,8 +102,8 @@ func play_action(action_name: String) -> void:
 	action_time = 0.0
 
 
-## 釋放的那一下（D-246）：先縮、再把兩手往兩邊甩開。滾到一半不擺（看不出來）。
-## 程序人偶＝疊在目前姿勢上；模型＝有 `release` 這段動作就播它（D-251；這 0.36 秒蓋過其他動作），沒有就沒有姿勢。
+## 釋放的那一下：先縮、再把兩手往兩邊甩開。滾到一半不擺（看不出來）。
+## 程序人偶＝疊在目前姿勢上；模型＝有 `release` 這段動作就播它（這 0.36 秒蓋過其他動作），沒有就沒有姿勢。
 func play_release() -> void:
 	release_left = RELEASE_POSE_TIME
 
@@ -126,7 +126,7 @@ func hand(side: String) -> Node3D:
 	return joints.get("hand_" + side) as Node3D
 
 
-## 人偶的關節；用模型時是對應骨頭上的掛點（第一次有人要的時候才做，D-253），模型沒有那根骨頭回傳 null。
+## 人偶的關節；用模型時是對應骨頭上的掛點（第一次有人要的時候才做），模型沒有那根骨頭回傳 null。
 func joint(joint_name: String) -> Node3D:
 	var j: Node3D = joints.get(joint_name) as Node3D
 	if j == null and model != null:
@@ -247,7 +247,7 @@ func _build_model() -> bool:
 	model.name = "Model"
 	_roll.add_child(model)
 	skeleton = skels[0] as Skeleton3D
-	# 模型自己臉朝 +Z（glTF 的慣例；Godot 與人偶的正面是 −Z）就轉半圈（D-260）：不然往前走看到的是臉、往後走看到的是背
+	# 模型自己臉朝 +Z（glTF 的慣例；Godot 與人偶的正面是 −Z）就轉半圈：不然往前走看到的是臉、往後走看到的是背
 	_model_back = Vector3.BACK
 	if CharacterModels.facing(skeleton, inst).z > 0.3:
 		model.rotation.y = PI
@@ -455,7 +455,7 @@ func _pose_attack(t: float) -> void:
 	_rot("thigh_R", Vector3(-0.25, 0, 0))
 
 
-## 往前戳（諾恩的法杖，D-268）：右手先收到腰邊（上臂往後、手肘彎）→ 往前伸直 → 停一下 → 收回。
+## 往前戳（諾恩的法杖）：右手先收到腰邊（上臂往後、手肘彎）→ 往前伸直 → 停一下 → 收回。
 ## 命中判定在 t＝0.35（noen.strike_window）：手在那之前伸直。右前臂從頭到尾朝前——法杖順著前臂指出去（player.gd 的 pose_staff）。
 ## 手伸著停到 t＝0.72：法杖從那時候開始收回左手（PlayerController.STAFF_RETURN_AT），手才放下來。
 func _pose_thrust(t: float) -> void:

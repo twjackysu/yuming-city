@@ -1,0 +1,65 @@
+{
+	"_doc": "異常狀態、來源與可攜藥劑。kind=dot：每秒扣血／反轉後回血；kind=action：不碰生命，影響出手（沒反轉＝不能出手；反轉＝出手加速，rate 是倍率）。新的狀態照這張表加（docs/design/13-chapter-1-plan.md「系統」）。",
+	"statuses": {
+		"poison": {
+			"max_duration": 30.0,
+			"max_reversed_rate": 8.0,
+			"name_key": "STATUS_POISON",
+			"reversed_key": "STATUS_POISON_REVERSED"
+		},
+		"paralysis": {
+			"kind": "action",
+			"max_duration": 20.0,
+			"max_reversed_rate": 1.5,
+			"name_key": "STATUS_PARALYSIS",
+			"reversed_key": "STATUS_PARALYSIS_REVERSED"
+		}
+	},
+	"sources": {
+		"miasma": {
+			"_doc": "腐敗之森的瘴氣：站在裡面每 0.25 秒刷新一次。",
+			"status": "poison",
+			"rate": 6.0,
+			"duration": 4.0
+		},
+		"boss_miasma": {
+			"_doc": "頭目的濃瘴氣。",
+			"status": "poison",
+			"rate": 8.0,
+			"duration": 3.0
+		},
+		"slime_touch": {
+			"_doc": "被劇毒史萊姆撞到。",
+			"status": "poison",
+			"rate": 5.0,
+			"duration": 3.0
+		},
+		"rusty_sword_cut": {
+			"_doc": "【瘴氣生鏽鐵劍】每一刀給自己的微弱中毒（還沒接上）。",
+			"status": "poison",
+			"rate": 1.0,
+			"duration": 6.0
+		},
+		"sera_paralysis_vial": {
+			"_doc": "席菈的失敗作（重度麻痺）：反轉＝神經超頻。",
+			"status": "paralysis",
+			"rate": 1.35,
+			"duration": 12.0
+		},
+		"paralysis_on_hit": {
+			"_doc": "打中人時給自己的麻痺（PlayerController.on_hit_source）：每命中一次重新計時，停手 6 秒就退。",
+			"status": "paralysis",
+			"rate": 1.35,
+			"duration": 6.0
+		}
+	},
+	"items": {
+		"sera_poison_vial": {
+			"status": "poison",
+			"rate": 3.0,
+			"duration": 20.0,
+			"name_key": "ITEM_SERA_POISON",
+			"desc_key": "ITEM_SERA_POISON_DESC"
+		}
+	}
+}

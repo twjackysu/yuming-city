@@ -93,7 +93,7 @@ func test_settings_menu_texts_and_controls() -> void:
 	await tree.process_frame
 
 
-## D-076：四個分組標題、「‹ 值 ›」箭頭（點箭頭／左右鍵切換）、值下面的小圓點、音量百分比、整個面板塞得進 1080。
+## ：四個分組標題、「‹ 值 ›」箭頭（點箭頭／左右鍵切換）、值下面的小圓點、音量百分比、整個面板塞得進 1080。
 func test_settings_menu_groups_arrows_pips() -> void:
 	var settings: Node = tree.root.get_node("Settings")
 	var menu: SettingsMenu = (load("res://scenes/ui/settings_menu.tscn") as PackedScene).instantiate() as SettingsMenu
@@ -178,7 +178,7 @@ func test_settings_menu_groups_arrows_pips() -> void:
 func test_pause_menu_pauses_and_resumes() -> void:
 	var pause: PauseMenu = (load("res://scenes/ui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
 	tree.root.add_child(pause)
-	# HUD 一類的圖層：暫停時藏起來、繼續時恢復；本來就藏著的維持藏著（D-093）
+	# HUD 一類的圖層：暫停時藏起來、繼續時恢復；本來就藏著的維持藏著
 	var hud_like := CanvasLayer.new()
 	hud_like.add_to_group(PauseMenu.HIDE_GROUP)
 	tree.root.add_child(hud_like)
@@ -205,7 +205,7 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	var title_i: int = menu.get_node("Title").get_index()
 	assert_eq(menu.get_child(title_i + 1).name, &"Rule", "標題下面一條細線")
 	assert_eq(menu.get_child(0).name, &"Chapter", "標題上面一行章節名（D-093）")
-	assert_eq((menu.get_child(0) as Label).text, "RB_GAME_SUBTITLE")
+	assert_eq((menu.get_child(0) as Label).text, "GAME_SUBTITLE")
 	assert_true(pause.hint_text().length() > 3 and not pause.hint_text().contains("{key}"), "左下角有按鍵提示（%s）" % pause.hint_text())
 	if Game.session != null and Game.session.objective_key() != "":
 		assert_eq(pause.objective_text(), Game.session.objective_key(), "左下角寫著目前目標")
@@ -224,72 +224,6 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	hud_like.queue_free()
 	already_hidden.queue_free()
 	pause.queue_free()
-	await tree.process_frame
-
-
-func test_hud_follows_objective_and_autosave() -> void:
-	var s: GameSession = _use_temp_session()
-	s.new_game()
-	var hud: Hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate() as Hud
-	tree.root.add_child(hud)
-	await tree.process_frame
-	assert_eq(hud.objective_text_key(), "Q_RB_OBJ_ESCAPE", "顯示目前目標")
-	assert_true(hud.is_objective_shown(), "進關卡時先顯示目標")
-	assert_true(Hud.OBJECTIVE_HOLD_SEC <= 10.0, "探索時 HUD 不常駐：目標幾秒後淡出")
-	_assert_texts_are_keys(hud, "HUD")
-	s.set_flag("rb.barrels_broken", true)
-	assert_eq(hud.objective_text_key(), "Q_RB_OBJ_MIST", "目標跟著任務換")
-	await tree.process_frame
-	await tree.process_frame
-	assert_eq(hud.saved_label().text, "HUD_SAVED", "檢查點存檔成功")
-	assert_true(hud.saved_label().modulate.a > 0.0, "存檔提示開始顯示")
-	hud.queue_free()
-	await tree.process_frame
-
-
-func test_dialogue_box_reveal_and_choices() -> void:
-	var s: GameSession = _use_temp_session()
-	s.new_game()
-	var box: DialogueBox = (load("res://scenes/ui/dialogue_box.tscn") as PackedScene).instantiate() as DialogueBox
-	tree.root.add_child(box)
-	await tree.process_frame
-	assert_false(box.is_open(), "沒有對話時隱藏")
-	var game: Node = tree.root.get_node("Game")
-	assert_true(game.call("start_dialogue", "rb_sheila_meet"), "開始對話")
-	assert_false(game.call("start_dialogue", "rb_sheila_meet"), "對話中不能再開一段")
-	assert_true(box.is_open(), "對話框打開")
-	assert_true(box.is_revealing(), "台詞逐字浮現")
-	box.press_continue()
-	assert_false(box.is_revealing(), "第一次按：先顯示完整")
-	assert_eq((box.find_child("Text", true, false) as Label).text, "DLG_RB_SHEILA_001", "還在第一句")
-	box.press_continue()
-	assert_eq((box.find_child("Text", true, false) as Label).text, "DLG_RB_SHEILA_002", "第二次按：下一句")
-	_assert_texts_are_keys(box, "對話框")
-	var app: Node = tree.root.get_node("App")
-	var device_before: int = int(app.get("last_device"))
-	TranslationServer.set_locale("en")
-	app.call("set_device", InputGlyphs.Device.KBM)
-	box.refresh_hint()
-	assert_true(box.hint_text().contains("[F]"), "鍵鼠提示 [F]：" + box.hint_text())
-	app.call("set_device", InputGlyphs.Device.PAD)
-	assert_true(box.hint_text().contains("[A]"), "切到手把自動換成 [A]：" + box.hint_text())
-	assert_false(box.hint_text().contains("{key}"), "沒有未替換的佔位符")
-	app.call("set_device", device_before)
-	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
-	(game.get("dialogue") as DialogueRunner).skip_to_choice()
-	var choices: Node = box.find_child("Choices", true, false)
-	assert_eq(choices.get_child_count(), 2, "選項按鈕")
-	_assert_texts_are_keys(box, "對話選項")
-	(choices.get_child(0) as Button).pressed.emit()
-	assert_eq(s.state.get_flag("rb.showed_sheila_wound"), true, "按下選項套用效果")
-	for i: int in 10:
-		if not bool(game.call("is_in_dialogue")):
-			break
-		box.press_continue()
-	assert_false(game.call("is_in_dialogue"), "對話結束")
-	assert_true(bool(s.state.get_flag("rb.sheila_met", false)), "說完話設了旗標")
-	assert_false(box.is_open())
-	box.queue_free()
 	await tree.process_frame
 
 

@@ -1,5 +1,5 @@
 extends TestCase
-## 新版（劇情重寫）的狀態邏輯（D-202）：生命的三種變化、中毒開始／刷新／結束、反轉欄位、可攜藥劑。
+## 新版（劇情重寫）的狀態邏輯：生命的三種變化、中毒開始／刷新／結束、反轉欄位、可攜藥劑。
 
 
 func _rules() -> StatusRules:
@@ -40,7 +40,7 @@ func test_heal_does_not_revive() -> void:
 func test_poison_without_reversal_hurts() -> void:
 	var fx := StatusEffects.new(_rules(), null)
 	var h := _hurt(50.0)
-	assert_eq(fx.apply("poison", 6.0, 4.0, "barrel_mist"), "start")
+	assert_eq(fx.apply("poison", 6.0, 4.0, "miasma"), "start")
 	fx.tick(1.0, h)
 	assert_true(absf(h.hp - 44.0) < 0.001, "沒有反轉（NPC）照常掉血")
 
@@ -53,7 +53,7 @@ func test_first_poison_awakens_reversal_and_heals_from_first_frame() -> void:
 	var h := _hurt(55.0)
 	var took_damage: Array[bool] = [false]
 	h.status_damaged.connect(func(_a: float, _i: Dictionary) -> void: took_damage[0] = true)
-	fx.apply_source("barrel_mist")
+	fx.apply_source("miasma")
 	assert_eq(awakened, ["poison"], "第一次中毒自動覺醒")
 	assert_true(rev.is_reversed("poison"))
 	assert_eq(rev.equipped[0], "poison", "裝進第一格")
@@ -61,7 +61,7 @@ func test_first_poison_awakens_reversal_and_heals_from_first_frame() -> void:
 	fx.tick(0.5, h)
 	assert_true(absf(h.hp - 58.0) < 0.001, "6／秒 × 0.5 秒＝回 3")
 	assert_false(took_damage[0], "反轉發生在扣血之前：不會先扣一次再補回")
-	fx.apply_source("barrel_mist")
+	fx.apply_source("miasma")
 	assert_eq(awakened.size(), 1, "覺醒只發生一次")
 
 
@@ -69,18 +69,18 @@ func test_poison_refresh_does_not_stack() -> void:
 	var fx := StatusEffects.new(_rules(), null)
 	var events: Array[String] = []
 	fx.changed.connect(func(_id: String, e: String) -> void: events.append(e))
-	fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
-	assert_eq(fx.apply("poison", 3.0, 20.0, "mist_serpent_poison"), "refresh")
+	fx.apply("poison", 3.0, 20.0, "sera_poison_vial")
+	assert_eq(fx.apply("poison", 3.0, 20.0, "sera_poison_vial"), "refresh")
 	assert_eq(fx.rate("poison"), 3.0, "同強度不疊加")
 	assert_eq(fx.remaining("poison"), 20.0, "時間取較長者，不相加")
-	fx.apply("poison", 8.0, 3.0, "guardian_spray")
+	fx.apply("poison", 8.0, 3.0, "boss_miasma")
 	assert_eq(fx.rate("poison"), 8.0, "比較強的來源換掉強度")
-	assert_eq(fx.source_of("poison"), "guardian_spray")
+	assert_eq(fx.source_of("poison"), "boss_miasma")
 	assert_eq(fx.remaining("poison"), 20.0, "時間不會被比較短的縮短")
 	fx.apply("poison", 1.0, 25.0, "x")
 	assert_eq(fx.rate("poison"), 8.0, "比較弱的不會降強度")
 	for i: int in 10:
-		fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
+		fx.apply("poison", 3.0, 20.0, "sera_poison_vial")
 	assert_true(fx.remaining("poison") <= 30.0, "最長 30 秒：喝一百瓶也不會永久")
 	fx.apply("poison", 3.0, 999.0, "x")
 	assert_eq(fx.remaining("poison"), 30.0)
@@ -94,7 +94,7 @@ func test_poison_ends_and_regen_stops() -> void:
 	var events: Array[String] = []
 	fx.changed.connect(func(_id: String, e: String) -> void: events.append(e))
 	var h := _hurt(50.0)
-	fx.apply_source("barrel_mist")  # 6／秒、4 秒
+	fx.apply_source("miasma")  # 6／秒、4 秒
 	for i: int in 50:
 		fx.tick(0.1, h)
 	assert_false(fx.has("poison"), "4 秒後結束")
@@ -114,14 +114,14 @@ func test_reversed_regen_is_capped() -> void:
 
 
 func test_regen_cannot_outheal_standing_in_combos() -> void:
-	# 守衛噴毒 8／秒；橫掃 28、約 2 秒一輪（tuning.json）＝站著吃會輸（D-202）
+	# 守衛噴毒 8／秒；橫掃 28、約 2 秒一輪（tuning.json）＝站著吃會輸
 	var rev := ReversalSlots.new()
 	rev.on_status_applied("poison")
 	var fx := StatusEffects.new(_rules(), rev)
 	var h := _hurt(100.0)
 	var sweep: float = CombatTuning.num("undertaker.moves.sweep.damage", 28.0)
 	for round_i: int in 3:
-		fx.apply_source("guardian_spray")
+		fx.apply_source("boss_miasma")
 		h.apply_damage(sweep)
 		fx.tick(2.0, h)
 	assert_true(h.hp < 100.0 - 20.0, "三輪站著吃還是一路往下掉：%s" % h.hp)
@@ -148,12 +148,12 @@ func test_unknown_status_and_bad_values_ignored() -> void:
 func test_status_save_round_trip_keeps_negative_effects() -> void:
 	var rev := ReversalSlots.new()
 	var fx := StatusEffects.new(_rules(), rev)
-	fx.apply("poison", 3.0, 20.0, "mist_serpent_poison")
+	fx.apply("poison", 3.0, 20.0, "sera_poison_vial")
 	fx.tick(5.0, null)
 	var again := StatusEffects.new(_rules(), ReversalSlots.from_dict(rev.to_dict()))
 	again.load_array(fx.to_array())
 	assert_eq(again.remaining("poison"), 15.0, "讀檔照原樣：不清掉、不補滿時間")
-	assert_eq(again.source_of("poison"), "mist_serpent_poison")
+	assert_eq(again.source_of("poison"), "sera_poison_vial")
 	assert_true(again.is_reversed("poison"))
 	again.load_array([{"id": "poison", "rate": 3.0, "remaining": 999.0}, {"id": "ghost", "rate": 1, "remaining": 5}, "junk"])
 	assert_eq(again.remaining("poison"), 30.0, "壞值夾到上限")
@@ -178,40 +178,40 @@ func test_potion_belt_grant_once_and_use() -> void:
 	var rev := ReversalSlots.new()
 	rev.on_status_applied("poison")
 	var fx := StatusEffects.new(_rules(), rev)
-	assert_true(belt.grant_once("rb.guardian_crate", "mist_serpent_poison", 2))
-	assert_false(belt.grant_once("rb.guardian_crate", "mist_serpent_poison", 2), "同一個藥箱只給一次")
-	assert_eq(belt.count("mist_serpent_poison"), 2)
+	assert_true(belt.grant_once("ch1.guardian_crate", "sera_poison_vial", 2))
+	assert_false(belt.grant_once("ch1.guardian_crate", "sera_poison_vial", 2), "同一個藥箱只給一次")
+	assert_eq(belt.count("sera_poison_vial"), 2)
 	var full := Health.new(100.0)
-	assert_eq(belt.use("mist_serpent_poison", fx, full), "confirm_full", "滿血先問，不直接喝")
-	assert_eq(belt.count("mist_serpent_poison"), 2, "問的時候沒扣")
+	assert_eq(belt.use("sera_poison_vial", fx, full), "confirm_full", "滿血先問，不直接喝")
+	assert_eq(belt.count("sera_poison_vial"), 2, "問的時候沒扣")
 	assert_false(fx.has("poison"))
 	var hurt := _hurt(60.0)
-	assert_eq(belt.use("mist_serpent_poison", fx, hurt), "used")
-	assert_eq(belt.count("mist_serpent_poison"), 1)
+	assert_eq(belt.use("sera_poison_vial", fx, hurt), "used")
+	assert_eq(belt.count("sera_poison_vial"), 1)
 	assert_eq(fx.remaining("poison"), 20.0, "霧蛇毒劑：中毒 20 秒")
 	fx.tick(1.0, hurt)
 	assert_true(absf(hurt.hp - 63.0) < 0.001, "喝下去確實回血（3／秒）")
-	assert_eq(belt.use("mist_serpent_poison", fx, full, true), "used", "滿血選「還是要喝」可以喝")
-	assert_eq(belt.use("mist_serpent_poison", fx, hurt), "none_left")
+	assert_eq(belt.use("sera_poison_vial", fx, full, true), "used", "滿血選「還是要喝」可以喝")
+	assert_eq(belt.use("sera_poison_vial", fx, hurt), "none_left")
 	assert_eq(belt.use("not_a_potion", fx, hurt), "unknown")
 	var reloaded: GameState = SaveCodec.decode(SaveCodec.encode(state))["state"]
-	assert_eq(PotionBelt.new(reloaded, _rules()).count("mist_serpent_poison"), 0, "數量跟著存檔")
-	assert_false(PotionBelt.new(reloaded, _rules()).grant_once("rb.guardian_crate", "mist_serpent_poison", 2), "讀檔後也不會重複領")
+	assert_eq(PotionBelt.new(reloaded, _rules()).count("sera_poison_vial"), 0, "數量跟著存檔")
+	assert_false(PotionBelt.new(reloaded, _rules()).grant_once("ch1.guardian_crate", "sera_poison_vial", 2), "讀檔後也不會重複領")
 
 
-## 麻痺（D-234）：不碰生命。沒反轉＝這段時間不能出手；時間到就恢復。
+## 麻痺：不碰生命。沒反轉＝這段時間不能出手；時間到就恢復。
 func test_paralysis_without_reversal_blocks_attacks_but_never_touches_health() -> void:
 	var fx := StatusEffects.new(_rules(), null)
 	var h := _hurt(50.0)
 	assert_eq(_rules().kind("paralysis"), "action")
 	assert_eq(_rules().kind("poison"), "dot")
-	assert_eq(fx.apply_source("bracer_test"), "start")
+	assert_eq(fx.apply_source("sera_paralysis_vial"), "start")
 	assert_true(fx.has("paralysis"))
 	assert_true(fx.blocks_attack(), "沒反轉：不能出手")
 	assert_eq(fx.attack_speed(), 1.0, "沒反轉不會變快")
 	fx.tick(3.0, h)
 	assert_eq(h.hp, 50.0, "麻痺不扣血也不回血")
-	fx.tick(float(_rules().source("bracer_test")["duration"]), h)
+	fx.tick(float(_rules().source("sera_paralysis_vial")["duration"]), h)
 	assert_false(fx.has("paralysis"), "時間到就退")
 	assert_false(fx.blocks_attack())
 	assert_eq(h.hp, 50.0)
@@ -222,12 +222,12 @@ func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> v
 	var slots := ReversalSlots.new()
 	var fx := StatusEffects.new(_rules(), slots)
 	var h := _hurt(50.0)
-	fx.apply_source("barrel_mist")
+	fx.apply_source("miasma")
 	assert_eq(slots.equipped[0], "poison", "第一次中毒：第一格")
 	assert_eq(slots.equipped[1], "", "第二格開場是空的")
 	# 沒解鎖不能裝；第一次麻痺不會像中毒那樣自動覺醒
 	assert_false(slots.equip("paralysis"), "沒解鎖不能裝")
-	fx.apply_source("bracer_test")
+	fx.apply_source("sera_paralysis_vial")
 	assert_false(slots.unlocked.has("paralysis"), "麻痺不會自動解鎖（開場的中毒是唯一的特例）")
 	assert_true(fx.blocks_attack())
 	# 安全測試之後解鎖、裝進第二格
@@ -240,7 +240,7 @@ func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> v
 	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "板子的麻痺：出手 1.35 倍")
 	# 同一來源再來十次：還是一份、一樣快、時間不超過上限
 	for i: int in 10:
-		assert_eq(fx.apply_source("bracer_test"), "refresh")
+		assert_eq(fx.apply_source("sera_paralysis_vial"), "refresh")
 	assert_eq(fx.ids().size(), 2, "一個中毒＋一個麻痺")
 	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "不會越疊越快")
 	assert_true(fx.remaining("paralysis") <= _rules().max_duration("paralysis") + 0.001)
@@ -265,21 +265,21 @@ func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> v
 	assert_false(old.is_reversed("paralysis"))
 
 
-## 戴著護腕打中人的麻痺（D-235）：每次命中只是重新計時——一份、一樣快、不超過 6 秒；停手 6 秒就退，退了之後不擋出手。
+## 戴著護腕打中人的麻痺：每次命中只是重新計時——一份、一樣快、不超過 6 秒；停手 6 秒就退，退了之後不擋出手。
 ## 丟毒瓶的霧：沒反轉扣血、反轉回血，比守衛噴的淡。
-func test_bracer_hit_refreshes_without_stacking_and_fades_when_you_stop() -> void:
+func test_paralysis_on_hit_refreshes_without_stacking_and_fades_when_you_stop() -> void:
 	var slots := ReversalSlots.new()
 	var fx := StatusEffects.new(_rules(), slots)
 	var h := _hurt(50.0)
 	slots.unlock("paralysis")
 	assert_true(slots.equip("paralysis", 1))
-	assert_eq(fx.apply_source("bracer_hit"), "start")
+	assert_eq(fx.apply_source("paralysis_on_hit"), "start")
 	assert_true(absf(fx.attack_speed() - 1.35) < 0.001)
 	assert_true(absf(fx.remaining("paralysis") - 6.0) < 0.001)
 	# 每 0.5 秒打中一下、連打 20 秒：一直是一份、一樣快、剩下的時間不超過 6 秒
 	for i: int in 40:
 		fx.tick(0.5, h)
-		assert_eq(fx.apply_source("bracer_hit"), "refresh")
+		assert_eq(fx.apply_source("paralysis_on_hit"), "refresh")
 		assert_true(fx.remaining("paralysis") <= 6.0 + 0.001)
 	assert_eq(fx.ids().size(), 1, "只有一份")
 	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "不會越打越快")
@@ -292,14 +292,14 @@ func test_bracer_hit_refreshes_without_stacking_and_fades_when_you_stop() -> voi
 	assert_eq(fx.attack_speed(), 1.0)
 	assert_false(fx.blocks_attack())
 	# 丟毒瓶的霧：第一次中毒覺醒 → 回血（每秒 5 點），加上麻痺一共兩種狀態
-	fx.apply_source("poison_bottle")
-	fx.apply_source("bracer_hit")
+	fx.apply_source("slime_touch")
+	fx.apply_source("paralysis_on_hit")
 	fx.tick(1.0, h)
 	assert_true(absf(h.hp - 55.0) < 0.01, "一秒回 5 點（%s）" % h.hp)
 	assert_eq(fx.ids().size(), 2)
 	# 沒有反轉的人（席菈）：同一團霧是扣血
 	var other := StatusEffects.new(_rules(), null)
 	var oh := _hurt(50.0)
-	other.apply_source("poison_bottle")
+	other.apply_source("slime_touch")
 	other.tick(1.0, oh)
 	assert_true(absf(oh.hp - 45.0) < 0.01, "沒反轉：一秒扣 5 點（%s）" % oh.hp)

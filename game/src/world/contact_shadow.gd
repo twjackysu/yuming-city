@@ -1,10 +1,9 @@
 class_name ContactShadow
 extends RefCounted
-## 腳下的接地陰影（D-108）：送葬者的那一片（D-101，ground_shadow.gdshader）給諾恩、席菈、灰巡者也加上。
-## 夜裡月光的影子被霧吃掉、路燈大多不投影，人物像浮在濕石板上；腳下一片中間最暗、往外柔和淡出的黑，
+## 腳下的接地陰影：角色腳下一片中間最暗、往外柔和淡出的黑（ground_shadow.gdshader），不然人物像浮在地上。
 ## 用透明度畫（照樣被霧蓋住）。掛在角色本身（原點在腳底），不跟著身體動作轉。
 
-const SHADER: String = "res://scenes/actors/undertaker/ground_shadow.gdshader"
+const SHADER: String = "res://src/world/ground_shadow.gdshader"
 const NODE_NAME: String = "GroundShadow"
 
 

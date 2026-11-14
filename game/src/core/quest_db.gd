@@ -1,6 +1,6 @@
 class_name QuestDB
 extends RefCounted
-## 任務資料（res://data/quests/*.json）。只放結構與翻譯 key（D-013）。
+## 任務資料（res://data/quests/*.json）。只放結構與翻譯 key。
 ##
 ## {
 ##   "id": "rb_main", "title": "Q_RB_MAIN_TITLE",
@@ -9,7 +9,7 @@ extends RefCounted
 ##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段",
 ##      "marker": "選填：目標指引指向哪裡（見 validate_marker）",
 ##      "marker_if": [{"when": {...條件}, "marker": ...}]  選填：第一個成立的取代 marker,
-##      "objective_if": [{"when": {...條件}, "objective": "Q_..."}]  選填：第一個成立的取代 objective（D-202）}
+##      "objective_if": [{"when": {...條件}, "objective": "Q_..."}]  選填：第一個成立的取代 objective}
 ##   ],
 ##   "on_complete": {...效果}
 ## }

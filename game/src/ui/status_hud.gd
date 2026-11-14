@@ -1,6 +1,6 @@
 class_name StatusHud
 extends Control
-## 新版的狀態圖示（D-202，09 第 6 節）：生命條下方一列，每種狀態一格。
+## 新版的狀態圖示（09 第 6 節）：生命條下方一列，每種狀態一格。
 ## 一格＝原類型的圖示（中毒：瓶子＋骷髏點）＋反轉時右下角一個綠色迴轉箭頭＋剩餘秒數，旁邊一行字
 ## 「中毒 → 回血」（反轉，綠）／「中毒」（沒反轉，紅）。圖示保留原類型，不讓人以為綠霧對所有人安全。
 ## 純顯示：refresh(effects) 每幀從玩家的 StatusEffects 讀。
@@ -23,7 +23,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## hint_id／hint：這一種狀態現在可以「釋放」（D-245）——那一列後面多一段組好的字（「滑鼠右鍵：炸出去 56」）。空的＝不顯示。
+## hint_id／hint：這一種狀態現在可以「釋放」——那一列後面多一段組好的字（「滑鼠右鍵：炸出去 56」）。空的＝不顯示。
 func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") -> void:
 	rows.clear()
 	if effects != null:

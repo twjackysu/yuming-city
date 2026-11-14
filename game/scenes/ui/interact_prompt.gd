@@ -1,7 +1,7 @@
 class_name InteractPrompt
 extends Control
-## 互動提示（HUD，D-065）：救援「按住 A　搬開瓦礫」、倒下的席菈「A 拉起席菈」這類「走近就能做」的提示，
-## 從場景裡的 Label3D 搬到畫面下方中央，鍵名用 GlyphLine（手把模式是按鈕圖示，D-063）。
+## 互動提示（HUD）：救援「按住 A　搬開瓦礫」、倒下的席菈「A 拉起席菈」這類「走近就能做」的提示，
+## 從場景裡的 Label3D 搬到畫面下方中央，鍵名用 GlyphLine（手把模式是按鈕圖示）。
 ## 來源：`interact_prompts` 群組裡的節點，實作 `interact_hint() -> Dictionary`：
 ##   {} ＝不顯示；{"fmt": 已翻譯、保留 {key} 的字串, "action": InputMap 動作, "progress": 0..1 按住進度（-1＝沒有進度條）}
 ## 純顯示：每幀讀，不改任何東西。

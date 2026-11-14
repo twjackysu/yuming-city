@@ -5,7 +5,7 @@ extends RefCounted
 ## - 低：關體積霧（改用便宜的深度霧保住氛圍）、SSAO、Glow；MSAA 關。
 ## - 中：預設（體積霧、SSAO、Glow；MSAA 2x）。
 ## - 高：再加 SSR、SSIL；MSAA 4x；體積霧較細。
-## - 水窪倒影的 ReflectionProbe（D-051）：中、高開；低關。
+## - ReflectionProbe：中、高開；低關。
 
 enum Level { LOW, MEDIUM, HIGH }
 
@@ -32,7 +32,7 @@ static func apply_environment(env: Environment, level: Level) -> void:
 		env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 		env.fog_light_color = (env.volumetric_fog_albedo * 0.12 + env.volumetric_fog_emission * 2.0).clamp()
 		env.fog_density = env.volumetric_fog_density * 1.2
-		env.fog_sky_affect = FrostbridgeLook.SKY_FOG_AFFECT
+		env.fog_sky_affect = 0.6
 
 
 ## ReflectionProbe（只在載入時拍一次）：低畫質關掉，省下每個像素取樣反射的成本。

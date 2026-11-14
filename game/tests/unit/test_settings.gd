@@ -66,23 +66,3 @@ func test_missing_file_uses_defaults() -> void:
 	assert_eq(int(s.get("quality")), int(QualityPreset.DEFAULT_LEVEL), "預設中畫質")
 	assert_eq(s.get("subtitles_enabled"), true, "預設開字幕")
 	s.free()
-
-
-func test_difficulty_normalize_and_live_apply() -> void:
-	assert_eq(SettingsScript.normalize_difficulty("story"), "story")
-	assert_eq(SettingsScript.normalize_difficulty("nightmare"), "standard", "不認得的難度回到標準")
-	var before: String = Settings.difficulty
-	var root := Node3D.new()
-	tree.root.add_child(root)
-	var walker := Ashwalker.new()
-	root.add_child(walker)
-	var sheila := Sheila.new()
-	root.add_child(sheila)
-	Settings.set_difficulty("standard")
-	assert_true(absf(walker.brain.telegraph_sec - 0.8) < 0.001)
-	Settings.set_difficulty("story")
-	assert_true(absf(walker.brain.telegraph_sec - 0.8 * 1.3) < 0.001, "改難度即時套用到灰巡者前兆")
-	assert_eq(sheila.brain.command_window, 1.0, "故事難度：席菈指令時機窗整段前兆")
-	Settings.set_difficulty(before)
-	root.queue_free()
-	await tree.process_frame

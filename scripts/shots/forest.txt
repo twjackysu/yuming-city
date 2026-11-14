@@ -1,0 +1,6 @@
+# 腐敗之森入口的固定鏡頭組：名稱 幀數 旗標…
+# 第 1 張＝玩家實際的鏡頭（驗收看這一張）；第 2、3 張繞到諾恩的側面與正面，只用來看模型與手上的劍。
+# 用法：改畫面之前 scripts/shots.sh forest --save-baseline，改完 scripts/shots.sh forest，先看印出來的數字。
+forest-view 60 --level=corrupt_forest --locale=zh_TW
+forest-noen-side 60 --level=corrupt_forest --cam-yaw=90 --locale=zh_TW
+forest-noen-front 60 --level=corrupt_forest --cam-yaw=180 --locale=zh_TW

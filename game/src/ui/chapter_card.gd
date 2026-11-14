@@ -1,8 +1,8 @@
 class_name ChapterCard
 extends CanvasLayer
-## 章節卡（D-149）：畫面淡成黑 → 置中出現「第一章」小字＋章名（明體）→ 停一下 → 呼叫 on_done（通常是換關卡）。
+## 章節卡：畫面淡成黑 → 置中出現「第一章」小字＋章名（明體）→ 停一下 → 呼叫 on_done（通常是換關卡）。
 ## 掛在關卡底下：關卡被釋放（測試、回標題）時卡片跟著消失，on_done 不會被呼叫。
-## 按確認鍵（ui_accept）可以提早結束；字一律用子節點 Label（D-060）。
+## 按確認鍵（ui_accept）可以提早結束；字一律用子節點 Label。
 
 const INK: Color = Color(0.95, 0.92, 0.86)
 const WARM: Color = Color(0.98, 0.8, 0.52)

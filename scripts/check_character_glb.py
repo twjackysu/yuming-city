@@ -8,8 +8,7 @@ import json
 from pathlib import Path
 import struct
 
-BUDGETS = {'noen': (15000, 40000), 'sheila': (15000, 40000),
-           'undertaker': (30000, 60000), 'ashwalker': (10000, 20000)}
+BUDGETS = {'noen': (15000, 40000), 'sheila': (15000, 40000)}
 
 
 def inspect(path, character):
@@ -73,7 +72,7 @@ def inspect(path, character):
             errors.append('Missing BaseColor, Normal, or ORM channels: ' + mat.get('name', '<unnamed>'))
         if 'occlusionTexture' in mat and 'metallicRoughnessTexture' in pbr and mat['occlusionTexture']['index'] != pbr['metallicRoughnessTexture']['index']:
             errors.append('Occlusion and metallic/roughness must share a packed ORM texture')
-    expected = {'undertaker': 'M_FrameJoint', 'ashwalker': 'M_Dial'}.get(character)
+    expected = {}.get(character)  # 角色 id → 一定要有的獨立材質槽（現在沒有）
     if expected and expected not in {m.get('name') for m in mats}:
         errors.append('Required independent material slot missing: ' + expected)
     images = data.get('images', [])

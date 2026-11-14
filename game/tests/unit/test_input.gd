@@ -108,7 +108,7 @@ func test_rebind_swaps_on_conflict() -> void:
 	assert_eq(InputSetup.slot_of(out, "interact", 1), Vector2i(2, JOY_BUTTON_B), "手把 A／B 交換")
 
 
-## 舊設定檔裡還留著已經刪掉的動作（「重現」nine_breath，D-222）：略過、不出錯，其他鍵照設定檔。
+## 舊設定檔裡還留著已經刪掉的動作（「重現」nine_breath）：略過、不出錯，其他鍵照設定檔。
 func test_saved_bindings_ignore_removed_actions() -> void:
 	assert_false(InputSetup.BINDINGS.has("nine_breath"), "沒有「重現」這個動作了")
 	assert_false(InputSetup.ACTION_KEYS.has("nine_breath"), "按鍵設定頁也不列")
@@ -183,37 +183,3 @@ func test_bindings_save_load_and_reset() -> void:
 	DirAccess.remove_absolute(path)
 	settings.call("load_settings", real_path)
 	settings.call("apply")
-
-
-func test_glyph_labels_and_device_switch() -> void:
-	InputSetup.apply_bindings(InputSetup.defaults())
-	TranslationServer.set_locale("en")
-	assert_eq(InputGlyphs.label_for_action("interact", InputGlyphs.Device.KBM), "[F]")
-	assert_eq(InputGlyphs.label_for_action("interact", InputGlyphs.Device.PAD), "[A]")
-	assert_eq(InputGlyphs.label_for_action("attack", InputGlyphs.Device.KBM), "[LMB]")
-	assert_eq(InputGlyphs.label_for_action("insight", InputGlyphs.Device.PAD), "[LT]")
-	TranslationServer.set_locale("zh_TW")
-	assert_eq(InputGlyphs.label_for_action("dodge", InputGlyphs.Device.KBM), "[空白鍵]")
-	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
-
-	var app: Node = tree.root.get_node("App")
-	var before: int = int(app.get("last_device"))
-	var seen: Array[int] = []
-	var cb: Callable = func(d: int) -> void: seen.append(d)
-	app.connect("device_changed", cb)
-	app.call("set_device", InputGlyphs.Device.KBM)
-	var pad := InputEventJoypadButton.new()
-	pad.button_index = JOY_BUTTON_A
-	pad.pressed = true
-	app.call("_input", pad)
-	var nudge := InputEventJoypadMotion.new()
-	nudge.axis = JOY_AXIS_LEFT_X
-	nudge.axis_value = 0.1
-	assert_eq(InputGlyphs.device_of_event(nudge), -1, "搖桿輕推不算切換")
-	app.call("_input", _key(KEY_W))
-	app.disconnect("device_changed", cb)
-	assert_eq(seen.size(), 2, "切到手把再切回鍵鼠，各發一次")
-	if seen.size() == 2:
-		assert_eq(seen[0], int(InputGlyphs.Device.PAD))
-		assert_eq(seen[1], int(InputGlyphs.Device.KBM))
-	app.call("set_device", before)

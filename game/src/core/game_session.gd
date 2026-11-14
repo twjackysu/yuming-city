@@ -8,37 +8,20 @@ extends RefCounted
 signal checkpoint_reached(checkpoint_id: String)
 signal stage_changed(quest_id: String, from_stage: String, to_stage: String)
 signal quest_completed(quest_id: String)
-## 要寫存檔之前（玩家把生命、狀態、反轉欄位寫回 state，D-202）
+## 要寫存檔之前（玩家把生命、狀態、反轉欄位寫回 state）
 signal saving(state: GameState)
 
 const AUTO_SLOT: String = "auto"
 const MANUAL_SLOTS: PackedStringArray = ["slot1", "slot2", "slot3"]
-## 以前舊劇情的存檔資料夾。標題的「新遊戲／繼續」不讀也不寫這裡：玩家留在那裡的舊存檔一個字都不會被動到（D-202、D-227）
 const DEFAULT_SAVE_DIR: String = "user://saves"
-## 現在的劇情存檔的資料夾。**名字不要改**：玩家已經有的進度就在這裡（D-227）
-const STORY_SAVE_DIR: String = "user://saves_reboot"
-## 測試、開發旗標自己給資料夾時，劇情存檔放在「<資料夾>＋這個字尾」（跟 STORY_SAVE_DIR 同一個規則）
-const STORY_DIR_SUFFIX: String = "_reboot"
-## 主線（docs/design/09-reboot-first-ten-minutes.md）
-const MAIN_QUEST: String = "rb_main"
-## 第二段：地下市場（docs/design/10-reboot-underground-market.md）。rb_main 做完時自動開始（rb_main.json 的 on_complete）
-const MARKET_QUEST: String = "rb_market"
-## 第二段 B：黑市示範場（design/10「B 的流程」，D-232）。rb_market 做完時自動開始（rb_market.json 的 on_complete）
-const DEMO_QUEST: String = "rb_demo"
-## 第二段 C 的前半：回彌夏的店試戴護腕、麻痺裝進第二格（design/10「C 的流程」，D-234）。
-## 拿到護腕的那一刻由劇情開（不是 rb_demo 做完就開：打贏到拿到護腕之間還有一段對話）
-const BRACER_QUEST: String = "rb_bracer"
-## 主線照順序排；HUD 的目標與任務標記指「第一條還沒做完的」
-## 第二段 C 的後半：小戰檢驗——兩格一起用（design/10「C 的流程」，D-235）。rb_bracer 做完時自動開始（rb_bracer.json 的 on_complete）
-const TRIAL_QUEST: String = "rb_trial"
-const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST, MARKET_QUEST, DEMO_QUEST, BRACER_QUEST, TRIAL_QUEST]
-const FIRST_CHAPTER: String = "rb_ch1"
+## 主線照順序排；HUD 的目標與任務標記指「第一條還沒做完的」。第一章：docs/story/chapter-1.md
+const MAIN_QUEST: String = "ch1_main"
+const MAIN_QUESTS: PackedStringArray = [MAIN_QUEST]
+const FIRST_CHAPTER: String = "ch1"
+const FIRST_CHECKPOINT: String = "ch1_forest_gate"
 
 var db: QuestDB
-## 建立時給的資料夾（預設＝舊劇情的那一個，只留著不寫）；劇情存檔實際放在 story_save_dir()
 var save_dir: String
-## true＝存讀檔走劇情的資料夾（new_game／load_story_slot 設定）
-var use_story_saves: bool = false
 var state: GameState
 var quests: QuestRunner
 ## 最近一次自動存檔的錯誤碼（給 UI 顯示「存檔失敗」用）
@@ -52,46 +35,20 @@ func _init(p_db: QuestDB, p_save_dir: String = DEFAULT_SAVE_DIR) -> void:
 	_bind(GameState.new())
 
 
-## 新遊戲：mode＝GameState.STORY_MODE、主線 rb_main、存檔寫到 story_save_dir()（D-202）。
+## 新遊戲：開主線、進第一個檢查點（會自動存檔）。
 func new_game() -> void:
-	use_story_saves = true
 	var s := GameState.new()
 	s.mode = GameState.STORY_MODE
 	s.chapter = FIRST_CHAPTER
-	s.checkpoint = "rb_start"
+	s.checkpoint = FIRST_CHECKPOINT
 	_bind(s)
 	quests.start(MAIN_QUEST)
 	advance()
 
 
-## 這個 session 有沒有開劇情（新遊戲或讀檔）。沒有＝只有空的鎮（測試、benchmark）：不掛開場控制器、不恢復生命與藥。
+## 這個 session 有沒有開劇情（新遊戲或讀檔）。沒有＝空關卡（測試、benchmark）：不恢復生命、不寫存檔。
 func in_story() -> bool:
 	return state.mode == GameState.STORY_MODE
-
-
-## 劇情存檔的資料夾：正式是 STORY_SAVE_DIR；測試自己給了資料夾時放在旁邊（<資料夾>＋STORY_DIR_SUFFIX），不會寫到真的 user://
-func story_save_dir() -> String:
-	return STORY_SAVE_DIR if save_dir == DEFAULT_SAVE_DIR else save_dir + STORY_DIR_SUFFIX
-
-
-func active_save_dir() -> String:
-	return story_save_dir() if use_story_saves else save_dir
-
-
-## 有沒有劇情存檔（標題畫面的「繼續」；不改變現在讀寫哪個資料夾）
-func has_story_save(slot: String = AUTO_SLOT) -> bool:
-	var path: String = story_save_dir().path_join(slot + ".json")
-	return FileAccess.file_exists(path) or FileAccess.file_exists(path + ".bak")
-
-
-## 讀劇情存檔（標題畫面的「繼續」用）
-func load_story_slot(slot: String = AUTO_SLOT) -> SaveCodec.Status:
-	var was: bool = use_story_saves
-	use_story_saves = true
-	var status: SaveCodec.Status = load_slot(slot)
-	if status != SaveCodec.Status.OK:
-		use_story_saves = was
-	return status
 
 
 func set_flag(key: String, value: Variant) -> void:
@@ -113,7 +70,7 @@ func advance() -> Array[Dictionary]:
 
 
 func slot_path(slot: String) -> String:
-	return active_save_dir().path_join(slot + ".json")
+	return save_dir.path_join(slot + ".json")
 
 
 func has_save(slot: String = AUTO_SLOT) -> bool:
@@ -122,7 +79,7 @@ func has_save(slot: String = AUTO_SLOT) -> bool:
 
 func save(slot: String) -> Error:
 	saving.emit(state)
-	DirAccess.make_dir_recursive_absolute(active_save_dir())
+	DirAccess.make_dir_recursive_absolute(save_dir)
 	return SaveCodec.write_file(slot_path(slot), state)
 
 
@@ -135,18 +92,6 @@ func load_slot(slot: String) -> SaveCodec.Status:
 	_bind(r["state"] as GameState)
 	# 讀檔不重新觸發自動存檔；若存檔後資料改版、條件已成立，照常推進。
 	quests.evaluate()
-	# 舊存檔的遷移：前十分鐘做完時還沒有地下市場這條任務——補開（檢查點跟著變成 rb2_arrive，「繼續」直接到地下市場）
-	if in_story() and quests.is_done(MAIN_QUEST) and not state.quests.has(MARKET_QUEST):
-		quests.start(MARKET_QUEST)
-	# 同樣的遷移：藥店那一段做完時還沒有黑市示範場這條任務（第 85 輪的存檔）——補開，「繼續」從藥店門外開始
-	if in_story() and quests.is_done(MARKET_QUEST) and not state.quests.has(DEMO_QUEST):
-		quests.start(DEMO_QUEST)
-	# 同樣的遷移：拿到護腕就「待續」的存檔（第 87 輪）——補開「試戴護腕」，「繼續」從示範台往藥店走
-	if in_story() and quests.is_done(DEMO_QUEST) and bool(state.get_flag("rb2.bracer_taken", false)) and not state.quests.has(BRACER_QUEST):
-		quests.start(BRACER_QUEST)
-	# 同樣的遷移：試戴護腕就「待續」的存檔（第 88 輪）——補開「兩格一起用」，「繼續」從藥店的櫃台前開始
-	if in_story() and quests.is_done(BRACER_QUEST) and not state.quests.has(TRIAL_QUEST):
-		quests.start(TRIAL_QUEST)
 	_autosave_pending = false
 	return status
 

@@ -1,5 +1,5 @@
 extends TestCase
-## 選單樣式（D-067）：全域 Theme 的按鈕／滑桿焦點不是 Godot 預設的白色方框，而是左側暖金色細條＋淡出的暖光。
+## 選單樣式：全域 Theme 的按鈕／滑桿焦點不是 Godot 預設的白色方框，而是左側暖金色細條＋淡出的暖光。
 
 
 func test_theme_button_and_slider_styles() -> void:
@@ -33,7 +33,7 @@ func test_theme_button_and_slider_styles() -> void:
 		assert_true(k.get_pixel(0, 0).a < 0.05 and k.get_pixel(k.get_width() / 2, k.get_height() / 2).a > 0.9, "把手是圓的（角落透明）")
 
 
-## D-071：關卡裡的 UI 掛在 Node3D／CanvasLayer 底下，root.theme 傳不過去；
+## ：關卡裡的 UI 掛在 Node3D／CanvasLayer 底下，root.theme 傳不過去；
 ## App 把同一套 Theme 併進引擎預設 Theme，所以那裡的 Label／Button 也用遊戲字型與焦點樣式。
 func test_controls_under_canvas_layer_get_game_theme() -> void:
 	var n3 := Node3D.new()

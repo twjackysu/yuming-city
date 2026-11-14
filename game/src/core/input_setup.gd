@@ -16,15 +16,11 @@ const BINDINGS: Dictionary = {
 	"dodge": [Vector2i(0, KEY_SPACE), Vector2i(2, JOY_BUTTON_B)],
 	"attack": [Vector2i(1, MOUSE_BUTTON_LEFT), Vector2i(2, JOY_BUTTON_X)],
 	"lock_on": [Vector2i(1, MOUSE_BUTTON_MIDDLE), Vector2i(2, JOY_BUTTON_RIGHT_STICK)],
-	## 釋放（D-245）：把身上反轉中的狀態一次用掉。滑鼠右鍵原本是「看穿」，搬到鍵盤 V（手把 LT 不變）
+	## 釋放：把身上反轉中的狀態一次用掉
 	"release": [Vector2i(1, MOUSE_BUTTON_RIGHT), Vector2i(2, JOY_BUTTON_Y)],
-	"insight": [Vector2i(0, KEY_V), Vector2i(3, JOY_AXIS_TRIGGER_LEFT)],
-	"command_weakpoint": [Vector2i(0, KEY_Q), Vector2i(2, JOY_BUTTON_DPAD_UP)],
-	"command_evade": [Vector2i(0, KEY_E), Vector2i(2, JOY_BUTTON_DPAD_RIGHT)],
-	"command_guard": [Vector2i(0, KEY_R), Vector2i(2, JOY_BUTTON_DPAD_DOWN)],
 	"interact": [Vector2i(0, KEY_F), Vector2i(2, JOY_BUTTON_A)],
 	"journal": [Vector2i(0, KEY_TAB), Vector2i(2, JOY_BUTTON_BACK)],
-	## 新版（D-202）：可攜藥劑快捷鍵
+	## 可攜藥劑快捷鍵
 	"use_item": [Vector2i(0, KEY_1), Vector2i(2, JOY_BUTTON_DPAD_LEFT)],
 	"pause": [Vector2i(0, KEY_ESCAPE), Vector2i(2, JOY_BUTTON_START)],
 }
@@ -46,10 +42,6 @@ const ACTION_KEYS: Dictionary = {
 	"attack": "ACT_ATTACK",
 	"release": "ACT_RELEASE",
 	"lock_on": "ACT_LOCK_ON",
-	"insight": "ACT_INSIGHT",
-	"command_weakpoint": "ACT_COMMAND_WEAKPOINT",
-	"command_evade": "ACT_COMMAND_EVADE",
-	"command_guard": "ACT_COMMAND_GUARD",
 	"interact": "ACT_INTERACT",
 	"journal": "ACT_JOURNAL",
 	"use_item": "ACT_USE_ITEM",
@@ -65,7 +57,6 @@ const _AXIS_SIGN: Dictionary = {
 	"move_back": 1.0,
 	"move_left": -1.0,
 	"move_right": 1.0,
-	"insight": 1.0,
 }
 
 

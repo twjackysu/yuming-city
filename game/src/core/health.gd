@@ -2,7 +2,7 @@ class_name Health
 extends Node
 ## 生命值元件：掛在角色或木樁底下。受傷回傳是否真的扣到（無敵、已死亡時不扣）。
 ## invulnerable_check 由擁有者提供（例如玩家閃避的無敵時間），避免元件反過來讀角色。
-## 生命的三種變化分開（D-202，新版反轉）：直接傷害 apply_damage、狀態傷害 apply_status_damage、治療 heal。
+## 生命的三種變化分開（新版反轉）：直接傷害 apply_damage、狀態傷害 apply_status_damage、治療 heal。
 ## 不用負數傷害代表治療。
 
 signal damaged(amount: float, info: Dictionary)
@@ -16,7 +16,7 @@ signal revived
 @export var max_hp: float = 100.0
 var hp: float = 100.0
 var invulnerable_check: Callable = Callable()
-## 受傷之前先問擁有者這一下打幾折（回傳 0～1；沒設＝照扣）。例：硬撐中的敵人只扣四分之一（D-242）。
+## 受傷之前先問擁有者這一下打幾折（回傳 0～1；沒設＝照扣）。例：硬撐中的敵人只扣四分之一。
 ## 擁有者可以在 info 裡留記號（例如 info["braced"] = true），收 damaged 的人看得到。
 var damage_scale: Callable = Callable()
 

@@ -1,30 +1,26 @@
 class_name EnemyActor
 extends CharacterBody3D
-## 敵人共用：EnemyBrain、Health、追最近的心跳（諾恩、席菈）、看穿顯示、弱點判定、難度即時套用。
-## 子類別覆寫 intel_id()、_build_body()（建立 _body）、_on_strike()、_on_strike_tick()、_update_look()。
+## 敵人共用：EnemyBrain、Health、追最近的心跳（"heartbeat" 群組：諾恩與同伴）、受擊與倒下的演出、難度即時套用。
+## 子類別覆寫 tuning_id()（data/combat/tuning.json 裡的那一段）、_build_body()（建立 _body）、_on_strike()、_on_strike_tick()、_update_look()。
 
 const TURN_SPEED: float = 8.0
-## 看穿的顯示距離（公尺）
-const INSIGHT_RANGE: float = 14.0
 
 var brain: EnemyBrain
 var health: Health
 ## 追擊目標：最近的心跳；前兆與出招中不換目標
 var target: Node3D
-## 看穿資訊的執行期修正（id → 是否已證實），觀察或劇情會改
-var intel_overrides: Dictionary = {}
 ## 空字串＝用設定裡的難度；設定改了即時套用
 var difficulty: String = ""
 var move_speed: float = 2.6
-## true＝只追諾恩（他倒下才找別人）。預設還是「最近的心跳」。小戰檢驗的第一個人（D-235）與戰鬥場的每一個敵人（D-239）會開：
+## true＝只追諾恩（他倒下才找別人）。預設還是「最近的心跳」。小戰檢驗的第一個人與戰鬥場的每一個敵人會開：
 ## 都追最近的話，敵人圍著席菈打，諾恩站著不動也沒事。
-## 硬撐中挨了幾下（只扣幾成的那種，D-242；統計與測試用）
+## 硬撐中挨了幾下（只扣幾成的那種；統計與測試用）
 var armored_hits: int = 0
 var focus_player: bool = false
-## 腳步聲（D-187）：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
+## 腳步聲：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
 var footsteps: Footsteps
 
-## 同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限；D-240）。別人剛出完招的 attack_gap 秒內也算佔著。
+## 同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）。別人剛出完招的 attack_gap 秒內也算佔著。
 ## 沒輪到的人停在 attack_range + wait_ring 外面等。數值在 tuning.json 的 crowd.*（劇情＝不限，戰鬥場＝1）；生出來的時候讀一次。
 var attack_slots: int = 0
 var attack_gap: float = 0.0
@@ -37,19 +33,13 @@ var _player: PlayerController
 var _body: Node3D
 var _push_dir: Vector3 = Vector3.ZERO
 var _push_speed: float = 0.0
-var _insight_layer: CanvasLayer
-var _insight_card: InsightCard
-var _insight_text: String = ""
-var _weak_marker: MeshInstance3D
-var _weak_mat: StandardMaterial3D
-var _insight_shown: bool = false
 
 
-func intel_id() -> String:
+func tuning_id() -> String:
 	return ""
 
 
-## 離鏡頭多近開始淡掉（x 以內看不到、y 以外不透明，D-115）。體型大的敵人覆寫成更遠。
+## 離鏡頭多近開始淡掉（x 以內看不到、y 以外不透明）。體型大的敵人覆寫成更遠。
 func camera_fade_range() -> Vector2:
 	return Vector2(CameraFade.CHARACTER_NEAR, CameraFade.CHARACTER_FAR)
 
@@ -60,25 +50,24 @@ func _ready() -> void:
 	if difficulty == "":
 		difficulty = Settings.difficulty
 		Settings.changed.connect(_on_settings_changed)
-	brain = EnemyBrain.new().configure(intel_id(), difficulty)
+	brain = EnemyBrain.new().configure(tuning_id(), difficulty)
 	brain.knelt.connect(_on_kneel)
 	brain.flinched.connect(_on_flinched)
 	brain.braced.connect(_on_braced)
 	attack_slots = int(CombatTuning.num("crowd.attack_slots", 0.0))
 	attack_gap = CombatTuning.num("crowd.attack_gap", 0.0)
 	wait_ring = CombatTuning.num("crowd.wait_ring", 0.0)
-	move_speed = CombatTuning.num(intel_id() + ".move_speed", move_speed)
-	health = Health.new(CombatTuning.num(intel_id() + ".max_hp", 60.0))
+	move_speed = CombatTuning.num(tuning_id() + ".move_speed", move_speed)
+	health = Health.new(CombatTuning.num(tuning_id() + ".max_hp", 60.0))
 	health.name = "Health"
 	add_child(health)
 	health.damage_scale = _damage_scale
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	_build_body()
-	_build_insight()
 	footsteps = _make_footsteps()
 	var fade: Vector2 = camera_fade_range()
-	CameraFade.apply(self, fade.x, fade.y)  # D-115
+	CameraFade.apply(self, fade.x, fade.y)
 
 
 func _physics_process(delta: float) -> void:
@@ -94,14 +83,13 @@ func _physics_process(delta: float) -> void:
 			var face: float = atan2(-d.x, -d.z)
 			_body.rotation.y = lerp_angle(_body.rotation.y, face, clampf(TURN_SPEED * delta, 0.0, 1.0))
 	if _held(delta):
-		# 劇情動作中（送葬者把燈柱舉過頭）：不追、不出招。劇情走位（D-205）由 _held_velocity 給水平速度，照樣用自己的腳走
+		# 劇情動作中（送葬者把燈柱舉過頭）：不追、不出招。劇情走位由 _held_velocity 給水平速度，照樣用自己的腳走
 		var held_v: Vector3 = _held_velocity(delta)
 		velocity = Vector3(held_v.x, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, held_v.z)
 		move_and_slide()
 		if Vector2(held_v.x, held_v.z).length() > 0.01:
 			_tick_footsteps(delta, Vector2(held_v.x, held_v.z).length())
 		_update_look()
-		_update_insight()
 		return
 	brain.may_attack = _may_attack()
 	if brain.tick(delta, dist):
@@ -128,47 +116,28 @@ func _physics_process(delta: float) -> void:
 	_after_move()
 	_update_look()
 	_update_brace(delta)
-	_update_insight()
 
 
 func forward() -> Vector3:
 	return -_body.global_basis.z
 
 
-## 直接轉向（水平角度，跟節點自己的 rotation.y 疊加）：關卡把劇情中的敵人交給戰鬥時用（D-169）。
+## 直接轉向（水平角度，跟節點自己的 rotation.y 疊加）：關卡把劇情中的敵人交給戰鬥時用。
 func set_facing(yaw: float) -> void:
 	if _body != null:
 		_body.rotation.y = yaw
 
 
-## 攻擊者從這個位置打，打得到哪個弱點（沒有就回傳空字串）。跪地時弱點全露。
-func weakpoint_exposed_to(attacker_pos: Vector3) -> String:
-	if brain.state == EnemyBrain.State.DEAD:
-		return ""
-	for w: Dictionary in EnemyIntel.weakpoints(intel_id()):
-		if brain.state == EnemyBrain.State.STAGGERED or EnemyIntel.is_exposed(global_position, forward(), attacker_pos, EnemyIntel.arc_of(w)):
-			return str(w.get("id", ""))
-	return ""
+## 現在打他算不算打在破綻上（傷害、失衡加倍，見 PlayerController.strike）：跪著的時候算。回傳 ""＝不算。
+func weakpoint_exposed_to(_attacker_pos: Vector3) -> String:
+	return "kneel" if brain.state == EnemyBrain.State.STAGGERED else ""
 
 
 ## 鎖定標記的高度（頭上）。
 func lock_height() -> float:
-	return _insight_height() + 0.25
+	return _head_height() + 0.25
 
 
-func insight_shown() -> bool:
-	return _insight_shown
-
-
-func insight_text() -> String:
-	return _insight_text
-
-
-func insight_card() -> InsightCard:
-	return _insight_card
-
-
-## 對所有心跳（諾恩、席菈）判定：pred(位置) 為 true 就扣血。回傳命中數。
 func hit_heartbeats(damage: float, kind: String, pred: Callable) -> int:
 	var n_hit: int = 0
 	for n: Node in get_tree().get_nodes_in_group("heartbeat"):
@@ -212,7 +181,7 @@ func _held(_delta: float) -> bool:
 	return false
 
 
-## 被劇情動作佔住時這一幀的水平速度（預設站著不動；劇情走位覆寫，D-205）。
+## 被劇情動作佔住時這一幀的水平速度（預設站著不動；劇情走位覆寫）。
 func _held_velocity(_delta: float) -> Vector3:
 	return Vector3.ZERO
 
@@ -226,13 +195,8 @@ func _update_look() -> void:
 	pass
 
 
-func _insight_height() -> float:
+func _head_height() -> float:
 	return 2.0
-
-
-## 身體（含背上的東西）往右多寬（公尺）：看穿小卡不蓋進這個範圍（D-146）。體型大的敵人覆寫。
-func insight_side() -> float:
-	return 0.45
 
 
 # ---- 共用 ----
@@ -248,7 +212,7 @@ func _tick_footsteps(delta: float, speed: float) -> void:
 func _on_settings_changed() -> void:
 	if Settings.difficulty != difficulty:
 		difficulty = Settings.difficulty
-		brain.configure(intel_id(), difficulty)
+		brain.configure(tuning_id(), difficulty)
 
 
 func _nearest_heartbeat() -> Node3D:
@@ -270,7 +234,7 @@ func _nearest_heartbeat() -> Node3D:
 	return best
 
 
-# ---------------------------------------------------------------- 輪流出手、挨打後仰（D-240）
+# ---------------------------------------------------------------- 輪流出手、挨打後仰
 ## 等的人離圈子多近才開始往後退、退多快（走路速度的幾成）
 const WAIT_SLACK: float = 0.5
 const WAIT_BACK_SPEED: float = 0.5
@@ -324,7 +288,7 @@ func _first_player() -> PlayerController:
 	return null
 
 
-## 硬撐中（整個人發紅）挨打只扣幾成（D-242）；順便在 info 留記號，_on_damaged 換一個「打在硬東西上」的聲音。
+## 硬撐中（整個人發紅）挨打只扣幾成；順便在 info 留記號，_on_damaged 換一個「打在硬東西上」的聲音。
 func _damage_scale(info: Dictionary) -> float:
 	var k: float = brain.armor_mult()
 	if k < 1.0:
@@ -333,9 +297,6 @@ func _damage_scale(info: Dictionary) -> float:
 
 
 func _on_damaged(_amount: float, info: Dictionary) -> void:
-	var weak: bool = str(info.get("weak", "")) != ""
-	if weak:
-		_flash_weak()
 	_hit_fx(info)
 	if bool(info.get("braced", false)):
 		armored_hits += 1
@@ -351,8 +312,8 @@ func _on_damaged(_amount: float, info: Dictionary) -> void:
 		brain.flinch()
 
 
-# ---------------------------------------------------------------- 硬撐的訊號（D-241）
-## 硬撐（後仰過幾次之後打不斷、下一招一定打得出來，D-240）是這個戰鬥唯一的「該閃了」訊號。
+# ---------------------------------------------------------------- 硬撐的訊號
+## 硬撐（後仰過幾次之後打不斷、下一招一定打得出來）是這個戰鬥唯一的「該閃了」訊號。
 ## 第 92 輪只有棍頭的兩圈箍變紅——縮小的連拍圖上是一個小橘點，看不出來。現在三樣一起：
 ## ①整個身體蓋一層紅光（`brace_glow.gdshader`，material_overlay：輪廓一圈最亮），硬撐多久就亮多久、一下一下跳；
 ## ②變紅的那一刻：腳邊一圈紅環往外擴、胸口一片紅色的亮斑、一盞很短的紅燈（掛在關卡上，自己收掉）；
@@ -364,7 +325,7 @@ const BRACE_COLOR: Color = Color(1.0, 0.16, 0.05)
 const BRACE_SFX: String = "brace_warn"
 const BRACE_DB: float = -2.0
 const INTERRUPT_SFX: String = "interrupt"
-## 打在硬撐中的人身上（只扣幾成，D-242）：一聲悶的鐵響，跟平常命中的「咚」分得開
+## 打在硬撐中的人身上（只扣幾成）：一聲悶的鐵響，跟平常命中的「咚」分得開
 const ARMOR_SFX: String = "iron_clang"
 const ARMOR_DB: float = -11.0
 const INTERRUPT_DB: float = -6.0
@@ -524,17 +485,17 @@ func _set_brace_lit(on: bool) -> void:
 
 ## 身體上看得到的實心東西（網格、CSG）；粒子、文字、弱點標記不蓋。
 func _collect_brace_meshes(n: Node) -> void:
-	if (n is MeshInstance3D or n is CSGShape3D) and n != _weak_marker:
+	if (n is MeshInstance3D or n is CSGShape3D):
 		_brace_meshes.append(n as GeometryInstance3D)
 	for c: Node in n.get_children():
 		_collect_brace_meshes(c)
 
 
-# ---------------------------------------------------------------- 被打中的那一下（D-217）
+# ---------------------------------------------------------------- 被打中的那一下
 ## 打中敵人原本只有聲音、頓一下、鏡頭晃——畫面上沒有東西飛出來。現在每次扣到血：
 ## 命中點（朝攻擊者那一側、胸口高度）噴一把冷白的霜屑（往攻擊者那邊飛、往下掉），打中弱點（鐵件）再多一把橘色火星；
 ## 同一點一盞很短的閃光——暗色的身體在那一下有輪廓。掛在關卡上（敵人倒下沉進雪裡也不會被帶走），自己收掉。
-## 一次性粒子照 D-208：節點先擺到位置，粒子才開始噴。
+## 一次性粒子照 ：節點先擺到位置，粒子才開始噴。
 const HIT_CHIP_COLOR: Color = Color(0.82, 0.93, 1.0)
 const HIT_SPARK_COLOR: Color = Color(1.0, 0.7, 0.32)
 const HIT_FLASH_SEC: float = 0.14
@@ -665,7 +626,7 @@ func _hit_particles(node_name: String, amount: int, color: Color, out: Vector3, 
 	return ps
 
 
-# ---------------------------------------------------------------- 跪地（D-191）
+# ---------------------------------------------------------------- 跪地
 ## 失衡滿了跪下的那一刻：膝蓋落地的重音＋一小團雪粉——「現在是破綻」聽得出來，不用盯著畫面。
 ## 致命的一擊不算（接著就是倒下，倒下有自己的聲音）。聲音掛在關卡上（跟腳步一樣）。
 
@@ -700,7 +661,7 @@ func _kneel_puff(at: Vector3, extents: Vector3, amount: int) -> void:
 	ps.finished.connect(ps.queue_free)
 
 
-# ---------------------------------------------------------------- 倒下（D-052、D-054）
+# ---------------------------------------------------------------- 倒下
 ## 一般敵人：跪下 → 向前撲倒（頭朝 forward()）→ 落地揚起灰粉、胸口的光熄掉 → 躺一會兒 → 沉進雪裡。
 ## 不再「往後倒＋壓扁成一片」。送葬者覆寫成更長、更重的版本。
 ## FALL_FORWARD：繞 X 軸轉負角度是往前倒（頭在 -Z）；寫新的姿勢照這個常數，別再寫反。
@@ -741,10 +702,6 @@ func _begin_death() -> void:
 	set_physics_process(false)
 	_set_brace_lit(false)
 	collision_layer = 0
-	if _insight_card != null:
-		_insight_card.visible = false
-	if _weak_marker != null:
-		_weak_marker.visible = false
 
 
 ## 身體撞到地面那一刻；子類別可以加料（記得呼叫 super）。
@@ -766,7 +723,7 @@ func _ground_puff(at: Vector3, extents: Vector3, amount: int, color: Color) -> C
 
 
 ## 一團粉的粒子：建好但**還沒開始噴**、也還沒進場景樹。要改速度、大小、重力的先改，再 puff_start()。
-## （D-208）CPUParticles3D 預設 emitting＝true，一進場景樹就會在「當下的位置」先噴出第一批；
+## CPUParticles3D 預設 emitting＝true，一進場景樹就會在「當下的位置」先噴出第一批；
 ## 一次性、explosiveness 0.9 的粒子第一批就是全部——原本先 add_child 再擺位置，整團粉其實噴在敵人腳下的原點，
 ## 不是指定的地方（倒地的粉偏 0.8 m 看不出來；燈柱砸藥桶那一下偏了 8 m，在鏡頭外，所以怎麼拍都拍不到）。
 func puff_build(extents: Vector3, amount: int, color: Color) -> CPUParticles3D:
@@ -790,7 +747,7 @@ func puff_build(extents: Vector3, amount: int, color: Color) -> CPUParticles3D:
 	ps.scale_amount_max = 1.6
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.35, 0.35)
-	# 圓形、邊緣淡出的貼圖（沒有貼圖時是硬邊方塊，一眼就看得出是方形面片；D-056）
+	# 圓形、邊緣淡出的貼圖（沒有貼圖時是硬邊方塊，一眼就看得出是方形面片）
 	quad.material = ParticleLook.material(color)
 	ps.mesh = quad
 	var ramp := Gradient.new()
@@ -807,65 +764,6 @@ func puff_start(ps: CPUParticles3D, at: Vector3) -> void:
 	ps.emitting = true
 
 
-## 粒子用的柔邊圓點（共用 ParticleLook，D-056）。
+## 粒子用的柔邊圓點（共用 ParticleLook）。
 static func soft_dot_texture() -> GradientTexture2D:
 	return ParticleLook.soft_dot()
-
-
-func _update_insight() -> void:
-	var on: bool = false
-	if _player != null and brain.state != EnemyBrain.State.DEAD:
-		on = _player.insight_active and global_position.distance_to(_player.global_position) <= INSIGHT_RANGE
-	if on:
-		var move: String = brain.intel_move()
-		_insight_text = "\n".join(EnemyIntel.lines(intel_id(), intel_overrides, move))
-		_insight_card.set_rows(EnemyIntel.rows(intel_id(), intel_overrides, move))
-		_insight_card.place(get_viewport().get_camera_3d(), global_position + Vector3(0.0, _insight_height(), 0.0), insight_side())
-		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-		_weak_mat.albedo_color.a = 0.45 + 0.4 * pulse
-	if on != _insight_shown:
-		_insight_shown = on
-		_weak_marker.visible = on
-	if not on:
-		_insight_card.visible = false
-
-
-func _flash_weak() -> void:
-	var t := create_tween()
-	_weak_marker.visible = true
-	t.tween_property(_weak_mat, "emission_energy_multiplier", 8.0, 0.04)
-	t.tween_property(_weak_mat, "emission_energy_multiplier", 2.0, 0.25)
-	t.tween_callback(func() -> void: _weak_marker.visible = _insight_shown)
-
-
-func _build_insight() -> void:
-	# 看穿小卡在畫面上（D-087）：自己一層 CanvasLayer，壓在 HUD（10）底下，不蓋住對話與暫停選單
-	_insight_layer = CanvasLayer.new()
-	_insight_layer.name = "InsightLayer"
-	_insight_layer.layer = 9
-	add_child(_insight_layer)
-	_insight_card = InsightCard.new()
-	_insight_layer.add_child(_insight_card)
-	_weak_mat = StandardMaterial3D.new()
-	_weak_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_weak_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_weak_mat.no_depth_test = true
-	_weak_mat.albedo_color = Color(0.6, 0.9, 1.0, 0.8)
-	_weak_mat.emission_enabled = true
-	_weak_mat.emission = Color(0.55, 0.85, 1.0)
-	_weak_mat.emission_energy_multiplier = 2.0
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.1
-	sphere.height = 0.2
-	_weak_marker = MeshInstance3D.new()
-	_weak_marker.name = "WeakMarker"
-	_weak_marker.mesh = sphere
-	_weak_marker.material_override = _weak_mat
-	_weak_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var ws: Array[Dictionary] = EnemyIntel.weakpoints(intel_id())
-	if not ws.is_empty():
-		var loc: Variant = ws[0].get("local", [0.0, 1.0, 0.0])
-		if loc is Array and (loc as Array).size() == 3:
-			_weak_marker.position = Vector3(float((loc as Array)[0]), float((loc as Array)[1]), float((loc as Array)[2]))
-	_weak_marker.visible = false
-	_body.add_child(_weak_marker)

@@ -1,9 +1,12 @@
 {
   "noen": {
     "max_hp": 100,
-    "blunt_damage": 6,
-    "blunt_stagger": 20,
-    "strike_window": [0.35, 0.6],
+    "blunt_damage": 24,
+    "blunt_stagger": 10,
+    "strike_window": [
+      0.35,
+      0.6
+    ],
     "strike_range": 1.9,
     "strike_arc_deg": 110,
     "dodge_time": 0.35,
@@ -11,97 +14,38 @@
     "dodge_cooldown": 0.2,
     "weak_damage_mult": 2.0,
     "weak_stagger_mult": 2.0,
-    "lunge_dist": 0.0,
+    "lunge_dist": 0.6,
     "lunge_seek": 3.4,
     "lunge_stop": 1.25,
-    "hurt_stun": 0.0,
-    "hurt_push": 0.0,
-    "input_buffer": 0.0,
-    "attack_face_lock": 0,
-    "_doc_release": "釋放（D-245，design/11 3.5）：把身上反轉中的中毒一次用掉＝毒爆。傷害＝用掉的秒數 × burst_per_sec（上限 burst_max），自己周圍 burst_radius 公尺。release_enabled 0＝這個鍵沒有作用（劇情）。status_refresh_gain＝已經中毒的時候每再中一次（毒霧每 0.25 秒一次）多加幾秒：0＝照舊（不會越站越多）。reversed_heal_scale＝反轉之後的回血乘幾成（1＝照舊；戰鬥場調低：留著毒只是慢慢補，大的好處要按釋放去拿）。",
-    "release_enabled": 0,
+    "hurt_stun": 0.4,
+    "hurt_push": 0.7,
+    "input_buffer": 0.2,
+    "attack_face_lock": 1,
+    "release_enabled": 1,
     "burst_per_sec": 8,
     "burst_max": 80,
     "burst_radius": 3.0,
     "burst_stagger": 30,
     "burst_min_sec": 0.5,
-    "status_refresh_gain": 0.0,
-    "reversed_heal_scale": 1.0
+    "status_refresh_gain": 0.75,
+    "reversed_heal_scale": 0.2,
+    "_doc": "諾恩。release_*／burst_*＝「釋放」：把身上反轉中的中毒一次用掉炸開，傷害＝用掉的秒數 × burst_per_sec（上限 burst_max）。status_refresh_gain＝已經中毒時每再中一次多加幾秒；reversed_heal_scale＝反轉後的回血乘幾成。"
   },
-  "sheila": {
-    "max_hp": 160, "slash_damage": 18, "slash_stagger": 15, "stamina": 100, "stamina_regen": 25,
-    "dodge_cost": 20, "slash_cost": 10, "slash_range": 1.8, "slash_interval": 1.3, "engage_range": 10.0, "command_cooldown": 1.5,
-    "weak_damage": 60, "counter_damage": 27, "counter_stagger": 30, "countered_damage": 14,
-    "revive_window": 8.0, "revive_range": 1.8, "revive_hp": 0.4, "after_combat_hp": 0.25
-  },
-  "ashwalker": {"max_hp": 60, "claw_damage": 14, "stagger_max": 60, "telegraph": 0.8, "recover": 0.6, "attack_range": 1.8, "telegraph_stagger_mult": 0.5, "recover_stagger_mult": 2.0, "stagger_kneel": 2.0, "move_speed": 2.6},
-  "undertaker": {
-    "max_hp": 900, "stagger_max": 200, "stagger_kneel": 3.0, "attack_range": 3.2, "telegraph": 0.9, "recover": 0.8, "move_speed": 2.3,
-    "telegraph_stagger_mult": 0.3, "recover_stagger_mult": 2.0,
-    "pattern": ["sweep", "slam", "sweep", "charge"],
-    "pattern_pursuit": ["sweep", "slam"], "pursuit_stagger_max": 140,
-    "pattern_guardian": ["sweep", "spray", "slam", "sweep"], "guardian_hp": 480, "guardian_stagger_max": 140,
-    "moves": {
-      "sweep": {"telegraph": 0.9, "active": 0.25, "recover": 0.8, "range": 3.2, "arc_deg": 150, "damage": 28},
-      "slam": {"telegraph": 1.0, "active": 0.15, "recover": 0.6, "range": 3.0, "reach": 1.9, "radius": 2.0, "damage": 40},
-      "charge": {"telegraph": 0.6, "active": 1.0, "recover": 0.9, "min_range": 4.0, "range": 11.0, "speed": 11.0, "hit_radius": 1.1, "damage": 22, "wall_kneel": 2.0},
-      "spray": {"telegraph": 1.1, "active": 0.3, "recover": 1.0, "range": 3.4, "reach": 2.6, "radius": 2.0, "life": 3.0}
-    }
-  },
-  "demo_guard": {
-    "max_hp": 120,
-    "stagger_max": 50,
-    "stagger_kneel": 2.0,
-    "attack_range": 2.1,
-    "telegraph": 0.75,
+  "poison_slime": {
+    "_doc": "劇毒史萊姆（第一章教學戰）：慢、一招撲撞。",
+    "max_hp": 60,
+    "bump_damage": 10,
+    "stagger_max": 40,
+    "telegraph": 0.7,
     "recover": 0.9,
-    "move_speed": 2.5,
+    "attack_range": 1.5,
     "telegraph_stagger_mult": 0.5,
     "recover_stagger_mult": 2.0,
-    "pattern": ["swing", "thrust"],
-    "moves": {
-      "swing": {"telegraph": 0.75, "active": 0.2, "recover": 0.9, "range": 2.1, "reach": 2.3, "arc_deg": 130, "damage": 12},
-      "thrust": {"telegraph": 0.55, "active": 0.15, "recover": 1.0, "range": 2.6, "reach": 2.9, "arc_deg": 36, "damage": 10}
-    }
+    "stagger_kneel": 1.5,
+    "move_speed": 2.0,
+    "flinch": 0.25,
+    "flinch_push": 0.4
   },
-  "demo_bracer": {
-    "max_hp": 100,
-    "stagger_max": 40,
-    "stagger_kneel": 2.2,
-    "attack_range": 1.6,
-    "telegraph": 0.32,
-    "recover": 1.8,
-    "move_speed": 3.3,
-    "telegraph_stagger_mult": 0.6,
-    "recover_stagger_mult": 3.0,
-    "pattern": ["jab"],
-    "moves": {
-      "jab": {"telegraph": 0.32, "active": 0.12, "recover": 1.8, "range": 1.6, "reach": 1.9, "arc_deg": 70, "damage": 9}
-    }
-  },
-  "demo_thrower": {
-    "max_hp": 70,
-    "stagger_max": 30,
-    "stagger_kneel": 2.2,
-    "attack_range": 7.0,
-    "telegraph": 0.9,
-    "recover": 2.4,
-    "move_speed": 2.2,
-    "telegraph_stagger_mult": 1.0,
-    "recover_stagger_mult": 2.0,
-    "pattern": ["toss"],
-    "gawk_sec": 1.6,
-    "gawk_back": 1.0,
-    "gawk_after": 0.6,
-    "gawk_cooldown": 10.0,
-    "fumble_damage": 32,
-    "fumble_radius": 1.6,
-    "fumble_life": 3.0,
-    "moves": {
-      "toss": {"telegraph": 0.9, "active": 0.15, "recover": 2.4, "range": 8.5, "radius": 2.0, "life": 3.0, "flight": 0.55, "damage": 0}
-    }
-  },
-  "caravan": {"speed": 1.1, "stop_sec": 2.0},
   "feel": {
     "hit_stop": 0.06,
     "hit_stop_kill": 0.12,
@@ -112,24 +56,23 @@
     "reduced_shake_scale": 0.25
   },
   "difficulty": {
-    "story": {"enemy_damage": 0.5, "telegraph": 1.3, "command_window": 1.0},
-    "standard": {"enemy_damage": 1.0, "telegraph": 1.0, "command_window": 0.6},
-    "hard": {"enemy_damage": 1.4, "telegraph": 0.85, "command_window": 0.35}
+    "story": {
+      "enemy_damage": 0.5,
+      "telegraph": 1.3
+    },
+    "standard": {
+      "enemy_damage": 1.0,
+      "telegraph": 1.0
+    },
+    "hard": {
+      "enemy_damage": 1.4,
+      "telegraph": 0.85
+    }
   },
   "crowd": {
-    "_doc": "同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）；別人剛出完招 attack_gap 秒內也算佔著；沒輪到的人停在 attack_range + wait_ring 外面等（D-240）。劇情＝不限。choke_*（D-248）：會走過來打人的敵人站進毒霧（或毒霧落在他身上）的那一刻被嗆到——後仰、往霧外跳（到霧的邊再多 choke_margin 公尺，最多 choke_push_max）、扣 choke_damage（扣到剩 1 為止）；同一個人同一團霧只一次，變紅的人不會。劇情＝choke_enabled 0＝沒有這件事。",
-    "attack_slots": 0, "attack_gap": 0.0, "wait_ring": 0.0,
-    "choke_enabled": 0, "choke_damage": 0, "choke_margin": 0.35, "choke_push_max": 1.4
-  },
-  "profiles": {
-    "arena": {
-      "noen": {"lunge_dist": 0.6, "blunt_damage": 24, "blunt_stagger": 10, "hurt_stun": 0.4, "hurt_push": 0.7, "input_buffer": 0.2, "attack_face_lock": 1, "release_enabled": 1, "status_refresh_gain": 0.75, "reversed_heal_scale": 0.2},
-      "sheila": {"slash_damage": 10, "weak_damage": 30, "engage_range": 4.5},
-      "crowd": {"attack_slots": 1, "attack_gap": 0.7, "wait_ring": 0.9, "choke_enabled": 1, "choke_damage": 8},
-      "demo_guard": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25, "moves": {"swing": {"damage": 22}, "thrust": {"damage": 18}}},
-      "demo_bracer": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 2, "brace_armor": 0.25, "moves": {"jab": {"damage": 18}}},
-      "demo_thrower": {"flinch": 0.25, "flinch_push": 0.4, "brace_after": 3, "brace_armor": 0.25},
-      "undertaker": {"_doc": "戰鬥場的南街守衛（第 4 波）。guardian_hp：諾恩一下 6 → 24（D-242），生命跟著乘四，要打幾下才倒跟改之前一樣；失衡沒有補（把牠的失衡上限減半的話，席菈一個人就能讓牠一直跪）。pattern_strict（D-243）：照 pattern_guardian 的順序出招，輪到的那一招還太遠就走近、不拿射程比較長的噴毒頂替——不開的話諾恩挨打被推開 0.7 m 之後牠會一直噴毒（六次噴毒才一次橫掃），站著不動 120 秒不會輸。橫掃 28 → 30、下砸 40 → 45：站著不動 21.5 → 19.5 秒倒（目標 10～20）。生命沒有為了「會打的機器人打滿 60 秒」再往上加：現在要打 80 下，再加就是當初的問題；連段、重擊、釋放做出來之後諾恩的輸出會變，那時候再定。", "guardian_hp": 1920, "pattern_strict": true, "moves": {"sweep": {"damage": 30}, "slam": {"damage": 45}}}
-    }
+    "_doc": "同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）；別人剛出完招 attack_gap 秒內也算佔著；沒輪到的人停在 attack_range + wait_ring 外面等。",
+    "attack_slots": 1,
+    "attack_gap": 0.7,
+    "wait_ring": 0.9
   }
 }

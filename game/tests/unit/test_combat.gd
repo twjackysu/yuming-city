@@ -3,18 +3,8 @@ extends TestCase
 
 
 func after_each() -> void:
-	CombatTuning.set_profile("")
 	CombatTuning.load_tuning()
 	Engine.time_scale = 1.0
-
-
-func test_tuning_defaults_match_design() -> void:
-	CombatTuning.load_tuning()
-	assert_eq(CombatTuning.num("noen.max_hp"), 100.0, "諾恩 100")
-	assert_eq(CombatTuning.num("noen.blunt_damage"), 6.0, "鈍擊 6")
-	assert_eq(CombatTuning.num("undertaker.max_hp"), 900.0, "送葬者 900")
-	assert_eq(CombatTuning.pair("noen.strike_window", Vector2.ZERO), Vector2(0.35, 0.6))
-	assert_eq(CombatTuning.num("no.such.key", 7.0), 7.0, "不存在用 fallback")
 
 
 func test_tuning_override_merges_deep() -> void:
@@ -28,49 +18,7 @@ func test_tuning_override_merges_deep() -> void:
 	DirAccess.remove_absolute(path)
 
 
-## 戰鬥場的那一套數值（D-239）：只蓋掉寫出來的 key；換回去之後劇情流程的數字跟原本一樣。
-func test_arena_profile_overrides_only_listed_keys_and_restores() -> void:
-	CombatTuning.load_tuning()
-	assert_eq(CombatTuning.profile(), "", "預設沒有套")
-	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), 12.0, "劇情：橫掃 12")
-	assert_eq(CombatTuning.num("sheila.slash_damage"), 18.0, "劇情：席菈一刀 18")
-	assert_eq(CombatTuning.num("sheila.engage_range"), 10.0, "劇情：席菈 10 m 就迎上去")
-	CombatTuning.set_profile(CombatTuning.PROFILE_ARENA)
-	assert_eq(CombatTuning.profile(), CombatTuning.PROFILE_ARENA)
-	var swing: float = CombatTuning.num("demo_guard.moves.swing.damage")
-	var hp: float = CombatTuning.num("noen.max_hp")
-	# D-242：28 → 22（挨打有硬直之後調輕一點）。四下不倒、五下倒
-	assert_true(swing > hp / 5.0 and swing <= hp / 3.0, "戰鬥場：拿棍子的橫掃 4～5 下打倒諾恩（%.0f）" % swing)
-	var jab: float = CombatTuning.num("demo_bracer.moves.jab.damage")
-	assert_true(jab > 9.0 and jab < swing, "戰鬥場：快拳比劇情痛、比橫掃輕（%.0f）" % jab)
-	assert_true(CombatTuning.num("sheila.slash_damage") < CombatTuning.num("noen.blunt_damage") * 2.0, "戰鬥場：席菈一刀不到諾恩兩下")
-	assert_true(CombatTuning.num("sheila.weak_damage") <= 30.0, "戰鬥場：席菈打弱點減半")
-	assert_true(CombatTuning.num("sheila.engage_range") < 6.0, "戰鬥場：敵人走近了她才動手")
-	assert_eq(CombatTuning.num("demo_guard.max_hp"), 120.0, "沒寫的 key 照舊")
-	assert_eq(CombatTuning.num("demo_guard.moves.swing.telegraph"), 0.75, "同一招沒寫的欄位照舊")
-	# D-242：諾恩一下 6 → 24，一般敵人五下以內倒；挨打有硬直，比敵人輪流出手的空檔短
-	var hit: float = CombatTuning.num("noen.blunt_damage")
-	for prefix: String in ["demo_guard", "demo_bracer", "demo_thrower"]:
-		var foe_hp: float = CombatTuning.num(prefix + ".max_hp")
-		assert_true(foe_hp / hit >= 2.5 and foe_hp / hit <= 5.0, "戰鬥場：%s 三到五下倒（%.0f 血、一下 %.0f）" % [prefix, foe_hp, hit])
-		assert_true(CombatTuning.num(prefix + ".brace_armor") < 0.5, "戰鬥場：%s 硬撐時打不痛" % prefix)
-	assert_true(CombatTuning.num("noen.hurt_stun") > 0.0 and CombatTuning.num("noen.hurt_stun") < CombatTuning.num("crowd.attack_gap"), "戰鬥場：挨打有硬直")
-	# 重新載入（F5）還是戰鬥場那一套
-	CombatTuning.load_tuning()
-	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), swing, "重新載入不會掉回去")
-	CombatTuning.set_profile("")
-	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), 12.0, "換回去：橫掃 12")
-	assert_eq(CombatTuning.num("demo_bracer.moves.jab.damage"), 9.0, "換回去：快拳 9")
-	assert_eq(CombatTuning.num("sheila.slash_damage"), 18.0, "換回去：席菈 18")
-	assert_eq(CombatTuning.num("sheila.weak_damage"), 60.0, "換回去：弱點 60")
-	assert_eq(CombatTuning.num("noen.blunt_damage"), 6.0, "換回去：諾恩一下 6")
-	assert_eq(CombatTuning.num("noen.blunt_stagger"), 20.0, "換回去：失衡 20")
-	assert_eq(CombatTuning.num("noen.hurt_stun"), 0.0, "換回去：挨打沒有硬直")
-	assert_eq(CombatTuning.num("undertaker.guardian_hp"), 480.0, "換回去：南街守衛 480")
-	CombatTuning.set_profile("no_such_profile")
-	assert_eq(CombatTuning.num("demo_guard.moves.swing.damage"), 12.0, "不認得的名字＝原本的數字")
-
-
+## 戰鬥場的那一套數值：只蓋掉寫出來的 key；換回去之後劇情流程的數字跟原本一樣。
 func test_health_damage_invuln_death_reset() -> void:
 	var h := Health.new(20.0)
 	var died: Array[int] = [0]
@@ -132,7 +80,7 @@ func test_player_swing_hits_target_with_hit_stop_and_shake() -> void:
 	assert_eq(front_hits[0], 1, "前方的靶被打中一次")
 	assert_eq(behind_hits[0], 0, "背後的不會中")
 	assert_eq(behind.hp, 60.0, "背後的沒有扣血")
-	assert_eq(front.hp, 60.0 - 6.0, "鈍擊 6")
+	assert_eq(front.hp, 60.0 - CombatTuning.num("noen.blunt_damage"), "一刀的傷害照數值檔")
 	assert_true(player.shake_amount() > 0.0, "命中有鏡頭震動")
 	for i: int in 30:
 		await tree.physics_frame

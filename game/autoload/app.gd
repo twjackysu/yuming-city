@@ -36,7 +36,7 @@ func _ready() -> void:
 	var theme: Theme = UiFonts.build_theme()
 	get_tree().root.theme = theme
 	# root.theme 傳不過 Node3D／CanvasLayer（關卡裡的 HUD、對話框、暫停選單都在那底下），
-	# 所以也併進引擎的預設 Theme：沒有 theme 來源的 Control 都會用到同一套字型與焦點樣式（D-071）
+	# 所以也併進引擎的預設 Theme：沒有 theme 來源的 Control 都會用到同一套字型與焦點樣式
 	ThemeDB.get_default_theme().merge_with(theme)
 	InputSetup.ensure_actions()
 	var args: Dictionary = parse_user_args(OS.get_cmdline_user_args())
@@ -58,7 +58,7 @@ func _input(event: InputEvent) -> void:
 		last_pad = event.device
 	if d >= 0:
 		set_device(d)
-	# 開發用：F5 重新載入戰鬥數值（user://tuning.json 覆寫，D-014）
+	# 開發用：F5 重新載入戰鬥數值（user://tuning.json 覆寫）
 	var key: InputEventKey = event as InputEventKey
 	if key != null and key.pressed and not key.echo and key.keycode == KEY_F5:
 		CombatTuning.load_tuning()
@@ -85,7 +85,7 @@ static func parse_user_args(argv: PackedStringArray) -> Dictionary:
 	return out
 
 
-## 連拍改成「從現在起第 delay 幀」開始拍（開發用，D-241）：要拍的事情什麼時候發生每場不一樣（例如敵人變紅），
+## 連拍改成「從現在起第 delay 幀」開始拍（開發用）：要拍的事情什麼時候發生每場不一樣（例如敵人變紅），
 ## 就把 --burst-from 設成很大的數字、事情發生的那一刻叫這個（戰鬥場的 --burst-on=brace）。印出實際的幀數，改前的版本用同一個數字拍。
 func burst_start_in(delay: int) -> void:
 	burst_from = _frame + maxi(delay, 1)

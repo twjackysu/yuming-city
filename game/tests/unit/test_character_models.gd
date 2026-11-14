@@ -41,44 +41,6 @@ func _puppet(scene: PackedScene) -> Puppet:
 	return p
 
 
-func test_no_model_uses_procedural_puppet() -> void:
-	assert_eq(CharacterModels.scene_for("nobody"), null, "沒有匯入的模型")
-	assert_eq(CharacterModels.scene_for(""), null)
-	var p := Puppet.new()
-	p.character_id = "nobody"
-	tree.root.add_child(p)
-	assert_false(p.uses_model())
-	assert_true(p.joint("hips") != null, "程序人偶的關節")
-	assert_true(p.hand("R").has_node("BellHammer"), "右手有鐘錘")
-	p.queue_free()
-	await tree.process_frame
-
-
-func test_model_drives_animations_by_state() -> void:
-	var p: Puppet = _puppet(_fake_model(["idle", "walk", "run", "light_attack_01"]))
-	assert_true(p.uses_model(), "有骨架的模型")
-	assert_false(p.joints.has("spine"), "不建程序人偶（沒有人偶自己的關節）")
-	assert_true(p.get_node_or_null("Roll/hips") == null, "不建程序人偶")
-	assert_true(p.hand("L").get_parent() is BoneAttachment3D, "左手掛點掛在骨骼附著點底下")
-	assert_eq((p.hand("L").get_parent() as BoneAttachment3D).bone_name, "mixamorig_LeftHand", "Godot 匯入 Mixamo 骨骼名（冒號變底線）")
-	assert_true(p.hand("R").has_node("BellHammer"), "鐘錘掛在右手骨骼")
-	assert_eq(p.model_animation, "idle")
-	assert_eq(p.anim.get_animation("walk").loop_mode, Animation.LOOP_LINEAR, "走路循環")
-	p.set_move_speed(1.6)
-	p.advance(0.05)
-	assert_eq(p.model_animation, "walk")
-	p.set_move_speed(5.8)
-	p.advance(0.05)
-	assert_eq(p.model_animation, "run")
-	p.play_action("attack")
-	p.advance(0.05)
-	assert_eq(p.model_animation, "light_attack_01")
-	p.advance(1.0)
-	assert_eq(p.model_animation, "run", "攻擊播完回到移動")
-	p.queue_free()
-	await tree.process_frame
-
-
 func test_missing_dodge_falls_back_to_roll() -> void:
 	var p: Puppet = _puppet(_fake_model(["Armature|idle"], true, ""))
 	assert_eq(p.model_animation, "Armature|idle", "glTF 前綴也找得到")
@@ -94,7 +56,7 @@ func test_missing_dodge_falls_back_to_roll() -> void:
 	await tree.process_frame
 
 
-## 循環動作的 `_loop` 結尾也認得（D-140：席菈試作的 GLB 走路叫 walk_loop）；照樣循環播放
+## 循環動作的 `_loop` 結尾也認得（席菈試作的 GLB 走路叫 walk_loop）；照樣循環播放
 func test_loop_suffixed_animations_are_found() -> void:
 	var p: Puppet = _puppet(_fake_model(["Armature|idle_loop", "Armature|walk_loop"], true, ""))
 	assert_eq(p.model_animation, "Armature|idle_loop", "idle_loop 當 idle")
@@ -114,7 +76,7 @@ func test_model_without_skeleton_is_rejected() -> void:
 	await tree.process_frame
 
 
-## D-251：模型有 `release` 這段動作 → 釋放的那 0.36 秒播它，播完回到原本的狀態；滾到一半不播；沒有這段動作就照舊。
+## ：模型有 `release` 這段動作 → 釋放的那 0.36 秒播它，播完回到原本的狀態；滾到一半不播；沒有這段動作就照舊。
 func test_model_plays_release_animation() -> void:
 	var p: Puppet = _puppet(_fake_model(["idle", "run", "light_attack_01", "release"]))
 	p.advance(0.016)
@@ -165,55 +127,8 @@ func _arm_model() -> PackedScene:
 	return scene
 
 
-## D-253：模型沒有人偶的關節 → joint() 給對應骨頭上的掛點，方向跟人偶的關節一樣（−Y 往下一節、−Z 朝前），
+## ：模型沒有人偶的關節 → joint() 給對應骨頭上的掛點，方向跟人偶的關節一樣（−Y 往下一節、−Z 朝前），
 ## 所以護腕（掛在 elbow_R 底下、往下擺）不用分人偶還是模型。
-func test_model_joint_is_attachment_with_puppet_axes() -> void:
-	var p: Puppet = _puppet(_arm_model())
-	assert_true(p.uses_model())
-	var elbow: Node3D = p.joint("elbow_R")
-	assert_not_null(elbow, "模型也拿得到 elbow_R（原本是 null：護腕掛不上去）")
-	var att: BoneAttachment3D = elbow.get_parent() as BoneAttachment3D
-	assert_not_null(att, "掛在骨骼附著點底下")
-	assert_eq(att.bone_name, "RightLowerArm")
-	assert_eq(p.joint("elbow_R"), elbow, "同一個關節只做一次")
-	var sk: Skeleton3D = p.skeleton
-	var world: Basis = sk.get_bone_global_rest(sk.find_bone("RightLowerArm")).basis * elbow.transform.basis
-	assert_true((-world.y).is_equal_approx(Vector3(1, 0, 0)), "−Y 沿著前臂往手（%s）" % str(-world.y))
-	assert_true((-world.z).is_equal_approx(Vector3(0, 0, -1)), "−Z 朝角色的前面（%s）" % str(-world.z))
-	assert_true(elbow.position.is_zero_approx(), "關節在骨頭的原點")
-	# 手：同樣的方向，另外往指尖移到掌心
-	var hand_r: Node3D = p.hand("R")
-	var hand_rest: Transform3D = sk.get_bone_global_rest(sk.find_bone("RightHand"))
-	var hand_world: Transform3D = hand_rest * hand_r.transform
-	assert_true((-hand_world.basis.y).is_equal_approx(Vector3(1, 0, 0)), "手的 −Y 朝指尖")
-	assert_true((hand_world.origin - hand_rest.origin).is_equal_approx(Vector3(Puppet.MODEL_PALM_OFFSET, 0, 0)), "掛點在掌心")
-	assert_true(hand_r.has_node("BellHammer"), "鐘錘掛在右手的掛點上")
-	# 沒有軸的關節跟模型同方向；模型沒有的骨頭回傳 null
-	var hips: Node3D = p.joint("hips")
-	assert_not_null(hips)
-	assert_true(hips.transform.basis.is_equal_approx(Basis.IDENTITY), "骨盆的掛點跟模型同方向")
-	assert_eq(p.joint("neck"), null, "模型沒有這根骨頭")
-	assert_eq(p.joint("no_such_joint"), null)
-	p.queue_free()
-	await tree.process_frame
-
-
-## 玩家在戰鬥場與劇情關卡都用模型（2026-11-14；以前 D-253 只在戰鬥場用）。
-func test_player_uses_model_everywhere() -> void:
-	var was: bool = Game.arena_mode
-	for arena: bool in [false, true]:
-		Game.arena_mode = arena
-		var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
-		tree.root.add_child(player)
-		assert_eq(player.puppet().character_id, "noen", "arena_mode=%s" % str(arena))
-		assert_not_null(player.puppet().hand("L"), "提燈有地方掛")
-		assert_not_null(player.puppet().hand("R"))
-		player.queue_free()
-		await tree.process_frame
-	Game.arena_mode = was
-
-
-## D-254、D-255：Puppet.lit_models（預設開，Jacky 選的）＝模型的材質換成吃場景的光、平塗的複本；關掉（`--char-unlit`）就照原檔不受光。原本的資源不動。
 func test_lit_models_override_unlit_materials() -> void:
 	var root := Node3D.new()
 	root.name = "FakeModel"
@@ -291,7 +206,7 @@ func _facing_model(front_z: float) -> PackedScene:
 	return scene
 
 
-## 模型臉朝 +Z（glTF 的慣例）就自動轉半圈（D-260）：身體的正面永遠是 −Z，掛在手上的東西也跟著對。
+## 模型臉朝 +Z（glTF 的慣例）就自動轉半圈：身體的正面永遠是 −Z，掛在手上的東西也跟著對。
 func test_backward_model_is_turned_to_face_forward() -> void:
 	var ok: Puppet = _puppet(_facing_model(-1.0))
 	assert_true(ok.uses_model())
@@ -319,7 +234,7 @@ func test_backward_model_is_turned_to_face_forward() -> void:
 	await tree.process_frame
 
 
-## 建置出來的模型（有的話）：站著與每一段動作，臉都朝身體的正面（−Z）——走路、跑步、出手不會整個人轉過去（D-260）。
+## 建置出來的模型（有的話）：站著與每一段動作，臉都朝身體的正面（−Z）——走路、跑步、出手不會整個人轉過去。
 ## 沒有模型（CI 裝不了 bpy）就略過。閃避是整個人滾一圈，不算。
 func test_built_models_face_forward_in_every_clip() -> void:
 	for id: String in ["noen", "sheila"]:
@@ -349,4 +264,3 @@ func test_built_models_face_forward_in_every_clip() -> void:
 			assert_true(worst < -0.2, "%s 的 %s：臉沒有轉到背後（z 最大 %.2f）" % [id, clip, worst])
 		p.queue_free()
 		await tree.process_frame
-

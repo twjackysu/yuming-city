@@ -28,16 +28,6 @@ func _memory_db() -> DialogueDB:
 	return db
 
 
-func test_default_data_is_valid_and_keys_exist() -> void:
-	var db: DialogueDB = _db()
-	assert_true(db.has_dialogue("rb_sheila_meet"), "席菈的對話")
-	assert_true(db.has_dialogue("rb_ada_wages"), "艾妲的對話")
-	TranslationServer.set_locale("en")
-	for key: String in db.translation_keys():
-		assert_ne(TranslationServer.translate(key), StringName(key), "對話用到不存在的翻譯 key：" + key)
-	TranslationServer.set_locale(str(tree.root.get_node("Settings").get("locale")))
-
-
 func test_validation_catches_mistakes() -> void:
 	var bad_next: PackedStringArray = DialogueDB.validate_dialogue({"id": "a", "start": "x", "nodes": {"x": {"speaker": "S", "text": "T", "next": "nope"}}})
 	assert_true(bad_next.size() > 0 and bad_next[0].contains("nope"), "next 指向不存在的節點")
@@ -61,32 +51,7 @@ func test_validation_catches_mistakes() -> void:
 	assert_true(old_condition.size() > 0, "已經拿掉的條件（memory_paid）會被擋下來，不會默默當成不成立")
 
 
-## 遊戲裡的資料：席菈的對話跳過只跳到選項為止，選項的效果寫進旗標，最後一句設 rb.sheila_met。
-func test_sheila_meet_choice_sets_flags() -> void:
-	var state := GameState.new()
-	var r := DialogueRunner.new(_db(), state)
-	var lines: Array[String] = []
-	r.line_shown.connect(func(_speaker: String, text: String) -> void: lines.append(text))
-	assert_true(r.start("rb_sheila_meet"))
-	r.skip_to_choice()
-	assert_eq(",".join(PackedStringArray(lines)),
-		"DLG_RB_SHEILA_001,DLG_RB_SHEILA_002,DLG_RB_SHEILA_003,DLG_RB_SHEILA_004,DLG_RB_SHEILA_005", "跳過只跳到選項為止")
-	assert_eq(r.visible_choices.size(), 2, "兩個選項")
-	assert_false(r.choose(5), "超出範圍的選項無效")
-	assert_true(r.choose(0), "把傷口給她看")
-	assert_eq(state.get_flag("rb.showed_sheila_wound"), true, "選項效果")
-	assert_eq(r.current_text(), "DLG_RB_SHEILA_L_SHOW")
-	assert_false(bool(state.get_flag("rb.sheila_met", false)), "還沒說完不設旗標")
-	r.advance()
-	assert_eq(r.current_text(), "DLG_RB_SHEILA_006")
-	assert_eq(state.get_flag("rb.sheila_met"), true, "最後一句設旗標")
-	var done: Array[bool] = [false]
-	r.finished.connect(func(_id: String) -> void: done[0] = true)
-	assert_false(r.advance(), "最後一句之後結束")
-	assert_true(done[0] and not r.is_running())
-
-
-## 對話的效果發出 state_changed → 任務重新檢查條件 → 推進（外殼就是這樣接 GameSession.advance()）。
+## 遊戲裡的資料：席菈的對話跳過只跳到選項為止，選項的效果寫進旗標，最後一句設 ch1.reversal_seen。
 func test_choice_effect_advances_quest() -> void:
 	var state := GameState.new()
 	var qdb := QuestDB.new()

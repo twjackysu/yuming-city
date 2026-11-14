@@ -203,7 +203,7 @@ func _build() -> void:
 	_choices = VBoxContainer.new()
 	_choices.name = "Choices"
 	box.add_child(_choices)
-	# 鍵鼠「[F] 繼續」；手把 A 的按鈕圖示＋「繼續」（D-063）
+	# 鍵鼠「[F] 繼續」；手把 A 的按鈕圖示＋「繼續」
 	_hint = GlyphLine.new().configure(15, Color(0.6, 0.62, 0.66, 0.8))
 	_hint.name = "Hint"
 	_hint.fit_content = false

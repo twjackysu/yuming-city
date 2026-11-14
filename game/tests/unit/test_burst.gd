@@ -1,5 +1,5 @@
 extends TestCase
-## 連拍（docs/design/11-combat-first.md 第 4 節，D-238）：哪幾幀要存。動作驗收看的是這一條，不是停住姿勢的單張圖。
+## 連拍（docs/design/11-combat-first.md 第 4 節）：哪幾幀要存。動作驗收看的是這一條，不是停住姿勢的單張圖。
 
 
 func test_burst_index_picks_every_nth_frame_from_the_start() -> void:

@@ -1,0 +1,29 @@
+{
+  "id": "ch1_main",
+  "title": "Q_CH1_MAIN_TITLE",
+  "stages": [
+    {
+      "id": "enter_miasma",
+      "objective": "Q_CH1_OBJ_MIASMA",
+      "checkpoint": "ch1_forest_gate",
+      "marker": "node:MiasmaEdge",
+      "done_when": {
+        "flag": "ch1.reversal_seen"
+      }
+    },
+    {
+      "id": "slimes",
+      "objective": "Q_CH1_OBJ_SLIMES",
+      "checkpoint": "ch1_slimes",
+      "marker": "node:SlimeGlade",
+      "done_when": {
+        "flag": "ch1.slimes_cleared"
+      }
+    }
+  ],
+  "on_complete": {
+    "set": {
+      "ch1.forest_gate_done": true
+    }
+  }
+}

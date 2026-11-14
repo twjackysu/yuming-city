@@ -3,7 +3,7 @@ extends RefCounted
 ## 可存檔的遊戲狀態（純資料，不依賴場景）。
 ## 只放「故事記得的事」：旗標、任務階段、目前章節與檢查點、身上的狀態與道具。
 
-var chapter: String = "rb_ch1"
+var chapter: String = "ch1"
 var checkpoint: String = "start"
 var playtime_sec: float = 0.0
 ## 任意故事旗標，值限 bool / int / float / String（要能 JSON 化）
@@ -11,20 +11,16 @@ var flags: Dictionary = {}
 ## quest_id -> 階段 id
 var quests: Dictionary = {}
 
-## 存檔裡 `mode` 欄位的值：STORY_MODE＝有開新遊戲的劇情（GameSession.new_game 設定，存在 GameSession.STORY_SAVE_DIR）。
-## **字串不要改**：玩家已經有的存檔裡寫的就是 "reboot"，改了那些存檔會被當成沒有劇情（D-227）。
-const STORY_MODE: String = "reboot"
-
-## STORY_MODE＝現在的劇情；"classic"＝沒有開新遊戲（測試、benchmark 的空鎮），或已經刪掉的舊劇情留下的 v3 存檔
-## （標題的「繼續」不認它）。存檔裡舊的 memories_paid／guide 兩個欄位讀到就丟掉。
-var mode: String = "classic"
+## 有開新遊戲（或讀檔）的劇情＝STORY_MODE；""＝沒有開劇情（測試、benchmark 的空關卡）：不恢復生命、不寫存檔。
+const STORY_MODE: String = "story"
+var mode: String = ""
 ## 身上還在的狀態（StatusEffects.to_array()），檢查點存的照原樣恢復
 var statuses: Array = []
 ## 反轉欄位（ReversalSlots.to_dict()）；空＝還沒覺醒、兩個空格
 var reversal: Dictionary = {}
 ## 道具數量：item_id -> int
 var items: Dictionary = {}
-## 已經發放過的一次性東西（藥箱、欠薪），讀檔重試不重複領
+## 已經發放過的一次性東西（寶箱、獎勵），讀檔重試不重複領
 var grants: PackedStringArray = []
 ## 諾恩的生命（檢查點存檔記下）；沒有 "hp"＝滿血
 var vitals: Dictionary = {}
@@ -73,7 +69,7 @@ static func from_dict(d: Dictionary) -> GameState:
 	var q: Variant = d.get("quests", {})
 	if q is Dictionary:
 		s.quests = (q as Dictionary).duplicate(true)
-	s.mode = str(d.get("mode", "classic"))
+	s.mode = str(d.get("mode", ""))
 	var st: Variant = d.get("statuses", [])
 	if st is Array:
 		s.statuses = (st as Array).duplicate(true)

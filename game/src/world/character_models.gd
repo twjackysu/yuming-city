@@ -8,7 +8,7 @@ extends RefCounted
 const DIR: String = "res://assets/characters"
 
 ## Puppet 狀態 → 動作表（art-inbox/README.md）名稱，依序找第一個存在的
-## 循環動作也認 `_loop` 結尾（D-140：Jacky 的席菈試作把走路匯出成 walk_loop）
+## 循環動作也認 `_loop` 結尾（Jacky 的席菈試作把走路匯出成 walk_loop）
 const ANIM_MAP: Dictionary = {
 	"idle": ["idle", "idle_loop", "sword_idle"],
 	"walk": ["walk", "walk_loop"],
@@ -26,7 +26,7 @@ const HAND_BONES: Dictionary = {
 }
 
 
-## 程序人偶的關節名 → 模型的骨頭（比對方式跟手一樣）。掛在人偶關節上的東西（護腕掛在 elbow_R…）用模型時改掛在這根骨頭上（D-253）。
+## 程序人偶的關節名 → 模型的骨頭（比對方式跟手一樣）。掛在人偶關節上的東西（護腕掛在 elbow_R…）用模型時改掛在這根骨頭上。
 ## 前面是 Godot 人形骨架的名字（VRM 轉來的、自製的都用這一套），後面是 Mixamo 的。
 const JOINT_BONES: Dictionary = {
 	"hips": ["hips"], "spine": ["spine"], "chest": ["chest", "upperchest", "spine1"], "neck": ["neck"], "head": ["head"],
@@ -77,7 +77,7 @@ static func find_animation(anim: AnimationPlayer, state: String) -> String:
 
 ## 掛點骨骼索引；沒有回傳 -1。
 ## 模型的臉朝哪邊（模型根節點 root 的座標）：上（骨盆→頭）× 右（左肩→右肩）。Godot 的正面是 −Z，所以正常是 (0, 0, −1) 左右；
-## glTF 的慣例是臉朝 +Z，別人做的模型常常是反的（D-260）。posed＝用目前動作的姿勢，否則用休息姿勢。量不出來（缺骨頭）回傳 Vector3.ZERO。
+## glTF 的慣例是臉朝 +Z，別人做的模型常常是反的。posed＝用目前動作的姿勢，否則用休息姿勢。量不出來（缺骨頭）回傳 Vector3.ZERO。
 static func facing(skeleton: Skeleton3D, root: Node3D, posed: bool = false) -> Vector3:
 	if skeleton == null:
 		return Vector3.ZERO

@@ -28,7 +28,7 @@ var vsync: bool = true
 var reduce_camera_shake: bool = false
 ## 目標指引（HUD 上指向目前目標的小菱形＋距離；02-gameplay「目標指引」）
 var objective_marker: bool = true
-## 觀察提示音（第 3 章段落 2，D-143／D-164）：掛著的送葬者轉頭之前，鏈子先響一聲。關掉就只看動作。
+## 觀察提示音（第 3 章段落 2）：掛著的送葬者轉頭之前，鏈子先響一聲。關掉就只看動作。
 var observe_cue: bool = true
 ## 目前的按鍵綁定（格式見 InputSetup）；存檔時只寫跟預設不同的動作到 [input]
 var input_bindings: Dictionary = InputSetup.defaults()

@@ -1,9 +1,9 @@
 class_name GlyphLine
 extends HBoxContainer
-## 一行含按鍵的提示（D-063）：翻譯字串裡的 {key} 在鍵鼠模式顯示成「[F]」文字，
+## 一行含按鍵的提示：翻譯字串裡的 {key} 在鍵鼠模式顯示成「[F]」文字，
 ## 在手把模式換成 PadGlyph 按鈕圖示（圖示之間的字各用一個 Label；{key} 可以出現不只一次）。
 ## 例：「按住 {key}　重現 9 秒」→ 鍵鼠「按住 [V]　重現 9 秒」；手把「按住 (Y 圖示)　重現 9 秒」。
-## 字一律用子節點 Label（D-060：遊戲裡 draw_string 這套子集字型會畫成缺字方塊）。
+## 字一律用子節點 Label（遊戲裡 draw_string 這套子集字型會畫成缺字方塊）。
 ## Label 印的是組好的字（不是翻譯 key），標 meta "glyph"，UI 測試的「寫死文字」檢查會跳過。
 ## plain_text() 永遠是文字版（「[Y]」），給測試與讀屏用。
 

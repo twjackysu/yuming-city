@@ -1,0 +1,15 @@
+{
+  "id": "ch1_forest_gate",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_GATE_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_GATE_002"
+    }
+  }
+}

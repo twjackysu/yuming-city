@@ -1,6 +1,6 @@
 class_name PotionBelt
 extends RefCounted
-## 可攜藥劑（新版，D-202）：數量存在 GameState.items；喝下去就是對自己 StatusEffects.apply。
+## 可攜藥劑（新版）：數量存在 GameState.items；喝下去就是對自己 StatusEffects.apply。
 ## 滿血時不直接喝：回傳 "confirm_full"，UI 問「現在滿血，看不出效果。還是要喝嗎？」（喝／先收著），
 ## 玩家選喝才帶 confirmed=true 再呼叫一次——不強迫自殘、也不浪費。
 ## 藥劑是虛構道具，只標效果（status_rules 的 desc_key），不寫任何配方。

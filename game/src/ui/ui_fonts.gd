@@ -14,7 +14,7 @@ static func load_font(path: String) -> Font:
 	return load(path) as Font
 
 
-## 建立全域 Theme：預設字型用 UI 黑體；按鈕與滑桿的焦點樣式見 UiTheme（D-067）。
+## 建立全域 Theme：預設字型用 UI 黑體；按鈕與滑桿的焦點樣式見 UiTheme。
 static func build_theme() -> Theme:
 	var theme := Theme.new()
 	var ui: Font = load_font(UI_SANS)

@@ -1,5 +1,5 @@
 extends TestCase
-## 遊戲時間（D-179）：GameState.playtime_sec 在關卡裡、沒暫停時累計；用真實時間（打擊停頓的慢動作不少算）；
+## 遊戲時間：GameState.playtime_sec 在關卡裡、沒暫停時累計；用真實時間（打擊停頓的慢動作不少算）；
 ## 換場景卡住的那一幀不算；倒下重來不退回檢查點；存讀檔保留（存檔本來就有這一欄）。
 
 var _game: Node
@@ -15,7 +15,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_game.set("session", _original)
-	for d: String in [_dir, _dir + "_reboot"]:
+	for d: String in [_dir]:
 		if DirAccess.dir_exists_absolute(d):
 			for f: String in DirAccess.get_files_at(d):
 				DirAccess.remove_absolute(d.path_join(f))

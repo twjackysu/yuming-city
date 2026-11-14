@@ -1,5 +1,0 @@
-# 新版前十分鐘的最後一段（D-210）的固定鏡頭組：名稱 幀數 旗標…
-# 名稱跟 CI 盤點截圖（.github/workflows/ci.yml 的 shot）同名：基準可以直接用 screens release 的那張（--fetch-baseline）。
-# 51＝藥的事講完，站在梨攤前（艾妲、帳本、攤燈；後面是貨梯）；52＝艾妲講完，站在貨梯前（吊架、貨板、柱上的燈）
-51-rb-market 40 --level=frostbridge --rb-at=market --locale=zh_TW
-52-rb-lift 40 --level=frostbridge --rb-at=lift --locale=zh_TW

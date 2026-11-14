@@ -1,6 +1,6 @@
 class_name DialogueDB
 extends RefCounted
-## 對話資料（res://data/dialogue/*.json）。只放結構與翻譯 key（D-013）。
+## 對話資料（res://data/dialogue/*.json）。只放結構與翻譯 key。
 ##
 ## {
 ##   "id": "rb_sheila_meet", "start": "greet",

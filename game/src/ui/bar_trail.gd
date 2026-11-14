@@ -1,6 +1,6 @@
 class_name BarTrail
 extends RefCounted
-## 生命條的「變化段」（D-213，design/09 第 6 節）：回血時剛長出來的那一段先畫成綠色（往上的段），
+## 生命條的「變化段」（design/09 第 6 節）：回血時剛長出來的那一段先畫成綠色（往上的段），
 ## 直接傷害時剛扣掉的那一段先留成紅色（往下的段），過一下才併回原本的顏色。
 ## 純邏輯：每幀 step(目前比例, delta)，畫的時候讀 base_ratio()／heal_span()／loss_span()。
 

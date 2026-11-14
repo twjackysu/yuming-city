@@ -1,5 +1,5 @@
 extends TestCase
-## 粒子外觀（D-056）：所有粒子面片都有圓形貼圖，不會是硬邊方塊。
+## 粒子外觀：所有粒子面片都有圓形貼圖，不會是硬邊方塊。
 
 
 func test_dots_are_shared_radial_textures() -> void:

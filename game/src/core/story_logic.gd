@@ -1,6 +1,6 @@
 class_name StoryLogic
 extends RefCounted
-## 任務與對話共用的條件與效果（D-013）。只能讀寫 GameState 的旗標，不執行任意程式。
+## 任務與對話共用的條件與效果。只能讀寫 GameState 的旗標，不執行任意程式。
 ##
 ## 條件：
 ##   {"flag": "k"}                       旗標為真（存在且不是 false／0／""）

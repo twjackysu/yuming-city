@@ -17,12 +17,12 @@ func after_each() -> void:
 
 func _sample() -> GameState:
 	var s := GameState.new()
-	s.mode = "reboot"
-	s.checkpoint = "rb_guardian"
+	s.mode = "story"
+	s.checkpoint = "ch1_guardian"
 	s.playtime_sec = 321.5
-	s.set_flag("rb.barrels_hit", 4)
-	s.set_flag("rb.sheila_met", true)
-	s.quests["rb_main"] = "guardian"
+	s.set_flag("ch1.barrels_hit", 4)
+	s.set_flag("ch1.sheila_met", true)
+	s.quests["ch1_main"] = "guardian"
 	return s
 
 
@@ -32,27 +32,27 @@ func test_round_trip() -> void:
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	var s: GameState = r["state"]
 	assert_eq(r["from_version"], SaveCodec.CURRENT_VERSION)
-	assert_eq(s.mode, "reboot")
-	assert_eq(s.checkpoint, "rb_guardian")
+	assert_eq(s.mode, "story")
+	assert_eq(s.checkpoint, "ch1_guardian")
 	assert_eq(s.playtime_sec, 321.5)
-	assert_eq(int(s.get_flag("rb.barrels_hit")), 4, "JSON 數字讀回後要能轉 int")
-	assert_eq(s.get_flag("rb.sheila_met"), true)
-	assert_eq(s.quests.get("rb_main"), "guardian")
+	assert_eq(int(s.get_flag("ch1.barrels_hit")), 4, "JSON 數字讀回後要能轉 int")
+	assert_eq(s.get_flag("ch1.sheila_met"), true)
+	assert_eq(s.quests.get("ch1_main"), "guardian")
 
 
 ## v3 的存檔裡還有舊欄位（memories_paid、guide；值一定是空的）：讀得進來、欄位丟掉，再存就沒有了。
 func test_v3_save_with_removed_fields_still_loads() -> void:
 	var v3: Dictionary = {"version": 3, "saved_at": "2026-11-11T00:00:00", "state": {
-		"chapter": "rb_ch1", "checkpoint": "rb_mist", "mode": "reboot", "flags": {"rb.sheila_met": true},
-		"quests": {"rb_main": "mist"}, "memories_paid": [], "guide": {}, "items": {"mist_serpent_poison": 1},
-		"statuses": [], "reversal": {}, "grants": ["rb.guardian_crate"], "vitals": {"hp": 40.0}}}
+		"chapter": "ch1", "checkpoint": "ch1_mist", "mode": "story", "flags": {"ch1.sheila_met": true},
+		"quests": {"ch1_main": "mist"}, "memories_paid": [], "guide": {}, "items": {"sera_poison_vial": 1},
+		"statuses": [], "reversal": {}, "grants": ["ch1.guardian_crate"], "vitals": {"hp": 40.0}}}
 	var r: Dictionary = SaveCodec.decode(JSON.stringify(v3))
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	var s: GameState = r["state"]
-	assert_eq(s.checkpoint, "rb_mist")
-	assert_eq(s.quests.get("rb_main"), "mist")
-	assert_eq(int(s.items["mist_serpent_poison"]), 1)
-	assert_false(s.grant_once("rb.guardian_crate"), "領過的還是領過")
+	assert_eq(s.checkpoint, "ch1_mist")
+	assert_eq(s.quests.get("ch1_main"), "mist")
+	assert_eq(int(s.items["sera_poison_vial"]), 1)
+	assert_false(s.grant_once("ch1.guardian_crate"), "領過的還是領過")
 	assert_eq(float(s.vitals["hp"]), 40.0)
 	var again: Dictionary = s.to_dict()
 	assert_false(again.has("memories_paid") or again.has("guide"), "再存一次就沒有舊欄位了")
@@ -102,7 +102,7 @@ func test_file_write_and_backup_recovery() -> void:
 	assert_eq(SaveCodec.read_file(path)["status"], SaveCodec.Status.NOT_FOUND)
 	assert_eq(SaveCodec.write_file(path, _sample()), OK, "第一次寫入")
 	var second: GameState = _sample()
-	second.checkpoint = "rb_market"
+	second.checkpoint = "ch1_market"
 	assert_eq(SaveCodec.write_file(path, second), OK, "第二次寫入")
 	assert_false(FileAccess.file_exists(path + ".tmp"), "暫存檔要被改名掉")
 	# 主檔損毀 → 讀 .bak（上一份）
@@ -112,26 +112,21 @@ func test_file_write_and_backup_recovery() -> void:
 	var r: Dictionary = SaveCodec.read_file(path)
 	assert_eq(r["status"], SaveCodec.Status.OK)
 	assert_eq(r.get("recovered_from_backup", false), true)
-	assert_eq((r["state"] as GameState).checkpoint, "rb_guardian")
+	assert_eq((r["state"] as GameState).checkpoint, "ch1_guardian")
 
 
 func test_v3_story_fields_round_trip() -> void:
 	var s := GameState.new()
-	s.mode = "reboot"
-	s.statuses = [{"id": "poison", "rate": 3.0, "remaining": 12.5, "source": "mist_serpent_poison"}]
+	s.mode = "story"
+	s.statuses = [{"id": "poison", "rate": 3.0, "remaining": 12.5, "source": "sera_poison_vial"}]
 	s.reversal = {"slots": 2, "unlocked": ["poison"], "equipped": ["poison", ""], "awakened_once": true}
-	s.items["mist_serpent_poison"] = 1
-	assert_true(s.grant_once("rb.guardian_crate"))
+	s.items["sera_poison_vial"] = 1
+	assert_true(s.grant_once("ch1.guardian_crate"))
 	s.vitals["hp"] = 55.0
 	var back: GameState = SaveCodec.decode(SaveCodec.encode(s))["state"]
-	assert_eq(back.mode, "reboot")
+	assert_eq(back.mode, "story")
 	assert_eq(float((back.statuses[0] as Dictionary)["remaining"]), 12.5, "負面狀態照原樣存，不清掉")
-	assert_eq(int(back.items["mist_serpent_poison"]), 1)
-	assert_false(back.grant_once("rb.guardian_crate"))
+	assert_eq(int(back.items["sera_poison_vial"]), 1)
+	assert_false(back.grant_once("ch1.guardian_crate"))
 	assert_eq(float(back.vitals["hp"]), 55.0, "生命照原樣，不補滿")
 	assert_true(ReversalSlots.from_dict(back.reversal).is_reversed("poison"))
-
-
-func test_story_saves_live_in_their_own_folder() -> void:
-	assert_ne(GameSession.STORY_SAVE_DIR, GameSession.DEFAULT_SAVE_DIR, "新版存檔不會寫到舊版的資料夾")
-	assert_false(GameSession.STORY_SAVE_DIR.begins_with(GameSession.DEFAULT_SAVE_DIR + "/"), "也不在舊版資料夾裡面")

@@ -23,7 +23,7 @@ INBOX = ROOT / 'art-inbox' / 'characters'
 SELF_MADE = ROOT / 'build' / 'art' / 'characters'
 DEST = ROOT / 'game' / 'assets' / 'characters'
 CHECKER = ROOT / 'scripts' / 'check_character_glb.py'
-KNOWN = ('noen', 'sheila', 'undertaker', 'ashwalker')
+KNOWN = ('noen', 'sheila')
 # 建置做出來的模型、但遊戲端還沒接完的角色：先不接進遊戲。本機要看：ART_USE=<id> python3 -I scripts/import_characters.py
 # （多個用逗號分開）。Jacky 放進 art-inbox 的不受影響。
 # 現在是空的（D-253）：諾恩的模型接進來了，但玩家只在戰鬥場用模型（game/scenes/actors/player/player.gd），劇情關卡還是程序人偶。

@@ -3,7 +3,7 @@ extends RefCounted
 ## 存檔格式：JSON，最外層 {"version": int, "saved_at": String, "state": {...}}。
 ## 每次改格式：CURRENT_VERSION +1，並在 _migrate_step 加一段舊版 → 新版的轉換與測試。
 ## 寫檔先寫 .tmp 再改名，舊檔保留為 .bak，避免當機時毀掉存檔。
-## v3 以前（v0～v2）是已經刪掉的舊劇情的存檔：不遷移、不刪檔，讀到回 TOO_OLD（當成沒有存檔，D-224）。
+## v3 以前（v0～v2）是已經刪掉的舊劇情的存檔：不遷移、不刪檔，讀到回 TOO_OLD（當成沒有存檔）。
 
 const CURRENT_VERSION: int = 3
 ## 還讀得懂的最舊版本
