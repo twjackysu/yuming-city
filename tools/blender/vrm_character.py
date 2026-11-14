@@ -438,6 +438,8 @@ def main():
     ap.add_argument("--cape", type=parse_rgb255, default=None)
     ap.add_argument("--cape-trim", type=parse_rgb255, default=[88, 112, 146])
     ap.add_argument("--outfit", choices=sorted(outfit.RECOLOR), default=None)
+    ap.add_argument("--attack", choices=("swing", "thrust"), default="swing",
+                    help="light_attack_01 的打法：swing＝往下劈（劍）、thrust＝往前戳（法杖；D-268）")
     args = ap.parse_args()
     human = humanoid_map(args.src)
 
@@ -498,7 +500,7 @@ def main():
         tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
 
     a = c.Animator(arm, segs)
-    c.standard_actions(a)
+    c.standard_actions(a, args.attack)
     c.release_action(a)
     c.activate(meshes[0])
     for o in meshes:

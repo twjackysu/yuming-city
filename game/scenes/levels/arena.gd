@@ -87,6 +87,8 @@ var sheila_cam: bool = false
 ## 開發用：`--noen-cam`＝同一個鏡頭改成對著諾恩的正面；`--noen-cam=back`＝架在他斜後方（玩家玩的時候看到的那一面：大衣的背面與下襬）。
 var noen_cam: bool = false
 var noen_cam_back: bool = false
+## `--noen-cam=side`＝從他的右邊橫著看（出手往前戳的時候，從前面或後面看杖都是一個點；橫著才看得出杖頭指著哪裡、伸多遠）
+var noen_cam_side: bool = false
 ## 每一波開打時鏡頭往下看的角度（弧度；D-266）：比探索的 −0.18 再低頭一點，鏡頭升高，
 ## 走到諾恩面前的敵人腰以上露在他的頭上面（玩家之後照樣可以自己轉）。
 const START_PITCH: float = -0.30
@@ -221,6 +223,7 @@ func _ready() -> void:
 		sheila_cam = true
 		noen_cam = App.parse_user_args(OS.get_cmdline_user_args()).has("noen-cam")
 		noen_cam_back = str(App.parse_user_args(OS.get_cmdline_user_args()).get("noen-cam", "")) == "back"
+		noen_cam_side = str(App.parse_user_args(OS.get_cmdline_user_args()).get("noen-cam", "")) == "side"
 		make_side_cam()
 	dev_lock = App.parse_user_args(OS.get_cmdline_user_args()).has("lock")
 	start_wave(wave)
@@ -268,10 +271,15 @@ func _aim_sheila_cam() -> void:
 	var at: Vector3 = who.global_position
 	side_cam.fov = SHEILA_CAM_FOV
 	var offset: Vector3 = SHEILA_CAM_OFFSET
+	var look: Vector3 = Vector3(0, 1.0, 0)
 	if noen_cam_back:
 		offset.z = -offset.z
+	elif noen_cam_side:
+		# 身體的 +X＝他的右邊、−Z＝前面：鏡頭在右邊 3.2 m，看他前面 0.7 m 的地方（杖伸出去的那一段在畫面中間）
+		offset = Vector3(3.2, offset.y, -0.7)
+		look = facing * Vector3(0, 1.0, -0.7)
 	side_cam.global_position = at + facing * offset
-	side_cam.look_at(at + Vector3(0, 1.0, 0), Vector3.UP)
+	side_cam.look_at(at + look, Vector3.UP)
 
 
 ## 長鏡頭要對著誰：第一個還站著的丟毒瓶的，沒有就最近的敵人。

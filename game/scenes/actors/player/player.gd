@@ -82,7 +82,7 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 const SELF_LAYER: int = 1 << 11
 const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
 ## 諾恩的武器是法杖（D-264；Jacky 11/14：「武器我希望不是燈籠...可以是法杖」）：現成的 CC0 模型（KayKit）。
-## 掛在右手原本鐘錘的節點（BellHammer）底下，平常的位置對到左手、出手時才回到右手（D-267，pose_staff）；
+## 掛在右手原本鐘錘的節點（BellHammer）底下，平常的位置對到左手、出手時才回到右手往前戳（D-267、D-268，pose_staff）；
 ## 沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
 const STAFF_MODEL: String = "kaykit/staff"
 ## 這包素材是大頭的比例（珠子比頭大）：縮到 0.6——全長 1.3 m、珠子直徑 27 cm
@@ -91,8 +91,15 @@ const STAFF_SCALE: float = 0.6
 const STAFF_GRIP_Y: float = 0.12
 ## 平常直直立在身邊：不管手怎麼擺，杖都是直的（世界座標）、杖頭往前斜這麼多（弧度）
 const STAFF_CARRY_TILT: float = -0.12
-## 出手時轉成跟著手往前指（原本鐘錘的方向），打完轉回來
-const STAFF_STRIKE_X: float = -PI * 0.5
+## 出手時轉成順著右前臂往前指（手的 −Y＝往指尖），打完轉回來。D-268：出手是往前戳——
+## 以前是 −PI/2（順著手的 −Z，拿鐘錘的握法）：手往前伸直時杖朝天，沒有一幀指著敵人
+const STAFF_STRIKE_X: float = PI
+## 出手時握的位置（右手的座標）：握的地方往杖尾滑 15 cm（−Y＝往指尖，杖頭多伸出去這麼多）、
+## 杖身在前臂下面 4.5 cm（手往前伸直時 +Z 朝下）——杖尾夾在手臂下面，不從手臂裡面穿過去
+const STAFF_GRIP_STRIKE: Vector3 = Vector3(0.0, -0.15, 0.045)
+## 出手的動作播到這個比例（0.72 × 0.55 秒＝0.4 秒）法杖就開始收回左手、轉回直立——手還伸著的時候收。
+## 等動作整個播完才收的話，右手已經放下來了，杖頭會跟著前臂垂到地上再甩回去（第 111 輪連拍看到的）
+const STAFF_RETURN_AT: float = 0.72
 ## 一秒轉幾次「直立 ↔ 往前指」（8＝0.125 秒轉完）
 const STAFF_TURN_RATE: float = 8.0
 ## 杖頭那顆珠子在模型裡的高度（縮放前）：原本提燈的光搬到這裡
@@ -918,6 +925,7 @@ func _build_staff() -> void:
 	hammer.add_child(model)
 	hammer.position = STAFF_GRIP_RIGHT
 	_staff = hammer
+	_puppet.attack_style = "thrust"
 	pose_staff(0.0)
 
 
@@ -925,7 +933,7 @@ func _build_staff() -> void:
 func pose_staff(delta: float) -> void:
 	if _staff == null or _puppet == null:
 		return
-	var striking: bool = _puppet.current_state() == "attack"
+	var striking: bool = _puppet.current_state() == "attack" and _puppet.action_time < float(Puppet.ACTION_TIME["attack"]) * STAFF_RETURN_AT
 	_staff_strike = move_toward(_staff_strike, 1.0 if striking else 0.0, STAFF_TURN_RATE * delta)
 	var hand: Node3D = _staff.get_parent() as Node3D
 	if hand == null or not hand.is_inside_tree():
@@ -942,7 +950,7 @@ func pose_staff(delta: float) -> void:
 		return
 	var body: Basis = _body.global_basis.orthonormalized()
 	var at_left: Vector3 = left_hand.global_position + body * STAFF_LEFT_OUT
-	var at_right: Vector3 = hand.global_transform * STAFF_GRIP_RIGHT
+	var at_right: Vector3 = hand.global_transform * STAFF_GRIP_STRIKE
 	var arc: Vector3 = body * Vector3(0.0, 0.0, -STAFF_SWAP_ARC) * sin(PI * _staff_strike)
 	_staff.position = hand.global_transform.affine_inverse() * (at_left.lerp(at_right, _staff_strike) + arc)
 

@@ -53,6 +53,9 @@ var action: String = ""
 var action_time: float = 0.0
 ## 出手動作播多快（1＝原速）。只影響 "attack"；麻痺被反轉時玩家把它調快（D-234）
 var attack_speed: float = 1.0
+## 程序人偶出手的打法："swing"＝舉過頭往下劈（預設；敵人、席菈）、"thrust"＝從腰邊往前戳（諾恩拿法杖，D-268）。
+## 用模型時打法在模型的動作裡（tools/blender/common.py 的 standard_actions），這個值不管。
+var attack_style: String = "swing"
 ## 「釋放」的姿勢還剩幾秒（0＝沒有在播）
 var release_left: float = 0.0
 var phase: float = 0.0
@@ -338,7 +341,10 @@ func _pose(speed_t: float) -> void:
 		"dodge":
 			_pose_dodge(action_time / float(ACTION_TIME["dodge"]))
 		"attack":
-			_pose_attack(action_time / float(ACTION_TIME["attack"]))
+			if attack_style == "thrust":
+				_pose_thrust(action_time / float(ACTION_TIME["attack"]))
+			else:
+				_pose_attack(action_time / float(ACTION_TIME["attack"]))
 
 
 ## 仰躺（車上的傷者）：整個人繞骨盆轉成水平、臉朝上、頭朝 +Z，胸口慢慢起伏。
@@ -447,6 +453,35 @@ func _pose_attack(t: float) -> void:
 	_rot("thigh_L", Vector3(0.35, 0, 0))
 	_rot("knee_L", Vector3(-0.3, 0, 0))
 	_rot("thigh_R", Vector3(-0.25, 0, 0))
+
+
+## 往前戳（諾恩的法杖，D-268）：右手先收到腰邊（上臂往後、手肘彎）→ 往前伸直 → 停一下 → 收回。
+## 命中判定在 t＝0.35（noen.strike_window）：手在那之前伸直。右前臂從頭到尾朝前——法杖順著前臂指出去（player.gd 的 pose_staff）。
+## 手伸著停到 t＝0.72：法杖從那時候開始收回左手（PlayerController.STAFF_RETURN_AT），手才放下來。
+func _pose_thrust(t: float) -> void:
+	var coil: float = 0.0
+	var reach: float = 0.0
+	if t < 0.18:
+		coil = ease(t / 0.18, 0.6)
+	elif t < 0.34:
+		reach = ease((t - 0.18) / 0.16, 0.5)
+		coil = 1.0 - reach
+	elif t < 0.72:
+		reach = 1.0
+	else:
+		reach = 1.0 - ease((t - 0.72) / 0.28, -1.5)
+	# 繞 Y 正的＝往左轉＝右肩往前：收的時候右肩往後、戳的時候右肩送出去；手臂轉回來一半，杖頭朝著正前方
+	var twist: float = -0.3 * coil + 0.35 * reach
+	_rot("shoulder_R", Vector3(-0.45 * coil + 1.5 * reach, -0.2 * reach, 0.1))
+	_rot("elbow_R", Vector3(1.75 * coil + 0.1 * reach, 0, 0))
+	# 左手：把杖交出去之後往後收，平衡往前伸的右手
+	_rot("shoulder_L", Vector3(0.4 * coil - 0.5 * reach, 0, -0.1 - 0.2 * reach))
+	_rot("elbow_L", Vector3(0.8 * coil + 0.5 * reach, 0, 0))
+	_rot("chest", Vector3(0.1, twist, 0))
+	_rot("spine", Vector3(-0.1 + twist * 0.3 - 0.1 * reach, 0, 0))
+	_rot("thigh_L", Vector3(0.4 * reach, 0, 0))
+	_rot("knee_L", Vector3(-0.35 * reach, 0, 0))
+	_rot("thigh_R", Vector3(-0.28 * reach, 0, 0))
 
 
 ## 釋放：縮（0～25%：兩手抱到胸前、膝蓋彎、上身往前捲）→ 炸開（25～55%：兩手往兩邊甩到水平、胸口往後挺、頭抬起來、兩腳踩開）→ 收回。

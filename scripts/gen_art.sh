@@ -38,7 +38,8 @@ declare -A VRM_SRC=([noen]="vroid/beta/HairSample_Male.vrm" [sheila]="vroid/beta
 #   席菈：白底、灰藍滾邊（design/03 她原本的設定）
 #   --outfit sheila|noen：冒險者服裝第二版（D-263、D-264；tools/blender/outfit.py）——布為主、甲片是點綴、大色塊＋金邊；
 #   底下原本的衣服照明暗重畫貼圖（所以諾恩不再用 --tint Tops=…，席菈不再用 --cape）
-declare -A VRM_ARGS=([noen]="--outfit noen --scarf 150,34,30" [sheila]="--outfit sheila")
+#   --attack thrust：出手的動作改成往前戳（諾恩拿法杖；沒寫＝往下劈，席菈的大劍；D-268）
+declare -A VRM_ARGS=([noen]="--outfit noen --scarf 150,34,30 --attack thrust" [sheila]="--outfit sheila")
 # 要做的角色。各自一個 .stamp：只重做腳本有改的（共用的部分在 tools/blender/common.py）。
 CHARACTERS=(sheila noen)
 

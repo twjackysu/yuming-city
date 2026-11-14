@@ -703,8 +703,9 @@ class Animator:
         return act
 
 
-def standard_actions(a):
-    """idle、walk、run、light_attack_01（右手拿武器的站姿）。"""
+def standard_actions(a, attack_style="swing"):
+    """idle、walk、run、light_attack_01（右手拿武器的站姿）。
+    attack_style："swing"＝舉過頭往下劈（席菈的大劍）；"thrust"＝從腰邊往前戳（諾恩的法杖，D-268）。"""
 
     def idle(f, t):
         b = math.sin(t * math.tau)
@@ -760,10 +761,37 @@ def standard_actions(a):
         a.leg_pose("Left", f, thigh=k([(0, 9), (0.55, 32), (1, 9)]), knee=k([(0, 10), (0.55, 38), (1, 10)]), foot=-2)
         a.leg_pose("Right", f, thigh=k([(0, -5), (0.55, -18), (1, -5)]), knee=k([(0, 6), (0.55, 14), (1, 6)]), foot=6)
 
+    def thrust(f, t):
+        # 往前戳（D-268）。遊戲裡這個動作照 24 fps 播、0.55 秒就切走（puppet.gd 的 ACTION_TIME），
+        # 命中判定在 0.35 × 0.55 ＝ 0.19 秒＝第 4.6 格（t＝0.29）——手要在那之前伸直。
+        # 法杖出手的前 0.125 秒（3 格）從左手換到右手、杖頭順著右前臂指出去（player.gd 的 pose_staff），
+        # 所以右前臂從頭到尾都朝前：0～0.14 右手收到腰邊（上臂往後、手肘彎）、0.14～0.28 往前伸直、停到 0.6、之後收回。
+        # 0.6＝0.4 秒：法杖從這時候開始收回左手（player.gd 的 STAFF_RETURN_AT）——手先放下來的話杖頭會跟著前臂垂到地上。
+        T_BACK, T_HIT, T_HOLD, T_END = 0.14, 0.28, 0.6, 0.92
+        reach = keys(t, [(0, 0), (T_BACK, 0), (T_HIT, 1), (T_HOLD, 1), (T_END, 0), (1, 0)])    # 手伸出去多少
+        coil = keys(t, [(0, 0), (T_BACK, 1), (T_HIT, 0), (1, 0)])                               # 收到腰邊多少
+        twist = -24 * coil + 30 * reach         # 繞 Z 正的＝往左轉＝右肩往前：收的時候右肩往後、戳的時候右肩送出去
+        lean = -3 * coil + 15 * reach           # 正的＝上身往前
+        step = keys(t, [(0, 0), (T_BACK, 0.25), (T_HIT, 1), (T_HOLD, 1), (T_END, 0), (1, 0)])  # 左腳踏出去多少
+        a.rot("Hips", f, (Z, twist * 0.35 - 6))
+        a.move("Hips", f, (0, 0.07 * step, -0.012 - 0.06 * step))
+        a.rot("Spine", f, (X, -lean * 0.5), (Z, twist * 0.35 + 4))
+        a.rot("Chest", f, (X, -lean * 0.5), (Z, twist * 0.3 + 6))
+        a.rot("Head", f, (X, 3 + lean * 0.7), (Z, -twist * 0.6 - 4))
+        # twist：上身轉了多少，手臂就轉回來多少——杖頭一直朝著正前方（量過：不轉回來的話戳出去偏 30 度）
+        a.arm_pose("Right", f, hang=13 + 9 * coil - 17 * reach,
+                   swing=12 - 40 * coil + 80 * reach,
+                   elbow=38 + 60 * coil - 32 * reach, twist=10 * coil - 30 * reach)
+        # 左手：把杖交出去之後往後收，平衡往前伸的右手
+        a.arm_pose("Left", f, hang=9 + 6 * coil + 16 * reach,
+                   swing=-3 + 30 * coil - 34 * reach, elbow=14 + 40 * coil + 26 * reach)
+        a.leg_pose("Left", f, thigh=9 + 25 * step, knee=10 + 30 * step, foot=-2)
+        a.leg_pose("Right", f, thigh=-5 - 17 * step, knee=6 + 10 * step, foot=4 + 6 * step)
+
     a.action("idle", 72, idle, step=6)
     a.action("walk", 30, gait(27, 48, 20, 3, 0.012, 18, 34), step=2)
     a.action("run", 18, gait(42, 78, 38, 11, 0.03, 70, 62), step=1)
-    a.action("light_attack_01", 16, attack, step=1)
+    a.action("light_attack_01", 16, thrust if attack_style == "thrust" else attack, step=1)
 
 
 class Spec:
