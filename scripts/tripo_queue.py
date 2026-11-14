@@ -279,8 +279,11 @@ def produce(cli, item: dict) -> dict:
         if rig_id:
             print("  沿用已綁好的骨架 %s" % rig_id)
         else:
-            r = run_cli(cli, ["anim", "rig", gen_id, "--rig-type", rig.get("type", "biped"),
-                              "--spec", rig.get("spec", "mixamo"), "--out-format", "glb",
+            rtype = rig.get("type", "biped")
+            # --spec 只有 biped 能給，四足等其他骨架給了會被 CLI 擋（exit 2）
+            spec = ["--spec", rig.get("spec", "mixamo")] if rtype == "biped" else []
+            r = run_cli(cli, ["anim", "rig", gen_id, "--rig-type", rtype] + spec + [
+                              "--out-format", "glb",
                               "--json", "--yes", "--no-open", "--quiet",
                               "-o", os.path.join("art-work", "tripo", iid, "rig")])
             rig_id = _task_id(r) or find_task(rig_dir, "animate_rig") or find_task(rig_dir, "rig")
