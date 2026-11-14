@@ -221,31 +221,82 @@ def compact_glb(path: str, max_side: int = 1024) -> tuple[int, int]:
 
 
 # ---------------------------------------------------------------- 產一個項目
+def find_task(folder: str, task_type: str) -> str | None:
+    """在 folder 底下找 tripo-cli 存的 task.json（成功的、指定類型），回傳 task_id。"""
+    if not os.path.isdir(folder):
+        return None
+    for dirpath, _dirs, files in os.walk(folder):
+        if "task.json" in files:
+            try:
+                t = json.load(open(os.path.join(dirpath, "task.json"), encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if t.get("type") == task_type and t.get("status") == "success":
+                return t.get("task_id")
+    return None
+
+
+def _task_id(res) -> str | None:
+    if not isinstance(res, dict):
+        return None
+    for key in ("task_id",):
+        if res.get(key):
+            return res[key]
+    for sub in ("primary", "data", "result"):
+        if isinstance(res.get(sub), dict) and res[sub].get("task_id"):
+            return res[sub]["task_id"]
+    return None
+
+
 def produce(cli, item: dict) -> dict:
     iid = item["id"]
     work = os.path.join(WORK, iid)
+    gen_dir = os.path.join(work, "gen")
+    rig_dir = os.path.join(work, "rig")
+    anim_dir = os.path.join(work, "anim")
     os.makedirs(work, exist_ok=True)
     tasks = {}
-    res = run_cli(cli, make_args(item, dry=False))
-    prim = res.get("primary", res)
-    tasks["generate"] = prim.get("task_id")
-    final_ref = iid
+
+    # 已經產過（上次中途失敗）就沿用，不重複扣點。舊版把生成放在 work/tripo-out，也一起找。
+    gen_id = find_task(gen_dir, "text_to_model") or find_task(gen_dir, "image_to_model") \
+        or find_task(os.path.join(work, "tripo-out"), "text_to_model") \
+        or find_task(os.path.join(work, "tripo-out"), "image_to_model")
+    if gen_id:
+        print("  沿用已產生的模型 %s" % gen_id)
+    else:
+        args = make_args(item, dry=False)
+        args[args.index("-o") + 1] = os.path.join("art-work", "tripo", iid, "gen")
+        res = run_cli(cli, args)
+        gen_id = _task_id(res) or find_task(gen_dir, "text_to_model") or find_task(gen_dir, "image_to_model")
+    if not gen_id:
+        raise RuntimeError("%s：生成完成但找不到 task_id" % iid)
+    tasks["generate"] = gen_id
 
     rig = item.get("rig")
     if rig:
-        r = run_cli(cli, ["anim", "rig", "@" + iid, "--rig-type", rig.get("type", "biped"),
-                          "--spec", rig.get("spec", "mixamo"), "--out-format", "glb",
-                          "--json", "--yes", "--no-open", "--quiet", "--name", iid + "-rig",
-                          "-o", os.path.join("art-work", "tripo", iid, "rig")])
-        tasks["rig"] = r.get("task_id") or r.get("primary", {}).get("task_id")
-        final_ref = iid + "-rig"
+        rig_id = find_task(rig_dir, "animate_rig") or find_task(rig_dir, "rig")
+        if rig_id:
+            print("  沿用已綁好的骨架 %s" % rig_id)
+        else:
+            r = run_cli(cli, ["anim", "rig", gen_id, "--rig-type", rig.get("type", "biped"),
+                              "--spec", rig.get("spec", "mixamo"), "--out-format", "glb",
+                              "--json", "--yes", "--no-open", "--quiet",
+                              "-o", os.path.join("art-work", "tripo", iid, "rig")])
+            rig_id = _task_id(r) or find_task(rig_dir, "animate_rig") or find_task(rig_dir, "rig")
+        if not rig_id:
+            raise RuntimeError("%s：綁骨完成但找不到 task_id" % iid)
+        tasks["rig"] = rig_id
         anims = item.get("animations", [])
         if anims:
-            a = run_cli(cli, ["anim", "retarget", "@" + final_ref, "--animation", *anims[:5],
-                              "--animate-in-place", "--out-format", "glb",
-                              "--json", "--yes", "--no-open", "--quiet", "--name", iid + "-anim",
-                              "-o", os.path.join("art-work", "tripo", iid, "anim")])
-            tasks["retarget"] = a.get("task_id") or a.get("primary", {}).get("task_id")
+            have_anim = any(f.lower().endswith(".glb") for _d, _s, fs in os.walk(anim_dir) for f in fs)
+            if have_anim:
+                print("  沿用已套好的動作")
+            else:
+                a = run_cli(cli, ["anim", "retarget", rig_id, "--animation", *anims[:5],
+                                  "--animate-in-place", "--out-format", "glb",
+                                  "--json", "--yes", "--no-open", "--quiet",
+                                  "-o", os.path.join("art-work", "tripo", iid, "anim")])
+                tasks["retarget"] = _task_id(a)
 
     # 收成品：每一步各留一個 GLB（生成、綁骨、動作），外加預覽圖
     dst = os.path.join(INBOX, iid)
@@ -255,7 +306,8 @@ def produce(cli, item: dict) -> dict:
         for fn in files:
             src = os.path.join(dirpath, fn)
             low = fn.lower()
-            stage = "anim" if os.sep + "anim" in dirpath else "rig" if os.sep + "rig" in dirpath else "model"
+            rel_parts = os.path.relpath(dirpath, work).split(os.sep)
+            stage = "anim" if rel_parts[0] == "anim" else "rig" if rel_parts[0] == "rig" else "model"
             if low.endswith(".glb"):
                 out = os.path.join(dst, "%s_%s.glb" % (iid, stage))
                 shutil.copyfile(src, out)
