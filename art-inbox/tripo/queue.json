@@ -200,8 +200,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young woman guild receptionist, tidy guild clerk uniform with vest and ribbon tie, short skirt over leggings, hair in a neat side braid, tired but professional smile, holding nothing",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A young woman in her mid twenties, adventurer guild receptionist. Chestnut brown hair in a neat low side braid over one shoulder, calm tired amber eyes, polite smile. White blouse with rolled sleeves, dark green fitted vest with brass buttons, small red ribbon tie, knee-length dark skirt over black leggings, brown ankle boots, small brass guild badge on the vest.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -216,8 +216,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Arrogant handsome young man, B-rank swordsman captain, polished silver and blue plate armor with a short cape on one shoulder, blond swept-back hair, smug expression",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An arrogant handsome young man about 24, B-rank swordsman captain. Short swept-back golden blond hair, sharp blue eyes, confident smirk. Polished silver plate chest armor and shoulder guards with royal blue trim, blue tunic underneath, a short blue half-cape hanging only behind the left shoulder, armored gauntlets and greaves, dark trousers, empty sword scabbard on the left hip.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -232,8 +232,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young female mage adventurer in a party, pointed hat, short robe and boots, confident look",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A young woman about 22, party mage. Wavy shoulder-length auburn hair, green eyes, proud expression. Wide-brimmed pointed dark purple wizard hat, short purple robe with gold trim ending above the knees, white shirt, black tights, brown knee boots, spellbook holster on the belt.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -248,8 +248,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Burly young male shield warrior adventurer, heavy armor without helmet, short hair, tough look",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A tall broad-shouldered young man about 26, party shield warrior. Very short dark hair, square jaw, stern look. Heavy steel plate armor on chest, shoulders and legs with a red cloth tabard, no helmet, thick leather belt, large gauntlets, sturdy boots.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -264,8 +264,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Shady middle-aged man merchant in a hooded patched cloak, many pouches and trinkets hanging on belt, sly grin, stubble",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A lean middle-aged man about 45, shady black market merchant. Messy grey-streaked dark hair, stubble, narrow sly eyes, crooked grin. Patched dark brown hooded cloak with the hood down, open at the front so the arms are free, layered vest full of pockets, many small pouches, keys and trinket charms on the belt, fingerless gloves, worn boots.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -280,8 +280,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Mysterious elegant inspector from the royal capital, long dark formal coat with gold trim and insignia, gloves, sharp eyes, hair tied back",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An elegant mysterious woman about 30, royal capital inspector. Long straight black hair in a low ponytail, sharp violet eyes, cool unreadable expression. Long fitted dark navy formal coat with gold trim and a gold royal insignia on the chest, high collar, white gloves, dark trousers, polished black boots.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -296,8 +296,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Ordinary young male adventurer, leather armor, bandana, friendly rough look",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An ordinary young man about 20, rookie adventurer. Spiky short brown hair under a red bandana, cheerful rough grin. Simple brown leather chest armor over a green shirt, leather bracers, belt with pouch, grey trousers, brown boots.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -312,8 +312,8 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Ordinary young female adventurer archer, green hooded short cloak, leather gear",
-      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An ordinary young woman about 20, archer adventurer. Short bob light brown hair, bright hazel eyes. Forest green short hooded mantle with hood down, cream tunic, leather corset belt, brown shorts over dark leggings, tall leather boots, empty quiver on the back.",
+      "negative_prompt": "chibi, super deformed, big head, short body, stubby legs, toy figure, nendoroid, realistic photo, western cartoon, holding weapon, holding object, cape covering arms, wings, tail, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
@@ -327,8 +327,9 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A round jelly slime monster, translucent purple-green toxic body with bubbles inside, two simple cute angry eyes, small drips of poison",
-      "note": "劇毒史萊姆（教學戰三隻；不綁骨，程式做彈跳）"
+      "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A single round jelly slime monster about knee height, glossy translucent purple body fading to toxic green at the bottom, small bubbles inside, two simple angry white eyes, a few drips of green poison, sitting on the ground.",
+      "note": "劇毒史萊姆（教學戰三隻；不綁骨，程式做彈跳）",
+      "negative_prompt": "text, logo, base, pedestal, multiple creatures, realistic photo"
     },
     {
       "id": "enemy_mold_slime",
@@ -336,8 +337,9 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A round jelly slime monster covered with fuzzy grey-green mold patches and tiny mushrooms, two simple cute sleepy eyes",
-      "note": "發霉史萊姆（酒館地下室支線）"
+      "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A single round jelly slime monster about knee height, dull grey-green body covered with fuzzy mold patches and a few tiny brown mushrooms on top, two simple sleepy white eyes, sitting on the ground.",
+      "note": "發霉史萊姆（酒館地下室支線）",
+      "negative_prompt": "text, logo, base, pedestal, multiple creatures, realistic photo"
     },
     {
       "id": "enemy_miasma_wolf",
@@ -346,7 +348,7 @@
         "texture_quality": "detailed",
         "face_limit": 20000
       },
-      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A corrupted forest wolf, dark fur with glowing purple veins and mushrooms growing on its back, standing on four legs, neutral pose",
+      "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A corrupted forest wolf standing on four legs in a neutral standing pose, dark charcoal fur, glowing purple veins along the body, small glowing teal mushrooms growing on its back, yellow eyes, mouth closed.",
       "rig": {
         "type": "quadruped",
         "spec": "tripo"
@@ -354,7 +356,8 @@
       "animations": [
         "preset:quadruped:walk"
       ],
-      "note": "腐敗之森的一般敵人（四足）"
+      "note": "腐敗之森的一般敵人（四足）",
+      "negative_prompt": "text, logo, base, pedestal, multiple creatures, realistic photo"
     },
     {
       "id": "enemy_spore_treant",
@@ -363,13 +366,14 @@
         "texture_quality": "detailed",
         "face_limit": 30000
       },
-      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A small humanoid walking tree monster, rotten bark body, glowing toxic mushrooms on shoulders, arms apart in T-pose, two legs",
+      "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A small humanoid walking tree monster about 1.8 meters tall, strict T-pose with arms straight out to the sides, two thick root legs apart, rotten dark bark body, glowing teal-purple mushrooms on the shoulders and head, two hollow glowing yellow eyes.",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
       },
       "animations": [],
-      "note": "腐敗之森的一般敵人（人形）"
+      "note": "腐敗之森的一般敵人（人形）",
+      "negative_prompt": "text, logo, base, pedestal, multiple creatures, realistic photo"
     },
     {
       "id": "boss_plague_golem",
@@ -378,13 +382,14 @@
         "texture_quality": "detailed",
         "face_limit": 50000
       },
-      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A huge ancient stone golem boss, 4 meters tall, cracked mossy stone body with a glowing sickly green-purple core in the chest, plague miasma leaking from cracks, massive fists, arms apart in T-pose, two legs, menacing but stylized",
+      "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A huge ancient stone golem boss about 4 meters tall, strict T-pose with massive arms straight out to the sides, two heavy legs apart, cracked mossy grey stone body, a large glowing sickly green-purple crystal core in the center of the chest, green glow in the cracks, small head with two glowing eyes, giant fists.",
       "rig": {
         "type": "biped",
         "spec": "mixamo"
       },
       "animations": [],
-      "note": "第一章 Boss【深淵疫病魔像】；胸口的核心要獨立看得出來"
+      "note": "第一章 Boss【深淵疫病魔像】；胸口的核心要獨立看得出來",
+      "negative_prompt": "text, logo, base, pedestal, multiple creatures, realistic photo"
     },
     {
       "id": "prop_aptitude_crystal",
