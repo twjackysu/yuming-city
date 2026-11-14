@@ -17,8 +17,6 @@ var move_speed: float = 2.6
 ## 硬撐中挨了幾下（只扣幾成的那種；統計與測試用）
 var armored_hits: int = 0
 var focus_player: bool = false
-## 腳步聲：子類別在 _make_footsteps() 回傳自己的一份（null＝不出聲）；移動後照實際走了多遠踏步。
-var footsteps: Footsteps
 
 ## 同時最多幾個敵人可以對同一個人擺前兆／出手（0＝不限）。別人剛出完招的 attack_gap 秒內也算佔著。
 ## 沒輪到的人停在 attack_range + wait_ring 外面等。數值在 tuning.json 的 crowd.*（劇情＝不限，戰鬥場＝1）；生出來的時候讀一次。
@@ -65,7 +63,6 @@ func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	health.died.connect(_on_died)
 	_build_body()
-	footsteps = _make_footsteps()
 	var fade: Vector2 = camera_fade_range()
 	CameraFade.apply(self, fade.x, fade.y)
 
@@ -87,8 +84,6 @@ func _physics_process(delta: float) -> void:
 		var held_v: Vector3 = _held_velocity(delta)
 		velocity = Vector3(held_v.x, 0.0 if is_on_floor() else velocity.y - 18.0 * delta, held_v.z)
 		move_and_slide()
-		if Vector2(held_v.x, held_v.z).length() > 0.01:
-			_tick_footsteps(delta, Vector2(held_v.x, held_v.z).length())
 		_update_look()
 		return
 	brain.may_attack = _may_attack()
@@ -112,7 +107,6 @@ func _physics_process(delta: float) -> void:
 	velocity.z = horizontal.z
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 18.0 * delta
 	move_and_slide()
-	_tick_footsteps(delta, Vector2(horizontal.x, horizontal.z).length())
 	_after_move()
 	_update_look()
 	_update_brace(delta)
@@ -186,11 +180,6 @@ func _held_velocity(_delta: float) -> Vector3:
 	return Vector3.ZERO
 
 
-## 這隻敵人的腳步聲（null＝不出聲）。
-func _make_footsteps() -> Footsteps:
-	return null
-
-
 func _update_look() -> void:
 	pass
 
@@ -200,14 +189,6 @@ func _head_height() -> float:
 
 
 # ---- 共用 ----
-
-## 移動後踏步：用 move_and_slide 之後的實際速度（撞牆原地踏不算）；比平常快很多（衝撞）算跑步。
-func _tick_footsteps(delta: float, speed: float) -> void:
-	if footsteps == null:
-		return
-	var real: Vector3 = get_real_velocity()
-	footsteps.tick(self, Vector2(real.x, real.z).length() * delta, speed > move_speed * 1.5, is_on_floor())
-
 
 func _on_settings_changed() -> void:
 	if Settings.difficulty != difficulty:

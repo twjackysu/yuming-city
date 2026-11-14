@@ -151,6 +151,7 @@ func _ready() -> void:
 	_puppet.name = "Puppet"
 	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
+	_puppet.footfall.connect(func() -> void: footfall(is_on_floor() and _dodge_left <= 0.0 and hurt_left <= 0.0))
 	ContactShadow.attach(self, 0.55, 0.5)
 	_build_weapon()
 	_arm.add_excluded_object(get_rid())
@@ -302,7 +303,7 @@ func _physics_process(delta: float) -> void:
 	if lunge != Vector3.ZERO or push != Vector3.ZERO:
 		velocity.x = horizontal.x
 		velocity.z = horizontal.z
-	footstep_tick(horizontal.length() * delta, sprinting, is_on_floor() and _dodge_left <= 0.0)
+	_sprinting = sprinting
 
 	if lock_target != null and _dodge_left <= 0.0 and not sprinting:
 		var to_t: Vector3 = lock_target.global_position - global_position
@@ -321,14 +322,13 @@ func _physics_process(delta: float) -> void:
 	_follow_rig(delta)
 
 
-## 腳步聲：每走 STRIDE 公尺（跑步 SPRINT_STRIDE）踏一步，聲音照關卡的地面
-## （關卡的 `footstep_surface(位置)`：雪、石、木；沒有就當石頭）。閃避、騰空時不算步。邏輯在 Footsteps（席菈共用）。
-const STRIDE: float = 0.8
-const SPRINT_STRIDE: float = 1.1
+## 腳步聲：人偶的腳落地的那一刻（Puppet.footfall）踏一步，所以聲音跟畫面上的腳對得上；聲音照關卡的地面
+## （關卡的 `footstep_surface(位置)`：雪、石、木；沒有就當石頭）。閃避、挨打、騰空時不踏。
 const STEP_DB: float = -13.0
 const SPRINT_STEP_DB: float = -9.0
 const STEP_SURFACES: PackedStringArray = Footsteps.SURFACES
-var footsteps: Footsteps = Footsteps.new(STRIDE, SPRINT_STRIDE, STEP_DB, SPRINT_STEP_DB)
+var footsteps: Footsteps = Footsteps.new(STEP_DB, SPRINT_STEP_DB)
+var _sprinting: bool = false
 var step_count: int:
 	get:
 		return footsteps.count
@@ -337,9 +337,12 @@ var last_step_surface: String:
 		return footsteps.last_surface
 
 
-## 回傳這一幀有沒有踏一步。
-func footstep_tick(moved: float, sprinting: bool, grounded: bool) -> bool:
-	return footsteps.tick(self, moved, sprinting, grounded)
+## 人偶的一隻腳落地了。grounded＝人在地上而且是自己在走（不是閃避、被推開）。回傳有沒有出聲。
+func footfall(grounded: bool) -> bool:
+	if not grounded:
+		return false
+	footsteps.stomp(self, _sprinting)
+	return true
 
 
 func footstep_surface() -> String:

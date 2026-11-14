@@ -105,6 +105,15 @@ func objective_key() -> String:
 	return quests.objective_key(main_quest())
 
 
+func hint_key() -> String:
+	return quests.hint_key(main_quest())
+
+
+## 主線全部做完了（目前做好的內容到底了）
+func story_finished() -> bool:
+	return quests.is_done(MAIN_QUESTS[MAIN_QUESTS.size() - 1])
+
+
 ## 目前的主線任務：MAIN_QUESTS 裡第一條還沒做完的；全部做完就是最後一條（沒有目標文字、沒有標記）。
 func main_quest() -> String:
 	for q: String in MAIN_QUESTS:

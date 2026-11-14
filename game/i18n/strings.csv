@@ -35,6 +35,12 @@ QUALITY_HIGH,High,高
 OPT_ON,On,開
 OPT_OFF,Off,關
 HUD_OBJECTIVE,OBJECTIVE,目標
+HUD_STORY_END,That's all for now. More is on the way.,目前的內容到這裡，後面還在做
+HUD_STORY_END_LINE1,To be continued,未完待續
+HUD_STORY_END_LINE2,"That's all for now. Keep exploring, or return to the title from the pause menu.",目前的內容到這裡。可以繼續逛，或從暫停選單回標題。
+HUD_MOVE_PAD,Left Stick,左搖桿
+HUD_LOOK_PAD,Right Stick,右搖桿
+HUD_LOOK_KBM,Mouse,滑鼠
 HUD_SAVED,Saved,已存檔
 HUD_DIED,You fell. Returning to the last checkpoint…,你倒下了。回到上一個檢查點……
 HUD_SAVE_FAILED,Save failed,存檔失敗
@@ -56,7 +62,6 @@ ACT_ATTACK,Attack,攻擊
 ACT_RELEASE,Release (burst your poison),釋放（把身上的毒炸出去）
 ACT_LOCK_ON,Lock On,鎖定
 ACT_INTERACT,Interact,互動
-ACT_JOURNAL,Show objective,看目前的目標
 ACT_USE_ITEM,Use item,使用道具
 ACT_PAUSE,Pause,暫停
 GLYPH_UNKNOWN,Unbound,未設定
@@ -112,6 +117,8 @@ SPK_LEO,Leo,雷歐
 Q_CH1_MAIN_TITLE,Chapter 1: The Tumor and the Junk,第一章　毒瘤與破爛的共鳴
 Q_CH1_OBJ_MIASMA,Walk into the miasma,走進瘴氣裡
 Q_CH1_OBJ_SLIMES,Defeat the poison slimes in the glade,打倒空地上的劇毒史萊姆
+Q_CH1_HINT_MOVE,{move} Move　{sprint} Run　{look} Look around,{move} 移動　{sprint} 跑　{look} 轉視角
+Q_CH1_HINT_FIGHT,{attack} Attack　{dodge} Dodge　{release} Burst the poison on you,{attack} 攻擊　{dodge} 閃避　{release} 把身上的毒炸出去
 CH1_REVERSAL_LINE1,Poisoned → Regenerating,中毒 → 回血
 CH1_REVERSAL_LINE2,Every ailment on you flips into a boon.,落在你身上的異常狀態，全都會反轉成增益。
 CH1_SLIMES_CLEARED,The glade is clear.,空地清乾淨了。

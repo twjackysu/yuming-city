@@ -77,35 +77,42 @@ func test_music_helper() -> void:
 	await tree.process_frame
 
 
-## 腳步聲：每走一個步幅踏一步、跑步步幅比較大、閃避與騰空不算；聲音照關卡的地面，沒有就當石頭。
-func test_footsteps_follow_distance_and_surface() -> void:
+## 腳步聲：人偶的腳落地才踏一步（聲音跟畫面上的腳對得上）、跑得快步子比較密、站著不踏、騰空與閃避不出聲；
+## 聲音照關卡的地面，沒有就當石頭。
+func test_footsteps_follow_the_puppets_feet_and_surface() -> void:
 	var root := Node3D.new()
 	tree.root.add_child(root)
 	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
 	root.add_child(player)
 	player.set_physics_process(false)
-	var steps: int = 0
-	for i: int in 100:  # 走 10 公尺
-		if player.footstep_tick(0.1, false, true):
-			steps += 1
-	assert_eq(steps, int(10.0 / PlayerController.STRIDE), "走 10 m 踏 %d 步" % int(10.0 / PlayerController.STRIDE))
-	assert_eq(player.step_count, steps)
+	var puppet: Puppet = player.puppet()
+	puppet.set_process(false)
+	var falls: Array[int] = [0]
+	puppet.footfall.connect(func() -> void: falls[0] += 1)
+	var jog: int = _count_footfalls(puppet, PlayerController.WALK_SPEED, falls)
+	assert_true(jog >= 6 and jog <= 10, "小跑 3 秒踏 6～10 步（每秒兩三步），踏了 %d 步" % jog)
+	assert_eq(player.step_count, 0, "人不在地上（這裡沒有地板）：腳落地也不出聲")
+	var sprint: int = _count_footfalls(puppet, PlayerController.SPRINT_SPEED, falls)
+	assert_true(sprint > jog, "跑得快步子比較密（%d > %d）" % [sprint, jog])
+	assert_eq(_count_footfalls(puppet, 0.0, falls), 0, "站著不動不踏步")
+	assert_true(player.footfall(true), "在地上：腳落地就踏一步")
+	assert_eq(player.step_count, 1)
 	assert_eq(player.last_step_surface, "stone", "關卡沒說地面是什麼 → 石頭")
-	var run_steps: int = 0
-	for i: int in 100:
-		if player.footstep_tick(0.1, true, true):
-			run_steps += 1
-	assert_true(run_steps < steps, "跑步的步幅比較大（%d < %d）" % [run_steps, steps])
-	var air: int = 0
-	for i: int in 100:
-		if player.footstep_tick(0.1, false, false):
-			air += 1
-	assert_eq(air, 0, "騰空、閃避時不踏步")
-	assert_false(player.footstep_tick(0.0, false, true), "站著不動不踏步")
+	assert_false(player.footfall(false), "騰空、閃避、被推開時不踏步")
+	assert_eq(player.step_count, 1)
 	for surface: String in PlayerController.STEP_SURFACES:
 		assert_not_null(Sfx.stream("step_" + surface), "有 step_%s" % surface)
 	root.queue_free()
 	await tree.process_frame
 
 
-## 席菈的腳步聲：同一套 Footsteps，步子短一點、小聲一點；真的走動才踏步（撞牆原地踏不算）。
+## 用這個速度走 3 秒，回傳腳落地幾次。用模型時動作是 AnimationPlayer 在播：這裡自己推進它。
+func _count_footfalls(puppet: Puppet, speed: float, falls: Array[int]) -> int:
+	puppet.set_move_speed(speed)
+	puppet.advance(0.0)
+	falls[0] = 0
+	for i: int in 180:
+		if puppet.anim != null:
+			puppet.anim.advance(1.0 / 60.0)
+		puppet.advance(1.0 / 60.0)
+	return falls[0]

@@ -55,6 +55,13 @@ func objective_key(quest_id: String) -> String:
 	return str(st.get("objective", ""))
 
 
+## 目前階段的操作提示（翻譯 key）；沒有就回傳空字串。
+func hint_key(quest_id: String) -> String:
+	if not is_active(quest_id):
+		return ""
+	return str(db.stage(quest_id, stage_of(quest_id)).get("hint", ""))
+
+
 ## 目前階段的目標指引（QuestDB.validate_marker 的格式）；marker_if 第一個成立的優先。沒有就回傳 null。
 func marker_spec(quest_id: String) -> Variant:
 	if not is_active(quest_id):

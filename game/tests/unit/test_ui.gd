@@ -238,7 +238,7 @@ func test_controls_menu_rebind_cancel_reset() -> void:
 	assert_true(menu.is_controls_open(), "從設定開啟按鍵設定")
 	var controls: ControlsMenu = menu.find_child("ControlsMenu", true, false) as ControlsMenu
 	await tree.process_frame
-	assert_true(_assert_texts_are_keys(controls, "按鍵設定") >= 18, "每個動作都有名稱")
+	assert_true(_assert_texts_are_keys(controls, "按鍵設定") >= 17, "每個動作都有名稱")
 	TranslationServer.set_locale("en")
 	controls.cancel_capture()
 	var cell: Button = controls.cell("dodge", InputSetup.SLOT_KBM)

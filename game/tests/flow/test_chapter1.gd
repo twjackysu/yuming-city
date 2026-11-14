@@ -267,7 +267,31 @@ func test_clearing_the_slimes_finishes_the_slice() -> void:
 		await tree.physics_frame
 	assert_eq(s.state.get_flag(CorruptForest.FLAG_SLIMES), true)
 	assert_true(s.quests.is_done("ch1_main"))
-	assert_eq((level.get_node("Hud") as Hud).banner_text(), "CH1_SLIMES_CLEARED")
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_eq(hud.banner_text(), "CH1_SLIMES_CLEARED")
+	assert_true(s.story_finished(), "目前的內容到底了")
+	assert_true(hud.is_objective_shown(), "做完之後左上還是有字")
+	assert_eq(hud.objective_text_key(), Hud.STORY_END_KEY, "寫的是「目前的內容到這裡」")
+	assert_eq(hud.hint_text(), "", "沒有操作提示了")
+
+
+## 左上的目標一直在畫面上（不會過幾秒就淡掉），下面一行寫現在用得到的按鍵。
+func test_objective_stays_on_screen_with_a_controls_hint() -> void:
+	_game().call("new_game", false)
+	var s: GameSession = _session()
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var hud: Hud = level.get_node("Hud") as Hud
+	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_MIASMA")
+	assert_eq(s.hint_key(), "Q_CH1_HINT_MOVE")
+	assert_true(hud.hint_text().contains("[WASD]"), "移動的提示寫 WASD：%s" % hud.hint_text())
+	assert_false(hud.hint_text().contains("{"), "動作名都換成按鍵了：%s" % hud.hint_text())
+	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
+	await tree.physics_frame
+	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_SLIMES")
+	assert_eq(s.hint_key(), "Q_CH1_HINT_FIGHT")
+	assert_false(hud.hint_text().contains("{"), "動作名都換成按鍵了：%s" % hud.hint_text())
+	assert_true(hud.is_objective_shown())
 
 
 func test_cleared_glade_stays_cleared_after_reload() -> void:

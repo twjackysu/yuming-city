@@ -19,7 +19,6 @@ const BINDINGS: Dictionary = {
 	## 釋放：把身上反轉中的狀態一次用掉
 	"release": [Vector2i(1, MOUSE_BUTTON_RIGHT), Vector2i(2, JOY_BUTTON_Y)],
 	"interact": [Vector2i(0, KEY_F), Vector2i(2, JOY_BUTTON_A)],
-	"journal": [Vector2i(0, KEY_TAB), Vector2i(2, JOY_BUTTON_BACK)],
 	## 可攜藥劑快捷鍵
 	"use_item": [Vector2i(0, KEY_1), Vector2i(2, JOY_BUTTON_DPAD_LEFT)],
 	"pause": [Vector2i(0, KEY_ESCAPE), Vector2i(2, JOY_BUTTON_START)],
@@ -43,7 +42,6 @@ const ACTION_KEYS: Dictionary = {
 	"release": "ACT_RELEASE",
 	"lock_on": "ACT_LOCK_ON",
 	"interact": "ACT_INTERACT",
-	"journal": "ACT_JOURNAL",
 	"use_item": "ACT_USE_ITEM",
 	"pause": "ACT_PAUSE",
 }

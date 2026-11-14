@@ -1,18 +1,29 @@
 class_name Hud
 extends CanvasLayer
-## 關卡 HUD：左上目前目標，右下存檔提示，目標指引（ObjectiveGuide）。只聽 Game.session 的訊號，不輪詢。
-## 目標換了會淡入，停留一陣子後淡出（03：探索時幾乎沒有 HUD）；按「日誌」鍵（Tab／Back）再顯示。
+## 關卡 HUD：左上目前目標＋下面一行操作提示（一直在畫面上），右下存檔提示，目標指引（ObjectiveGuide）。
+## 目標換了會淡入。主線做完（目前的內容到底了）：中央跳「未完待續」，左上改寫「目前的內容到這裡」。
+## 以前目標 8 秒後會淡掉、要按鍵才再出現——Jacky 2026-11-14 玩過：「不知道要幹嘛，畫面也沒有什麼指引」。
 ## 進入檢查點（自動存檔）時右下閃一下「已存檔」（失敗則顯示「存檔失敗」）。
 
 const OBJECTIVE_FADE_SEC: float = 0.6
-const OBJECTIVE_HOLD_SEC: float = 8.0
-const OBJECTIVE_PEEK_SEC: float = 4.0
+## 主線做完之後左上那一行、中央那兩行
+const STORY_END_KEY: String = "HUD_STORY_END"
+const STORY_END_LINES: PackedStringArray = ["HUD_STORY_END_LINE1", "HUD_STORY_END_LINE2"]
+## 做完最後一個目標之後隔多久才跳「未完待續」（先讓關卡自己的橫幅講完）
+const STORY_END_DELAY: float = 4.5
+const CENTER_LINE1_COLOR: Color = Color(0.95, 0.42, 0.38)
+## 左上目標後面的暗底比字多出多少（背景很花：樹、草、孢子）
+const OBJECTIVE_BACK_PAD: Vector2 = Vector2(18.0, 10.0)
 const SAVED_SHOW_SEC: float = 2.2
 ## 狀態列後面的「可以釋放」提示
 const RELEASE_HINT_KEY: String = "HUD_RELEASE_HINT"
 
 var _objective: Label
 var _objective_box: VBoxContainer
+## 目標下面那一行操作提示（任務階段的 hint；裡面的 {attack} 這類動作名換成現在裝置的按鍵）
+var _hint: Label
+var _hint_key: String = ""
+var _hint_device: int = -1
 var _saved: Label
 var _died: Label
 var _saved_tween: Tween
@@ -36,7 +47,7 @@ var _banner_tween: Tween
 ## 畫面中間的兩行字（新版第一次覺醒：「【中毒】」→「【逆轉體質已啟動】中毒 → 持續回血」）
 var _center: VBoxContainer
 var _center_tween: Tween
-var _center_back: StyleBoxFlat
+var _text_back: StyleBoxFlat  # 中央兩行字與左上目標共用的暗底
 ## 第二行比第一行晚出現幾秒
 const CENTER_LINE_GAP: float = 0.9
 ## 中央兩行字的暗底比字多出多少（左右、上下）
@@ -70,8 +81,9 @@ func _ready() -> void:
 	_build()
 	var s: GameSession = Game.session
 	s.stage_changed.connect(_on_stage_changed)
+	s.quest_completed.connect(_on_quest_completed)
 	s.checkpoint_reached.connect(_on_checkpoint)
-	_set_objective(s.objective_key(), false)
+	_refresh_objective(false)
 	_saved.modulate.a = 0.0
 	Game.player_died.connect(_on_player_died)
 	# 截圖用：`--nohud` 整個 HUD 不顯示（Steam 膠囊圖替代版的背景、宣傳截圖）
@@ -79,17 +91,22 @@ func _ready() -> void:
 		visible = false
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("journal") and _objective.text != "":
-		_show_objective(OBJECTIVE_PEEK_SEC, _objective_box.modulate.a < 0.99)
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and _hint != null:
+		_refresh_hint()
 
 
 func is_objective_shown() -> bool:
-	return _objective_box.visible and _objective_box.modulate.a > 0.0
+	return _objective_box.visible
 
 
 func objective_text_key() -> String:
 	return _objective.text
+
+
+## 操作提示現在寫的字（已經換好按鍵；沒有提示是空的）
+func hint_text() -> String:
+	return _hint.text if _hint.visible else ""
 
 
 func saved_label() -> Label:
@@ -102,21 +119,32 @@ func _build() -> void:
 	_objective_box = VBoxContainer.new()
 	_objective_box.name = "Objective"
 	_objective_box.position = Vector2(56, 44)
-	_objective_box.add_theme_constant_override("separation", 2)
+	_objective_box.add_theme_constant_override("separation", 3)
+	_objective_box.draw.connect(func() -> void:
+		_objective_box.draw_style_box(_text_back, Rect2(-OBJECTIVE_BACK_PAD, _objective_box.size + OBJECTIVE_BACK_PAD * 2.0)))
 	add_child(_objective_box)
 	var header := Label.new()
 	header.name = "Header"
 	header.text = "HUD_OBJECTIVE"
-	header.add_theme_font_size_override("font_size", 16)
+	header.add_theme_font_size_override("font_size", 17)
 	header.add_theme_color_override("font_color", Color(0.75, 0.66, 0.48, 0.9))
 	_objective_box.add_child(header)
 	_objective = Label.new()
 	_objective.name = "Text"
-	_objective.add_theme_font_size_override("font_size", 24)
+	_objective.add_theme_font_size_override("font_size", 28)
 	_objective.add_theme_color_override("font_color", Color(0.93, 0.92, 0.88))
 	_objective.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
 	_objective.add_theme_constant_override("shadow_offset_y", 2)
 	_objective_box.add_child(_objective)
+	_hint = Label.new()
+	_hint.name = "Hint"
+	_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_hint.set_meta("glyph", true)  # 組好的字（不是翻譯 key）：UI 測試的「寫死文字」檢查跳過
+	_hint.add_theme_font_size_override("font_size", 21)
+	_hint.add_theme_color_override("font_color", Color(0.86, 0.82, 0.7))
+	_hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	_hint.add_theme_constant_override("shadow_offset_y", 2)
+	_objective_box.add_child(_hint)
 
 	_died = Label.new()
 	_died.name = "Died"
@@ -162,18 +190,18 @@ func _build() -> void:
 	_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor.add_child(_center)
 	# 兩行字後面一塊邊緣柔和的暗底：背景很亮、很花的時候（藥店那一排發光的瓶子）字才讀得出來
-	_center_back = StyleBoxFlat.new()
-	_center_back.bg_color = Color(0.02, 0.03, 0.04, 0.5)
-	_center_back.set_corner_radius_all(20)
-	_center_back.shadow_color = Color(0.02, 0.03, 0.04, 0.26)
-	_center_back.shadow_size = 30
-	_center.draw.connect(_draw_center_back)
+	_text_back = StyleBoxFlat.new()
+	_text_back.bg_color = Color(0.02, 0.03, 0.04, 0.5)
+	_text_back.set_corner_radius_all(20)
+	_text_back.shadow_color = Color(0.02, 0.03, 0.04, 0.26)
+	_text_back.shadow_size = 30
+	_center.draw.connect(_draw_text_back)
 	for i: int in 2:
 		var l := Label.new()
 		l.name = "Line%d" % (i + 1)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.add_theme_font_size_override("font_size", 34 if i == 0 else 30)
-		l.add_theme_color_override("font_color", Color(0.95, 0.42, 0.38) if i == 0 else CENTER_LINE2_COLOR)
+		l.add_theme_color_override("font_color", CENTER_LINE1_COLOR if i == 0 else CENTER_LINE2_COLOR)
 		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 		l.add_theme_constant_override("shadow_offset_y", 2)
 		l.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04, 0.9))
@@ -198,8 +226,8 @@ func _build() -> void:
 
 
 func _process(delta: float) -> void:
-	# 目標文字亮著時指引也全亮；關卡＝Hud 的父節點
-	guide.emphasized = is_objective_shown()
+	if App.last_device != _hint_device:
+		_refresh_hint()
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	var pc: PlayerController = player as PlayerController
 	# 身上的毒可以放出去的時候（戰鬥場），那一列後面寫按哪個鍵、會扣多少
@@ -369,30 +397,53 @@ func _on_potion_decided(drink: bool) -> void:
 			_potion_player.use_potion(true)
 
 
-func _set_objective(key: String, animate: bool) -> void:
+## 左上的目標照現在的主線階段重寫（主線做完＝「目前的內容到這裡」）；fade_in＝淡入，不然直接出現。之後一直留在畫面上。
+func _refresh_objective(fade_in: bool) -> void:
+	var s: GameSession = Game.session
+	var key: String = STORY_END_KEY if s.story_finished() else s.objective_key()
 	_objective.text = key
 	_objective_box.visible = key != ""
-	if key != "":
-		_show_objective(OBJECTIVE_HOLD_SEC, animate)
-
-
-## 顯示目標 hold 秒後淡出；fade_in 為 false 時立即出現。
-func _show_objective(hold: float, fade_in: bool) -> void:
+	_hint_key = s.hint_key()
+	_refresh_hint()
 	if _objective_tween != null:
 		_objective_tween.kill()
-	_objective_box.modulate.a = 0.0 if fade_in else 1.0
-	if not is_inside_tree():
-		return
-	_objective_tween = create_tween()
-	if fade_in:
+	_objective_box.modulate.a = 1.0
+	if fade_in and is_inside_tree():
+		_objective_box.modulate.a = 0.0
+		_objective_tween = create_tween()
 		_objective_tween.tween_property(_objective_box, "modulate:a", 1.0, OBJECTIVE_FADE_SEC)
-	_objective_tween.tween_interval(hold)
-	_objective_tween.tween_property(_objective_box, "modulate:a", 0.0, OBJECTIVE_FADE_SEC * 2.0)
+
+
+## 操作提示：翻譯好的字裡 {attack}、{dodge} 這類動作名換成現在裝置的按鍵；{move}、{look} 是移動與轉視角。
+func _refresh_hint() -> void:
+	_hint_device = App.last_device
+	_hint.visible = _hint_key != ""
+	if _hint_key == "":
+		return
+	var pad: bool = _hint_device == InputGlyphs.Device.PAD
+	var keys: Dictionary = {"move": "[%s]" % tr("HUD_MOVE_PAD"), "look": "[%s]" % tr("HUD_LOOK_PAD" if pad else "HUD_LOOK_KBM")}
+	if not pad:
+		var wasd: String = ""
+		for action: String in ["move_forward", "move_left", "move_back", "move_right"]:
+			wasd += InputGlyphs.label_for_action(action, _hint_device).trim_prefix("[").trim_suffix("]")
+		keys["move"] = "[%s]" % wasd
+	for action: String in InputSetup.ACTION_KEYS:
+		keys[action] = InputGlyphs.label_for_action(action, _hint_device)
+	_hint.text = tr(_hint_key).format(keys)
 
 
 func _on_stage_changed(quest_id: String, _from: String, _to: String) -> void:
 	if quest_id == Game.session.main_quest():
-		_set_objective(Game.session.objective_key(), true)
+		_refresh_objective(true)
+
+
+## 主線做完：左上改寫，隔一下中央跳「未完待續」。
+func _on_quest_completed(_quest_id: String) -> void:
+	if not Game.session.story_finished():
+		return
+	_refresh_objective(true)
+	if is_inside_tree():
+		create_tween().tween_callback(show_center_lines.bind(STORY_END_LINES[0], STORY_END_LINES[1], 8.0, CENTER_LINE2_COLOR)).set_delay(STORY_END_DELAY)
 
 
 func _on_checkpoint(_checkpoint_id: String) -> void:
@@ -431,14 +482,16 @@ func show_banner(key: String, seconds: float = 3.0) -> void:
 
 
 ## 中央兩行字的暗底（畫在字的後面，跟著字一起淡入淡出）
-func _draw_center_back() -> void:
-	_center.draw_style_box(_center_back, Rect2(-CENTER_BACK_PAD, _center.size + CENTER_BACK_PAD * 2.0))
+func _draw_text_back() -> void:
+	_center.draw_style_box(_text_back, Rect2(-CENTER_BACK_PAD, _center.size + CENTER_BACK_PAD * 2.0))
 
 
 ## 畫面中間的兩行字（不暫停遊戲）：第一行先出現，第二行晚 CENTER_LINE_GAP 秒，一起停留 seconds 秒後淡出。
-func show_center_lines(key1: String, key2: String, seconds: float = 4.0) -> void:
+## 第一行預設是紅的（壞東西上身）；不是壞消息的時候給別的顏色。
+func show_center_lines(key1: String, key2: String, seconds: float = 4.0, line1_color: Color = CENTER_LINE1_COLOR) -> void:
 	var l1: Label = _center.get_child(0) as Label
 	var l2: Label = _center.get_child(1) as Label
+	l1.add_theme_color_override("font_color", line1_color)
 	l1.text = key1
 	l2.text = key2
 	l2.modulate.a = 0.0

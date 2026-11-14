@@ -5,6 +5,7 @@
     {
       "id": "enter_miasma",
       "objective": "Q_CH1_OBJ_MIASMA",
+      "hint": "Q_CH1_HINT_MOVE",
       "checkpoint": "ch1_forest_gate",
       "marker": "node:MiasmaEdge",
       "done_when": {
@@ -14,6 +15,7 @@
     {
       "id": "slimes",
       "objective": "Q_CH1_OBJ_SLIMES",
+      "hint": "Q_CH1_HINT_FIGHT",
       "checkpoint": "ch1_slimes",
       "marker": "node:SlimeGlade",
       "done_when": {

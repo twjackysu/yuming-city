@@ -7,6 +7,7 @@ extends RefCounted
 ##   "stages": [
 ##     {"id": "explore_town", "objective": "Q_...", "checkpoint": "start",
 ##      "done_when": {...條件}, "on_done": {...效果}, "next": "選填：預設為下一個階段",
+##      "hint": "選填：目標下面那一行操作提示的翻譯 key（{attack} 這類動作名會換成按鍵，見 Hud）",
 ##      "marker": "選填：目標指引指向哪裡（見 validate_marker）",
 ##      "marker_if": [{"when": {...條件}, "marker": ...}]  選填：第一個成立的取代 marker,
 ##      "objective_if": [{"when": {...條件}, "objective": "Q_..."}]  選填：第一個成立的取代 objective}
@@ -99,6 +100,8 @@ func translation_keys() -> PackedStringArray:
 		out.append(str(q["title"]))
 		for s: Variant in (q["stages"] as Array):
 			out.append(str((s as Dictionary)["objective"]))
+			if (s as Dictionary).has("hint"):
+				out.append(str((s as Dictionary)["hint"]))
 			for alt: Variant in ((s as Dictionary).get("objective_if", []) as Array):
 				out.append(str((alt as Dictionary)["objective"]))
 	return out
@@ -128,6 +131,8 @@ static func validate_quest(q: Dictionary) -> PackedStringArray:
 		ids[sid] = true
 		if not st.has("objective"):
 			out.append("階段 %s 缺少 objective" % sid)
+		if st.has("hint") and not st["hint"] is String:
+			out.append("階段 %s 的 hint 要是翻譯 key（字串）" % sid)
 		if not st.has("done_when"):
 			out.append("階段 %s 缺少 done_when" % sid)
 		else:

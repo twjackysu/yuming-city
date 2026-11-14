@@ -12,11 +12,7 @@ const EDGE_MARGIN: float = 56.0
 const SIZE: float = 11.0
 const COL: Color = Color(0.98, 0.8, 0.52)
 const COL_OUTLINE: Color = Color(0.04, 0.04, 0.06, 0.85)
-## 平常淡一點（03：探索時幾乎沒有 HUD），目標剛換或按 Tab 時跟著目標文字亮起
-const IDLE_ALPHA: float = 0.55
 
-## 外部（Hud）設定：目標文字顯示中 → 指引全亮
-var emphasized: bool = false
 ## 目前畫面上的狀態（測試用）
 var shown: bool = false
 var screen_pos: Vector2 = Vector2.ZERO
@@ -76,7 +72,7 @@ func refresh(level: Node, player: Node3D, cam: Camera3D, in_combat: bool, delta:
 				want = true
 				_place(cam, target + Vector3(0, HEAD_HEIGHT, 0))
 	shown = want
-	var goal: float = (1.0 if emphasized else IDLE_ALPHA) if want else 0.0
+	var goal: float = 1.0 if want else 0.0
 	_alpha = move_toward(_alpha, goal, delta * 3.0)
 	queue_redraw()
 

@@ -11,10 +11,21 @@ extends Node3D
 ## 找不到（或模型沒有骨架）就用程序人偶。模型缺的動作：閃避退回整個人前滾、其他退回 idle。
 ## 碰撞、AI、弱點判定都不跟模型走（04-architecture「角色模型接入點」）。
 
+## 走路或跑步時，每隻腳落地的那一刻發一次（腳步聲照這個播）
+signal footfall
+
 const STATES: PackedStringArray = ["idle", "walk", "run", "dodge", "attack", "shoot"]
 const WALK_MIN_SPEED: float = 0.3
-const RUN_MIN_SPEED: float = 4.6
+## 這個速度以上用跑的動作。諾恩平常移動 3.4 m/s 是小跑：以前用「走路」的動作加速到 1.6 倍，腿還是跟不上，
+## 看起來在地上滑（Jacky 2026-11-14：「走路的音效跟走路速度差很多」）。
+const RUN_MIN_SPEED: float = 2.6
 const RUN_SPEED: float = 5.8
+## 模型的動作原速播放時，腳不滑的移動速度（m/s）：步幅 × 每秒幾步，從 tools/blender/common.py 的 gait() 算的
+## （走路：大腿擺 ±27°、一圈 1.25 秒；跑步：±42°、一圈 0.75 秒；腿長約 0.88 m）
+const WALK_CLIP_SPEED: float = 1.3
+const RUN_CLIP_SPEED: float = 3.2
+## 一圈步態（0～1）裡腳落地的兩個時間點：大腿擺到最前面的那一刻
+const FOOT_CONTACTS: PackedFloat32Array = [0.25, 0.75]
 const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55, "shoot": 0.9}
 ## 「釋放」的姿勢播多久。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
 const RELEASE_POSE_TIME: float = 0.36
@@ -59,6 +70,8 @@ var attack_style: String = "swing"
 ## 「釋放」的姿勢還剩幾秒（0＝沒有在播）
 var release_left: float = 0.0
 var phase: float = 0.0
+## 上一幀的 gait_cycle()（-1＝那時候不在走）
+var _last_cycle: float = -1.0
 var breath: float = 0.0
 
 ## true＝模型吃場景的光、平塗（toon 漫射）——Jacky 2026-11-13 看了兩種的圖選的（「會受環境光影響比較好」）。
@@ -192,10 +205,39 @@ func advance(delta: float) -> void:
 	release_left = maxf(release_left - delta, 0.0)
 	if model != null:
 		_animate_model()
+	else:
+		_pose(speed_t)
+		if release_t < 1.0 and action != "dodge" and lying == "" and not sitting:
+			_pose_release(release_t)
+	_emit_footfalls()
+
+
+## 步態走到一圈的哪裡（0～1，一圈＝左右腳各一步）；不是在走路或跑步就回傳 -1。
+func gait_cycle() -> float:
+	var state: String = current_state()
+	if state != "walk" and state != "run":
+		return -1.0
+	if model == null:
+		return phase / TAU
+	if anim == null or not anim.is_playing() or anim.current_animation_length <= 0.0 \
+			or model_animation != CharacterModels.find_animation(anim, state):
+		return -1.0
+	return fposmod(anim.current_animation_position / anim.current_animation_length, 1.0)
+
+
+## 這一幀步態跨過落地的時間點就發 footfall。剛開始走、剛換動作的那一幀不算（位置是跳過去的，不是走過去的）。
+func _emit_footfalls() -> void:
+	var cycle: float = gait_cycle()
+	var before: float = _last_cycle
+	_last_cycle = cycle
+	if cycle < 0.0 or before < 0.0:
 		return
-	_pose(speed_t)
-	if release_t < 1.0 and action != "dodge" and lying == "" and not sitting:
-		_pose_release(release_t)
+	var moved: float = fposmod(cycle - before, 1.0)
+	if moved <= 0.0 or moved > 0.5:
+		return
+	for contact: float in FOOT_CONTACTS:
+		if fposmod(contact - before, 1.0) <= moved and fposmod(contact - before, 1.0) > 0.0:
+			footfall.emit()
 
 
 ## 模型：依狀態換動作；缺的動作退回（閃避＝整個人前滾，其他＝idle）。
@@ -220,12 +262,12 @@ func _animate_model() -> void:
 	if model_animation != name_found:
 		model_animation = name_found
 		anim.play(name_found, 0.05 if state == "release" else 0.15)
-	# 步頻跟速度走（動作表的走路約 1.6 m/s、跑步約 RUN_SPEED）
+	# 步頻跟速度走：腳踩在地上的那一段，腳往後的速度要跟人往前的速度差不多
 	match state:
 		"walk":
-			anim.speed_scale = clampf(move_speed / 1.6, 0.6, 1.6)
+			anim.speed_scale = clampf(move_speed / WALK_CLIP_SPEED, 0.6, 1.8)
 		"run":
-			anim.speed_scale = clampf(move_speed / RUN_SPEED, 0.7, 1.4)
+			anim.speed_scale = clampf(move_speed / RUN_CLIP_SPEED, 0.85, 1.45)
 		_:
 			anim.speed_scale = 1.0
 

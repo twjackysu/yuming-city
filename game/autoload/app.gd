@@ -26,6 +26,9 @@ var _burst_saved: int = 0
 ## 開機的前 BURST_LAZY_BOOT 幀照常畫（載入、編 shader），要存的那一幀與它前面 BURST_LAZY_WARM 幀也畫
 ## （體積霧要前幾幀的結果；用 --burst-on 觸發的第一張來不及暖，霧會粗一點）。
 var burst_lazy: bool = false
+## 連拍用：`--hold=move_right,sprint` 一直按住這些動作（看走路、跑步的樣子）。
+## 每一幀重按：視窗失去焦點時引擎會把按著的動作全部放開（xvfb 底下一開始就會發生）。
+var held_actions: PackedStringArray = []
 const BURST_LAZY_BOOT: int = 20
 const BURST_LAZY_WARM: int = 2
 var _frame: int = 0
@@ -49,6 +52,7 @@ func _ready() -> void:
 	burst_every = maxi(int(args.get("burst-every", burst_every)), 1)
 	burst_count = maxi(int(args.get("burst-count", burst_count)), 1)
 	burst_lazy = args.has("burst-lazy")
+	held_actions = str(args.get("hold", "")).split(",", false)
 	set_process(screenshot_path != "" or burst_prefix != "")
 
 
@@ -111,6 +115,8 @@ static func burst_wait(frame: int, from: int, every: int) -> int:
 
 func _process(_delta: float) -> void:
 	_frame += 1
+	for held: String in held_actions:
+		Input.action_press(held)
 	if burst_prefix != "":
 		if burst_lazy and _frame > BURST_LAZY_BOOT:
 			RenderingServer.render_loop_enabled = burst_wait(_frame, burst_from, burst_every) <= BURST_LAZY_WARM
