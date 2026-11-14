@@ -8,7 +8,7 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "stylized anime-style 3D game character, clean readable silhouette, hand-painted PBR textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young man, 23 years old, rookie F-rank adventurer, messy dark brown hair, tired but determined eyes, worn dark red scarf, patched beige linen shirt, scuffed brown leather vest, simple belt with small pouches, frayed dark trousers, worn leather boots, fingerless leather gloves, poor shabby but practical adventurer clothes",
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Handsome cool young man, 23 years old, anime protagonist look, rookie F-rank adventurer, messy dark brown hair, tired but determined eyes, worn dark red scarf, patched beige linen shirt, scuffed brown leather vest, simple belt with small pouches, frayed dark trousers, worn leather boots, fingerless leather gloves, poor shabby but practical adventurer clothes",
       "negative_prompt": "weapon, sword, staff, lantern, cape covering arms, wings, text, logo, base, pedestal",
       "rig": {
         "type": "biped",
@@ -28,7 +28,7 @@
         "texture_quality": "detailed",
         "face_limit": 40000
       },
-      "prompt": "stylized anime-style 3D game character, clean readable silhouette, hand-painted PBR textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young woman, 25 years old, F-rank swordswoman adventurer, confident expression, long silver-white hair in a high ponytail, small scar over right eyebrow, short worn white cloak over the shoulders, faded blue tunic, light brown leather chest guard, leather belt with pouches, dark leggings, knee-high worn leather boots, leather bracers, modest full coverage clothing, shabby but practical rookie adventurer gear",
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Beautiful and cute young woman, 25 years old, anime heroine look, F-rank swordswoman adventurer, confident expression, long silver-white hair in a high ponytail, small scar over right eyebrow, short worn white cloak over the shoulders, faded blue tunic, light brown leather chest guard, leather belt with pouches, dark leggings, knee-high worn leather boots, leather bracers, modest full coverage clothing, shabby but practical rookie adventurer gear",
       "negative_prompt": "weapon, sword, staff, lantern, cape covering arms, wings, text, logo, base, pedestal, revealing clothing",
       "rig": {
         "type": "biped",
@@ -48,7 +48,7 @@
         "texture_quality": "detailed",
         "face_limit": 50000
       },
-      "prompt": "stylized anime dark fantasy monster, 2.6 meter tall hunched gaunt undertaker creature, carrying a huge rusty iron frame strapped on its back with two vertical posts and three crossbars, heavy iron chains hanging from the frame and wrists, tattered black funeral coat, long arms, faceless pale mask, glowing weak point at the iron frame joints, full body, T-pose, hand-painted PBR textures, game-ready",
+      "prompt": "anime manga style dark fantasy monster, cool and menacing design, 2.6 meter tall hunched gaunt undertaker creature, carrying a huge rusty iron frame strapped on its back with two vertical posts and three crossbars, heavy iron chains hanging from the frame and wrists, tattered black funeral coat, long arms, faceless pale mask, glowing weak point at the iron frame joints, full body, T-pose, vibrant hand-painted textures, game-ready",
       "negative_prompt": "text, logo, base, pedestal, gore",
       "rig": {
         "type": "biped",
@@ -66,7 +66,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. Simple steel longsword with leather wrapped grip and plain crossguard, slightly worn rookie adventurer sword",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. Simple steel longsword with leather wrapped grip and plain crossguard, slightly worn rookie adventurer sword",
       "note": "可換裝備：長劍"
     },
     {
@@ -75,7 +75,7 @@
       "params": {
         "face_limit": 5000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. Short sword / large dagger, straight steel blade, wooden grip wrapped in cloth, iron pommel",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. Short sword / large dagger, straight steel blade, wooden grip wrapped in cloth, iron pommel",
       "note": "可換裝備：短劍"
     },
     {
@@ -84,7 +84,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. One-handed battle axe, wooden handle, single iron axe head with worn edge, leather grip",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. One-handed battle axe, wooden handle, single iron axe head with worn edge, leather grip",
       "note": "可換裝備：斧頭"
     },
     {
@@ -93,7 +93,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. One-handed war hammer, wooden shaft, square iron hammer head with iron bands",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. One-handed war hammer, wooden shaft, square iron hammer head with iron bands",
       "note": "可換裝備：槌子"
     },
     {
@@ -102,7 +102,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. Wooden mage staff about 1.6 meters long, twisted gnarled wood top holding a small glowing teal crystal, leather wraps",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. Wooden mage staff about 1.6 meters long, twisted gnarled wood top holding a small glowing teal crystal, leather wraps",
       "note": "可換裝備：法杖（諾恩現在用法杖，D-263）"
     },
     {
@@ -111,7 +111,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game weapon, hand-painted PBR textures, single object, no hand, no stand, no text, isolated. Wooden recurve short bow with string, leather grip, simple carved tips",
+      "prompt": "cool stylized anime manga fantasy game weapon, appealing shapes, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. Wooden recurve short bow with string, leather grip, simple carved tips",
       "note": "可換裝備：弓"
     },
     {
@@ -120,7 +120,7 @@
       "params": {
         "face_limit": 6000
       },
-      "prompt": "stylized anime fantasy game prop, hand-painted PBR textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Cracked wooden barrel with iron hoops leaking glowing green poison liquid, a painted skull warning symbol on the side",
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Cracked wooden barrel with iron hoops leaking glowing green poison liquid, a painted skull warning symbol on the side",
       "note": "開場：被砸裂、冒綠霧的毒藥桶（主角第一次中毒的地方）"
     },
     {
@@ -129,7 +129,7 @@
       "params": {
         "face_limit": 8000
       },
-      "prompt": "stylized anime fantasy game prop, hand-painted PBR textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Old cast-iron fantasy street lamp post snapped in half and bent, broken glass lantern head with a warm flame, cobblestone chunks at the base",
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Old cast-iron fantasy street lamp post snapped in half and bent, broken glass lantern head with a warm flame, cobblestone chunks at the base",
       "note": "開場：被怪物打斷的街燈"
     },
     {
@@ -138,7 +138,7 @@
       "params": {
         "face_limit": 10000
       },
-      "prompt": "stylized anime fantasy game prop, hand-painted PBR textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Adventurer guild quest board, sturdy wooden notice board with a small shingled roof, many pinned parchment quest papers and wanted posters, hanging small iron lantern, blank papers without readable writing",
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Adventurer guild quest board, sturdy wooden notice board with a small shingled roof, many pinned parchment quest papers and wanted posters, hanging small iron lantern, blank papers without readable writing",
       "note": "冒險感：冒險者公會的委託板（F 級接任務）"
     },
     {
@@ -147,7 +147,7 @@
       "params": {
         "face_limit": 10000
       },
-      "prompt": "stylized anime fantasy game prop, hand-painted PBR textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Small two-wheeled wooden hand cart loaded with roped wooden supply crates and sacks, one crate cracked open, worn and dented",
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. Small two-wheeled wooden hand cart loaded with roped wooden supply crates and sacks, one crate cracked open, worn and dented",
       "note": "開場：諾恩和波克拉的運貨小車"
     }
   ]
