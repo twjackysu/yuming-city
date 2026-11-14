@@ -4,7 +4,7 @@ Jacky 2026-11-14 問：「很多遊戲動輒好幾 GB，我怕 git 爆掉。」
 
 ## 先講結論
 
-商業遊戲的幾 GB 幾乎都是**素材**（貼圖、模型、音樂、影片）；**程式碼通常只有幾 MB 到幾十 MB**。這個 repo 現在約 37 MB（GitHub 顯示的大小，2026-11-14），程式與資料不到 10 MB。只要守下面的規則，做到完成也會在幾百 MB 以內，GitHub 沒問題。
+商業遊戲的幾 GB 幾乎都是**素材**（貼圖、模型、音樂、影片）；**程式碼通常只有幾 MB 到幾十 MB**。這個 repo 的工作目錄現在約 85 MB（2026-11-14），其中 `art-inbox/` 的模型約 80 MB、程式與資料不到 5 MB。只要守下面的規則，做到完成也會在幾百 MB 以內，GitHub 沒問題。
 
 GitHub 的限制：單一檔案超過 100 MB 會被拒絕（50 MB 會警告）；整個 repo 建議保持在 1 GB 左右以內。
 
@@ -22,16 +22,9 @@ GitHub 的限制：單一檔案超過 100 MB 會被拒絕（50 MB 會警告）�
 | 截圖、對照圖 | Releases（`screens`）、`build/shots/` | **不進** |
 
 - **同一個模型不要反覆改了又提交**：git 會把每一版都留著。要重產就換 id（`_v2`），確定不用的舊版在下一次整理時從 `art-inbox/` 刪掉（歷史裡還是佔空間，所以一開始就少放）。
-- 人物的三個檔（`_model`／`_rig`／`_anim`）遊戲只用 `_rig`；之後佇列改成只留用得到的那一個。
+- 人物只留 `_rig`（有動作的再加 `_anim`）；`tripo_queue.py` 已經不存 `_model`。
 - **預算**：`art-inbox/` 全部加起來保持在 300 MB 以內；超過 200 MB 時 loop 在 FOR_JACKY 提醒一次。
 - 不用 Git LFS（雲端 loop 推不了，免費額度也小）。`.gitattributes` 裡舊的 LFS 規則只影響舊檔。
 - 真的需要很大的東西（影片、整包未壓縮的原檔）：放 GitHub Releases 當附件，repo 裡只留下載與驗雜湊的腳本。
 
-## 程式的架構（現況，新東西照這個放）
-
-- `game/src/core/`：規則與資料（狀態、任務、存檔、戰鬥數值）——純邏輯，可單獨測試。
-- `game/src/world/`：畫面用的共用元件（shader、模型接入點、粒子）。
-- `game/scenes/actors/`：角色（玩家、席菈、敵人）；`game/scenes/levels/`：關卡與各關的劇情控制器；`game/scenes/world/`：場景物件（毒霧、火球…）。
-- `game/data/`：對話、任務、數值表（JSON）；`game/i18n/`：翻譯。
-- `game/tests/`：`unit/` 與 `flow/`（從新遊戲走到結尾的流程測試）。
-- 找某個功能在哪個檔：[`05-code-map.md`](05-code-map.md)。
+程式放哪裡、東西在哪個檔：[`04-architecture.md`](04-architecture.md)。

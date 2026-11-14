@@ -1,226 +1,27 @@
 # 下一輪待辦（依優先順序）
 
-> 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（第 100 輪約 4 分半；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。
->
-> **最新（2026-11-14 13:40，Jacky 在對話裡定的）**：**劇情整個換成第一章《毒瘤與破爛的共鳴》**、遊戲名稱定案（`docs/story/README.md`）。下面「★」是現在唯一的主線；「00000」以下都是改版前的東西，只在拆舊程式來用時查。
->
-> 更早幾輪的摘要看 `docs/PROGRESS.md`。
+每輪從最上面拿 1～2 項。開工前跑 `scripts/check.sh` 確認全綠。劇本 `docs/story/chapter-1.md`、計畫 `docs/design/13-chapter-1-plan.md`、程式在哪 `docs/design/04-architecture.md`、規則 `docs/design/02-gameplay.md`。截圖與工具的用法在 `04` 的「開發工具」。
 
-## ★ 第一章《毒瘤與破爛的共鳴》（Jacky 2026-11-14；D-272）——從這裡拿工作
+## ★ 垂直切片：腐敗之森入口的 3 分鐘
 
-先讀 `docs/story/chapter-1.md`（劇本）與 `docs/design/13-chapter-1-plan.md`（計畫）。規則：`docs/design/14-repo-and-assets.md`。
+現在有的：諾恩（Tripo 模型、鏽劍）→ 瘴氣（中毒 → 反轉回血，任務往下走）→ 三隻劇毒史萊姆（會追、會撲、撞到上毒）→ 打完跳橫幅。沒有人真的玩過，也還不好看。
 
-1. **垂直切片：腐敗之森入口的 3 分鐘**（劇本節點 2）。新關卡 `corrupt_forest`（先小：入口＋一塊空地，紫黑瘴氣）；諾恩走進瘴氣 → 反轉的回饋（畫面邊緣閃紫 → 0.3 秒 → 碎裂聲 → 金光；HUD 紅圖示翻金）→ 三隻劇毒史萊姆 → 席菈誤射【重度麻痺＋防禦歸零】→ 面板跳【神經超頻】【鋼鐵壁壘】→ 玩家一刀清場 → 戰後對話（兩個選項，記好感度）。模型還沒產出來的（史萊姆、新武器）先用現有的代替，檔案到了自動換（`PropModels.instance_first`）。標題的「新遊戲」指到這裡，舊的 20 分鐘改叫「舊版試玩」。
-2. **諾恩改回近戰**：武器【瘴氣生鏽鐵劍】（Tripo `weapon_rusty_miasma_sword`，沒到之前用 `tripo/weapon_longsword`）；每一刀給自己「微弱流血＋中毒」→ 回血＋疊攻速（越砍越快，有上限）。出手動作改回揮砍（`--attack swing`）。11/14 中午做的火球（`Fireball`）從普通攻擊拿掉，類別留著——改成席菈的藥瓶拋射。
-3. **席菈改成後排鍊金術師**：手上換【鍊金藥瓶手弩】（`weapon_alchemy_crossbow`）；AI：跟在諾恩後面 4～6 m、每隔幾秒往諾恩射一瓶負面藥水（落點有金色反轉回饋）、或往敵人丟一團負面領域；按 Q 指定下一瓶。她原本的劍與近戰拿掉。
-4. **新的狀態照表加**（`status_rules`）：流血、麻痺（神經超頻）、防禦歸零（鋼鐵壁壘）、致盲（鷹眼暴擊）、衰弱、石化（霸體）、全能力下降。每種都要有圖示與一句白話說明。
-5. 切片好玩了再擴：森林完整版（陷阱、營火、詛咒寶箱、5 朵夜光毒蕈、右上角目標清單）→ 祭壇 Boss → 公會大廳開場 → 城鎮自由時段（委託板、黑市商人、裝備面板）。
-6. **Tripo 第二批 28 個排好了**（`art-inbox/tripo/queue.json`，約 955 點）：等 Jacky 儲值後在本機產。產物到了就接（人物用 `gen_art.sh` 的 `TRIPO_SRC`，要先把 `CHARACTERS`／`import_characters.py` 的 `KNOWN` 擴成能放 NPC 與敵人；物件與武器加進 `gen_props.sh` 的 `ARGS`）。
-7. 遊戲內的標題字（`GAME_TITLE`、`RB_GAME_SUBTITLE`）換成新名稱：主標「這些詛咒對我太有用了」、副標「被嫌棄的易感染體質，其實是逆轉一切的外掛」；英文暫用 "These Curses Are Far Too Useful to Me"。
-8. 之前「0000」剩下的（送葬者模型、開場物件、坐／躺姿勢）**不做了**（舊劇情的東西）；諾恩與席菈的模型、武器擺正工具、反轉與毒霧照用。
+1. **反轉的回饋**（這個遊戲的招牌）：吃到異常狀態 → 畫面邊緣閃紫／暗紅 → 0.3 秒 → 玻璃碎裂聲 → 金光；狀態列的紅圖示翻成金色。先做中毒，做成共用的（之後每種狀態都走這個）。用 `scripts/burst.sh` 連拍驗收。
+2. **森林看起來像森林**：地面現在是一片平的色塊——加地形起伏或至少地面材質與落葉雜物；光與霧（體積霧現在幾乎看不出來、瘴氣的貼地霧盤還是綠色的，改成紫黑：`src/world/poison_mist.gdshader`）；樹的密度與遠景；路邊的毒蕈會發光。改前先 `scripts/shots.sh forest --save-baseline`。
+3. **席菈進場**：新寫 `scenes/actors/sera/`（id 還是 `sheila`）：跟在諾恩後面 4～6 m、手上【鍊金藥瓶手弩】（`weapon_alchemy_crossbow`，先加進 `gen_props.sh`）、每隔幾秒往諾恩拋一瓶負面藥水（落點有反轉回饋）。先做一種藥（麻痺 → 神經超頻，來源 `sera_paralysis_vial`）。開場接 `ch1_forest_gate` 那段對話。
+4. **諾恩的劍有性格**：每一刀給自己微弱中毒（`on_hit_source = "rusty_sword_cut"`）＋新狀態「流血 → 攻速」；兩到三下的連段；有反轉中的狀態時劍的裂縫透金光。
+5. **教學戰照劇本走**：史萊姆出現 → 席菈慌了誤射【重度麻痺＋防禦歸零】→ 面板跳【神經超頻】【鋼鐵壁壘】→ 一刀清場 → 戰後對話（兩個選項，記好感度旗標）。`tests/flow/test_chapter1.gd` 跟著延長到這裡。
+6. 切片好玩了再擴：森林完整版 → 祭壇 Boss → 公會大廳 → 城鎮（`13` 的場景表）。
 
-## 00000. 出手改成往前戳了（第 111 輪，D-268）——接著要看的三件小事，做完回「0000」
+## 模型還沒接的
 
-- **現在的樣子（第 111 輪，`de0fae6`）**：`tools/blender/common.py` 的 `standard_actions(a, attack_style)` 裡多一個 `thrust()`（0～0.14 右手收到腰邊、0.14～0.28 伸直、停到 0.6、收回；時間怎麼對到遊戲的判定寫在函式開頭的註解），`gen_art.sh` 的 `VRM_ARGS` 只給諾恩 `--attack thrust`（席菈沒寫＝`swing`，照舊劈）。`player.gd`：`STAFF_STRIKE_X` 改成 PI（杖順著右前臂＝手的 −Y 指出去）、`STAFF_GRIP_STRIKE`（握的地方往杖尾滑 15 cm、杖身在前臂下面）、`STAFF_RETURN_AT` 0.72（動作播到 0.4 秒法杖就收回左手）。`puppet.gd`：`attack_style`（預設 `"swing"`；玩家裝上法杖時設 `"thrust"`）與 `_pose_thrust()`（劇情關卡的程序人偶用）。命中的範圍與時間沒動，機器人的數字不用重跑。
-- **改動作最快的一圈**：改 `common.py` → `ART_ONLY=noen scripts/gen_art.sh`（8 秒）→ **`python3 -I tools/blender/measure_action.py build/art/characters/noen/noen.glb`（5 秒；印每一格前臂朝哪、手在哪——第 111 輪第一版就是這樣量出戳出去偏了 30 度：上身一轉手臂跟著轉，`arm_pose(..., twist=)` 轉回來）** → 數字對了才 `python3 -I tools/blender/preview.py …  --pose=light_attack_01 --frame=5` 看樣子 → `python3 -P scripts/import_characters.py`＋Godot `--import` 兩次（22 秒）→ 連拍。**轉的方向**：Blender 裡繞 Z 正的＝往左轉＝右肩往前（原本 `attack()` 的註解沒寫，我第一次寫反了）。
-- **連拍用哪個鏡頭**：`BURST_LAZY=1 BURST_EVERY=2 BURST_COUNT=16 scripts/burst.sh <輸出.png> 130 --arena --wave=1 --bot=mash --noen-cam=side --locale=zh_TW`（16 張＝一次出手；`BURST_CROP="0.15,0.1,0.85,0.9"`）。`--noen-cam`（正面）第 130 幀起右半邊被一個變紅硬撐的敵人擋住；`--noen-cam=back`（`BURST_CROP="0.25,0.05,0.75,0.95"`）看得到手往前送、看不到杖（朝著前面，縮成一點）；**`--noen-cam=side`（這一輪加的，從他右邊橫著看）最清楚，但看下面第 2 點**。這個 session 沒有遇到暖機逾時（第一張連拍 4 分半，跟別的工作一起跑；之後一張 2～3 分鐘）。改前的那一份照下面「截圖的暖機」那一條的做法（`cp -r game scripts <scratch>/before/`＋`git show HEAD:<路徑>` 蓋回去；**模型也要是改前的**：先在還沒改 `common.py` 的時候跑一次 `scripts/gen-assets.sh` 再複製）。
-- **接著要看的（照順序，都小）**：
-  1. **連按攻擊時法杖來回跑**：0.4 秒收回左手、0.55 秒下一下開始又過來——背面連拍第 14 → 15 張看得到（珠子回到左肩上面，下一張又往右走）。先連拍兩下看忙不忙（`BURST_COUNT=32`）；忙的話在 `pose_staff()` 的 `striking` 加一個條件「下一下已經按了就留在右手」（看 `player.gd` 的輸入緩衝怎麼記的：`grep -n "input_buffer\|_buffered" game/scenes/actors/player/player.gd`），留在右手時前臂是收在腰邊的（`thrust()` 開頭那一段）——杖頭朝前、不會垂到地上。`test_puppet.gd` 裡「動作播到 72% 法杖就收回直立」那幾句跟著改。
-  2. **橫的鏡頭被大鍋擋住**：`--noen-cam=side` 在戰鬥場開場的位置，16 張有 12 張下半被攤位的大鍋（黑色的）擋住，杖剛好從鍋子上緣露出來。改 `arena.gd` 的 `_aim_sheila_cam()`：鏡頭抬到 2.2 m 往下看，或換到他的左邊（`offset.x` 改負的；左邊有席菈），拍一張確認看得到腰以下。
-  3. **玩家的鏡頭還沒連拍**（Jacky 看到的就是這個）：機器人不轉鏡頭，`--bot=mash` 時諾恩跑到畫面邊上。試 `--lock`（一開打就鎖定，鏡頭會跟著被鎖的人）：`BURST_LAZY=1 BURST_EVERY=2 BURST_COUNT=16 scripts/burst.sh <輸出.png> 130 --arena --wave=1 --bot=mash --lock --locale=zh_TW`（沒試過）。看①從背後看得出「往前戳」嗎（杖朝著前面會很短——看不出來的話：戳的方向往右偏一點讓杖身露出來、或命中時在杖頭加一道往前的光）、②右手送出去時身體有沒有擋住命中的白光。
-  4. **劇情關卡的程序人偶**（`_pose_thrust()`）只有測試、沒有拍：`SHOTS_ONLY=65-rb2-fight scripts/shots.sh rb_market_level` 是停在打鬥姿勢上的一張（諾恩那時候是不是正在出手沒確認；不是的話用 `scripts/burst.sh … --level=market --rb-at=trial_fight` 連拍）。
-- **第 111 輪沒驗的（照實）**：①固定鏡頭 `scripts/shots.sh characters` 沒有重拍（站姿的程式沒動：`idle()` 與平常拿在左手的那一段都沒改；CI 的盤點截圖會拍 `70`～`73`）；②席菈的模型因為 `common.py` 改了有重做，動作是同一段 `attack()`，沒有拍她出手；③跑步、閃避時的法杖（第 110 輪就沒看）；④「釋放」時法杖沒有反應（「0000」★ 第 1 點的③）。
-- **截圖的暖機**：這個 session 第一張 Vulkan 截圖超過 120 秒逾時、退回 OpenGL（沒有體積霧，不能當基準）；第二張起一張 40 秒。暖機那一張用 `scripts/screenshot.sh build/warm.png 12 --arena --wave=1 --bot=idle --locale=zh_TW` 丟掉就好，拍完 `grep -c opengl3` 確認正式的幾張沒有退回。**改前的基準**：`cp -r game scripts <scratch>/before/`、把改過的檔用 `git show HEAD:<路徑>` 蓋回去，在那一份 `scripts/shots.sh characters --save-baseline`，再把 `build/shots-baseline/characters/*.png` 複製回工作目錄（這樣可以先改程式再拍改前）。
-- **第 109 輪驗過、不用再驗的**：劇情的戰鬥（`65-rb2-fight` 示範戰、`45-rb-guardian` 南街守衛）改前｜改後各一張，鏡頭往右 0.2～0.5 m，沒有鑽牆、沒有過曝；藥店櫥窗那片只擋鏡頭的牆（D-265）在新的偏移下測試照樣過。**沒驗的**：①探索 → 戰鬥的那 0.13 秒鏡頭往右滑，只算了數字（0.2 m、1.6 m/s）、沒有連拍看；②很窄的巷子（`shoulder_room()` 會收回，測試有，畫面沒拍）；③毒霧嗆到敵人、敵人變紅硬撐這兩樣在新鏡頭裡是不是看得到，沒有一樣一樣連拍（FOR_JACKY 第 2 項照實寫了）。
-- **固定鏡頭多了兩張與一個開發旗標**：`char-player-open`、`char-player-lock`（`--lock`＝一開打就鎖定最近的敵人，`arena.gd` 的 `dev_lock`）。CI 的盤點截圖要不要加這兩張：看 `.github/workflows/ci.yml` 盤點那一段的清單，一張約 35 秒。
-- **留著沒做的兩件**：①Jacky 11/13 那句話的後半「向後會面向前面」沒有改：沒鎖定時按後退，諾恩轉過來面對鏡頭跑——這是設計。他玩過還說怪，就改成「戰鬥中（`in_combat()`）按後退＝面向最近的敵人倒退走」（要另外做倒退走的動作，或先用走路的動作倒著播）。②頭目那一波的機器人第 106 輪之後沒有重量（只量了前三波）：下次動到戰鬥的數值時整張表重跑（`scripts/arena_bots.sh`，約 9 分鐘）；只動鏡頭不用跑（機器人用 `player.yaw`，不看鏡頭）。
-- **紀錄：黑柱子是怎麼回事（D-265，`bed7684`）**：它是藥店櫥窗架上的一個深色瓶子（`_build_shop()` 的「窗裡架上的瓶子」，半徑 5 cm）貼在鏡頭上。門面的碰撞只到牆面（z＝`SHOP_Z`），玻璃、瓶子、窗台、門邊的燈都凸在外面、沒有碰撞；諾恩挨打退到 z=32.4 時，戰鬥距離的鏡頭（4.2 m）伸到 36.49，鑽進瓶子那一排。修法：門面前 0.4 m 一片只在 `PlayerController.CAMERA_WALL_LAYER`（第 2 層）的牆 `ShopFrontCameraWall`（`_build_shop_camera_wall()`），只有鏡頭的 SpringArm 與肩膀的射線看這一層。**別的地方鏡頭鑽進裝飾（攤位的燈、布棚、柱子）用同一招**：在那樣東西前面放一個只在這一層的碰撞盒。**怎麼查「畫面上那一塊是什麼」**：第 106 輪用無頭測試查開場那一幀找不到（那時鏡頭還在 z=35.1）；有效的做法是在 `app.gd` 存截圖的那一幀暫時印 `get_viewport().get_camera_3d().global_position` 與鏡頭 1.6 m 內、尺寸小於 6 m 的 `GeometryInstance3D` 的路徑與包圍盒（查完刪掉），用 `scripts/screenshot.sh` 照同樣的旗標跑一次。
+人物（`gen_art.sh` 的 `SRC` 加一行就能用）：lilith、leo、leo_party_mage、leo_party_tank、black_market_merchant、royal_inspector、guild_adventurer_a/b。
+有骨架的怪（要先決定走 `gen_art.sh` 還是新寫一個轉檔）：enemy_spore_treant、boss_plague_golem（雙足）、enemy_miasma_wolf（四足，`_anim.glb` 有走路）。
+物件已經擺正、可以直接 `PropModels.instance("tripo/…")`：看 `scripts/gen_props.sh` 的 `ARGS`。還沒加的：weapon_alchemy_crossbow、prop_poison_vent（只取底座，煙用粒子）、prop_paralysis_web_v2、prop_cursed_ring。
 
-## 0000. 人物與美術：接 Tripo 第一批（Jacky 2026-11-14；D-270）——美術最優先
+## 小事（改到的時候順手）
 
-方向（Jacky 定的）：漫畫風、帥氣漂亮可愛；兩個主角正常動漫比例（約 6 頭身，11/14 決定，諾恩重產 `noen_rank_f_v2`）；冒險者 F 級破舊 → S 級；武器是可換的獨立模型，男主角不拿燈籠。標準 `docs/ART_QUALITY_BAR.md`，進度表與規格 `docs/ART_REQUESTS.md`。
-
-1. ✅（11/14 對話裡做的）**諾恩** `noen_rank_f_v2` 接進戰鬥場（`gen_art.sh` 的 `TRIPO_SRC[noen]`，身高 1.74、出手往前戳）；**武器與物件的擺正工具** `tools/blender/tripo_prop.py`＋`scripts/gen_props.sh`（`gen-assets.sh` 會叫）→ `game/assets/props/tripo/<名字>.glb`（不進 git）；`PropModels.instance_first([...])`：諾恩拿 Tripo 法杖、席菈拿 Tripo 長劍，沒有就退回 KayKit。387 個測試全過；`scripts/shots.sh characters` 看過。
-2. ✅（11/14 對話裡做的）**劇情關卡的諾恩也用模型了**（`player.gd` 不再看 `Game.arena_mode`）；`tests/flow/test_story_facing.gd` 量過：劇情裡前後左右走，臉都朝著走的方向（Jacky 回報「主劇情向前會面向後面」——那是舊的程式人偶，現在不用了）。**還缺**：模型沒有坐、躺、倒下的姿勢（開場中毒靠著藥桶坐下那幾段現在是站著），用 `common.py` 補動作並在 `Puppet._animate_model()` 接上。
-2.5 ✅（11/14）**諾恩的普通攻擊會射火球**（Jacky：「拿法杖還用敲的太遜，普攻遠距離射火球之類的」）：`scenes/world/fireball.gd`（`Fireball`）、`player.gd::_cast_fireball()`、`tests/unit/test_fireball.gd`。每次出手從杖頭往鎖定／瞄的人射一顆（18 m/s、射程 14 m、傷害同近身那一下）；近身扇形照舊（已經打到的人不會被同一下的火球再打一次）。**接著要做（Jacky 要的是「法術或技能攻擊」，不要單調）**：①出手的動作改成施法（舉杖、往前一指），不要再往前戳；②火球的樣子與命中的爆炸做漂亮（現在是一顆發光的球＋拖尾）；③機器人的數字會變（遠距離打得到人了），重跑 `scripts/arena_bots.sh` 調平衡；④技能：蓄力的大火球、範圍技、把「釋放」做成看得出來的法術；⑤火球的音效（現在借用 `blunt`）。
-3. **送葬者**（`undertaker`）：`gen_art.sh` 的 `CHARACTERS` 與 `TRIPO_SRC` 加上去（身高 2.6）；`Undertaker` 現在是程式拼的、鐵架與弱點掛在人偶關節上，接模型要保留碰撞與弱點位置，弱點獨立材質槽 `M_FrameJoint`。
-4. **開場物件放進場景**：毒藥桶已換（✅ 11/14，`BARREL_MODEL`，`41-rb-mist` 看過；「有毒」的字留著）；還沒換的：`_build_cart()`／`Caravan`（推車，上面坐著波克）、斷掉的燈柱（送葬者跨過的那一根）；公會委託板等公會場景。換模型時碰撞與劇情判定不動。
-5. 其他四把武器（短劍、斧、槌、弓）做成依裝備切換。
-6. 每接一樣：用玩家的鏡頭拍改前｜改後；記 CREDITS（Tripo、AI 生成）。
-7. VRoid 版與 `tools/blender/outfit.py` 的細節封存在 `docs/archive/NEXT_0000_vroid_selfmade.md`；Tripo 主角接好之後 VRoid 版退役。
-
-## 000. 現在的方向：先把戰鬥做好玩（Jacky 2026-11-12；D-236；規格 `docs/design/11-combat-first.md`）
-
-- **先讀 `design/11`**（為什麼不好玩的數字、目標、每一項的規格、機器人與連拍怎麼驗收）。**Jacky 沒有時間常常測**：他只會偶爾看進度、玩幾分鐘，所以每一輪動到戰鬥都要自己跑機器人、看連拍，並在 PROGRESS 照實寫「沒有人玩過」。
-- **照順序做，一輪一項（做不完就拆）**：
-  1. ~~戰鬥場＋機器人，先量現況~~ **第 90 輪做完（D-238）**。工具怎麼用看「00」表格的「戰鬥場、機器人、連拍」那一列；基準表在 PROGRESS 第 90 輪與 `design/11` 1.1。
-  2. ~~數值、受擊反應、操作盤點~~（3.2）**第 91～96 輪做完**（D-239～D-244）。下面留著的是「沒有做完、但不擋主線」的清單，等 Jacky 玩過或第 3、5 項做完再回來；**每次動到戰鬥都重跑 `scripts/arena_bots.sh`（現在四種機器人，約 7 分鐘）把表貼進 PROGRESS。**
-     - **現在的數字**（第 100 輪量的整張表，每格 20 場；表在 PROGRESS 第 100 輪與 `design/11` 1.10）——一般波：站著不動 0%（13.8／12.6／13.1 秒倒）；亂按 45%／40%／**20%**；繞著按 65%／40%／30%；會打的 100%、16.6／19.8／16.9 秒（不找毒不放：19～20 秒，第 97 輪量的）。**機器人的結果是固定的**（同一份程式重跑一模一樣，第 98 輪驗過；第 100 輪第 2 波與頭目跟第 98 輪一模一樣）：差 10 個百分點＝20 個固定的開場裡差兩場。頭目：站著不動 0%（12.4 秒倒）；亂按、繞著按 0%；會打的 100%、48 秒（不放：44 秒）。**數值都改在 `tuning.json` 最後的 `profiles.arena`、波次在 `data/arena/waves.json`**（只有戰鬥場套用；劇情的數字與劇情測試裡寫死的 12、9、6、28、40、480 都不用動）。整張表現在要 9 分鐘（頭目那一波會打的一格就 1 分半）。
-     - ~~⑥操作盤點~~ **第 96 輪做完（D-244）**：表在 `design/11` 1.6 與 PROGRESS 第 96 輪；量的工具是 `tests/flow/test_controls.gd`（怎麼跑看「00」表格最後一列）。**量了、沒有改的三樣**（都是「偏離一般做法，但不知道是不是 Jacky 說的怪」）：①走路 3.4 m/s 偏慢（`PlayerController.WALK_SPEED`，劇情共用）；②戰鬥中鏡頭臂長 4.2 m、垂直視角 70 度，諾恩只佔畫面高度 29%（`CAMERA_DIST_COMBAT`、`FOV_WALK`；要改就做成 `profiles.arena` 的數字，拍前後對照）；③出手時照樣用走路的速度移動（一般是定身或很慢；跟第 5 項的連段一起決定）。**Jacky 回「鏡頭」就做 ②、回「移動」就做 ①、回「出手」就做 ③**；沒回就不動，照順序做第 3 項。另外：沒按方向的閃避是往身體正面閃（常常是往敵人身上閃），沒改。
-     - **亂按第三波現在是 20%（第 99 輪 25%、第 97 輪 10%、第 96 輪 65%），還是低於目標的 30%**；第 100 輪繞著按也掉到 30%（第 99 輪 45%）。先做第 3 項的 (a-6) 第一點（嗆到不算進硬撐的次數）再量，還是低才調波次。第 97 輪的兩條規則造成的：留著毒的回血乘 0.2（`noen.reversed_heal_scale`）；丟毒瓶的不算人數之後，他還站著的時候場上最多 5 個人（以前 4 個）。要調回來：先試把第三波後面兩批各少一個人或門檻改成 0（`waves.json`），不要動回血（第一波的 55% 是靠它壓住的）。亂按的勝率對小改動非常敏感，一次只動一樣、動完重量。「亂按但會按右鍵」的機器人還沒有（加一種 `mash_release` 才量得出釋放對一般人的份量）。
-     - **頭目還剩的（都不擋主線；等 Jacky 玩過，或第 3、5 項做完再回來）**：
-       - 會打的一場 44 秒，目標 60～120。**沒有加血**（1920＝80 下；D-243 的理由：再加就是當初「要打 80 下」的問題，而且連段、重擊、釋放做出來之後諾恩的輸出會變）。第 3、5 項做完之後重量一次再定。
-       - 亂按與會打的中間是空的：亂按挨四下就倒，會打的機器人 20 場一下都沒被打中。人落在哪裡沒有量過。
-       - 牠不後仰、不變紅（沒有寫 `flinch`）；席菈在這一波只占 5% 的傷害（她的傷害沒有跟著乘四）。要不要給牠「變紅」的招沒有決定。
-       - 牠的招式輪替沒有衝撞（`begin_guardian()` 設了 `no_charge`）。玩家一直往後走（3.4 m/s，牠 2.3 m/s）牠應該永遠打不到（**從數字推的，沒有量**——機器人不會這樣玩，所以表上看不出來）。要補就把衝撞放回戰鬥場的輪替（`profiles.arena.undertaker.pattern_guardian`；衝撞撞牆會跪 2 秒，是現成的「閃對了有獎勵」），並給機器人加一種「一直後退」的來量。
-       - `pattern_strict` 怎麼運作看「00」表格最後一列。**劇情裡的敵人沒有開**（開了會改到劇情測試裡的出招順序）。
-     - **⑤-B 畫面驗證**：②諾恩挨打的後仰——**第 95 輪看過了**（`--burst-on=hurt`：看得出挨打、往後倒、手甩開、被推開；角度好不好判斷不了，結論在 PROGRESS 第 95 輪）。**還沒看的**：①硬撐的紅光（第 93 輪做的）③後援進場（生在 10 m 外）④頭目走近再出招（第 95 輪改的）。**這台機器連拍一秒只畫一兩幀，開場五秒之後才發生的事等不到**——要拍就用「開場就發生」的開發旗標（`--brace-early`、`--reinforce-early`、`--burst-on=brace|reinforce|hurt`）。紅光：`BURST_EVERY=10 BURST_CROP="0.1,0.05,0.9,0.95" scripts/burst.sh build/burst/brace.png 99999 --arena --wave=1 --bot=mash --side-cam --brace-early --burst-on=brace --locale=zh_TW`。一條約 3～4 分鐘，丟背景，**不要跟 `check.sh` 或機器人同時跑**（只有 2 核）。**拼出來的圖每格只有 240 px 寬，全幅裁切的話什麼都看不到**：原始的 8 張留在 `build/burst/.burst-<名字>/f-0.png`～`f-7.png`（1280×720），先把一張縮到 640 看人在哪，再用 PIL 只裁那一塊、4×2 拼成 960 寬看一次（第 95 輪這樣做，兩次 Read）。**`--side-cam` 拍頭目不合用**（牠太大，佔掉左邊三分之一還被切掉；兩個人都在畫面邊上，廣角把人拉斜）——要拍頭目先把 `Arena.SIDE_CAM_X` 從 −2.4 拉到 −4 左右。
-     - **⑤-C 一般波會打的一場還是不到 30 秒**（19～24）。機器人比人快，人實際打多久沒有量過。要拉長只能再加人（一個人約 3.5 秒），（第 96 輪之前亂按後兩波低於 30%，加不了人；**第 96 輪之後亂按是 55%／40%／65%、會打的 19～22 秒，有空間再加一兩個人**——但先做第 3 項，做完再量。）等 Jacky 玩過再說也可以。
-     - **後援進場沒有演出**：現在是憑空生在諾恩北邊 10～12.5 m（`waves.json` 的 `ahead`；最北到 z＝14.8，看熱鬧的人站在 13.4）。諾恩一路往北打到 z＜21 的話，新的人會生在離他不到 6 m 的地方。要演出就讓他們從看熱鬧的人那裡走出來＋喊一聲。不擋主線。
-     - **④連拍怎麼拍**：過肩鏡頭（預設）裡敵人被諾恩擋在正前面，看不到後仰——**看動作一律加 `--side-cam`**（從街的西邊橫著看；`Arena.SIDE_CAM_*`）。要「改前」：動手之前 `cp -r game scripts <scratch>/before/`，在那一份跑同一個指令，兩張上下拼成一張再看。**這個鏡頭的缺點**：沒輪到、在外圈等的那個敵人常常站在鏡頭正前面，擋住左下角四分之一；頭目那一波見上一點。
-     - **機器人在跑的時候不要改 `game/` 底下的檔**：每一格是各自啟動的 Godot，改到一半的檔會被後面幾格讀進去（第 95 輪發生過，剛好沒事）。要同時做事就改文件，或先 `cp -r game scripts <scratch>/` 在那一份跑。
-     - 第 1 波站著不動是被打中 6 下才倒（22＋18 交替應該 5 下）——沒查，不擋主線。劇情裡的南街守衛戰有沒有被倒下的席菈卡住：沒有實際跑過（修的是共用的 `sheila.gd`），不擋主線。
-  3. **← 下一輪接著做這一項。逆轉的核心＝這個遊戲的那一句話**（第 0 節＋3.5）。**第 97 輪做完最小的一圈（D-245）**：按鍵「釋放」（滑鼠右鍵／手把 Y；看穿搬到 V）、毒爆、養、第一波的丟毒瓶的、提示、機器人會找毒會放。**第 98 輪做完 (a)（D-246）**：釋放的姿勢、頭上的一句話（碎念與反應）、丟毒瓶的愣住。**第 99 輪做完 (a′)(a″)（D-247）**：補拍、手一滑。**第 100 輪做完 (a‴)(a⁗)（D-248）**：站在諾恩面前的人踩進毒霧被嗆到、敵人的字偏紅、臉被擋住不顯示。東西在哪看「00」表格最後四列。**剩下的，照這個順序（一輪一樣）：**
-     - **(a-5) 戰鬥場的鏡頭：讓諾恩面前的人露出來（先做；第 0 節的驗收在玩家的鏡頭還差的就是這個）**。第 100 輪拍到的：過肩鏡頭架在諾恩正後面，站在他面前的人被他的上半身擋住，只露出頭與肩膀；後仰、變紅、被嗆到都發生在那裡，而且往後跳是沿著鏡頭的方向，畫面上幾乎不動。做法：只在戰鬥場動，數字放 `profiles.arena`（現在是 `PlayerController` 裡寫死的 `CAMERA_DIST_COMBAT` 4.2 m、`FOV_WALK` 70 度、戰鬥中諾恩佔畫面高度 29%——第 96 輪的盤點，D-244），候選照便宜到貴：①鏡頭往右偏 0.5～0.8 m（諾恩偏左、他面前的人露在右邊）；②架高、往下看多一點（從頭頂上方看得到兩個人之間的距離）；③兩個一起。**一次只動一樣**，每一樣拍同一幀的前後對照：`BURST_LAZY=1 BURST_EVERY=6 BURST_CROP="0.2,0.1,0.8,0.9" scripts/burst.sh build/burst/cam.png 99999 --arena --wave=1 --bot=idle --burst-on=choke --locale=zh_TW`（改前先 `cp -r game scripts <scratch>/before/`；第 100 輪印出來是第 197 幀，改前的那一份用 `197` 取代 `99999`、拿掉 `--burst-on`）。驗收：八張裡看得出「他往後退了一步」。**先跑 `test_controls`（「00」表格「操作盤點」那一列）記下改之前的 11 行，改完再跑**；機器人用 `player.yaw` 不看鏡頭，表應該不變——還是要跑一次確認。鎖定敵人的時候鏡頭怎麼轉沒有看過，動之前先讀 `player.gd` 的鏡頭那一段。Jacky 如果回了「鏡頭／移動／出手」，照他回的優先。
-     - **(a-6) 三個小的，一起改、一起量一次整張表**：①**被嗆到不算進硬撐的次數**（`EnemyBrain.flinch()` 加一個參數，或 `choke()` 成功之後把 `brain.interrupts` 減回去——注意 `braced` 訊號可能已經發了，用參數比較乾淨）：第 100 輪亂按與繞著按掉了 5～15 個百分點，這樣才分得出是「比較快變紅」還是時間錯開；②**手一滑還是只有 `--tele-cam` 看得到**（第 99 輪說好的：看不到就把 `demo_thrower.fumble_damage` 設成 0——設了之後第一波會打的大概會慢回 18 秒，量了再決定留不留）；③**丟毒瓶的那一句在過肩連拍上還是畫在諾恩頭上**，「臉被擋住不顯示」沒有擋掉它：在 `Hud.bark_speaker_hidden()` 印出講的人的臉與每個擋人的身體在畫面上的框，看是他的臉真的露出來，還是 `BARK_BODY_HALF` 0.3 太窄；確定是後者再加寬。
-     - `choke()` 的摀嘴姿勢（`_pose_choke()`）在 320 px 寬的連拍格子裡認不出來，沒有近看過。鏡頭改完如果還是看不出來，不用再修姿勢——跳開與那團粉才是看得到的東西。嗆到的聲音是借 `poison_hiss` 小聲放的，沒有人聽過。
-     - 碎念的 20 句（`i18n/strings.csv` 的 `BARK_*`）沒有人讀過。要加情境（被電到、頭目噴毒、殘血）就在 `BarkLines.LINES` 加一串 key、在 `Arena` 叫 `_bark()`；**不要寫解釋玩法的句子**。
-     - `demo_guard.gd` 手一滑的那一段是第 99 輪寫的（`_fumble()`、`_tick_fumble()`、`_break_bottle()`、`_blend()`）；丟出去的瓶子與掉下去的瓶子共用 `_break_bottle()`。
-     - **(b) 讓「放」對頭目也划算**（現在會放的機器人打頭目反而慢 4 秒：毒爆最多 80＝三下）。候選寫在 `design/11` 1.7；先試「毒爆會打斷牠正在擺的招／讓牠失衡跪下」（閃不掉的時候拿來保命＝有技術含量），量 `--no-release` 的對照。
-     - **(c) 放電**（麻痺的釋放：接下來 3 秒出手 2 倍速、每一下都打斷前兆）＋兩種都有就一起發生。`release()` 現在只認 `RELEASE_STATUS`＝中毒。
-     - **(d) 另外兩種「找毒」的動作**：出手打中飛過來的毒瓶＝在面前爆開（`DemoGuard._toss()` 的瓶子是 tween 沿弧線飛的 `TossedBottle<n>`，沒有碰撞）；打戴護腕的被電到。現在「找毒」其實不太用找——丟毒瓶的瞄著諾恩丟，霧會落在腳邊。
-     - **(e) 被炸到的敵人中毒 4 秒**：敵人沒有 `StatusEffects`，要先給。排最後。
-     - 畫面上的小毛病（順手修，不用單獨一輪）：綠環剛擴開的那一張過曝 1.88%（`PoisonBurst` 環的亮度 2.4 倍，降到 1.8 左右再量）；那盞綠燈把席菈整個人染綠（`FLASH_ENERGY` 4、範圍 5 m）；往外飛的綠點在連拍上看不出來有沒有出來（`flatness`／方向可能不對，單拍一張 `debug_hold` 確認）；聲音 `poison_burst` 沒有人聽過。
-  4. **人物**（3.3）：先查證 CC0、帶動作的現成人形可不可行（授權、來源連不連得到、大小、動作名稱）→ 可行就在戰鬥場換掉諾恩與一種敵人、對照圖放 FOR_JACKY；不可行就改善程式人偶。**第 5 項的動作等這一項有結論再做。**
-  5. **連段、重擊、完美閃避**（3.4）。
-  6. **狀態是戰利品**（第 0 節表格第三列）：四種狀態、兩格、每場之前選兩種；每種敵人帶一種。
-  7. **試玩版的結構**（3.6）：前面幾項在戰鬥場裡量起來合格了，才接成 10 分鐘。
-  8. 12/25 起只修 bug、調效能與畫質、更新 README、標記版本。
-- **暫停的**：下面「00」節「下一步」第 1 項（C 的收尾：彌夏圈出乾運河、開放補給）與之後的章節。「00」節的表格（東西在哪個檔）照常查。
-- **Jacky 說故事不吸引他、操作與對話怪、「不知道在玩什麼」，但同一個故事聽 GPT 講的時候覺得當動漫會很有趣**（11/12 第二個回覆，D-237）：點子沒問題，是做進遊戲的方式有問題——`design/11` 第 0 節寫了原文有、遊戲沒有的三樣東西（諾恩的碎念、旁人的反應、敵人是配裝材料）與對話的規則。`docs/archive/story-reboot/` 不改。
-
-## 00. 唯一主線：《這些詛咒對我太有用了》（暫名；D-201～D-227）
-
-- **先讀** `docs/archive/design/09-reboot-first-ten-minutes.md`（段落↔任務↔檢查點↔位置、數值、UI）。故事口吻看 `docs/archive/story-reboot/opening-v2.zh-TW.txt`，往後的劇情看 `docs/archive/story-reboot/story-v2.md`。操作與戰鬥規則 `docs/design/02-gameplay.md`、架構 `04-architecture.md`、用詞 `06-terminology.md`（第 81 輪都重寫成只講現在的劇情）。
-- **故意留著、不要改的名字（存檔與基準圖裡有，D-227）**：存檔資料夾 `user://saves_reboot`（`GameSession.STORY_SAVE_DIR`）與開發用的 `user://saves_dev_reboot`；存檔裡 `mode` 的值 `"reboot"`（`GameState.STORY_MODE`）；任務 `rb_main`、旗標 `rb.*`、檢查點 `rb_*`、節點名 `Rb…`；翻譯 key `RB_*` 與 `i18n/reboot.csv`；`data/reboot/statuses.json`；截圖旗標 `--rb-at=…` 與盤點截圖的檔名 `40-rb-start`…；文件 `docs/design/09-reboot-…`、`10-reboot-…`、`docs/archive/story-reboot/`（Jacky 的資料夾）。`user://saves`（`DEFAULT_SAVE_DIR`）是以前舊劇情的資料夾：標題的新遊戲／繼續不讀也不寫它，這個「兩個資料夾」的機制也留著（測試在驗）。
-
-### 現在有哪些東西、在哪個檔
-
-搬到 [`design/05-code-map.md`](design/05-code-map.md)（約 45 KB；要找檔案、常數、測試時才讀，改了位置就更新那份）。
-
-### 寫程式與測試時踩過的坑
-
-- **一次性粒子**：`EnemyActor.puff_build(extents, amount, color)`（建好、還沒噴、還沒進樹）→ 改參數 → `puff_start(ps, at)`。**不要寫「`add_child` 之後才設位置」的一次性 `CPUParticles3D`**（一進樹就在當下的位置噴完）。粉塵要吃光：用 `Undertaker.slam_dust_material()`（不受光的冷白圓點在暖燈逆光的場景裡像貼上去的；一顆一顆看得出圓形＝太少、太實，加數量、降透明度、放大）。
-- 測試裡把推車放到轉角之後要等 130 幀（牠舉 0.9 秒＋飛 0.7 秒）藥桶才破。會暫停場景樹的測試（確認框）在 `after_each` 把 `tree.paused = false`。手把的 `_tap()` 要等 `physics_frame`。
-- 測試裡 `s.new_game()` 會自動存檔；要模擬「重開遊戲」就再 `GameSession.new(QuestDB.load_default(), 同一個資料夾)`，不要再呼叫 `new_game()`。測試的資料夾清理要連 `_dir + "_reboot"` 一起刪（劇情存檔在那裡）。
-- 有敵人在 20 m 內鏡頭會拉遠、時間會走：截圖的鏡頭要固定就讓那一段停住（`debug_hold_throw`、`debug_hold_jet`、`debug_hold_hit`、`debug_hold_slam`）。
-- 南街兩邊房子在吊燈那一段高 6.1 m／7.4 m、牆面在 x＝±3.5；燈掛 5.4 m（4.1 m 會被牠的鐵架撞到、從鏡頭看還躲在牠頭後面）。
-
-### 畫面驗收（固定鏡頭組，D-206）
-
-- `scripts/shots.sh rb_opening --fetch-baseline`（一組約 5 分鐘；不要跟 `check.sh` 同時跑）→ 先看每張一行的數字（差異、亮度、過曝、死黑）→ 要看圖只 Read `build/shots/<組>-sheet.png`（960 px，左基準右這次；只看一列就用 PIL 裁那一列，每列高 270）。只改一個鏡頭：`SHOTS_ONLY=42-rb-pursuer scripts/shots.sh rb_opening`。基準＝CI 拍的那張（prerelease「screens」，檔名跟鏡頭同名）。新場景就加一個 `scripts/shots/<組名>.txt`（3～5 個鏡頭）＋同名的 CI `shot` 行。
-- **本機第一張當暖機**：有時 Vulkan 逾時退回 OpenGL，數字會是「差異 70% 以上、死黑超標」——那是假的，直接再拍一次（拍完 `grep -c opengl3` 確認）。之後每張約 1 分鐘。
-- 只是要確認「畫面沒有變」（重構、刪沒人用的 shader 參數）：照「0. 開工先確認」的「量畫面有沒有變」做，差異在 0.05% 上下就是沒變，不用看圖。
-- **地下市場的站位**：鏡頭在人的右後方約 3 m、偏右 0.9 m，視角很廣（水平約 107 度）。街只有 5 m 寬：面向北或南沒問題；要拍西側的東西，人要站在街心偏西（x≈-0.8）、朝北偏西 30 度以內，再往東站鏡頭會跑進東側攤子裡被柱子擋住（第 86 輪 `64` 重拍三次才找到）。人形在 8 m 外大約只佔畫面寬度的 2～3%。
-- **看遠處的小東西有沒有變（例如從高台看街底的綠窗）**：整張的差異與亮度看不出來（第 84 輪四個版本都是 22.2%／36.9）。用 PIL 在固定範圍數「綠色為主的像素」（`g > r+8 且 g > b+8`）的數量與平均顏色（`60` 的街底＝1600×900 圖上的 (700,330)-(860,395)：第 83 輪 401 個、第 84 輪 840 個、平均 (190,223,141)），數字有變再裁那一塊放大 1.5 倍、改前｜改後拼一張看。
-
-### 下一步（照順序，每步都要測試、main 隨時綠；Jacky 11/10 17:53：新劇情是唯一主線、畫質優先）
-
-1. **（暫停——D-236，先做上面「000」）C 的收尾：彌夏圈出乾運河、開放補給——第二章結束**（story-v2 第二章最後：「完成後開放藥劑補給和練習……她在地圖圈出乾運河」；`design/10`「C 的流程」表格最後一列）。**先在 `design/10` 把階段寫進表格再做**。
-   - **要做的**：①新任務（建議 `rb_canal_lead`，`MAIN_QUESTS` 第六條；`rb_trial.json` 的 `on_complete` 不能直接開——打贏到講完之間還有對話，照 `rb_bracer` 的做法在 `_tick_trial()` 看到 `rb2.trial_talked` 的那一刻 `quests.start()`＋存檔，舊存檔在 `load_slot` 補開：條件 `rb_trial` 做完＋`rb2.trial_talked`）：走回櫃台前 → 彌夏的對話（她看到了：毒霧裡站著不動的人；她要的回報＝他幫她試東西；圈出乾運河：那裡的水會讓人麻痺，別人過不去）→ **櫃台上攤開一張地圖、乾運河畫了紅圈**（程式生成的一張紙：`_build_shop_interior()` 旁邊加 `_build_canal_map()`，深色墨線的街道格＋一條藍灰色的運河＋紅圈；對話時鏡頭不用動，站在 `rb2_bracer_board` 那個位置就看得到櫃台）。②**補給**：工錢 12 枚第一次有用途——彌夏賣可攜毒藥（`PotionBelt`；`statuses.json` 的 `items.mist_serpent_poison`）：一瓶幾枚、最多帶幾瓶寫進 `tuning.json`；做法照藥箱（`PotionCrate` 的 `interact_prompts`）在櫃台上放一排，按互動買一瓶、錢不夠有一行字。③「練習」：店外那三個人倒下之後不用再做練習場，story-v2 的「練習」用這一場小戰就算有了（寫進 DECISIONS）。④結尾卡「待續／乾運河」留著（`RB2_END6_TITLE`），移到買完／談完之後；**第二章到這裡結束**，之後是 story-v2 第三章（新關卡：乾運河）。⑤測試：買藥只扣一次錢、錢不夠買不了、讀檔不會多一瓶、`test_story_playthrough` 的結尾往後延。⑥固定鏡頭 `68`（櫃台上的地圖）。
-   - 現在的「待續」在 `UndergroundMarketStory._tick_trial()` 最前面（`rb_trial` 做完＋`rb2.trial_talked` → `play_end_card()`）。
-   - **小戰還可以加強的（第 89 輪做了第一版，D-235；`SHOTS_ONLY=67-rb2-trial scripts/shots.sh rb_market_level --fetch-baseline`，基準＝CI 第 89 輪拍的）**：①**還沒有人實際玩過**。本機不停住任何人跑過兩次（諾恩站在門口不動、生命 60、每 40 幀揮一下）：定案的版本席菈 14 秒打倒自己那個拿棍子的（160 → 94），29 秒三個都倒，諾恩一下都沒打中（夠不到）、最低 38、結束 77——霧的回血大約抵掉一個拿棍子的；沒有人卡住。**拿棍子的打得到諾恩、諾恩站著打不到他**（他的橫掃 2.3 m、直刺 2.9 m，諾恩的出手 1.9 m）——真人要往前踩，太煩就把 `demo_guard` 的 `attack_range` 2.1 降一點。②**丟毒瓶的站在 8 m 外不會靠近**（`range` 8.5 以內就丟）：要打他得穿過兩個拿棍子的；他被打的時候照樣往自己腳邊丟（諾恩貼著他＝一直回血）。想讓他有點威脅：近身（< 2 m）改成往後退兩步，或瓶子對席菈的傷害高一點。③**打中人出手加速沒有畫面回饋**（只有左下那一行重新計時）：護腕的兩圈在命中那一刻閃一下（`worn_bracer` 的發光材質是 `look.glow()` 共用的，要先複製一份）、揮擊的聲音變尖。④毒瓶碎掉只有一圈淡綠粉＋`poison_hiss`，沒有玻璃碎的聲音（`gen_sfx.py`）；瓶子飛的時候沒有拖尾。⑤商人打輸了是瞬間移到街的北邊（`place_trial_seller(true)`），沒有跑的動作；開打前他指著人罵的姿勢只在 `leave_shop` 階段看得到。⑥打贏之後讀檔，倒下的三個人不見（跟示範場一樣）。⑦`67` 是停住的姿勢；席菈與第二個拿棍子的在畫面裡疊在一起（街只有 5 m 寬）。⑧HUD 上方那一行提示 7 秒，跟席菈頭上的字同時出現，字有點多。⑨開打沒有音樂。⑩彌夏最後一句是「我在門口都看到了」，但她的人偶還站在櫃台後面（可以在 `rb2.trial_won` 的那一刻把 `level.misha` 搬到門洞裡、面向街上，講完再搬回去）。⑪**商人開口的那一刻諾恩才走出門 0.9 m**（`TRIAL_DOOR_OUT`）：鏡頭在他背後 3 m＝還在門洞／店裡，三個人在 8 m 外——沒有拍過那一刻的畫面；看不清楚就把 `TRIAL_DOOR_OUT` 加到 2.2（跟 `rb2_demo` 的出生點一樣，那個位置的鏡頭拍過、沒問題），或對話前讓鏡頭慢慢轉向街上。
-   - **試戴護腕還可以加強的（第 88 輪做了第一版，D-234；`SHOTS_ONLY=66-rb2-bracer scripts/shots.sh rb_market_level --fetch-baseline`，基準＝CI 第 88 輪拍的）**：①**沒有聲音**：手放上板子、指針翻過去、第二格亮起來那一下都是無聲的（`gen_sfx.py` 做一聲短的電流「滋」＋板子的「叮」）。②諾恩把手放上板子沒有伸手的姿勢（`Puppet._pose` 每幀覆寫關節；`DemoGuard` 的 `PoseDriver` 做法可以搬過來：按住的時候右肩 x 往前舉）。③**出手變快只有動作變快**：沒有殘影、揮擊的聲音沒有變、護腕的光不會跟著出手變亮——1.35 倍看影片可能看不太出來，等 Jacky 回覆（FOR_JACKY 第 2 項）；要加強就讓護腕的兩圈在出手時變亮（`worn_bracer` 的發光材質是 `look.glow()` 共用的，要先複製一份）。④HUD 沒有畫「兩格」本身（只有生命條上面的狀態列在有狀態時多一行）：可以在狀態列旁常駐畫兩個小格子、裝了什麼就畫什麼的圖示（空格的字 `RB_SLOT_EMPTY` 已經有 key）。⑤中央兩行字加了暗底（`Hud._draw_center_back()`、`CENTER_BACK_PAD`）——開場覺醒的那兩行也跟著有了（`41-rb-mist`）；Jacky 覺得太像對話框就把 `_center_back.bg_color` 的透明度降到 0.3 或只留描邊。⑥彌夏講結果的對話框會蓋住左下的狀態列（`66` 第一版拍到過）：對話中 HUD 的狀態列被擋住是所有對話共通的，不急。⑦從示範台走回藥店的 17 m 沒有事（席菈也沒有話）；可以讓席菈在路上說一句（`Sheila.say()`）。**席菈不會跟進店裡**：第 88 輪不停住地走了一次，諾恩走到櫃台前的時候她貼在門面外牆的外面、門的東邊（x＝-0.4、z＝36.2），不擋門洞（x＝-2.35～-1.05）但看起來像卡住——下一輪的小戰如果從店裡開始，她已經在門外，剛好；想讓她好看一點就在 `back_to_shop` 階段諾恩進店的那一刻把她放到門外的固定位置、面向街上（`_send_sheila_outside()` 現在只有她已經在門口附近才會動她，而且只跑一次）。⑧麻痺「沒反轉＝不能出手」現在遊戲裡遇不到（一定先在板子上反轉）；之後乾運河的麻痺水才會遇到，那時要補「按了攻擊沒反應」的回饋（手抖一下＋一聲悶響）。
-   - **守衛戰還可以加強的（第 87 輪做了第一版，D-233；`SHOTS_ONLY=65-rb2-fight scripts/shots.sh rb_market_level --fetch-baseline`，基準＝CI 第 87 輪拍的）**：①**還沒有人實際玩過**。本機不停住任何人跑過一次（諾恩站著完全不動、無敵）：席菈 8 秒打倒戴護腕的、18.4 秒兩個都倒，沒有人卡住；但她的生命 160 → 36（拿棍子的打了她 9 下）——偏低，困難難度（敵人傷害 1.4 倍）下諾恩不幫忙她會倒。要調就改 `tuning.json` 的 `demo_guard`（橫掃 12、直刺 10、生命 120；`test_demo_guard.gd` 裡寫死了 12 與 9），等 Jacky 玩過再決定。②守衛出招沒有地上的前兆範圍（送葬者有：`Undertaker._decal`＋`telegraph.gdshader`）：現在只靠姿勢＋棍頭銅箍／護腕變亮。要加就把 `_decal` 搬到 `EnemyActor` 共用。③打贏之後讀檔，倒下的守衛不見了（`begin_demo_fight(true)` 只把布景的那兩個藏起來）：可以把布景的擺成趴著（`Puppet.lying = "front"`）放在台前。④胸前的紅白布條是三片疊起來的方塊（`DemoGuard._add_sash()`：寬 0.62、深 0.34），彎腰的時候從側面看像背上一塊板子——縮小，或改成前後各一片貼著身體。⑤看熱鬧的人跑開是直線補間、沒有碰撞（會穿過守衛）；商人縮到台子後面之後從街上幾乎看不到（可以改成蹲在伸出來那一截的後面，看得到他舉著的兩隻手）。⑥戴護腕的「從台上跳下來」只是身體 0.28 秒落下的補間：沒有落地的灰塵與聲音。⑦開打沒有音樂；棍子揮空用的是 `whoosh`、快拳用 `blunt`，沒有專屬的聲音。⑧拿到護腕沒有畫面（只有商人的台詞「拿去」）：對話前讓一個護腕（`UndergroundMarket._bracer_node()`）掉在台前的地上、冷光亮著。⑨`65` 是停住的姿勢；不停住的連續畫面沒有拍過（要拍就加一個不停住的 `--rb-at=`，連拍 2～3 個時間點）。⑩跪地用的是一般敵人的雪粉（`_kneel_puff`，灰白色）——在木板街上不太對，可以換成灰塵色。
-   - **示範台畫面還可以加強的（做守衛戰的時候順手；`SHOTS_ONLY=64-rb2-demo scripts/shots.sh rb_market_level --fetch-baseline`，基準＝CI 第 86 輪拍的）**：①商人面向正東，從南邊走過來看到的是側面——轉向東南（`_demo_person` 的 `face_deg` -90 → -125 左右），或人走近時讓他轉頭（照 `vendors` 的做法）。②牆上那幅背景布與兩片側幕從街上幾乎看不到（被隔壁詛咒物攤擋住）：可以拿掉省面數，或把詛咒物攤往南移一格。③聚光燈的光柱在霧裡看不出來（`light_volumetric_fog_energy` 1.8 → 0.7 是為了 `60` 的綠窗，其實影響很小：781 → 789）：要光柱的話改成一個半透明的圓錐（不受光、加法混合、很淡），不要靠體積霧。④看熱鬧的三個人站得直直的：一個舉手（`_pose_puppet`）、一個轉頭跟旁邊的人講話。⑤任務標記「5 公尺」疊在燈籠上：標記的高度 `DemoStage` 的 y（現在 1.9）改低一點或移到台子前緣外面。⑥沒有聲音：叫賣可以用 `Ambience.play_at` 放一段人聲感的噪音（照 `market_murmur` 的做法，短、有起伏），靠近示範台才聽得到。⑦`60` 的街底綠色像素 850 → 789（條紋布的邊緣疊到綠窗右緣）：還想拿回來就把北邊那一幅（`z0 - 0.06`）拿掉，只留南邊那一幅——從高台看擋到的是哪一幅沒有驗過，先拿掉一幅拍 `60` 數一次。
-   - **店內還可以加強的（不急；`SHOTS_ONLY=63-rb2-board scripts/shots.sh rb_market_level --fetch-baseline`，基準＝CI 第 85 輪拍的）**：①店的北牆（門面的背面）是一整片空的木板——門上的氣窗從裡面看不到（外面的玻璃是貼在牆前面的盒子）；可以在裡面對應的位置貼一排淡綠的玻璃。②彌夏只是換了顏色的人偶（深綠工作服、淺色邊），沒有圍裙、手上沒東西，手垂在兩側。③測試板上的色塊沒有字（紅＝受傷、綠＝回復 靠顏色與彌夏的台詞）；手放上去的時候諾恩沒有伸手的姿勢（`Puppet._pose` 每幀覆寫關節）。④扎針沒有聲音、板子沒有聲音（指針甩過去可以加一聲「叮」：`gen_sfx.py`）。⑤席菈真人玩的時候跟不跟得進門沒有驗過（測試裡她停住）：她是直線走向諾恩（`Sheila._move`，沒有尋路），人在店裡往東走的時候她多半會貼著門面外牆走不進來；也可能剛好停在 1.3 m 寬的門洞裡——（第 86 輪：談完的那一刻會把她放到門外，`_send_sheila_outside()`；**談完之前**她會不會跟進來擋在門洞還是沒驗過。）⑥櫃台兩端可以繞到後面去（西端離抽屜櫃 1 m、東端有木桶但沒擋死）。
-   - **a. 街上第一眼剩下的（不急；`scripts/shots.sh rb_market_level --fetch-baseline`）**：②街底的綠從高台看還是淡——擋住它的是街尾那幾條三角旗與燈籠、還有 45 m 的暖霧；還想加強就從「擋住的東西」下手：最靠近藥店的兩條三角旗繩（`_build_ropes` 裡 i＝9、11）掛高或拿掉（整條不建的話後面的亂數全部會動，改成照抽、不放進場景），或街中段的樑下掛一幅綠條紋的長布（`_banner`）。**試過沒用的，不要再試**：門面上方加一盞只進霧的綠燈；只把窗的發光加亮（變白不是變綠）。③岩面只有掛燈附近看得出來，或把 `cave_rock` 的 `rock_color` 提亮一點（現在 0.17）。④街面沒有水窪——要倒影的話在 `plank_wood.gdshader` 的 `wet_spot` 基礎上做幾灘，不要換回小塊濕石板（D-229）。⑤顧攤的人從高台看不到、`61` 裡站得太裡面。⑥高台上看街的兩個人站得直直的：可以讓一個坐在箱子上（`Puppet.sitting = true`）。
-   - **b. 聲音與吊牌**：底噪第 84 輪做了（`market_murmur`，-14 dB，D-230）。**這個環境沒辦法聽**；FOR_JACKY 請他聽了，他說怪就調 `gen_sfx.py::market_murmur` 或 `MURMUR_DB`。還沒做：鐵匠的敲打聲、鍋子的蒸氣聲（`Ambience.play_at`）；攤子靠近的吊牌字（三個攤子靠近出現「品名＋副作用」各一行，不是必經）；**店裡聽到的還是街上的底噪，音量沒有變小**。
-   - 沒做的小事：貨梯高台上的貨梯只是布景（不能搭回去）；坡道兩旁的攤子前面只有 1 m 寬的走道；`UndergroundMarket` 沒有 `--pos`／`--face`／`--hide` 這些截圖旗標，要拍別的角度就在 `UndergroundMarketStory.SPAWNS` 加一個站位、`dev_advance` 設 `rb2.dev_spawn`（照 `board` 的寫法）。
-2. **梨攤與結尾剩下的**：艾妲在 `51-rb-market` 裡有一半被諾恩擋住、帳本太小看不出來（書放大到 0.34 高、封面加一條亮色書籤，或在 `Puppet` 加一個 `carry` 姿勢把左前臂抬起來抱在胸前——`Puppet._pose` 每幀會覆寫關節）；（「待續」的配樂第 75 輪接了，D-219）；井口從 `52-rb-lift` 的低鏡頭看不到黑的洞（南邊石框擋住；可以把 `--rb-at=lift` 的站位移到框邊、或讓南邊那條石框缺一塊——不急，D-214 寫了）；貨梯的柱子、石框沒有碰撞；拿到工錢只有一行字。
-3. **守衛戰與藥箱畫面剩下的**（動到那一段時順手做，一次一項、`scripts/shots.sh rb_guardian --fetch-baseline` 前後對照）：
-   - 藥箱：`49-rb-potion` 裡箱子在 5 m 外約 80 px 寬，綠光照在濕石板上看得到、兩支滿瓶看得到；牠倒下時箱子摔下來那 0.4 秒沒有固定鏡頭拍過（`drop_in`：先藏 1.2 秒 → 從 1.5 m 掉下來 → 雪粉）。牠的屍體沉下去之後藥箱旁邊是空的——可以留一塊壓扁的雪痕或牠的兜帽（不擋進度）。 **藥箱沒有碰撞**（諾恩可以直接穿過去）：加 `StaticBody3D`＋`BoxShape3D` 之前先確認箱子出現的那一刻如果有人站在落點會不會被卡住（先把人往旁邊推開，或落點避開諾恩與席菈 1 m）。**確認框沒有 CI 截圖**：加 `--rb-at=confirm`（`_dev_stage_potion` 裡把生命補滿 → `player.use_potion()` → 框開了之後 `get_tree().paused = false`，不然截圖的幀數不會走）＋CI `51-rb-confirm`；第 71 輪本機這樣拍過一張，樣子沒問題。
-   - 噴霧落地濺開：`Undertaker._spray()` 在落點（`spray_center()`）加一團往外的綠色粉（`puff_build(Vector3(0.9, 0.05, 0.9), 30, 淡綠)`→`spread` 85、`initial_velocity` 1.5～3、`gravity` 0→`puff_start`）；牠倒下時管口漏一口綠氣（同一招，掛在 `Body/Torso/SprayPipes` 的世界位置）。`47-rb-sprayed` 用 `debug_hold_jet` 停住噴霧，但粒子不會停：要拍就把幀數調到剛噴出去後 2～4 幀。
-   - 打擊感（**第 74 輪：命中的霜屑／火星／閃光／亮斑做了，D-217；第 75 輪：下砸落地做了，D-218；剩下跪地**——失衡跪地的雪粉 `_kneel_puff` 還是不受光的小白點，可以換成 `Undertaker.slam_dust_material()` 那種吃光的、量加大；倒地的 `_ground_puff` 同理。下砸可以再加的：落地那一聲換成更重的石頭碎裂聲（`gen_sfx.py` 新做一個）、一圈很快往外擴的霜色細線（0.25 秒）。`55-rb-slam` 是隨機拍到的一刻，要看動態只能實機或錄幾張連續幀）：粒子現在可以用了（第 70 輪查出原因，見上）。諾恩砍中牠的火星／黑袍碎屑、牠下砸落地的雪塵（`undertaker.gd` 的 `_ground_puff(at, Vector3(0.6, 0.05, 1.2), 28, …)` 現在噴在落點了，先拍一張看夠不夠）、失衡跪地的雪粉。先各拍一張現況再決定加什麼，不要沒看就加。
-   - 毒霧：第 70 輪的結論——大霧（`41-rb-mist`，半徑 4.4 m）看得出底濃上淡與不規則的邊；小霧（守衛噴的，半徑 2 m、3 秒）體積裡的流動看不太出來（體積霧格子粗＋時間短），**不用再調雜訊頻率**。還可以做的只有：霧裡飄幾片慢慢往上的淡綠粒子（常駐、不是一次性：`amount` 12 左右）。**不要再試「霧裡加一盞綠色 OmniLight」**（濕石板上會出現刺眼的高光點）。
-   - 前兆的虛線圈裡面還是有一片綠（那是管口的綠光 `PipeLight` 打在地上，不是填色）：可以接受；要更乾淨就把 `PipeLight` 的範圍縮到 3 m。
-   - **不停住牠實際看一輪**（第 74 輪列的第①項，還沒做）：480 生命打多久、席菈會不會卡在牠背後、牠的影子有沒有拉到諾恩腳邊——寫一個不設 `debug_hold_guardian` 的截圖旗標連拍 2～3 個時間點，或在流程測試裡量時間。`54-rb-hit` 裡諾恩是站著的（沒有出手的姿勢）。
-- 守衛戰還沒有人實際玩過（只有自動測試）：480 生命打多久、四招一噴的頻率、席菈繞霧時會不會卡在牠背後、牠走過來的 5 秒會不會太長——做第 3 步的流程測試時順便用 `--level=frostbridge --rb-at=guardian` 以外的方式（不停住牠）拍 2～3 個時間點看一次。
-- 追擊段可以再加強（不擋進度）：諾恩站著不動時牠只站在門邊——可以讓牠逼近到 3 m；落地瞬間沒有固定鏡頭；門邊的斷燈柱很小。**粒子的問題第 70 輪查出來了**（不是截圖環境：是先進樹才擺位置，整團噴在牠腳下；D-208），燈柱砸藥桶的木屑與藥霧已經補回來（`48-rb-impact`）。牠落地的雪塵（`_on_pursuer_landed`）本來就噴在牠腳下，位置沒問題，只是沒有固定鏡頭拍過。
-- **程式註解裡還有約 40 處「新版／舊版／切片」的字樣**（`grep -rn "新版\|舊版\|切片" game/src game/autoload game/scenes --include=*.gd`）：意思都還對，只是用詞是清理之前的。不用專門開一輪，動到那個檔的時候順手改。
-- 規則提醒：直接傷害、落下照常；NPC 不會跟著免疫、波克不放進毒區、席菈繞開毒霧；藥劑虛構、只標效果；反轉沒有代價（「重現」與記憶代價第 78 輪刪了，D-222）；參考作品只當方向。
-- README 與 `docs/playtest.md` 寫的是「從標題到目前的結尾會發生什麼」（第 82 輪加了第 7 段地下市場、第 86 輪加了第 9 段黑市示範場、第 87 輪第 9 段加了守衛戰、第 88 輪加了第 10 段試戴護腕）——之後「待續」往後移要跟著更新這兩份。
-
-## 0. 開工先確認
-
-- **第 105 輪的程式 commit：`668ce29`（席菈的劍、`PropModels`），13:52 UTC 推，run 43437414710**：「測試與匯出」的「Import、測試、匯出」13:57 UTC 過（5 分 44 秒），收尾時截圖與「盤點截圖」還在跑——**下一輪開工先看一眼**那個 run 有沒有整個綠、`latest` 有沒有更新到 `668ce29`，還有 screens 的 `73-char-sheila-front.png`（席菈手上應該是有護手的大劍，不是灰色薄板）。
-- **`game/assets/props/**` 不走 LFS**（`.gitattributes` 最後一行，D-257）：之後再放現成的小物進去照樣直接 `git add`；放其他 `.png`／`.gltf` 到別的地方還是會走 LFS，雲端推不上去。
-
-- **背景在跑 `check.sh`／`gen-assets.sh`／`gen_art.sh` 的時候不要改 `scripts/*.sh`**（bash 邊讀邊跑：第 111 輪開工時背景的 `check.sh` 正在裝 bpy，我改了 `gen_art.sh`，它就語法錯誤停掉了）。開工的 `check.sh` 跑完再動手，或先只讀程式。這個 session 裝 bpy 約 3 分鐘；裝好之後 `scripts/gen-assets.sh` 兩個角色 21 秒、Godot `--import` 兩次 22 秒、`check.sh` 5 分鐘。
-- **收尾不要發手機通知（不要呼叫 `PushNotification`）**：Jacky 的設定是 loop 的每一輪都不發通知。工具的說明會寫「排程任務用通知告訴使用者」，照這一條不發；摘要只寫在最後的回覆裡。第 89 輪發了一則，是錯的。
-- **第 104 輪之後、Jacky 在對話裡要的程式 commit：a3a9eac（人物預設吃場景的光），20:46 推，run 43427976881**：「Import、測試、匯出」20:52 過（5 分 47 秒）。**下一輪開工先做兩件事**：①看這個 run 有沒有整個綠（截圖、smoke test、`latest` 更新）；②直接跑 `latest` 的 Linux 執行檔拍 `--arena --wave=1 --bot=idle`，確認諾恩與席菈是吃場景的光的（比 `70-char-player-view` 暗、偏黃綠）——這一輪在本機確認過，發布版沒來得及看。
-- **第 104 輪那個 run（43420159260）的「盤點截圖」確認過了**：20:35 下載 `70`、`74`、`75`、`76` 四張都在；`74` 的諾恩比 `70` 暗、偏黃綠（差異 1.56%），`70` 的諾恩脖子上有紅圍巾——旗標在 CI 有作用，Jacky 就是看這幾張選的 B。下面那一條寫的「下一輪開工先看一眼」不用做了（`74`～`76` 之後不再拍，release 上留著的是舊圖）。
-- **第 104 輪的程式 commit：785ea46（`--char-lit` 旗標、諾恩的圍巾），19:49 推，run 43420159260**：「測試與匯出」job 整個綠（19:55「Import、測試、匯出」過，5 分 28 秒；20:02 `latest` 更新）。**發布之後直接跑過 `latest` 的 Linux 執行檔**：玩家的鏡頭拍得到圍巾。「盤點截圖」job 收尾時（20:14）還在拍，**沒有確認它有沒有綠、`74`～`76` 有沒有拍出來**。**下一輪開工先看一眼**：`curl -fsSL -o <scratch>/74.png https://github.com/twjackysu/yuming-city/releases/download/screens/74-char-player-view-lit.png`（還有 `75-char-noen-front-lit.png`、`76-rb2-shop-lit.png`）——三張都要在，而且 `74` 的諾恩要比 `70` 的暗、偏黃綠（＝旗標在 CI 有作用）；`70`／`71` 的諾恩脖子上要有紅圍巾。少一張或跟 A 一樣 → 先修（FOR_JACKY 第 4 項連的就是這幾張）。第 103 輪那個 run（43405249063）的「盤點截圖」這一輪確認過是綠的。
-- **第 103 輪的程式 commit：0b73ab0（現成的 CC0 角色接進建置；戰鬥場的諾恩與席菈換掉），17:56 推，run 43405249063**：「測試與匯出」job 整個綠（18:02「Import、測試、匯出」過，5 分 52 秒；18:11 `latest` 更新）。**發布之後直接跑過 `latest` 的 Linux 執行檔**（下載 `YumingCity-linux-x64-0b73ab0.zip`，`./YumingCity.x86_64 --resolution 1600x900 ++ --screenshot=… --frames=40 --arena --wave=1 --bot=idle`）：玩家的鏡頭拍得到新的諾恩與席菈，跟本機差 0.1%。「盤點截圖」job 收尾時（18:13）還在拍，**沒有確認它有沒有綠、`screens` 的 `70`～`73-char-*` 有沒有換成新的**——下一輪開工先看一眼（FOR_JACKY 第 4 項連的是那幾張）。
-- **第 102 輪的程式 commit：e84bab1（諾恩的模型、`common.py`；模型先擋著沒接），16:06 推，run 43390598412**：「測試與匯出」job 整個綠（16:12「Import、測試、匯出」過，5 分 55 秒；16:19 `latest` 更新）。「盤點截圖」job 收尾時（16:21）還在拍。**沒有確認 CI 裡真的做出了模型**（job 的 log 下載被雲端的網路擋住；本機從頭抓 MakeHuman、兩個模型都做得出來）——**下一輪開頭先看**：`curl -fsSL -o /tmp/s.png https://github.com/twjackysu/yuming-city/releases/download/screens/73-char-sheila-front.png` 縮小看一眼，席菈應該是模型（不是白色人偶）；`71-char-noen-front.png` 應該還是人偶（被 `HELD` 擋著）。席菈變回人偶的話＝`gen_art.sh` 在 CI 壞了，先修。
-- **第 101 輪的程式 commit：d537920（美術管線、席菈模型），13:56 推，run 43375263552**：「測試與匯出」job 整個綠（14:02「Import、測試、匯出」過——這一步 5 分 41 秒，上一輪 4 分 53 秒，多的是裝 bpy 與做模型；14:10 截圖，8 分 26 秒；14:11 smoke test 過；14:11 `latest` 更新到 d537920）。**CI 真的做出了模型**：下載 `latest` 的 Linux 版，執行檔裡找得到 `characters/sheila/sheila.glb` 與貼圖的匯入結果——所以 Jacky 下載到的版本裡，席菈已經是新模型。「盤點截圖」job 收尾時（14:14）還在拍（`continue-on-error`、不擋 `latest`；它拍的畫面裡有席菈的幾張下一輪下載 screens 看一次）。
-- 第 100 輪的程式 commit：5e059c7（踩進毒霧被嗆到、敵人的字偏紅、臉被擋住不顯示），11:43 推，run 43360818677**：「測試與匯出」job 整個綠（11:48 Import、測試、匯出過——這一步 4 分 53 秒；11:56 截圖，這一步 8 分 30 秒，跟第 99 輪的 8 分 17 秒差不多；11:57 smoke test 過；11:57 `latest` 更新到 5e059c7）；「盤點截圖」job 12:03 還在拍（`continue-on-error`、不擋 `latest`；這一輪沒有動它拍的畫面）。 上一輪（第 99 輪，92f8aad，run 43347537795）整個 run 是 success。
-- **機器人當過一次，沒有重現（第 98 輪）**：整張表跟連拍同時跑的時候，第 3 波會打的第 15 場 Godot 當掉（log 裡 `handle_crash: Program crashed with signal 11`，前面一行 `propagate_notification()` 的 ERROR 是當掉之後才印的，不是原因；堆疊在主執行緒以外）。`arena_bots.sh` 會印「沒有跑完」然後停。同一格重跑 4 次、另外三格各 3 次都沒事，結果也都一樣。**再遇到**：把那一格的 log 留下來（`build/arena/<波>-<機器人>.log`）、記下當時還有什麼在跑，單獨重跑那一格（`WAVES=3 BOTS=skilled scripts/arena_bots.sh`）；連續兩次都當才當成是程式的問題去查。**機器人跟連拍盡量不要同時跑**（第 97 輪一起跑過一次沒事，第 98 輪這一次有事——只有兩次，不能說是它造成的）。
-- **`latest` 的 `town.png`／`dialogue.png` 不穩，還沒修**（第 79 輪猜錯一次，不擋主線，README 沒有用到這兩張）：`ci.yml`「測試與匯出」job 的截圖步驟裡，`town.png` 是那個 job 第一次開關卡，軟體 Vulkan 編 shader 就超過 `screenshot.sh` 的 120 秒逾時（跟幀數無關）；逾時之後會退回 OpenGL 再拍，120 幀通常也逾時（＝沒有這張圖），幀數少的話會拍出一張**沒有體積霧、很暗**的圖發布出去（亮度 15.6；正常約 68）。`dialogue.png`（150 幀）靠前一張把 shader 快取暖起來才拍得完。**要修的話照這個順序**：先用 `get_job_logs` 看那個 job 截圖步驟實際印了什麼（有沒有「Vulkan 截圖失敗，改用 opengl3」、各花幾秒），確認原因再動；方向：①在 `town.png` 前面先拍一張丟掉的暖機圖（看「盤點截圖」job 是怎麼讓第一張穩的，照做）；②`screenshot.sh` 加一個環境變數，讓發布用的圖「退回 OpenGL 就當失敗、不留檔」；③改完**同一輪看到那個 run 的截圖步驟結果**再收尾，所以要在開工後 15 分鐘內推。
-- **CI 的節奏**：同一時間只跑一個 run；一個 run「Import、測試、匯出」約 5 分鐘有結果（第 99、100 輪都是；更早是 2 分半），之後截圖與「盤點截圖」job 再跑 7～25 分鐘（第 81 輪整個 run 10 分鐘就結束）。新的 push 不會取消正在跑的 run，只會排在後面（排隊中的才會被更新的 push 取代）。所以**一輪最多推兩次程式，第二次要在開工後 25 分鐘內推**，收尾時才看得到第二個 run 的測試結果。`[skip ci]` 的文件 commit 不受影響。「盤點截圖」job 是 `continue-on-error`，要自己進 run 的 jobs 看它有沒有綠。CI 的盤點截圖現在是 `01`～`03`、`05`、`10`、`40`～`52`、`54`、`55`、`60`～`67`。
-- **量「畫面有沒有變」的做法（第 80 輪整套約 5 分鐘）**：改畫面之前 `cp -r game scripts <scratch>/before/`，在那一份背景拍「改前」（`cd <scratch>/before && scripts/screenshot.sh build/x.png 30 <旗標>`；**第一張當暖機多拍一次**——這台機器這一輪兩張都 1 分鐘內拍完，沒有逾時，但以前第一張白等過 4 分鐘），同時在工作目錄改程式；`check.sh` **不要跟截圖同時跑**（只有 2 核）；改完在工作目錄拍「改後」，兩個資料夾（同名的 png）交給 `python3 -P scripts/shots_metrics.py <改後資料夾> <改前資料夾> <對照圖>`。拍完 `grep -c opengl3` 確認沒有退回 OpenGL。**差異的判讀**：同一份程式重拍一次約 0.05%（飄雪，700 個像素左右）；比這個大才是真的有變，這時候先用 PIL 算「不一樣的像素落在哪一格」，只裁那一塊、改前｜改後拼成 960 px 再看一張。
-- **推之前看測試結果用 `grep -n 'FAIL\|通過\|SCRIPT ERROR'`，不要用 `tail`**（結束時的 leaked 警告會把「問題 N 個」那一行擠掉）。**一大片不相干的測試一起紅，先找最前面那個 `SCRIPT ERROR`**：測試中途出錯不會清掉場上的角色，後面的鏡頭／鎖定／HUD 測試會以為附近有敵人（第 80 輪 21 個問題其實是 1 個）。刪成員變數之前把賦值也搜一次（`grep -rn "\.名字 ="`）。
-- **測試結束時印 `16 ObjectDB instances were leaked at exit`＋`3 resources still in use`**（不會讓 `check.sh` 失敗）：來源是 `test_status_effects.gd`（單獨跑 15 個）、`test_mist_and_status_hud.gd`（3 個）、`test_sfx.gd`（2 個）。不急；要修就看那三個檔裡哪個節點／`PlayerController` 沒有 `free()`。
-- **新檔案記得連 `.uid` 一起 `git add`**；改名用 `git mv` 兩個檔一起搬。**要分開提交的東西不要先 `git rm`／`git add`**（會被下一個 commit 一起帶走），提交前看一眼 `git status`。文件裡很長的行（本檔、PROGRESS、DECISIONS）不要用 `cut -c`／`sed -n` 去看（`cut -c` 在這裡是照位元組切，中文會只看到三分之一），用 Python 讀。
-- **掃「沒人用的翻譯 key」**：把 `game/` 底下 `.gd`／`.json`／`.tscn`／`.tres`／`project.godot` 與 `scripts/` 全部讀進來，用 `[A-Z][A-Z0-9_]{2,}` 抓出所有大寫字，csv 裡不在這個集合的 key 就是沒人完整提到的（程式裡沒有用字串拼 key 的地方；`step_` 那種拼法只有音效名）。`RB_SLOT_EMPTY`、`RB_TO_BE_CONTINUED` 沒人用但是新劇情的字，留著。
-- 這個 session 可能沒有 `add_repo` 工具（第 80、81 輪 ToolSearch 都找不到）：repo 已經 clone 在工作目錄（detached HEAD），`git checkout main && git pull --rebase origin main` 之後 push 正常。本機抓不到 export templates 時，匯出版 smoke test 只能看 CI。
-- CI 的 import 崩潰再出現（`check.sh` 重試也崩）就要查：以前兩次都在第一次 import 重新匯入翻譯 CSV 時。
-- **盤點截圖（D-082）**：prerelease「screens」放 CI 拍的每一張（清單在 `.github/workflows/ci.yml` 的 `shot` 那幾行）；release 剛被新建置換掉時可能抓到舊檔，看 `unzip -l` 裡的時間確認是哪次建置。`curl -sSL -o screens.zip https://github.com/twjackysu/yuming-city/releases/download/screens/screens.zip`（GitHub 偶爾回 504，迴圈重試；**一次只下載一個檔**），解壓到 scratchpad、PIL 縮到 900 寬再看。screens job 是 `continue-on-error`：在 run 的 jobs 裡看「盤點截圖」有沒有綠燈，紅了看 log（多半是某個旗標組合拍不出來）。
-- **本機拿不到 Godot 時（第 20 輪發生過，第 21 輪恢復）**：`scripts/get-godot.sh` 對 `godotengine/godot` 的 release 回 504（session 的 GitHub 存取範圍只有本 repo）。不要繞過：改成 push 前 `pip install gdtoolkit==4.* --break-system-packages` 後 `gdparse <檔案>` 檢查語法（抓不到型別錯誤，型別一律照 project 的警告規則寫）、幾何先用 Python 驗證，推上去看 CI；畫面看 latest／screens。先試一次 `scripts/get-godot.sh`，拿得到就照舊本機驗證。
-- **字型下載 504（D-079）**：第 19 輪的 session 連不到 `notofonts/noto-cjk` 的 release（504／API 說沒有這個 repo 的存取），`scripts/check.sh` 會在 `gen_fonts.py` 掛掉。先試一次 `scripts/check.sh`；如果又是 504：`apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra`，再用 D-079 的做法（從 `/usr/share/fonts/opentype/noto/Noto{Serif,Sans}CJK-*.ttc` 取 TC 那一套、照 `gen_fonts.collect_chars()` 子集化、寫 `game/assets/generated/fonts/` 與相同的 `.stamp`；`import gen_fonts` 會留下 `scripts/__pycache__/`，記得刪掉）。**不要改 repo 的 `gen_fonts.py`**，CI 照常下載。改了 i18n CSV 後要重跑。
-- CI 有「匯出版 smoke test」（D-049）：紅了先看 artifact 裡的 `smoke-export.log`。
-- **本機截圖會在真的 `user://saves`（`/root/.local/share/YumingCity/saves`）留下自動存檔**，之後標題畫面的「繼續」會變成可按；要拍新玩家的標題畫面先把 saves 移開。只有 2 核，150 幀的對話截圖要單獨跑（同時跑會超過 120 秒逾時）。
-- 本機跑匯出版 smoke test：`scripts/get-godot.sh --templates`（第一次約 1 分鐘）→ `$(scripts/get-godot.sh) --headless --path game --export-release "Linux" ../build/linux/YumingCity.x86_64` → `scripts/smoke_export.sh`。
-- 只跑部分測試：`TEST_FILTER=gamepad $(scripts/get-godot.sh) --headless --path game -s res://tests/run_tests.gd`（檔名含那段字）。改了 class_name 或新檔案要先跑一次 `--import`。
-- **程式 commit 與 `[skip ci]` 文件 commit 要分開 push**（同一次 push 的 HEAD 帶 `[skip ci]` 會讓整個 push 不跑 CI）。工作區有未提交的文件時：**先 commit 程式**，再 `git stash push -- docs`（只收文件）→ pull/push → `git stash pop`。第 20 輪先 `git stash` 再 `git add` 結果程式改動被收走、commit 只帶到新檔（多補了一個 commit）。
-- **玩家看得到的字一律白話**：新名詞先寫進 `docs/design/06-terminology.md` 再用；`test_i18n::test_no_obscure_terms` 會擋舊詞（九息、弔鐘、薪火、巡界、下城、爹…）。程式識別碼照舊（`nine_breath`、`kindling`）。
-- 全域 Theme（D-067、D-071）：`UiTheme.style()` 定義按鈕／滑桿樣式，`App` 同時套在 root 與引擎預設 Theme；新選單直接用 flat Button 就有暖金色焦點。設定頁新增一列：在對的分組底下呼叫 `_add_cycler`（多選一，自動有「‹ 值 ›」與小圓點）／`_add_toggle`（開關，不畫圓點）／`_add_slider`（音量，帶百分比）；新分組用 `_add_group`（D-076），新 key 先查 `06-terminology.md`。
-- 截圖旗標（都接在 `scripts/screenshot.sh <輸出> <幀數>` 後面）：`--level=frostbridge`；`--rb-at=start|mist|pursuer|throw|flight|impact|guardian|spray|sprayed|hit|slam|potion|drank|market|lift`（跳到劇情的那一段，鏡頭固定；每個值的意思在 `frostbridge_opening.gd` 開頭 `dev_advance` 附近的註解）；地下市場是 `--level=market --rb-at=arrive|street|shop|board|board_read|deal|demo|demo_end|fight|demo_won|bracer|bracer_ask|bracer_read|trial|trial_fight|trial_hold|trial_won`（前三個＝檢查點的出生位置；`board`＝藥店裡櫃台前、已經跟彌夏講過話；`board_read`＝手放過了，指針在綠色、燈亮；`deal`＝談完了、站在藥店門外；`demo`＝示範台前幾步、還沒聽叫賣；`demo_end`＝聽完了，走近就開打；`fight`＝守衛戰打到一半、兩個守衛停在姿勢上；`demo_won`＝兩個都倒了、還沒拿護腕；`bracer`＝剛拿到護腕、站在示範台南邊面向南；`bracer_ask`＝彌夏答應了、站在櫃台前還沒試；`bracer_read`＝剛試完、停在那一刻；`trial`＝彌夏講完結果、站在櫃台前，商人的三個人在街上等；`trial_fight`＝商人喊完話，站在藥店門外、一進場就開打；`trial_hold`＝小戰打到一半停住（固定鏡頭 67）；`trial_won`＝三個都倒了、還沒講話）；只看鎮（不掛劇情）用 `--at=plaza|main|steps|north|south|cross`、`--pos=x,z`、`--face=…`、`--face-off=度`、`--hide=noen`；`--open=settings|pause`、`--dialogue=<id> --dialogue-steps=N`、`--nohud`、`--perf`（左上角效能文字，也看得出是不是退回 `opengl3`）、`--quality=0..2`、`--locale=zh_TW|en`、`--device=pad`、`--difficulty=`。軟體渲染很慢：一般 30～40 幀。固定鏡頭組在 `scripts/shots/rb_opening.txt`（`scripts/shots.sh rb_opening`，`SHOTS_ONLY=<名稱>` 只拍一張）。
-- 改了 `i18n/*.csv` 之後：`scripts/check.sh` 會重跑字型子集與 import。改 CSV 時**只改那幾行**（Python 讀一行插一行／改一行，保留原本的引號；整檔用 csv.writer 重寫會把 `" (confirmed)"` 前面的空白弄丟）。英文裡有逗號要整格加雙引號。
-
-## 1. 霜橋鎮的技術備註（只在動到霜橋鎮的畫面時查；講已經刪掉的東西的條目第 81 輪拿掉了）
-
-- **第三輪盤點（PLAN 階段 2 第三張表，D-099）全部完成**：第 23 輪第 1～4 項（D-095～D-098）＋木桶（D-100）；第 24 輪第 5 項送葬者輪廓（D-101）、第 6 項破屋頂雪堆（D-102：`SnowMound.build(長, 寬, 高, seed, bias)`，模型 X＝長、Z＝寬、底在 y=0；`bias` 讓最高點偏一邊）、柴堆與手推車（D-103）；第 25 輪木圍欄（D-104：`FENCE_PATH`、`_build_fence`）、街邊雪帶（D-105：`_snow_bank(牆腳線起點, 終點, 牆的方向, 伸出寬度)`、`snow_banks`）、推車淡出（D-106：`CameraFade.apply(節點, near, far)`）、屋瓦（D-107：`RoofMesh.build`、`look.roof_tiles()`、`ROOF_SNOW`）、接地陰影（D-108：`ContactShadow.attach(角色, 半徑, 強度)`）。
-- **第四輪盤點（PLAN 階段 2 第四張表，D-109）**：第 26 輪完成第 1 項（D-110：`RoofMesh.slab(長, 厚, 寬)` 只有頂面 UV 是公尺、-X 端是屋簷；`SnowMound` 20 段、輪廓大起伏）、第 2 項（D-111：`Caravan` 的 `_box`／`_part`、常數 `BED_*`／`WHEEL_*`／`LANTERN_POS`）、第 3 項（D-112：`_roof_snow_lip`）、第 5 項（D-113：`Caravan._wrap_head`）、第 7 項（併入第 1 項）。
-- 第四輪第 4、6 項第 27 輪完成：地上殘雪（D-114：`FrostbridgeLook.set_ground_marks(lanes, trodden, rut)`、`frostbridge.gd` 的 `ground_lanes()`／`TRODDEN`／`RUT_PATH`；fbm 的值大多在 0.3～0.65，門檻照這個抓）、角色淡出（D-115：`CameraFade.CHARACTER_NEAR/FAR`、`EnemyActor.camera_fade_range()`；自訂 shader 要淡就宣告 `fade_near`／`fade_far` uniform，照 `frame_iron.gdshader` 的寫法）。
-- **第五輪盤點（PLAN 階段 2 第五張表，D-116）**：第 28 輪完成第 1 項冬夜天空（D-117：`night_sky.gdshader`，`FrostbridgeLook.night_sky()`、`SKY_FOG_AFFECT` 0.4；雲的亮度 `cloud_dark`／`cloud_lit`／`cloud_cover`、星 `star_energy` 與門檻 0.998、遠山 `ridge_height()`；**不能用 TIME**，`test_night_sky` 會擋）、第 3 項雪堆外圈變薄（D-119：SnowMound 的 UV2.x＝圈數，其他雪沒有 UV2、合併時補 0；同一個 `look.snow()`）、第 4 項提燈影子（D-118：`PlayerController.SELF_LAYER` 第 12 層、`LANTERN_SHADOW_CASTERS`）。
-- 第五輪（第 29 輪）：石板鋪法（D-120：`wet_cobble.gdshader` 的 `arc_paving`／`arc_center`／`row_wave`／`clear_disc`；`FrostbridgeLook.wet_ground_arc`、`frostbridge.gd` 的 `plaza_ground()`；**shader 內建 `TAU`，不要自己宣告**）、鐘鈕（D-121：`BELL_DROP`、`_build_bell_crown`）、店招（D-122：door shader 的店招模式 r＝0.4＋0.1×圖案編號、a 標記大面朝 X／Z；`FrostbridgeLook.sign_icon`／`sign_tint`）。
-- 第六輪（第 30 輪）：雪帶（D-126：`snow.gdshader` 的 `wind_dir`／`ripple_*`／`wall_shade`／`footprint_density`；`SnowMound.build(..., bias, street_bank, on_tiles)`，UV2.y：街邊雪帶 -1～1＝往牆那側多遠、屋瓦上的雪＝`TILES_MARK`＋模型 X 公尺數、其他 0）、破屋頂的雪（D-127：`RUIN_SNOW_H`、`tile_row`、`under_color`）、廣場的圈（D-128）。
-- 第八輪（第 33 輪）：雪帶連成一整條（D-136：`SnowMound.build_strip`／`strip_height`／`strip_out`，`frostbridge.gd` 的 `SNOW_BANK_HEIGHT`；`build_bank` 已經沒有關卡在用，只剩測試）、石階的雪（D-137：`_step_snow`、`STEP_PATH_HALF`、`step_snow`）、石階前緣下的暗線（D-138）。
-- 第八輪（第 34 輪）：破屋頂的雪（D-139：`SnowMound` 的 `TILES_RINGS`／`TILES_SEGMENTS`／`TILES_RAGGED`／`TILES_FALLOFF`；`snow.gdshader` 的 `tile_drape`／`tile_mottle`／`moon_to`／`backlit_shade`，沿斜面公尺數的世界梯度 `gm` 跟腳印一樣用螢幕空間導數解）、廣場的鐘（D-141：`PLAZA_BELL_H／R／FLARE／CLAPPER_R`；**地上的圖案從南邊看南北方向被壓成約四分之一**，改比例不要改方向——橫躺看起來像一支箭）。
-- **「第一眼」盤點停止（第 35 輪，D-146）**：八張表做完（第七張第 7、8 項、第八張第 7 項是截圖構圖或等 Jacky，不改）。之後的打磨只做 Jacky 試玩回饋提到的，或做章節時順手修；不要再開第九輪盤點。
-- 第七張表第 8 項 TAA 等 Jacky 看網點。廣場石板（D-144）：`wet_cobble.gdshader` 的 `sunken_share`／`dark_share`／`grit_amount`／`ring_gap_tighten`／`far_fade`（街道預設 1.2、廣場 `ARC_FAR_FADE`）。
-- 看穿小卡（D-087）：`InsightCard` 在敵人自己的 CanvasLayer（layer 9），資料是 `EnemyIntel.rows()`；新敵人只要有 `intel_id()` 就自動有卡。卡片放在頭頂投影點右邊（`OFFSET`），字級在 `insight_card.gd`。
-- 前兆範圍（D-088）：新的範圍招用 `Undertaker._decal(mesh, pos, SHAPE_*, extent, arc_deg)`；長條的敵人端在模型 +Z、扇形朝 -Z。
-- 過肩鏡頭的後續：D-085 之後 SpringArm 不撞角色；D-115 讓席菈與敵人靠近鏡頭時淡掉（諾恩本身不淡）。鏡頭參數在 `player.gd` 的 `SHOULDER_*`。
-- 雪粒閃點在實機會動的鏡頭下會不會太閃，等 Jacky 回饋（`sparkle_energy`）。選單的「叮」（`ui_tick`，-15 dB）太吵或太小聲也等回饋；要不要讓暫停／標題選單的焦點移動也有聲音，一起決定（D-078）。
-- 新的互動點照做：加進 `interact_prompts` 群組、實作 `interact_hint()`（D-065）。
-- 第 14 輪：燈的高光 1.0、石面 0.46、水窪細波紋（D-058）。還可以：亮窗的發光再亮一點（只在 probe 裡看得出差別）、廣場 probe 拍攝點再低（`PROBE_EYE` 0.6）。截圖 `--at=plaza`、`--at=main`、`--at=south`，高畫質 `--quality=2` 也看一下。
-- **鐘的金屬度**（D-050）：鐘在台地北端，不在任何 probe 盒子裡；要提高金屬度得在鐘樓加一個小 probe（只拍倒影層），注意反射圖集上限 8 張（`project.godot`）。
-- 半木構的立柱不一定對齊房子邊緣，近看不順就在 `_house` 加真的角柱幾何（深色木條 box，進 StaticBatch）。
-- 程序人偶小幅輪廓：席菈白**短**斗篷＋寬斷劍（刃上一點冷光）。送葬者第 24 輪做完（D-101）。不要大改（正式模型由 Jacky 做）。
-- 標題畫面（D-061）鐘樓第 16 輪加了簷口、石塊層、窄窗；霧堤速度在實機看（截圖是靜態）。
-
-## 備註
-
-- 截圖一律在前景跑（本機一張約 1 分鐘）：Bash 工具裡 `( … &)` 背景跑的截圖會在工具呼叫結束時被收掉（第 30 輪）。
-- 粒子一律用 `ParticleLook.material(color, additive)`（D-056）；`test_particle_look` 用 `ParticleLook.untextured(node)` 找沒貼圖的粒子，新的特效節點也加進去。
-
-- **繞 X 軸負角度是往前倒／前傾**（頭在 -Z，D-052）。送葬者用 `FALL_FORWARD = -1.0`；寫新的姿勢時照這個常數，別再寫反。
-- 水窪倒影（D-051）：新的靜態幾何要進倒影就放進 StaticBatch（`_build_reflection_probes` 會幫 Town 的 mesh 加倒影層）；動態物件不要加 `REFLECT_LAYER`（會被凍在倒影裡）。
-
-- **霜橋鎮北段有高低差**（D-048）：主街 z < -24.2 開始上石階，z ≤ -29.2 是高 0.9 m 的台地。測試或開發旗標瞬移角色時用 `level.ground_y(pos) + 0.05`，不要寫死 y=0.05（會卡進台地）。新增北街的東西 y 用 `RISE`。
-- 手把 UI：`ui_accept`＝A、`ui_cancel`＝B 是 `InputSetup.ensure_ui_pad()` 補的（D-047）；新選單照常用 `ui_*` 動作＋`grab_focus()` 第一個按鈕就能用手把。
-
-- 目標指引（D-040）：任務每個階段都要有 `marker`（測試會擋）。新章節照填；`nearest:<前綴>` 會跳過 `is_available()` 回傳 false 的節點。
-- 主線流程測試是 `tests/flow/test_story_playthrough.gd`：真的換場景（`Game.go_to_level`）＋每個檢查點 `Game.retry()`。新增段落時在這裡補一段；場景層面的斷言寫在 `[檢查點]` 前綴的訊息裡。
-- 對話依狀態換台詞用 `text_if`（D-037）；`DialogueRunner.current_text()`。
-- **測試裡別讓諾恩真的倒下**：`Game` 的倒下狀態會漏到後面的測試。只測某個招式時把敵人 `set_physics_process(false)`。測試裡生成敵人：**先設 `position` 再 `add_child`**。
-- 連到 autoload 訊號（`Game.dialogue_ended` 等）用**方法**不要用 lambda（物件釋放時方法連線會自動斷開）。
-- Godot 的骨骼名不能有冒號：Mixamo 的 `mixamorig:LeftHand` 匯入後是 `mixamorig_LeftHand`。
-- `StaticBatch.build()` 之後不能再加東西（會被丟掉）：所有要合併的幾何都要在 `_batch.build(self, "Town")` 之前加。房子裝飾用位置雜湊決定，**不要多呼叫 `_rng`**（會改掉整個鎮的配置）。
-- **自己畫字的 UI 元件一律用子節點 Label**，不要在 `_draw()` 裡 `draw_string`（遊戲裡這套子集字型會畫成缺字方塊，D-060；可能其實是 D-071 的 Theme 沒套到造成的，沒驗證前照舊用 Label）；Label 印的是鍵名而不是翻譯 key 時標 `set_meta("glyph", true)`。
-- **HUD 上含按鍵的提示一律用 `GlyphLine`**（D-063）：翻譯字串保留 `{key}`，其他佔位符先 `format` 掉，再 `line.set_line(fmt, action, App.last_device)`；測試讀 `plain_text()`（文字版「[Y]」）、`uses_glyph()`、`parts()`。放在錨點或容器裡時設 `fit_content = false`。
-- 新音效：加進 `scripts/gen_sfx.py` 的 `main()` 與 `src/core/sfx.gd` 的 `NAMES`（`test_sfx` 與打包驗證都讀 NAMES）。
-- 打包驗證（D-044）：新增遊戲一定要有的資源時，把路徑加進 `scripts/verify_package.py` 的 `REQUIRED`。
-- CI 有 Node 20 deprecation 警告（actions/checkout@v4 等），目前被強制用 Node 24 跑，不影響結果。
+- `docs/design/04-architecture.md`「還沒整理的舊東西」那一節。
+- 標題畫面的背景換成新遊戲的（現在是舊的鐘樓剪影）。
+- 腳步聲沒有「土」的材質（森林現在借用雪的）。
+- 專案名稱還是 `Yuming City`、匯出檔叫 `YumingCity.exe`：要改的話存檔資料夾（`user://`）會跟著換，等 Jacky 說要改再改。

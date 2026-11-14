@@ -1,79 +1,63 @@
-# 04　架構與技術規則
+# 04　架構、程式地圖與開發工具
 
-> 2026-11-11 重寫：把舊的「架構」與 `docs/technical-direction.md` 併成這一份，只留現在還成立的（D-227）。原則：**邏輯是純資料類別、場景只負責顯示**，所以開發 loop 能在沒有 GPU 的雲端 session 用 headless 測試驗證大部分行為。
+原則：**邏輯是純資料類別、場景只負責顯示**，所以雲端 session 沒有 GPU 也能用 headless 測試驗證大部分行為。2026-11-14 重新開始時只留了跟劇情無關的底層（D-273）；舊的東西在分支 `archive/pre-restart-2026-11-14`。
 
-## 技術決定（不變）
+## 技術決定
 
-- **引擎**：Godot 4.7.2 stable（標準版），固定在 `scripts/get-godot.sh`，不因新版發布就升級。選它的原因：能在 Linux 與 GitHub Actions 上 import、測試、匯出 Windows 版；場景與腳本是純文字；開源、無權利金。
-- **語言**：GDScript＋靜態型別（未加型別的宣告視為錯誤）。不使用 C#／.NET。
-- **渲染**：Forward+。Windows 預設 D3D12，失敗時由 Godot 退回 Vulkan。
-- **平台**：Windows 64-bit；CI 順便匯出 Linux 跑 smoke test。
-- **效能目標**（待實機驗證，不是承諾）：中階獨顯、1080p 中等畫質、60 fps。量測用遊戲內建的效能 overlay（F3）與 `--benchmark`（結果寫到 `user://benchmark/`）；實機步驟在 [`../playtest.md`](../playtest.md)。體積霧、SSAO、SSR 等都做成畫質選項（`QualityPreset` 三級）。
-- **素材**：程式生成優先（音效、字型子集、貼圖、模型都在建置時產生，不進 git）；單檔超過 1 MB 不進 git；授權記在 `docs/CREDITS.md`。
-- **機密**：Steam 憑證、`steam_appid.txt` 不進 git。
+- Godot 4.7.2 stable（標準版，版本固定在 `scripts/get-godot.sh`）、GDScript＋靜態型別（沒加型別視為錯誤）、不用 C#、Forward+。平台 Windows 64-bit；CI 順便匯出 Linux 跑 smoke test。
+- 玩家看得到的字一律走翻譯 key（`game/i18n/strings.csv`，欄位 `keys,en,zh_TW`）；JSON 資料裡只放 key。
+- 建置時產生的東西（字型子集、音效、轉好的模型）不進 git；什麼進 git 看 [`14-repo-and-assets.md`](14-repo-and-assets.md)。
 
-## 目錄
+## 程式地圖（`game/`）
 
-```
-game/
-  project.godot          # Forward+、D3D12、GDScript 型別警告設為錯誤
-  autoload/              # App（命令列、字型主題、按鍵）、Settings、Game（持有 GameSession、切關卡）、Perf
-  src/core/              # 純邏輯：RefCounted／Resource，不碰場景樹
-  src/ui/                # UI 共用：字型、主題、按鍵圖示、HUD 小元件
-  src/world/             # 場景用的共用零件：合併 mesh、材質與環境、粒子、shader
-  scenes/                # .tscn＋配套 .gd：boot（標題）、levels、actors、ui、world、bench
-  data/                  # 任務、對話、戰鬥數值、狀態（JSON），文字只放翻譯 key
-  i18n/                  # 翻譯 CSV（keys,en,zh_TW）：strings.csv（介面）、reboot.csv（劇情）
-  assets/generated/      # 建置時程序生成，不進 git
-  tests/                 # 自製測試框架；unit／flow
-scripts/                 # get-godot、check、screenshot、shots（固定鏡頭組）、gen-assets
-```
+| 位置 | 內容 |
+|---|---|
+| `autoload/app.gd` | 命令列旗標、截圖／連拍、輸入裝置切換、字型主題 |
+| `autoload/game.gd` | 持有 `GameSession`；新遊戲／繼續／切關卡／對話／倒下重試／打擊停頓。關卡表 `LEVELS`、檢查點對關卡 `CHECKPOINT_LEVELS` |
+| `autoload/settings.gd`、`perf.gd` | 設定（音量、畫質、難度、語言、按鍵）；效能 overlay（F3） |
+| `src/core/game_state.gd`、`save_codec.gd`、`game_session.gd` | 可存檔的狀態；JSON＋版本號＋`.bak` 回復；一局遊戲（任務、自動存檔、重試） |
+| `src/core/story_logic.gd`、`quest_db.gd`、`quest_runner.gd`、`dialogue_db.gd`、`dialogue_runner.gd` | 條件與效果、任務與對話的資料驗證與推進 |
+| `src/core/status_rules.gd`、`status_effects.gd`、`reversal_slots.gd`、`potion_belt.gd`、`mist_zone.gd` | 異常狀態、反轉欄位、身上的藥、狀態區（瘴氣）的規則 |
+| `src/core/health.gd`、`combat_tuning.gd`、`enemy_brain.gd` | 生命、戰鬥數值（`data/combat/tuning.json`，F5 重讀、`user://tuning.json` 可覆寫）、敵人狀態機 |
+| `src/core/input_setup.gd`、`sfx.gd`、`ambience.gd`、`footsteps.gd`、`quality_preset.gd`、`frame_stats.gd`、`benchmark_run.gd` | 按鍵、音效、環境音與配樂、腳步、畫質三級、效能統計 |
+| `src/ui/` | 字型與主題、按鍵圖示（`GlyphLine`、`PadGlyph`）、狀態列、藥劑格、目標指引、章節卡（`ChapterCard`，還沒用到）、設定頁的小元件 |
+| `src/world/` | `CharacterModels`／`PropModels`（模型載入，找不到回傳 null）、`ContactShadow`、`CameraFade`、`HealMotes`、`PoisonBurst`、`ParticleLook`、毒霧與接地陰影的 shader |
+| `scenes/boot/` | 標題畫面 |
+| `scenes/levels/story_level.gd`、`corrupt_forest.gd/.tscn` | 關卡基底；腐敗之森入口（建場景＋設劇情旗標） |
+| `scenes/actors/player/` | `PlayerController`：移動、過肩鏡頭、鎖定、閃避、出手、釋放、手上的劍 |
+| `scenes/actors/puppet/` | `Puppet`：有模型就播模型的動作，沒有就用程式拼的人偶（同一套介面：`set_move_speed`、`play_action`、`hand()`） |
+| `scenes/actors/enemy/enemy_actor.gd`、`scenes/actors/slime/` | 敵人共用（追人、受擊、硬撐、跪地、倒下）；劇毒史萊姆 |
+| `scenes/world/poison_mist.gd` | 瘴氣／毒霧的節點（`MistZone`＋霧盤＋體積霧） |
+| `scenes/ui/` | `Hud`（目標、橫幅、存檔提示）、`CombatHud`（生命條）、對話框、暫停、設定、按鍵設定、互動提示 |
+| `scenes/bench/` | `--benchmark`：鏡頭飛過關卡、把統計寫到 `user://benchmark/` |
+| `data/` | `quests/`、`dialogue/`、`status/statuses.json`、`combat/tuning.json` |
+| `tests/` | 自製測試框架（`framework/test_case.gd`）；`unit/`、`flow/test_chapter1.gd`（新遊戲 → 瘴氣 → 史萊姆） |
 
-## 主要模組
+**加東西的做法**
 
-| 模組 | 位置 | 職責 |
-|---|---|---|
-| GameState／SaveCodec | `src/core/` | 可存檔的狀態（旗標、任務階段、檢查點、身上的狀態、反轉欄位、道具、一次性發放、生命）；JSON＋版本號、`.tmp` 改名、`.bak` 回復 |
-| GameSession | `src/core/game_session.gd` | 一局遊戲：狀態＋任務＋自動存檔＋死亡重試。`new_game()` 開劇情、`in_story()` 問有沒有開 |
-| StoryLogic／QuestDB／QuestRunner | `src/core/` | 條件與效果、任務資料驗證、依旗標推進（D-013） |
-| DialogueDB／DialogueRunner | `src/core/` | 對話資料驗證、台詞與選項、效果（D-018） |
-| StatusEffects／StatusRules／ReversalSlots／PotionBelt／MistZone | `src/core/` | 負面狀態、反轉欄位、身上的藥、毒霧範圍（設計 09） |
-| CombatTuning／Health／EnemyBrain／EnemyIntel／CompanionBrain | `src/core/` | 戰鬥數值、生命、敵人狀態機（前兆、出招、破綻、失衡）、看穿資料、席菈的狀態機 |
-| FrostbridgeOpening | `scenes/levels/frostbridge_opening.gd` | 前十分鐘的劇情控制器（開場 → 毒霧 → 守衛戰 → 藥箱 → 艾妲與貨梯）。`frostbridge.gd` 只蓋鎮，`in_story()` 時才掛它 |
-| PlayerController／Sheila／EnemyActor／Undertaker／Ashwalker／Puppet／Caravan | `scenes/actors/` | 角色：移動、鏡頭、出招、程序人偶與程式動畫 |
-| Hud／CombatHud／DialogueBox／PauseMenu／SettingsMenu／ControlsMenu | `scenes/ui/` | 介面；文字全走翻譯 key |
-| StaticBatch／FrostbridgeLook／PoisonMist／PotionCrate／HealMotes | `src/world/`、`scenes/world/` | 靜態幾何合併、冬夜環境與材質、毒霧、藥箱、回血光點 |
-| Sfx／Ambience／Footsteps | `src/core/`、`scripts/gen_sfx.py` | 程序音效（建置時產生） |
+- 新關卡：繼承 `StoryLevel`、場景裡放 `Spawn`／`Player`／`Hud`／`PauseMenu`／`DialogueBox`，在 `Game.LEVELS` 與 `CHECKPOINT_LEVELS` 登記；劇情只透過 `Game.session.set_flag()` 推進任務。
+- 新敵人：繼承 `EnemyActor`，覆寫 `tuning_id()`、`_build_body()`、`_on_strike()`，數值加在 `tuning.json`（看 `Slime`）。
+- 新角色模型：`scripts/gen_art.sh` 的 `SRC`／`ARGS` 加一行、`scripts/import_characters.py` 的 `KNOWN` 加 id，場景裡 `Puppet.character_id = "<id>"`。
+- 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。
+- 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試。
 
-## 資料格式（D-013）
+## 還沒整理的舊東西（改到那個檔的時候順手清）
 
-- **結構用 JSON，文字用翻譯 key**。JSON 裡不出現玩家看得到的文字，只出現 `RB_…`／`Q_RB_…` 這類 key；文字在 `i18n/*.csv`。測試會檢查每個 key 都有 en＋zh_TW、JSON 引用的 key 都存在。
-- 任務：`{"id", "title", "stages": [{"id", "objective", "done_when", "marker", "checkpoint"}]}`；每個階段都要有 `marker` 與 `checkpoint`。
-- 對話節點：`{"id", "speaker", "text", "next" | "choices": [{"text", "next", "if", "do"}]}`；`if`／`do` 只能讀寫旗標，不能執行任意程式。
-- 字型子集化（`gen_fonts.py`）掃描 `i18n/*.csv`，新增文字不會缺字。
+- `Puppet` 的程式人偶還帶著以前的鐘錘（`BellHammer`）與躺、坐的姿勢；模型都到位之後可以把程式人偶縮成最簡單的替身。
+- 部分註解還提到舊劇情的東西（霜橋、送葬者、守衛、提燈）。
+- 標題畫面的背景還是舊的鐘樓剪影（`scenes/boot/title_fog.gdshader`）。
+- `scripts/gen_sfx.py` 還會產幾個沒在用的音效（市場底噪、「待續」配樂等）。
+- `tools/blender/common.py` 裡有以前自製人體用的函式，現在只有 `tripo_character.py` 在用它的動作部分。
 
-## 存檔與檢查點
+## 開發工具
 
-- 場景只透過 `set_flag`／`add_flag` 改狀態，不直接改存檔。存檔內容只有 `GameState.to_dict()`；場景狀態（敵人位置等）不存，從檢查點重建。
-- 進入有 `checkpoint` 的任務階段時自動存檔；死亡重試＝重讀那一份。寫檔前 `GameSession.saving` 讓玩家把生命、狀態、反轉欄位寫回去。
-- **存檔資料夾是 `user://saves_reboot`、存檔裡的 `mode` 是 `"reboot"`、任務與旗標是 `rb_*`：這些名字不改**（玩家已經有存檔，D-227）。`user://saves` 是以前舊劇情的資料夾，遊戲不讀也不寫。開發旗標（`--level=…`）開的遊戲存在 `user://saves_dev_reboot`。
-- 改存檔格式：`CURRENT_VERSION` +1、在 `SaveCodec` 加一步遷移、加一個從舊版 JSON 讀起的測試。目前 v3；比 `MIN_VERSION` 舊的回「太舊」，不遷移、不刪檔。
+| 指令 | 用途 |
+|---|---|
+| `scripts/check.sh`（已經產過素材時約半分鐘；乾淨的機器第一次要下載 Godot、裝 bpy、轉模型，約 5 分鐘） | 產生素材 → import 兩次 → 全部測試；有 `SCRIPT ERROR` 就算失敗。`--export` 再匯出 |
+| `TEST_FILTER=chapter1 <godot> --headless --path game -s res://tests/run_tests.gd` | 只跑檔名含這段字的測試 |
+| `scripts/screenshot.sh <out.png> <幀數> [旗標…]` | 用 xvfb＋軟體 Vulkan 截一張。先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`；每個 session 第一張常逾時，先拍一張丟掉 |
+| `scripts/shots.sh forest [--save-baseline]` | 固定鏡頭組（`scripts/shots/forest.txt`），印跟基準的差異數字、拼對照圖 |
+| `scripts/burst.sh <out.png> <從第幾幀> [旗標…]` | 連拍 8 張拼一張：會動的東西（出手、受擊）用這個驗收 |
+| `scripts/gen_art.sh`、`gen_props.sh` | 用 bpy 把 `art-inbox/tripo/` 的模型轉成遊戲用的（`gen-assets.sh` 會叫） |
 
-## 關卡
-
-- 關卡繼承 `StoryLevel`（地面高度、腳步聲材質）。靜態幾何用 `StaticBatch` 依材質合併成少數 MeshInstance＋一個 StaticBody。
-- 檢查點對到哪個關卡：`Game.CHECKPOINT_LEVELS`；出生點在劇情控制器的 `SPAWNS`。
-
-## 角色模型接入點（D-041）
-
-- 交件：`art-inbox/characters/<id>/<id>.glb`（id：noen、sheila、undertaker、ashwalker；規格見 `docs/ART_REQUESTS.md`）。
-- 收件：`scripts/gen-assets.sh` → `scripts/import_characters.py` → `scripts/check_character_glb.py`（靜態檢查、不執行模型內容）。通過才複製到 `game/assets/characters/<id>/<id>.glb`（gitignore）；LFS 指標檔略過；沒過就刪掉舊複本。
-- 遊戲端：`CharacterModels`（路徑、動作表對應、手骨骼名稱）＋`Puppet.character_id`。有 Skeleton3D 的模型才採用；AnimationPlayer 依 `current_state()` 播 `ANIM_MAP` 裡第一個存在的動作（idle、walk、run、dodge_roll、light_attack_01；比對結尾）。缺閃避動作 → 整個人前滾；缺其他 → idle。
-- 掛點：`hand("L"|"R")` 回傳手骨骼上的 BoneAttachment3D；找不到骨骼就放在估計位置並警告。
-- 不跟模型走的：碰撞膠囊、AI、弱點判定（位置仍由程式決定）。
-
-## 測試與命令列
-
-- `scripts/check.sh`：import（兩次）→ `tests/unit` → `tests/flow`；有 `SCRIPT ERROR` 一律算失敗。
-- 主線流程測試 `tests/flow/test_story_playthrough.gd`：標題按新遊戲 → 一路玩到目前的結尾。**每加一段就把它的結尾往後延。**
-- 命令列旗標（`--` 之後）與截圖做法寫在 [`../NEXT.md`](../NEXT.md) 的「0. 開工先確認」。
+遊戲的命令列旗標（放在 `--` 之後）：`--level=corrupt_forest`（直接開新遊戲進關卡，存檔寫到 `user://saves_dev`）、`--cam-yaw=90|180`（鏡頭繞到諾恩側面／正面）、`--open=pause|settings|controls`、`--locale=zh_TW|en`、`--quality=0..2`、`--perf`、`--benchmark`、`--screenshot=<png> --frames=<n>`。

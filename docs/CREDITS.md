@@ -22,20 +22,17 @@
 
 - 標題畫面背景（`game/scenes/boot/title_fog.gdshader`）
 - 遊戲圖示（`game/icon.svg`）
-- 音效與配樂：鈍擊、弱點鈍擊、爪擊、斬擊、閃避風聲、腳步、風雪、毒霧、玻璃瓶、介面音、標題與「待續」的配樂（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
-- 諾恩與席菈的動作（站、走、跑、出手、釋放；`tools/blender/common.py` 用程式寫的關鍵影格，套在下面「第三方素材」的 VRoid 角色上）
-- 自製的席菈與諾恩（`tools/blender/sheila.py`、`noen.py`：服裝、頭髮、骨架、貼圖；身體是「第三方素材」的 MakeHuman CC0 基底）——**2026-11-13 起不再接進遊戲**（D-252、D-253），腳本留著
-- 角色與敵人外型：諾恩、席菈的斷劍、灰巡者、送葬者（CSG／程序 mesh，霜紋前兆為程序扇形／圓形／直線）
+- 音效與配樂：打擊、閃避風聲、腳步、毒霧、玻璃瓶、介面音、標題配樂（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
+- 人物的動作（站、走、跑、閃、出手、釋放；`tools/blender/common.py` 用程式寫的關鍵影格，套在 Tripo 的模型上）
+- 模型找不到時的替身（程式拼的人偶、球、圓柱）
 
 ## 第三方素材
 
 | 名稱 | 作者 | 授權 | 來源 | 用在哪裡 | AI 生成 |
 |---|---|---|---|---|---|
-| VRoid 範例角色 `HairSample_Male.vrm`（諾恩的底）與 `Sendagaya_Shino.vrm`（席菈的底） | pixiv Inc.（VRoid Studio 的範例角色；檔案裡的作者欄是空的） | **CC0**——根據是 `.vrm` 檔自己的 `extensions.VRM.meta`：`licenseName: "CC0"`、`commercialUssageName: "Allow"`（轉檔工具每次建置都會讀，不是 CC0 就不做）。pixiv 的說明頁（`vroid.pixiv.help/hc/en-us/articles/4402614652569`）**2026-11-13 這一輪打不開，沒有直接確認**——見 `docs/FOR_JACKY.md` | https://github.com/madjin/vrm-samples （commit e16eb187100149a315ad92c3c9968f1d5baa6c7d 的 `vroid/beta/`；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 戰鬥場裡的諾恩、所有場景的席菈：臉、頭髮、身體、衣服、貼圖照原檔（諾恩的上衣改成深褐色）；骨頭改名、動作、Normal／ORM 貼圖是 `tools/blender/vrm_character.py` 加的 | 否 |
-| KayKit Adventurers Character Pack 1.0 的雙手劍（`sword_2handed.gltf`＋`.bin`＋`knight_texture.png`，席菈的劍）與法杖（`staff.gltf`＋`.bin`＋`mage_texture.png`，諾恩的武器，D-264） | Kay Lousberg（www.kaylousberg.com） | **CC0 1.0**（素材包根目錄的 `LICENSE.txt`：`License: (Creative Commons Zero, CC0)`、「free to use in personal, educational and commercial projects」；該檔一起放進 `game/assets/props/kaykit/LICENSE-KayKit-Adventurers.txt`） | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 （commit 672074b，路徑 `addons/kaykit_character_pack_adventures/Assets/gltf/`；檔案小，直接放進本 repo） | 席菈手上的劍（`Sheila._build_sword()` 經 `PropModels` 載入；縮到 0.42 倍、劍尖朝下）。檔案照原樣，沒有改 | 否 |
-| Fantasy Props MegaKit（免費的 Standard 版；94 個模型＋13 張貼圖） | Quaternius（quaternius.com） | **CC0 1.0**——根據是素材包裡附的 `License_Standard.txt`（原樣放在 `art-inbox/props/`）。作者網站另有一頁「Quaternius Asset License v1.0」（2026-08-28 更新）禁止把素材本身轉散布，也寫「以取得當時的版本為準」；素材包自己的頁面到 2026-11-13 還是標 CC0——以包裡附的授權檔為準（`art-inbox/props/README.md`） | https://quaternius.com/packs/fantasypropsmegakit.html （Jacky 2026-11-13 從 itch.io 下載，commit e4fdaa3；貼圖由 `scripts/compact_props.py` 縮成 1024² 的 JPEG，D-258） | **還沒用在遊戲裡**——放在 `art-inbox/props/` 當素材庫，用到哪個再複製到 `game/assets/props/quaternius/` 並更新這一格 | 否 |
-| MakeHuman 人體基底網格 `base.obj` 與 `targets/macrodetails/` 的 8 個 target（universal／asian／caucasian／african 的 female-young 與 male-young） | MakeHuman Community | **CC0 1.0**（該專案的 `LICENSE.ASSETS.md`；程式碼是 AGPL，本專案沒有使用或複製它的程式碼） | https://github.com/makehumancommunity/makehuman （commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482；建置時由 `scripts/gen_art.sh` 下載，不進本 repo） | 自製的席菈與諾恩的身體、臉、手（`tools/blender/sheila.py`、`noen.py`）——2026-11-13 起不再接進遊戲、建置也不再下載（D-253） | 否 |
+| KayKit Adventurers Character Pack 1.0 的雙手劍（`sword_2handed.gltf`＋`.bin`＋`knight_texture.png`；Tripo 的劍找不到時的替身，也是擺正武器時對齊的基準） | Kay Lousberg（www.kaylousberg.com） | **CC0 1.0**（素材包根目錄的 `LICENSE.txt`：`License: (Creative Commons Zero, CC0)`、「free to use in personal, educational and commercial projects」；該檔一起放進 `game/assets/props/kaykit/LICENSE-KayKit-Adventurers.txt`） | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 （commit 672074b，路徑 `addons/kaykit_character_pack_adventures/Assets/gltf/`；檔案小，直接放進本 repo） | 席菈手上的劍（`Sheila._build_sword()` 經 `PropModels` 載入；縮到 0.42 倍、劍尖朝下）。檔案照原樣，沒有改 | 否 |
+| Fantasy Props MegaKit（免費的 Standard 版；94 個模型＋13 張貼圖） | Quaternius（quaternius.com） | **CC0 1.0**——根據是素材包裡附的 `License_Standard.txt`（原樣放在 `art-inbox/props/`）。作者網站另有一頁「Quaternius Asset License v1.0」（2026-08-28 更新）禁止把素材本身轉散布，也寫「以取得當時的版本為準」；素材包自己的頁面到 2026-11-13 還是標 CC0——以包裡附的授權檔為準（`art-inbox/props/README.md`） | https://quaternius.com/packs/fantasypropsmegakit.html （Jacky 2026-11-13 從 itch.io 下載，commit e4fdaa3；貼圖由 `scripts/compact_props.py` 縮成 1024² 的 JPEG） | **還沒用在遊戲裡**——放在 `art-inbox/props/` 當素材庫，用到哪個再複製到 `game/assets/props/quaternius/` 並更新這一格 | 否 |
 
 ## AI 生成素材
 
-- Tripo（VAST AI）產的 3D 模型：`art-inbox/tripo/<id>/`，每個資料夾的 `SOURCE.json` 記提示、task id 與日期。2026-11-14 第一批 13 個（諾恩、席菈、送葬者、六把武器、四個開場物件）。Jacky 付費 API 帳號產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布。**上架時要在 Steamworks 申報 Pre-Generated AI content。**
+- Tripo（VAST AI）產的 3D 模型：`art-inbox/tripo/<id>/`，每個資料夾的 `SOURCE.json` 記提示、task id 與日期。2026-11-14 兩批共約 40 個（人物、怪物、武器、場景物件；清單在 `docs/ART_REQUESTS.md`）。Jacky 付費 API 帳號產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布。**上架時要在 Steamworks 申報 Pre-Generated AI content。**
