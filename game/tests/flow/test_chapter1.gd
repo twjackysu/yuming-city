@@ -179,7 +179,6 @@ func test_sera_starts_in_view_and_follows_behind_noen() -> void:
 	assert_eq(sera.collision_layer, 0, "不擋路")
 	assert_not_null(sera.crossbow(), "手上有手弩")
 	assert_true(sera.puppet().hand("R").has_node("Crossbow"), "手弩在右手")
-	assert_false(sera.puppet().hand("R").has_node("BellHammer"))
 	for slime: Slime in level.slimes:
 		slime.set_physics_process(false)
 	player.global_position = Vector3(0, 0.05, 3)

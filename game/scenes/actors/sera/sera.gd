@@ -98,10 +98,6 @@ func _build_crossbow() -> void:
 	var hand: Node3D = _puppet.hand("R")
 	if hand == null:
 		return
-	var old: Node = hand.get_node_or_null("BellHammer")
-	if old != null:
-		hand.remove_child(old)
-		old.queue_free()
 	_crossbow = Node3D.new()
 	_crossbow.name = "Crossbow"
 	hand.add_child(_crossbow)

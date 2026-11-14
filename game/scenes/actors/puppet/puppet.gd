@@ -149,7 +149,7 @@ func joint(joint_name: String) -> Node3D:
 
 ## 模型上對應人偶關節的掛點：骨頭上的 BoneAttachment3D 底下再一層 Node3D，轉成跟人偶的關節同一個方向——
 ## 手臂、腿、手：−Y 沿著骨頭往下一節（手＝往指尖）、−Z 朝角色的前面；其他（骨盆、胸、頭）跟模型同方向。
-## 這樣掛在上面的東西（護腕、劍、鐘錘、提燈）不用分人偶還是模型。
+## 這樣掛在上面的東西（劍、手弩）不用分人偶還是模型。
 ## 每個模型骨頭自己的軸不一樣（自製的 +Y 沿著骨頭；VRM 轉來的不是），所以從休息姿勢算，不假設。
 func _model_joint(joint_name: String) -> Node3D:
 	var bone: int = CharacterModels.find_joint_bone(skeleton, joint_name)
@@ -312,7 +312,6 @@ func _build_model() -> bool:
 			model.add_child(holder)
 			holder.name = "Hand" + side
 			joints["hand_" + side] = holder
-	_add_hammer()
 	_animate_model()
 	return true
 
@@ -481,7 +480,7 @@ func _pose_shoot(t: float) -> void:
 	_rot("elbow_R", Vector3(0.25 * (1.0 - aim), 0, 0))
 
 
-## 鐘錘下劈：舉起（0～35%）→ 劈下（35～60%）→ 收回。
+## 舉過頭往下劈：舉起（0～35%）→ 劈下（35～60%）→ 收回。
 func _pose_attack(t: float) -> void:
 	var arm: float
 	var twist: float
@@ -694,35 +693,4 @@ func _build() -> void:
 		boot.position = Vector3(0, -SHIN_LEN - 0.02, -0.05)
 		knee.add_child(boot)
 
-	_add_hammer()
 	_pose(0.0)
-
-
-## 右手：鐘錘（握柄＋鐵錘頭）。正式模型也掛在右手掛點（武器之後換成模型）。
-func _add_hammer() -> void:
-	var trim: StandardMaterial3D = _mat(trim_color)
-	var iron: StandardMaterial3D = _mat(Color(0.32, 0.3, 0.28), 0.45)
-	iron.metallic = 0.7
-	var hammer := Node3D.new()
-	hammer.name = "BellHammer"
-	hand("R").add_child(hammer)
-	hammer.rotation = Vector3(-PI * 0.5, 0, 0)
-	var shaft := MeshInstance3D.new()
-	var shaft_mesh := CylinderMesh.new()
-	shaft_mesh.top_radius = 0.02
-	shaft_mesh.bottom_radius = 0.02
-	shaft_mesh.height = 0.6
-	shaft_mesh.material = trim
-	shaft.mesh = shaft_mesh
-	shaft.position = Vector3(0, 0.2, 0)
-	hammer.add_child(shaft)
-	var head_iron := MeshInstance3D.new()
-	var iron_mesh := CylinderMesh.new()
-	iron_mesh.top_radius = 0.06
-	iron_mesh.bottom_radius = 0.075
-	iron_mesh.height = 0.17
-	iron_mesh.material = iron
-	head_iron.mesh = iron_mesh
-	head_iron.position = Vector3(0, 0.5, 0)
-	head_iron.rotation = Vector3(0, 0, PI * 0.5)
-	hammer.add_child(head_iron)

@@ -783,7 +783,7 @@ func _lunge_velocity(delta: float) -> Vector3:
 	return _lunge_dir * (step / maxf(delta, 0.0001))
 
 
-## 鐘錘下劈：動作進到命中區間（strike_window，動作時間比例）時判定一次。
+## 出手：動作進到命中區間（strike_window，動作時間比例）時判定一次。
 func _update_swing() -> void:
 	if _swing_resolved:
 		return
@@ -890,7 +890,7 @@ func shake_amount() -> float:
 	return _shake
 
 
-## 右手拿劍：程序人偶右手上程式拼的那一把拿掉，換成模型。沒有任何模型檔＝維持人偶原本的。
+## 右手拿劍（模型掛在手的掛點上）。沒有任何模型檔＝空手（KayKit 的劍在 git 裡，平常不會發生）。
 func _build_weapon() -> void:
 	var hand: Node3D = _puppet.hand("R")
 	if hand == null:
@@ -898,10 +898,6 @@ func _build_weapon() -> void:
 	var model: Node3D = PropModels.instance_first(SWORD_MODELS)
 	if model == null:
 		return
-	var old: Node = hand.get_node_or_null("BellHammer")
-	if old != null:
-		hand.remove_child(old)
-		old.queue_free()
 	_weapon = Node3D.new()
 	_weapon.name = "Weapon"
 	model.name = "Model"
