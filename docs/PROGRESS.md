@@ -8,4 +8,5 @@
 - **新做**：`scenes/levels/corrupt_forest`（腐敗之森入口的最小版）、`scenes/actors/slime`（劇毒史萊姆）、任務 `ch1_main`、`tests/flow/test_chapter1.gd`（10 個測試：新遊戲 → 瘴氣反轉 → 史萊姆 → 讀檔）。諾恩手上換成【瘴氣生鏽鐵劍】。存檔資料夾改成 `user://saves`。
 - **Tripo 第二批 28 個全部產完**（花 1015 點，餘額 1985）：清單在 `ART_REQUESTS.md`。
 - **驗證**：`scripts/check.sh` 全過、CI 綠（run 43574451022，含匯出與匯出版 smoke test）；截圖看過標題、森林（玩家鏡頭、諾恩側面與正面）。**沒有人真的玩過**；畫面只是能看，還不好看。
+- **改名**：repo `yuming-city` → `curses-too-useful`；執行檔、存檔資料夾 `YumingCity` → `CursesTooUseful`；視窗標題與產品名稱改成新遊戲名（CI run 43576679972）。
 - 舊的全部在分支 `archive/pre-restart-2026-11-14`（`483884c`）。
