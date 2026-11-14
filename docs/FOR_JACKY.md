@@ -2,11 +2,11 @@
 
 只放需要你處理或想聽你意見的事，處理完就刪。沒回的意見題照預設做。以前的回覆與處理紀錄：[archive/FOR_JACKY_replies_2026-11.md](archive/FOR_JACKY_replies_2026-11.md)。
 
-1. **怎麼玩**：[latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 zip → 解壓 → `YumingCity.exe`。「新遊戲」是約 20 分鐘的劇情；「戰鬥場」直接開打（操作與各段說明在 [playtest.md](playtest.md)）。
-2. **主角比例已決定**（11/14 12:0x）：諾恩改成正常比例重產（`noen_rank_f_v2`，跟席菈一致），Q 版的 `noen_rank_f` 不用。產好之後 loop 接進遊戲。
-3. **戰鬥場只想知道一件事**：打起來最怪的是**鏡頭、移動、還是出手**？回一個詞就好；都不怪只是無聊也請直說。
-4. **有空時看一眼**：[pixiv 說明頁](https://vroid.pixiv.help/hc/en-us/articles/4402614652569) 是否寫 VRoid 範例角色是 CC0（雲端打不開）。主角換成 Tripo 模型之後就不需要了。
-5. **之後才需要、只有你能做的**：Steamworks 帳號／App ID／商店頁（暫緩中）；實機效能測試（指令在 playtest.md），試玩時順便測一次。
+1. **Tripo 第二批排好了，等你儲值**（11/14）：28 個（三把新武器、8 個人物、5 種敵人含 Boss、12 個物件），約 955 點≈**10 美元**。到 <https://platform.tripo3d.ai> 儲值後，雙擊 `art-work\run_tripo_all.cmd`（或 `python scripts/tripo_queue.py --run`），大約跑 40 分鐘；產完跟對話裡的 Claude 說一聲（你本機的 git 推不上去，要它代推），或先跑 `git config --global credential.helper manager` 修好本機的推送。
+2. **新劇情已經進 repo**：劇本 [story/chapter-1.md](story/chapter-1.md)、計畫 [design/13](design/13-chapter-1-plan.md)。loop 從「腐敗之森入口的 3 分鐘」開始做，做好會改這一項請你玩。
+3. **怎麼玩現在的版本**：[latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) → 「戰鬥場」或「新遊戲」（舊版試玩）。主劇情的諾恩已經是新模型。
+4. **想請你下載一包場景素材（可選）**：Quaternius「Medieval Village MegaKit」免費版（itch.io，153 MB，CC0）→ 解壓放 `art-inbox/village/`。沒有的話 loop 先用 GitHub 抓得到的 KayKit。
+5. **之後才需要的**：Steamworks 帳號／App ID／商店頁；實機效能測試。
 
 ---
 

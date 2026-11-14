@@ -7,22 +7,22 @@
 - 畫風：**漫畫風，帥氣、漂亮、可愛**。人物吃場景的光（D-255）。
 - 兩個主角都是**正常動漫比例（約 6 頭身）**：Jacky 11/14 決定諾恩重產成 `noen_rank_f_v2`，Q 版的 `noen_rank_f` 不用。
 - 兩人是冒險者：一開始是剛進冒險者公會的 **F 級、破舊服裝**，裝備越好服裝越好，**最高 S 級**。之後的等級可以用 Tripo 再產，或用 bpy 在 F 級模型上加護甲、換配色。
-- **武器可換、男主角不拿燈籠**：角色是空手模型，武器是獨立模型，掛在手骨上依裝備切換（長劍、短劍、斧、槌、法杖、弓）。
+- **武器可換、男主角不拿燈籠**：角色是空手模型，武器是獨立模型，掛在手骨上依裝備切換。諾恩初始【瘴氣生鏽鐵劍】（近戰），席菈【鍊金藥瓶手弩】（後排）。
 - 場景要有冒險感：建築、街道用 CC0 模組化套件拼，Tripo 只做有劇情意義的重點物件，光影、霧、材質在 Godot 裡做。
 
-## 進度表
+## 進度表（第一章；劇本 `docs/story/chapter-1.md`）
 
-| 項目 | 來源 | 狀態 | 下一步 |
-|---|---|---|---|
-| 諾恩 F 級 | Tripo `noen_rank_f_v2`（正常比例；Q 版 `noen_rank_f` 不用） | **已接進遊戲（11/14，戰鬥場）**；劇情關卡的諾恩還是人偶（`player.gd`：`character_id` 只在 `Game.arena_mode` 設） | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
-| 席菈 F 級 | Tripo `sheila_rank_f` | 已接進遊戲（D-271，`tools/blender/tripo_character.py`） | 補動作、武器掛點 |
-| 送葬者 | Tripo `undertaker`（walk／slash） | 已產生，未接 | 接進開場與戰鬥場；弱點要獨立材質槽 `M_FrameJoint` |
-| 六把武器 | Tripo `weapon_*` | **六把都擺正了**（`scripts/gen_props.sh` → `game/assets/props/tripo/`，握把在原點、頭朝 +Y）；諾恩拿 Tripo 法杖、席菈拿 Tripo 長劍（沒有 bpy 時退回 KayKit） | 短劍、斧、槌、弓做成依裝備切換 |
-| 開場物件 | Tripo `prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board` | 已擺正、縮到實際大小（`PropModels.instance("tripo/prop_…")` 拿得到），**還沒放進場景** | 放進開場南街與公會 |
-| 地下市場小物 | Quaternius CC0（`art-inbox/props/`，D-258） | 已進 repo | 換掉攤位、木桶、木箱、瓶子 |
-| 現在遊戲裡的主角 | VRoid CC0＋自製服裝（D-253、D-264） | 使用中 | Tripo 版接好後退役 |
-| 一般敵人、灰巡者 | 程序人偶 | 未開始 | 點數不夠就用 bpy 改既有模型或找 CC0 |
-| 動作 | Tripo idle／walk／run；`common.py` 自製 | 部分 | 補 `dodge_roll`、攻擊、受擊、倒下（自製或 CC0 動捕） |
+| 項目 | 來源 | 狀態 |
+|---|---|---|
+| 諾恩 F 級 | Tripo `noen_rank_f_v2` | 已接進遊戲（戰鬥場與劇情） |
+| 席菈 F 級 | Tripo `sheila_rank_f` | 已接進遊戲；之後用 bpy 在腰間加藥瓶 |
+| 第一批武器（長劍、短劍、斧、槌、法杖、弓） | Tripo `weapon_*` | 已擺正（`scripts/gen_props.sh`）；長劍、法杖在用 |
+| **第二批 28 個**：三把新武器（瘴氣生鏽鐵劍、鍊金藥瓶手弩、不祥的裂刃）、8 個人物（莉莉絲、雷歐、兩個隊員、黑市商人、巡察官、兩個路人）、5 種敵人（劇毒史萊姆、發霉史萊姆、瘴氣狼、孢子樹人、疫病魔像）、12 個物件（水晶、櫃檯、夜光毒蕈、詛咒寶箱、營火、毒氣口、蜘蛛網、野果、祭壇、樹、招牌、戒指） | Tripo 佇列 | **已排、等 Jacky 儲值後產**（約 955 點≈10 美元） |
+| 森林的地形、樹叢、岩石；公會與城鎮的牆、地板、家具 | CC0 模組化套件＋現有霜橋鎮 | 還沒選；先看 KayKit（GitHub 抓得到）、Quaternius Medieval Village（要 Jacky 下載） |
+| 之後：服裝等級（D／B／S）、更多敵人與 NPC | Tripo 或 bpy 改色加甲 | 第一章做完再排 |
+| 舊劇情的模型（送葬者、毒藥桶、斷街燈、推車） | Tripo 第一批 | 不再接（舊劇情）；毒藥桶已在舊試玩裡 |
+
+預算：Jacky 願意投入到 100 美元（11/14）。第一章估 15～25 美元含重產。
 
 ## 模型規格（收件檢查 `scripts/check_character_glb.py`）
 

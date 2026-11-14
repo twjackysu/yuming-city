@@ -1,7 +1,7 @@
 # 02　玩法
 
 > 2026-11-11 重寫：只留現在的劇情《這些詛咒對我太有用了》（暫名）還成立的規則；舊劇情的「重現」、記憶代價、日記、車隊戰、送葬者第二階段都刪了（D-220～D-227）。
-> 劇情、狀態與反轉的規則看 [`09-reboot-first-ten-minutes.md`](09-reboot-first-ten-minutes.md)；數值以資料檔為準（`game/data/combat/tuning.json`、`game/data/reboot/statuses.json`）。
+> 劇情、狀態與反轉的規則看 [`../story/chapter-1.md`](../story/chapter-1.md)、[`13-chapter-1-plan.md`](13-chapter-1-plan.md)（舊規則：`../archive/design/09-reboot-first-ten-minutes.md`）；數值以資料檔為準（`game/data/combat/tuning.json`、`game/data/reboot/statuses.json`）。
 
 ## 三個支柱
 

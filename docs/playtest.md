@@ -28,7 +28,7 @@
 
 ## 想看的事
 
-（[`design/09`](design/09-reboot-first-ten-minutes.md) 第 9 節）
+（[`design/09`](archive/design/09-reboot-first-ten-minutes.md) 第 9 節）
 
 - 30 秒內知不知道要把波克帶去南街。
 - 3 分鐘時說不說得出「毒讓我回血、被打照樣受傷」。

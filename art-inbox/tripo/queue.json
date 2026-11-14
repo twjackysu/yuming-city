@@ -1,5 +1,5 @@
 {
-  "budget_credits_per_run": 500,
+  "budget_credits_per_run": 1000,
   "items": [
     {
       "id": "noen_rank_f",
@@ -165,6 +165,334 @@
       },
       "animations": [],
       "note": "Jacky 11/14 12:0x 決定：諾恩改成正常比例（跟已接進遊戲的席菈一致，約 6 頭身）；Q 版 noen_rank_f 不用。動作用 loop 的 common.py，所以只綁骨不套動作（30＋25＝55 點）。"
+    },
+    {
+      "id": "weapon_rusty_miasma_sword",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cool stylized anime manga fantasy game weapon, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. A worn medieval iron broadsword, chipped blade with heavy dark red rust, dark cloth wrapped around the hilt, a cracked purple crystal embedded in the guard",
+      "note": "諾恩的初始武器【瘴氣生鏽鐵劍】（劇本第零節）"
+    },
+    {
+      "id": "weapon_alchemy_crossbow",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 7000
+      },
+      "prompt": "cool stylized anime manga fantasy game weapon, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. A quirky fantasy alchemy hand crossbow made of wood and brass, holding a glowing purple glass potion vial instead of an arrow, round test tube slot, thick rubber bands and a spring pusher, small spare potion vials of purple, green and yellow strapped to the side, leather straps",
+      "note": "席菈的初始武器【鍊金藥瓶手弩】"
+    },
+    {
+      "id": "weapon_ominous_split_blade",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cool stylized anime manga fantasy game weapon, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. An ominous cursed sword with a jagged blade split down the middle, dark steel with glowing violet cracks, tattered black cloth on the grip, sinister but cool",
+      "note": "第一章強力武器【不祥的裂刃】（詛咒寶箱）"
+    },
+    {
+      "id": "lilith",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young woman guild receptionist, tidy guild clerk uniform with vest and ribbon tie, short skirt over leggings, hair in a neat side braid, tired but professional smile, holding nothing",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "櫃檯小姐莉莉絲"
+    },
+    {
+      "id": "leo",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Arrogant handsome young man, B-rank swordsman captain, polished silver and blue plate armor with a short cape on one shoulder, blond swept-back hair, smug expression",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "B 級隊長雷歐"
+    },
+    {
+      "id": "leo_party_mage",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Young female mage adventurer in a party, pointed hat, short robe and boots, confident look",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "雷歐小隊的隊員（法師）；倒在祭壇那一段也用"
+    },
+    {
+      "id": "leo_party_tank",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Burly young male shield warrior adventurer, heavy armor without helmet, short hair, tough look",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "雷歐小隊的隊員（盾戰）"
+    },
+    {
+      "id": "black_market_merchant",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Shady middle-aged man merchant in a hooded patched cloak, many pouches and trinkets hanging on belt, sly grin, stubble",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "黑市商人／倉庫大叔（賣詛咒飾品）"
+    },
+    {
+      "id": "royal_inspector",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Mysterious elegant inspector from the royal capital, long dark formal coat with gold trim and insignia, gloves, sharp eyes, hair tied back",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "結尾在公會二樓的王都巡察官"
+    },
+    {
+      "id": "guild_adventurer_a",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Ordinary young male adventurer, leather armor, bandana, friendly rough look",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "公會大廳嘲笑主角的路人冒險者 A"
+    },
+    {
+      "id": "guild_adventurer_b",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 40000
+      },
+      "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, normal anime proportions about 6 heads tall, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Ordinary young female adventurer archer, green hooded short cloak, leather gear",
+      "negative_prompt": "weapon, text, logo, base, pedestal, chibi, big head",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "公會大廳的路人冒險者 B"
+    },
+    {
+      "id": "enemy_poison_slime",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A round jelly slime monster, translucent purple-green toxic body with bubbles inside, two simple cute angry eyes, small drips of poison",
+      "note": "劇毒史萊姆（教學戰三隻；不綁骨，程式做彈跳）"
+    },
+    {
+      "id": "enemy_mold_slime",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A round jelly slime monster covered with fuzzy grey-green mold patches and tiny mushrooms, two simple cute sleepy eyes",
+      "note": "發霉史萊姆（酒館地下室支線）"
+    },
+    {
+      "id": "enemy_miasma_wolf",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 20000
+      },
+      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A corrupted forest wolf, dark fur with glowing purple veins and mushrooms growing on its back, standing on four legs, neutral pose",
+      "rig": {
+        "type": "quadruped",
+        "spec": "tripo"
+      },
+      "animations": [
+        "preset:quadruped:walk"
+      ],
+      "note": "腐敗之森的一般敵人（四足）"
+    },
+    {
+      "id": "enemy_spore_treant",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 30000
+      },
+      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A small humanoid walking tree monster, rotten bark body, glowing toxic mushrooms on shoulders, arms apart in T-pose, two legs",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "腐敗之森的一般敵人（人形）"
+    },
+    {
+      "id": "boss_plague_golem",
+      "model": "tripo-v3.1",
+      "params": {
+        "texture_quality": "detailed",
+        "face_limit": 50000
+      },
+      "prompt": "cute stylized anime manga fantasy game monster, vibrant hand-painted textures, readable silhouette, game-ready, full body. A huge ancient stone golem boss, 4 meters tall, cracked mossy stone body with a glowing sickly green-purple core in the chest, plague miasma leaking from cracks, massive fists, arms apart in T-pose, two legs, menacing but stylized",
+      "rig": {
+        "type": "biped",
+        "spec": "mixamo"
+      },
+      "animations": [],
+      "note": "第一章 Boss【深淵疫病魔像】；胸口的核心要獨立看得出來"
+    },
+    {
+      "id": "prop_aptitude_crystal",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 8000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A large magic aptitude test crystal orb on an ornate brass stand, faintly glowing blue",
+      "note": "公會的適性測試水晶"
+    },
+    {
+      "id": "prop_guild_counter",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 10000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A long wooden guild reception counter with papers, a small bell, ink and quill, sturdy medieval carpentry",
+      "note": "公會櫃檯"
+    },
+    {
+      "id": "prop_glow_toxic_mushroom",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 5000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A cluster of glowing bioluminescent toxic mushrooms, teal-purple caps with bright spots, growing from a mossy root",
+      "note": "夜光毒蕈（主線要採 5 朵）"
+    },
+    {
+      "id": "prop_cursed_chest",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 8000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A cursed treasure chest, dark wood with tarnished metal bands, purple miasma leaking from the lid, a sinister eye-shaped lock",
+      "note": "被詛咒的寶箱"
+    },
+    {
+      "id": "prop_campfire",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A cozy adventurer campfire with stones around burning logs, a small cooking pot and a log seat",
+      "note": "營火（休息事件）"
+    },
+    {
+      "id": "prop_poison_vent",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A cracked ground vent with rocks around it, spewing thick purple-green toxic gas, sickly crystals at the rim",
+      "note": "毒氣噴發口（陷阱＝補給）"
+    },
+    {
+      "id": "prop_paralysis_web",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A large spider web stretched between two dead branches, strands crackling with yellow electric sparks",
+      "note": "麻痺蜘蛛網"
+    },
+    {
+      "id": "prop_rotten_fruit_bush",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A twisted bush bearing rotten purple fruits dripping dark juice, small flies",
+      "note": "腐敗野果"
+    },
+    {
+      "id": "prop_ruined_altar",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 12000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. An abandoned ancient stone altar with broken pillars, carved runes glowing faint green, moss and vines",
+      "note": "廢棄祭壇（Boss 場地中央）"
+    },
+    {
+      "id": "prop_corrupt_tree",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 8000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A twisted dead forest tree with dark bark, purple fungus and hanging moss, eerie but stylized",
+      "note": "腐敗之森的樹（重複擺放）"
+    },
+    {
+      "id": "prop_guild_signboard",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 6000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A hanging wooden adventurer guild signboard with a crossed sword and shield emblem on an iron bracket, no letters",
+      "note": "公會門口的招牌"
+    },
+    {
+      "id": "prop_cursed_ring",
+      "model": "tripo-v3.1",
+      "params": {
+        "face_limit": 3000
+      },
+      "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A rusty cursed ring with a tiny red gem, oversized icon-like 3D model, faint red aura",
+      "note": "詛咒飾品【生鏽的痛覺戒指】（面板與商店展示用）"
     }
   ]
 }

@@ -2,9 +2,22 @@
 
 > 每輪從最上面拿 1～3 項。開工前先跑 `scripts/check.sh` 確認全綠（第 100 輪約 4 分半；第一次會下載 Godot 與字型來源、產生音效、檢查角色模型）。截圖前先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`（**一定要先 update**，不然裝不到 mesa-vulkan-drivers，截圖退回 OpenGL、沒有體積霧）。
 >
-> **最新（2026-11-14 10:10，第 111 輪收尾）**：**諾恩出手改成往前戳了（D-268，`de0fae6`）**——右手從腰邊把法杖往前送、杖頭順著前臂指著敵人，動作播到 72% 法杖收回左手；席菈的大劍照舊是劈的。橫的與背面的開發鏡頭連拍（改前｜改後）都看得出來。**開工先看 CI run 43543290988**（「測試與匯出」的測試 10:00 過了（387 個）；收尾時截圖、匯出版 smoke test、`latest` 更新還在跑；「盤點截圖」要 30 分鐘，看它過了沒、`screens` 的 `70-char-player-view.png`／`72-char-noen-back.png` 站著的樣子跟上一輪一樣——動作改了，站姿不該變）；再看 FOR_JACKY 回覆區（第 3.4 項的服裝他還沒說好不好；第 2 項問他最怪的是鏡頭、移動還是出手）。**他沒回的話，這一輪做下面「00000」的 1～3**（都是小事：連按時法杖來回跑、橫的鏡頭被大鍋擋住、玩家的鏡頭還沒連拍），做完回「0000」★ 的「接下來」。**Tripo 佇列（D-270，另一個對話今天早上推的；第一批已經排了）loop 自己先不要加**：排程的提示還寫著不要叫 Jacky 用 Tripo，FOR_JACKY 第 6 項跟他說了——這一輪的提示已經沒有那兩句、或他在回覆區說可以，才照 `art-inbox/tripo/README.md` 加（D-269）；**`art-inbox/tripo/<id>/` 裡有他產好的東西就照 README 第 4 步接入**（先看 `git log --oneline -8 -- art-inbox/tripo`）。不要做 lock 的 commit（repo 裡沒有 `.loop/`）。**推之前先 `git fetch` 看一眼有沒有別人的 commit**（這一輪跟另一個對話撞了兩次決策編號；最後 D-268＝出手往前戳、D-269＝這一條 Tripo 的判斷、D-270＝Tripo 佇列）。
+> **最新（2026-11-14 13:40，Jacky 在對話裡定的）**：**劇情整個換成第一章《毒瘤與破爛的共鳴》**、遊戲名稱定案（`docs/story/README.md`）。下面「★」是現在唯一的主線；「00000」以下都是改版前的東西，只在拆舊程式來用時查。
 >
-> 更早幾輪的摘要看 `docs/PROGRESS.md`（不再重複寫在這裡）。
+> 更早幾輪的摘要看 `docs/PROGRESS.md`。
+
+## ★ 第一章《毒瘤與破爛的共鳴》（Jacky 2026-11-14；D-272）——從這裡拿工作
+
+先讀 `docs/story/chapter-1.md`（劇本）與 `docs/design/13-chapter-1-plan.md`（計畫）。規則：`docs/design/14-repo-and-assets.md`。
+
+1. **垂直切片：腐敗之森入口的 3 分鐘**（劇本節點 2）。新關卡 `corrupt_forest`（先小：入口＋一塊空地，紫黑瘴氣）；諾恩走進瘴氣 → 反轉的回饋（畫面邊緣閃紫 → 0.3 秒 → 碎裂聲 → 金光；HUD 紅圖示翻金）→ 三隻劇毒史萊姆 → 席菈誤射【重度麻痺＋防禦歸零】→ 面板跳【神經超頻】【鋼鐵壁壘】→ 玩家一刀清場 → 戰後對話（兩個選項，記好感度）。模型還沒產出來的（史萊姆、新武器）先用現有的代替，檔案到了自動換（`PropModels.instance_first`）。標題的「新遊戲」指到這裡，舊的 20 分鐘改叫「舊版試玩」。
+2. **諾恩改回近戰**：武器【瘴氣生鏽鐵劍】（Tripo `weapon_rusty_miasma_sword`，沒到之前用 `tripo/weapon_longsword`）；每一刀給自己「微弱流血＋中毒」→ 回血＋疊攻速（越砍越快，有上限）。出手動作改回揮砍（`--attack swing`）。11/14 中午做的火球（`Fireball`）從普通攻擊拿掉，類別留著——改成席菈的藥瓶拋射。
+3. **席菈改成後排鍊金術師**：手上換【鍊金藥瓶手弩】（`weapon_alchemy_crossbow`）；AI：跟在諾恩後面 4～6 m、每隔幾秒往諾恩射一瓶負面藥水（落點有金色反轉回饋）、或往敵人丟一團負面領域；按 Q 指定下一瓶。她原本的劍與近戰拿掉。
+4. **新的狀態照表加**（`status_rules`）：流血、麻痺（神經超頻）、防禦歸零（鋼鐵壁壘）、致盲（鷹眼暴擊）、衰弱、石化（霸體）、全能力下降。每種都要有圖示與一句白話說明。
+5. 切片好玩了再擴：森林完整版（陷阱、營火、詛咒寶箱、5 朵夜光毒蕈、右上角目標清單）→ 祭壇 Boss → 公會大廳開場 → 城鎮自由時段（委託板、黑市商人、裝備面板）。
+6. **Tripo 第二批 28 個排好了**（`art-inbox/tripo/queue.json`，約 955 點）：等 Jacky 儲值後在本機產。產物到了就接（人物用 `gen_art.sh` 的 `TRIPO_SRC`，要先把 `CHARACTERS`／`import_characters.py` 的 `KNOWN` 擴成能放 NPC 與敵人；物件與武器加進 `gen_props.sh` 的 `ARGS`）。
+7. 遊戲內的標題字（`GAME_TITLE`、`RB_GAME_SUBTITLE`）換成新名稱：主標「這些詛咒對我太有用了」、副標「被嫌棄的易感染體質，其實是逆轉一切的外掛」；英文暫用 "These Curses Are Far Too Useful to Me"。
+8. 之前「0000」剩下的（送葬者模型、開場物件、坐／躺姿勢）**不做了**（舊劇情的東西）；諾恩與席菈的模型、武器擺正工具、反轉與毒霧照用。
 
 ## 00000. 出手改成往前戳了（第 111 輪，D-268）——接著要看的三件小事，做完回「0000」
 
@@ -74,12 +87,12 @@
   7. **試玩版的結構**（3.6）：前面幾項在戰鬥場裡量起來合格了，才接成 10 分鐘。
   8. 12/25 起只修 bug、調效能與畫質、更新 README、標記版本。
 - **暫停的**：下面「00」節「下一步」第 1 項（C 的收尾：彌夏圈出乾運河、開放補給）與之後的章節。「00」節的表格（東西在哪個檔）照常查。
-- **Jacky 說故事不吸引他、操作與對話怪、「不知道在玩什麼」，但同一個故事聽 GPT 講的時候覺得當動漫會很有趣**（11/12 第二個回覆，D-237）：點子沒問題，是做進遊戲的方式有問題——`design/11` 第 0 節寫了原文有、遊戲沒有的三樣東西（諾恩的碎念、旁人的反應、敵人是配裝材料）與對話的規則。`docs/story-reboot/` 不改。
+- **Jacky 說故事不吸引他、操作與對話怪、「不知道在玩什麼」，但同一個故事聽 GPT 講的時候覺得當動漫會很有趣**（11/12 第二個回覆，D-237）：點子沒問題，是做進遊戲的方式有問題——`design/11` 第 0 節寫了原文有、遊戲沒有的三樣東西（諾恩的碎念、旁人的反應、敵人是配裝材料）與對話的規則。`docs/archive/story-reboot/` 不改。
 
 ## 00. 唯一主線：《這些詛咒對我太有用了》（暫名；D-201～D-227）
 
-- **先讀** `docs/design/09-reboot-first-ten-minutes.md`（段落↔任務↔檢查點↔位置、數值、UI）。故事口吻看 `docs/story-reboot/opening-v2.zh-TW.txt`，往後的劇情看 `docs/story-reboot/story-v2.md`。操作與戰鬥規則 `docs/design/02-gameplay.md`、架構 `04-architecture.md`、用詞 `06-terminology.md`（第 81 輪都重寫成只講現在的劇情）。
-- **故意留著、不要改的名字（存檔與基準圖裡有，D-227）**：存檔資料夾 `user://saves_reboot`（`GameSession.STORY_SAVE_DIR`）與開發用的 `user://saves_dev_reboot`；存檔裡 `mode` 的值 `"reboot"`（`GameState.STORY_MODE`）；任務 `rb_main`、旗標 `rb.*`、檢查點 `rb_*`、節點名 `Rb…`；翻譯 key `RB_*` 與 `i18n/reboot.csv`；`data/reboot/statuses.json`；截圖旗標 `--rb-at=…` 與盤點截圖的檔名 `40-rb-start`…；文件 `docs/design/09-reboot-…`、`10-reboot-…`、`docs/story-reboot/`（Jacky 的資料夾）。`user://saves`（`DEFAULT_SAVE_DIR`）是以前舊劇情的資料夾：標題的新遊戲／繼續不讀也不寫它，這個「兩個資料夾」的機制也留著（測試在驗）。
+- **先讀** `docs/archive/design/09-reboot-first-ten-minutes.md`（段落↔任務↔檢查點↔位置、數值、UI）。故事口吻看 `docs/archive/story-reboot/opening-v2.zh-TW.txt`，往後的劇情看 `docs/archive/story-reboot/story-v2.md`。操作與戰鬥規則 `docs/design/02-gameplay.md`、架構 `04-architecture.md`、用詞 `06-terminology.md`（第 81 輪都重寫成只講現在的劇情）。
+- **故意留著、不要改的名字（存檔與基準圖裡有，D-227）**：存檔資料夾 `user://saves_reboot`（`GameSession.STORY_SAVE_DIR`）與開發用的 `user://saves_dev_reboot`；存檔裡 `mode` 的值 `"reboot"`（`GameState.STORY_MODE`）；任務 `rb_main`、旗標 `rb.*`、檢查點 `rb_*`、節點名 `Rb…`；翻譯 key `RB_*` 與 `i18n/reboot.csv`；`data/reboot/statuses.json`；截圖旗標 `--rb-at=…` 與盤點截圖的檔名 `40-rb-start`…；文件 `docs/design/09-reboot-…`、`10-reboot-…`、`docs/archive/story-reboot/`（Jacky 的資料夾）。`user://saves`（`DEFAULT_SAVE_DIR`）是以前舊劇情的資料夾：標題的新遊戲／繼續不讀也不寫它，這個「兩個資料夾」的機制也留著（測試在驗）。
 
 ### 現在有哪些東西、在哪個檔
 
