@@ -30,7 +30,7 @@
 1. ✅（11/14 對話裡做的）**諾恩** `noen_rank_f_v2` 接進戰鬥場（`gen_art.sh` 的 `TRIPO_SRC[noen]`，身高 1.74、出手往前戳）；**武器與物件的擺正工具** `tools/blender/tripo_prop.py`＋`scripts/gen_props.sh`（`gen-assets.sh` 會叫）→ `game/assets/props/tripo/<名字>.glb`（不進 git）；`PropModels.instance_first([...])`：諾恩拿 Tripo 法杖、席菈拿 Tripo 長劍，沒有就退回 KayKit。387 個測試全過；`scripts/shots.sh characters` 看過。
 2. **劇情關卡的諾恩換成模型**：`player.gd` 的 `_puppet.character_id = "noen" if Game.arena_mode else ""`——拿掉條件會有測試不過（人偶的幾何數、躺／坐的姿勢），一個一個修。
 3. **送葬者**（`undertaker`）：`gen_art.sh` 的 `CHARACTERS` 與 `TRIPO_SRC` 加上去（身高 2.6）；`Undertaker` 現在是程式拼的、鐵架與弱點掛在人偶關節上，接模型要保留碰撞與弱點位置，弱點獨立材質槽 `M_FrameJoint`。
-4. **開場物件放進場景**：`frostbridge_opening.gd::_build_barrels()`（毒藥桶，破掉前後兩種狀態）、`_build_cart()`／`Caravan`（推車，上面坐著波克）、斷掉的燈柱（送葬者跨過的那一根）；公會委託板等公會場景。換模型時碰撞與劇情判定不動。
+4. **開場物件放進場景**：毒藥桶已換（✅ 11/14，`BARREL_MODEL`，`41-rb-mist` 看過；「有毒」的字留著）；還沒換的：`_build_cart()`／`Caravan`（推車，上面坐著波克）、斷掉的燈柱（送葬者跨過的那一根）；公會委託板等公會場景。換模型時碰撞與劇情判定不動。
 5. 其他四把武器（短劍、斧、槌、弓）做成依裝備切換。
 6. 每接一樣：用玩家的鏡頭拍改前｜改後；記 CREDITS（Tripo、AI 生成）。
 7. VRoid 版與 `tools/blender/outfit.py` 的細節封存在 `docs/archive/NEXT_0000_vroid_selfmade.md`；Tripo 主角接好之後 VRoid 版退役。

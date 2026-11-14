@@ -135,6 +135,9 @@ var level: StoryLevel
 var player: PlayerController
 var cart: Caravan
 var mist: PoisonMist
+## Tripo 產的毒藥桶（模型高 1.05 m，含潑出來的毒；縮到跟原本程式拼的桶子差不多）
+const BARREL_MODEL: String = "tripo/prop_poison_barrel"
+const BARREL_MODEL_SCALE: float = 0.95
 var barrels: Array[Node3D] = []
 var red: Puppet
 ## 第一次覺醒之後，諾恩已經離開毒霧、毒效也結束了（之後再踏進去才算「確認」）
@@ -1495,6 +1498,26 @@ func _build_barrels() -> void:
 		b.name = "RbBarrel%d" % i
 		b.position = spot
 		b.rotation.y = 0.7 * float(i)
+		# Tripo 產的毒藥桶（漏著綠色的毒、畫了骷髏；scripts/gen_props.sh）：有就用它，沒有才用下面程式拼的
+		var model: Node3D = PropModels.instance(BARREL_MODEL)
+		if model != null:
+			model.name = "Model"
+			model.scale = Vector3.ONE * BARREL_MODEL_SCALE
+			b.add_child(model)
+			var toxic := Label3D.new()  # 「有毒」兩個字照舊（劇情要玩家讀得到）
+			toxic.name = "Toxic"
+			toxic.text = "RB_BARREL_TOXIC"
+			toxic.font_size = 40
+			toxic.pixel_size = 0.004
+			toxic.modulate = Color(0.95, 0.9, 0.75)
+			toxic.outline_size = 8
+			toxic.outline_modulate = Color(0.35, 0.04, 0.04)
+			toxic.position = Vector3(0.0, 0.3, 0.4)
+			b.add_child(toxic)
+			barrels.append(b)
+			level.add_child(b)
+			i += 1
+			continue
 		var body := MeshInstance3D.new()
 		var cyl := CylinderMesh.new()
 		cyl.top_radius = 0.3
