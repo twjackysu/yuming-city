@@ -37,7 +37,7 @@ WORK = os.path.join(ROOT, "art-work", "tripo")
 DEFAULT_CLI_WIN = r"C:\Users\jacky\Tools\tripo-cli\node_modules\.bin\tripo.cmd"
 
 # 沒有公開價目的步驟（綁骨、套動作）先用保守猜測算預算；真正扣多少看 tripo balance。
-GUESS_RIG = 30
+GUESS_RIG = 25  # 官方價目：auto rig 25 點、每段動作 10 點（developers.tripo3d.ai/en/pricing）
 GUESS_PER_ANIMATION = 10
 MAX_FILE_MB = 6.0  # 單檔超過就再縮一次（512）；art-inbox/tripo 不走 LFS，要讓雲端 loop 拿得到
 
