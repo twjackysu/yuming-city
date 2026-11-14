@@ -1,6 +1,6 @@
 class_name PoisonBurst
 extends Node3D
-## 毒爆（docs/design/11-combat-first.md 3.5）：諾恩把身上的毒一次放出去的那一下。
+## 毒爆（docs/design/02-gameplay.md「釋放」）：諾恩把身上的毒一次放出去的那一下。
 ## 腳邊一圈綠環擴到傷害的範圍（環停下來的地方＝打得到的地方）、地上一片綠光、一把往外飛的綠點、一盞很短的綠燈。
 ## 只有畫面，傷害在 PlayerController.release()。strength 0～1（用掉的秒數占上限幾成）：越多秒越亮、點越多。
 

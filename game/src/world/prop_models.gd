@@ -1,6 +1,6 @@
 class_name PropModels
 extends RefCounted
-## 現成素材（CC0）的接入點（查證在 docs/design/12-ready-made-characters.md 第 6 節）。
+## 現成素材（CC0）的接入點（授權記在 docs/CREDITS.md）。
 ## 角色模型是建置時產生、不進 git（CharacterModels）；小物與武器的檔案小（一個 20～150 KB），
 ## 直接放進 game/assets/props/<包名>/<名字>.gltf 進 git，建置不用連網路。
 ## 找得到就用現成的模型，檔案不在（被刪、沒匯入）就回傳 null，呼叫的地方退回程式拼的那一份。

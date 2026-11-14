@@ -3,7 +3,7 @@ extends TestCase
 ## - i18n/*.csv 每個 key 都要有非空的 en 與 zh_TW，key 不可跨檔重複
 ## - 場景檔裡的 text / tooltip_text / placeholder_text 只能是翻譯 key（大寫底線），不准寫死句子
 ## - 場景用到的 key 都要存在於 CSV
-## - 玩家看到的字要白話：原作的難懂用詞不可出現（docs/design/06-terminology.md）
+## - 玩家看到的字要白話：原作的難懂用詞不可出現（docs/design/02-gameplay.md「用詞」）
 
 const CSV_DIR: String = "res://i18n"
 const KEY_PATTERN: String = "^[A-Z][A-Z0-9_]*$"
@@ -82,7 +82,7 @@ func test_scenes_use_translation_keys_only() -> void:
 				fail("%s 用到不存在的 key：%s" % [path, value])
 
 
-## docs/design/06-terminology.md 左欄的詞：只能留在設計文件與程式識別碼，玩家畫面一律用白話。
+## docs/design/02-gameplay.md「用詞」：只能留在設計文件與程式識別碼，玩家畫面一律用白話。
 const OBSCURE_ZH: PackedStringArray = ["九息", "弔鐘", "薪火", "巡界", "廢鐘", "下城", "噬日", "歸時核", "爹"]
 const OBSCURE_EN: PackedStringArray = ["Nine Breaths", "Bellmourner", "Kindling", "Preservable"]
 

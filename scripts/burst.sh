@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 連拍：會動的東西（出手、命中、受擊、閃避）不能用停住姿勢的單張圖驗收（docs/design/11-combat-first.md 第 4 節，D-238）。
+# 連拍：會動的東西（出手、命中、受擊、閃避）不能用停住姿勢的單張圖驗收（docs/design/04-architecture.md「開發工具」）。
 # 用法：scripts/burst.sh <輸出.png> <從第幾幀> [額外 user 參數…]
 #   scripts/burst.sh build/burst/forest.png 100 --level=corrupt_forest --locale=zh_TW
 # → 第 N 幀起每 0.1 秒一張、共 8 張（--fixed-fps 60：遊戲裡的時間固定，跟這台機器畫得多慢無關），

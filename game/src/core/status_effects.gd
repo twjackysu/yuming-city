@@ -2,7 +2,7 @@ class_name StatusEffects
 extends RefCounted
 ## 身上的持續狀態（新版）。純邏輯：擁有者每個物理幀呼叫 tick(delta, health)；
 ## 暫停、對話、過場時不呼叫＝不計時。
-## 規則（docs/design/09-reboot-first-ten-minutes.md 第 3 節、docs/story-reboot/status-reversal.md）：
+## 規則（docs/design/02-gameplay.md「異常狀態與反轉」）：
 ## - 同一種狀態只有一份：新來源比較強就換強度；時間取剩下的與新的較長者；不超過 max_duration。
 ## - 反轉發生在扣血之前：裝進反轉欄位的狀態每幀直接變成好處（中毒 → 回血），不先扣再補。
 ## - 反轉後的好處有上限（max_reversed_rate）。直接傷害不歸這裡管（Health.apply_damage）。

@@ -13,7 +13,7 @@ var last_device: int = InputGlyphs.Device.KBM
 var last_pad: int = 0
 var screenshot_path: String = ""
 var screenshot_frames: int = 60
-## 連拍（docs/design/11-combat-first.md 第 4 節；scripts/burst.sh 在用）：
+## 連拍（docs/design/04-architecture.md「開發工具」；scripts/burst.sh 在用）：
 ##   -- --burst=/tmp/b --burst-from=100 --burst-every=6 --burst-count=8
 ##   → 第 100 幀起每 6 幀存一張 /tmp/b-0.png…b-7.png，存完結束。搭配 --fixed-fps 60 就是每 0.1 秒一張。
 var burst_prefix: String = ""
