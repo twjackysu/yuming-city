@@ -32,7 +32,7 @@
 | `scenes/ui/` | `Hud`（目標、橫幅、存檔提示）、`CombatHud`（生命條）、對話框、暫停、設定、按鍵設定、互動提示 |
 | `scenes/bench/` | `--benchmark`：鏡頭飛過關卡、把統計寫到 `user://benchmark/` |
 | `data/` | `quests/`、`dialogue/`（`ch1_forest_gate`、`ch1_after_slimes`）、`status/statuses.json`、`combat/tuning.json` |
-| `tests/` | 自製測試框架（`framework/test_case.gd`）；`unit/`、`flow/test_chapter1.gd`（新遊戲 → 一個人走進來 → 遇到席菈、結伴 → 她戴面具 → 瘴氣 → 對話 → 席菈跟隨 → 拿錯的那一瓶 → 清場要幾秒 → 戰後對話的兩個回答 → 讀檔） |
+| `tests/` | 自製測試框架（`framework/test_case.gd`）；`unit/`、`flow/test_chapter1.gd`（新遊戲 → 一個人走進來 → 遇到席菈、結伴 → 她戴面具 → 瘴氣 → 對話 → 席菈跟隨 → 拿錯的那一瓶 → 清場要幾幀、幾刀（超頻要一刀一隻）→ 戰後對話的兩個回答 → 讀檔） |
 
 **加東西的做法**
 
@@ -41,12 +41,14 @@
 - 會走路的角色要腳步聲：接 `Puppet.footfall`（腳落地的那一刻）呼叫 `Footsteps.stomp()`，不要照距離算（看 `PlayerController`）。
 - 新敵人：繼承 `EnemyActor`，覆寫 `tuning_id()`、`_build_body()`、`_on_strike()`，數值加在 `tuning.json`（看 `Slime`）。
 - 新角色模型：`scripts/gen_art.sh` 的 `SRC`／`ARGS` 加一行、`scripts/import_characters.py` 的 `KNOWN` 加 id，場景裡 `Puppet.character_id = "<id>"`。
+- 出手的動作：`tools/blender/common.py` 的 `standard_actions` 裡三段 `swing(拉開, 砍到, 帶過去, 踏幾步)`（`light_attack_01～03`）。遊戲的命中判定在出手後 0.19 秒，劍要在 `T_HIT` 之前砍到位；改完用 `--burst-on=combo` 連拍看。`Puppet.attack_variant` 選第幾段，模型沒有那一段就播第一段。
 - 新的人物動作：`tools/blender/common.py` 的 `standard_actions` 加一段（每個角色都會有）、`CharacterModels.ANIM_MAP` 與 `Puppet.ACTION_TIME`／`STATES` 加名字、程式人偶補一個最簡單的姿勢（看 `shoot`）。
 - 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。模型自帶一圈亮色草皮底座的（樹）加 `--moss-below <高度> --sink <公尺>`：草皮改塗成地面的苔色、底座邊緣埋進地面；苔色在 `tripo_prop.py` 的 `MOSS` 與 `forest_ground.gdshader` 的 `moss`，兩邊要一樣。
 - 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試（現在 v4；看 `test_save.gd` 的 v3 → v4）。
-- 新狀態：`statuses.json` 加一筆（種類 dot／action／guard）＋翻譯 key＋`StatusHud._draw` 的圖示；一樣東西要帶兩種狀態就在來源寫 `also`。反轉的回饋不用接。
+- 新狀態：`statuses.json` 加一筆（種類 dot／action／guard／bleed；要會疊就寫 `stack_max`）＋翻譯 key＋`StatusHud._draw` 的圖示；一樣東西要帶兩種狀態就在來源寫 `also`。反轉的回饋不用接。
+- 武器打中人時給自己的狀態：`PlayerController.on_hit_source` 填資料表的來源（現在是鏽劍的 `rusty_sword_cut`）；換武器就換這個。
 - 關卡裡要有人喊一句（不停下遊戲）：`Hud.show_bark(講的人, 翻譯 key)`；要玩家選擇的才用對話（`Game.start_dialogue`），對話要改旗標寫在對話資料的 `do`。
-- 量戰鬥的手感有沒有變：`test_chapter1.gd` 的 `_mash_until_clear`（像玩家那樣一直按出手，回傳清場要幾幀；測試會印數字）。
+- 量戰鬥的手感有沒有變：`test_chapter1.gd` 的 `_mash_until_clear`（像玩家那樣一直按出手，回傳清場要幾幀、`_mash_swings` 是出了幾刀；測試會印數字）。
 
 ## 還沒整理的舊東西（改到那個檔的時候順手清）
 
@@ -62,9 +64,9 @@
 |---|---|
 | `scripts/check.sh`（已經產過素材時約半分鐘；乾淨的機器第一次要下載 Godot、裝 bpy、轉模型，約 5 分鐘） | 產生素材 → import 兩次 → 全部測試；有 `SCRIPT ERROR` 就算失敗。`--export` 再匯出 |
 | `TEST_FILTER=chapter1 <godot> --headless --path game -s res://tests/run_tests.gd` | 只跑檔名含這段字的測試 |
-| `scripts/screenshot.sh <out.png> <幀數> [旗標…]` | 用 xvfb＋軟體 Vulkan 截一張。先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`；每個 session 第一張常逾時，先拍一張丟掉 |
+| `scripts/screenshot.sh <out.png> <幀數> [旗標…]` | 用 xvfb＋軟體 Vulkan 截一張。先 `apt-get update && apt-get install -y xvfb mesa-vulkan-drivers`；每個 session 第一張常逾時，先拍一張丟掉；幀數超過一百多也會逾時（沒有固定幀率，軟體算圖太慢）——進場幾秒之後的畫面改用 `BURST_LAZY=1 scripts/burst.sh`，單張在 `build/burst/.burst-<名字>/f-N.png` |
 | `scripts/shots.sh forest [--save-baseline]` | 固定鏡頭組（`scripts/shots/forest.txt`），印跟基準的差異數字、拼對照圖 |
 | `scripts/burst.sh <out.png> <從第幾幀> [旗標…]` | 連拍 8 張拼一張：會動的東西（出手、受擊）用這個驗收 |
 | `scripts/gen_art.sh`、`gen_props.sh` | 用 bpy 把 `art-inbox/tripo/` 的模型轉成遊戲用的（`gen-assets.sh` 會叫） |
 
-遊戲的命令列旗標（放在 `--` 之後）：`--level=corrupt_forest`（直接開新遊戲進關卡，存檔寫到 `user://saves_dev`）、`--cam-yaw=90|180`（鏡頭繞到諾恩側面／正面）、`--hold=move_right,sprint`（一直按住這些動作：連拍走路、跑步用；`move_right` 配預設鏡頭剛好是側面）、`--at=x,z`（把諾恩放到別的地方，例：空地前面 `--at=0,-5`）、`--joined`（直接從結伴之後開始，席菈在旁邊；不加的話她等在瘴氣前面、不跟不射）、`--burst-on=reversal`（進場 1.5 秒後讓諾恩中毒並從那一刻開始連拍；`scripts/burst.sh` 的起始幀填很大的數字、`BURST_CROP="0,0,1,1"` 看整個畫面）、`--joined --burst-on=vial`（改成讓席菈射一瓶：舉弩 0.6 秒＋飛 0.55 秒，`BURST_EVERY=10` 以上才拍得到落地；加 `--cam-yaw=90`、`BURST_CROP="0.5,0.3,0.78,0.82"` 是她的側面近拍）、`--open=pause|settings|controls`、`--locale=zh_TW|en`、`--quality=0..2`、`--perf`、`--benchmark`、`--screenshot=<png> --frames=<n>`。
+遊戲的命令列旗標（放在 `--` 之後）：`--level=corrupt_forest`（直接開新遊戲進關卡，存檔寫到 `user://saves_dev`）、`--cam-yaw=90|180`（鏡頭繞到諾恩側面／正面）、`--hold=move_right,sprint`（一直按住這些動作：連拍走路、跑步用；`move_right` 配預設鏡頭剛好是側面）、`--at=x,z`（把諾恩放到別的地方，例：空地前面 `--at=0,-5`）、`--joined`（直接從結伴之後開始，席菈在旁邊；不加的話她等在瘴氣前面、不跟不射）、`--burst-on=reversal`（進場 1.5 秒後讓諾恩中毒並從那一刻開始連拍；`--burst-on=combo` 是連砍三下，`BURST_EVERY=4 BURST_COUNT=24` 剛好三下各 8 格；`scripts/burst.sh` 的起始幀填很大的數字、`BURST_CROP="0,0,1,1"` 看整個畫面）、`--joined --burst-on=vial`（改成讓席菈射一瓶：舉弩 0.6 秒＋飛 0.55 秒，`BURST_EVERY=10` 以上才拍得到落地；加 `--cam-yaw=90`、`BURST_CROP="0.5,0.3,0.78,0.82"` 是她的側面近拍）、`--open=pause|settings|controls`、`--locale=zh_TW|en`、`--quality=0..2`、`--perf`、`--benchmark`、`--screenshot=<png> --frames=<n>`。
