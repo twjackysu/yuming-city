@@ -18,7 +18,7 @@
 
 | # | 場景 | 對應劇本 | 現況 |
 |---|---|---|---|
-| 1 | 腐敗之森入口＋一小段森林 | 節點 2 | **有最小版**（`scenes/levels/corrupt_forest.gd`）：平地、Tripo 的樹與毒蕈、一團瘴氣、三隻史萊姆。要補：地形起伏與地面材質、光與霧、席菈、開場對話 |
+| 1 | 腐敗之森入口＋一小段森林 | 節點 2 | **有最小版**（`scenes/levels/corrupt_forest.gd`）：苔與土的地面（shader）、草叢、Tripo 的樹與會發光的毒蕈、紫霧與孢子、一團瘴氣、三隻史萊姆。要補：席菈、開場對話；地形還是平的 |
 | 2 | 森林完整版（營火、毒沼、陷阱、詛咒寶箱、5 朵夜光毒蕈） | 時段 B | 沒有。模型有：`prop_campfire_v2`、`prop_poison_vent`、`prop_paralysis_web_v2`、`prop_rotten_fruit_bush`、`prop_cursed_chest`、`enemy_mold_slime`、`enemy_miasma_wolf`、`enemy_spore_treant` |
 | 3 | 廢棄祭壇（Boss） | 節點 3 | 沒有。模型有：`prop_ruined_altar`、`boss_plague_golem`、`leo`、`leo_party_mage`、`leo_party_tank` |
 | 4 | 公會大廳 | 節點 1、結尾 | 沒有。模型有：`lilith`、`prop_guild_counter_v2`、`prop_aptitude_crystal`、`prop_guild_quest_board`、`prop_guild_signboard`、`guild_adventurer_a/b`、`royal_inspector` |

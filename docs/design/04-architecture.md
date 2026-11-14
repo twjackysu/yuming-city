@@ -21,7 +21,7 @@
 | `src/core/health.gd`、`combat_tuning.gd`、`enemy_brain.gd` | 生命、戰鬥數值（`data/combat/tuning.json`，F5 重讀、`user://tuning.json` 可覆寫）、敵人狀態機 |
 | `src/core/input_setup.gd`、`sfx.gd`、`ambience.gd`、`footsteps.gd`、`quality_preset.gd`、`frame_stats.gd`、`benchmark_run.gd` | 按鍵、音效、環境音與配樂、腳步、畫質三級、效能統計 |
 | `src/ui/` | 字型與主題、按鍵圖示（`GlyphLine`、`PadGlyph`）、狀態列（`StatusHud`，圖示會翻面）、反轉的畫面那一層（`ReversalOverlay`＋`reversal_overlay.gdshader`）、藥劑格、目標指引、章節卡（`ChapterCard`，還沒用到）、設定頁的小元件 |
-| `src/world/` | `CharacterModels`／`PropModels`（模型載入，找不到回傳 null）、`ContactShadow`、`CameraFade`、`HealMotes`、`PoisonBurst`、`ParticleLook`、毒霧與接地陰影的 shader |
+| `src/world/` | `CharacterModels`／`PropModels`（模型載入，找不到回傳 null）、`ContactShadow`、`CameraFade`、`HealMotes`、`PoisonBurst`、`ParticleLook`、`GrassTufts`（一整片草叢，一個 MultiMesh）、`forest_ground.gdshader`（森林的地面：苔／土／落葉、路與空地、樹腳下的苔）、毒霧與接地陰影的 shader |
 | `scenes/boot/` | 標題畫面 |
 | `scenes/levels/story_level.gd`、`corrupt_forest.gd/.tscn` | 關卡基底；腐敗之森入口（建場景＋設劇情旗標） |
 | `scenes/actors/player/` | `PlayerController`：移動、過肩鏡頭、鎖定、閃避、出手、釋放、手上的劍 |
@@ -38,7 +38,7 @@
 - 新關卡：繼承 `StoryLevel`、場景裡放 `Spawn`／`Player`／`Hud`／`PauseMenu`／`DialogueBox`，在 `Game.LEVELS` 與 `CHECKPOINT_LEVELS` 登記；劇情只透過 `Game.session.set_flag()` 推進任務。
 - 新敵人：繼承 `EnemyActor`，覆寫 `tuning_id()`、`_build_body()`、`_on_strike()`，數值加在 `tuning.json`（看 `Slime`）。
 - 新角色模型：`scripts/gen_art.sh` 的 `SRC`／`ARGS` 加一行、`scripts/import_characters.py` 的 `KNOWN` 加 id，場景裡 `Puppet.character_id = "<id>"`。
-- 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。
+- 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。模型自帶一圈亮色草皮底座的（樹）加 `--moss-below <高度> --sink <公尺>`：草皮改塗成地面的苔色、底座邊緣埋進地面；苔色在 `tripo_prop.py` 的 `MOSS` 與 `forest_ground.gdshader` 的 `moss`，兩邊要一樣。
 - 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試。
 
 ## 還沒整理的舊東西（改到那個檔的時候順手清）
@@ -60,4 +60,4 @@
 | `scripts/burst.sh <out.png> <從第幾幀> [旗標…]` | 連拍 8 張拼一張：會動的東西（出手、受擊）用這個驗收 |
 | `scripts/gen_art.sh`、`gen_props.sh` | 用 bpy 把 `art-inbox/tripo/` 的模型轉成遊戲用的（`gen-assets.sh` 會叫） |
 
-遊戲的命令列旗標（放在 `--` 之後）：`--level=corrupt_forest`（直接開新遊戲進關卡，存檔寫到 `user://saves_dev`）、`--cam-yaw=90|180`（鏡頭繞到諾恩側面／正面）、`--burst-on=reversal`（進場 1.5 秒後讓諾恩中毒並從那一刻開始連拍；`scripts/burst.sh` 的起始幀填很大的數字、`BURST_CROP="0,0,1,1"` 看整個畫面）、`--open=pause|settings|controls`、`--locale=zh_TW|en`、`--quality=0..2`、`--perf`、`--benchmark`、`--screenshot=<png> --frames=<n>`。
+遊戲的命令列旗標（放在 `--` 之後）：`--level=corrupt_forest`（直接開新遊戲進關卡，存檔寫到 `user://saves_dev`）、`--cam-yaw=90|180`（鏡頭繞到諾恩側面／正面）、`--at=x,z`（把諾恩放到別的地方，例：空地前面 `--at=0,-5`）、`--burst-on=reversal`（進場 1.5 秒後讓諾恩中毒並從那一刻開始連拍；`scripts/burst.sh` 的起始幀填很大的數字、`BURST_CROP="0,0,1,1"` 看整個畫面）、`--open=pause|settings|controls`、`--locale=zh_TW|en`、`--quality=0..2`、`--perf`、`--benchmark`、`--screenshot=<png> --frames=<n>`。
