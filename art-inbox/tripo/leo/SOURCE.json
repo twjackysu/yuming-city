@@ -1,0 +1,38 @@
+{
+  "id": "leo",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, realistic anime proportions about 6.5 heads tall, small head, long legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. An arrogant handsome young man about 24, B-rank swordsman captain. Short swept-back golden blond hair, sharp blue eyes, confident smirk. Polished silver plate chest armor and shoulder guards with royal blue trim, blue tunic underneath, a short blue half-cape hanging only behind the left shoulder, armored gauntlets and greaves, dark trousers, empty sword scabbard on the left hip.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "6ce8d6c4-cb13-4847-b27c-6898e6bac97e",
+    "rig": "4ce8caa1-64d2-4543-bb8e-6fd2cee70896"
+  },
+  "files": [
+    {
+      "file": "leo_model_preview.jpg"
+    },
+    {
+      "file": "leo_rig.glb",
+      "bytes_raw": 11480928,
+      "bytes": 2344400
+    },
+    {
+      "file": "leo_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T14:03:16+08:00",
+  "requested_by": "B 級隊長雷歐"
+}

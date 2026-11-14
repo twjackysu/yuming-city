@@ -1,0 +1,30 @@
+{
+  "id": "weapon_alchemy_crossbow",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cool stylized anime manga fantasy game weapon, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. A quirky fantasy alchemy hand crossbow made of wood and brass, holding a glowing purple glass potion vial instead of an arrow, round test tube slot, thick rubber bands and a spring pusher, small spare potion vials of purple, green and yellow strapped to the side, leather straps",
+  "image": null,
+  "params": {
+    "face_limit": 7000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "e8d132be-4abd-4fa1-9fc8-d36689c39321"
+  },
+  "files": [
+    {
+      "file": "weapon_alchemy_crossbow_model_preview.jpg"
+    },
+    {
+      "file": "weapon_alchemy_crossbow_model.glb",
+      "bytes_raw": 3638588,
+      "bytes": 1009892
+    }
+  ],
+  "generated_at": "2026-11-14T13:56:30+08:00",
+  "requested_by": "席菈的初始武器【鍊金藥瓶手弩】"
+}

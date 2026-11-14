@@ -1,0 +1,30 @@
+{
+  "id": "enemy_poison_slime",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A single round jelly slime monster about knee height, glossy translucent purple body fading to toxic green at the bottom, small bubbles inside, two simple angry white eyes, a few drips of green poison, sitting on the ground.",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "533d58b2-496e-48e3-9fbb-e16d16270435"
+  },
+  "files": [
+    {
+      "file": "enemy_poison_slime_model_preview.jpg"
+    },
+    {
+      "file": "enemy_poison_slime_model.glb",
+      "bytes_raw": 2021384,
+      "bytes": 416308
+    }
+  ],
+  "generated_at": "2026-11-14T14:06:01+08:00",
+  "requested_by": "劇毒史萊姆（教學戰三隻；不綁骨，程式做彈跳）"
+}

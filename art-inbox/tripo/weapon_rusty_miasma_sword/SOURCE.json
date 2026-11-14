@@ -1,0 +1,30 @@
+{
+  "id": "weapon_rusty_miasma_sword",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cool stylized anime manga fantasy game weapon, vibrant hand-painted textures, single object, no hand, no stand, no text, isolated. A worn medieval iron broadsword, chipped blade with heavy dark red rust, dark cloth wrapped around the hilt, a cracked purple crystal embedded in the guard",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "c31258d6-1e71-4762-a5b8-109e6bd6e4da"
+  },
+  "files": [
+    {
+      "file": "weapon_rusty_miasma_sword_model_preview.jpg"
+    },
+    {
+      "file": "weapon_rusty_miasma_sword_model.glb",
+      "bytes_raw": 3618776,
+      "bytes": 840648
+    }
+  ],
+  "generated_at": "2026-11-14T13:54:16+08:00",
+  "requested_by": "諾恩的初始武器【瘴氣生鏽鐵劍】（劇本第零節）"
+}

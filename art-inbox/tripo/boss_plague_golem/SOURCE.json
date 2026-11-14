@@ -1,0 +1,38 @@
+{
+  "id": "boss_plague_golem",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A huge ancient stone golem boss about 4 meters tall, strict T-pose with massive arms straight out to the sides, two heavy legs apart, cracked mossy grey stone body, a large glowing sickly green-purple crystal core in the center of the chest, green glow in the cracks, small head with two glowing eyes, giant fists.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 50000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "1a67c250-b741-4752-b0f1-7810219a38c4",
+    "rig": "272a7e83-836d-4076-8b79-2e87b5929e86"
+  },
+  "files": [
+    {
+      "file": "boss_plague_golem_model_preview.jpg"
+    },
+    {
+      "file": "boss_plague_golem_rig.glb",
+      "bytes_raw": 12834768,
+      "bytes": 2531540
+    },
+    {
+      "file": "boss_plague_golem_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T14:09:01+08:00",
+  "requested_by": "第一章 Boss【深淵疫病魔像】；胸口的核心要獨立看得出來"
+}
