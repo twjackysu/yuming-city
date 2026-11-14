@@ -1,0 +1,43 @@
+{
+  "id": "noen_rank_f_v2",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute and cool anime manga style 3D game character, big expressive anime eyes, attractive appealing face, soft cel-shaded look, clean readable silhouette, vibrant hand-painted textures, full body, T-pose, arms apart, standing straight, empty hands, no weapon. Handsome cool young man, 23 years old, anime protagonist look, normal adult anime proportions about 6.5 heads tall, slim athletic build, same proportions as a typical anime heroine companion, rookie F-rank adventurer, messy dark brown hair, tired but determined eyes, worn dark red scarf, patched beige linen shirt, scuffed brown leather vest, simple belt with small pouches, frayed dark trousers, worn leather boots, fingerless leather gloves, poor shabby but practical adventurer clothes",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "19445570-6bec-4044-9174-2f7b997ea6c5",
+    "rig": "b9d711f8-e079-4838-b27e-bdf2c0925b9f"
+  },
+  "files": [
+    {
+      "file": "noen_rank_f_v2_model_preview.jpg"
+    },
+    {
+      "file": "noen_rank_f_v2_model.glb",
+      "bytes_raw": 9885616,
+      "bytes": 1859012
+    },
+    {
+      "file": "noen_rank_f_v2_rig.glb",
+      "bytes_raw": 10151176,
+      "bytes": 2124572
+    },
+    {
+      "file": "noen_rank_f_v2_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T12:12:10+08:00",
+  "requested_by": "Jacky 11/14 12:0x 決定：諾恩改成正常比例（跟已接進遊戲的席菈一致，約 6 頭身）；Q 版 noen_rank_f 不用。動作用 loop 的 common.py，所以只綁骨不套動作（30＋25＝55 點）。"
+}
