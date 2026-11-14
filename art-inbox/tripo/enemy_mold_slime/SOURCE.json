@@ -1,0 +1,30 @@
+{
+  "id": "enemy_mold_slime",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A single round jelly slime monster about knee height, dull grey-green body covered with fuzzy mold patches and a few tiny brown mushrooms on top, two simple sleepy white eyes, sitting on the ground.",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "f08e290c-4594-4883-9cb0-9b3732c26f3a"
+  },
+  "files": [
+    {
+      "file": "enemy_mold_slime_model_preview.jpg"
+    },
+    {
+      "file": "enemy_mold_slime_model.glb",
+      "bytes_raw": 2676980,
+      "bytes": 547384
+    }
+  ],
+  "generated_at": "2026-11-14T14:20:40+08:00",
+  "requested_by": "發霉史萊姆（酒館地下室支線）"
+}

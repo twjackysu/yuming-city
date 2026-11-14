@@ -1,0 +1,30 @@
+{
+  "id": "prop_rotten_fruit_bush",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A twisted bush bearing rotten purple fruits dripping dark juice, small flies",
+  "image": null,
+  "params": {
+    "face_limit": 6000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "337fafc3-3b54-43ff-ac63-a48845480258"
+  },
+  "files": [
+    {
+      "file": "prop_rotten_fruit_bush_model_preview.jpg"
+    },
+    {
+      "file": "prop_rotten_fruit_bush_model.glb",
+      "bytes_raw": 3100588,
+      "bytes": 838020
+    }
+  ],
+  "generated_at": "2026-11-14T14:45:18+08:00",
+  "requested_by": "腐敗野果"
+}

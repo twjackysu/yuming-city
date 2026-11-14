@@ -1,0 +1,30 @@
+{
+  "id": "prop_cursed_ring",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A rusty cursed ring with a tiny red gem, oversized icon-like 3D model, faint red aura",
+  "image": null,
+  "params": {
+    "face_limit": 3000
+  },
+  "rig": null,
+  "animations": [],
+  "tasks": {
+    "generate": "7ee3f401-4ab0-4476-8cef-a0bdcaa75dbc"
+  },
+  "files": [
+    {
+      "file": "prop_cursed_ring_model_preview.jpg"
+    },
+    {
+      "file": "prop_cursed_ring_model.glb",
+      "bytes_raw": 2294252,
+      "bytes": 448332
+    }
+  ],
+  "generated_at": "2026-11-14T14:53:44+08:00",
+  "requested_by": "詛咒飾品【生鏽的痛覺戒指】（面板與商店展示用）"
+}

@@ -1,0 +1,38 @@
+{
+  "id": "enemy_spore_treant",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game monster, clean cel-shaded hand-painted textures with soft gradients, readable silhouette, modern anime action RPG style, cute but dangerous. A small humanoid walking tree monster about 1.8 meters tall, strict T-pose with arms straight out to the sides, two thick root legs apart, rotten dark bark body, glowing teal-purple mushrooms on the shoulders and head, two hollow glowing yellow eyes.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 30000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "0aa0b738-66ae-49fe-9feb-7365e1a9716b",
+    "rig": "9d19a873-52aa-4eee-a84d-0eca1221dd27"
+  },
+  "files": [
+    {
+      "file": "enemy_spore_treant_model_preview.jpg"
+    },
+    {
+      "file": "enemy_spore_treant_rig.glb",
+      "bytes_raw": 8198168,
+      "bytes": 1604852
+    },
+    {
+      "file": "enemy_spore_treant_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T14:25:54+08:00",
+  "requested_by": "腐敗之森的一般敵人（人形）"
+}

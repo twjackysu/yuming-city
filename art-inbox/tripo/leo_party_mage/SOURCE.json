@@ -1,0 +1,38 @@
+{
+  "id": "leo_party_mage",
+  "tool": "Tripo (VAST AI) via tripo-cli",
+  "ai_generated": true,
+  "steam_disclosure": "Pre-Generated AI content（上架時要在 Steamworks 內容問卷申報）",
+  "license": "Jacky 的付費 Tripo 帳號／API 產出，商用權依 Tripo 條款歸帳號持有人；不是 CC0，不得當素材再散布",
+  "model": "tripo-v3.1",
+  "prompt": "Stylized anime JRPG 3D game character, modern anime action RPG party member style: slim young-adult body, youthful anime proportions about 5.5 heads tall, slightly large head, sturdy legs, anime face with medium-large eyes, clean cel-shaded hand-painted textures, detailed layered fantasy clothing, slightly worn. Full body, strict T-pose, arms straight out to the sides, legs slightly apart, facing forward, empty open hands. A young woman about 22, party mage. Wavy shoulder-length auburn hair, green eyes, proud expression. Wide-brimmed pointed dark purple wizard hat, short purple robe with gold trim ending above the knees, white shirt, black tights, brown knee boots, spellbook holster on the belt.",
+  "image": null,
+  "params": {
+    "texture_quality": "detailed",
+    "face_limit": 40000
+  },
+  "rig": {
+    "type": "biped",
+    "spec": "mixamo"
+  },
+  "animations": [],
+  "tasks": {
+    "generate": "a2d166b2-e5c4-483e-b80b-526f770699fd",
+    "rig": "8f9b9f1f-f912-4a9f-9fae-1bce510920ac"
+  },
+  "files": [
+    {
+      "file": "leo_party_mage_model_preview.jpg"
+    },
+    {
+      "file": "leo_party_mage_rig.glb",
+      "bytes_raw": 9136016,
+      "bytes": 2124472
+    },
+    {
+      "file": "leo_party_mage_rig_preview.jpg"
+    }
+  ],
+  "generated_at": "2026-11-14T14:18:26+08:00",
+  "requested_by": "雷歐小隊的隊員（法師）；倒在祭壇那一段也用"
+}
