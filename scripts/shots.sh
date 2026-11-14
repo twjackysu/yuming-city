@@ -16,7 +16,7 @@ MODE="${2:-}"
 LIST="$ROOT/scripts/shots/$SET.txt"
 OUT="$ROOT/build/shots/$SET"
 BASE="$ROOT/build/shots-baseline/$SET"
-RELEASE_URL="https://github.com/twjackysu/yuming-city/releases/download/screens"
+RELEASE_URL="https://github.com/twjackysu/curses-too-useful/releases/download/screens"
 test -f "$LIST" || { echo "沒有這一組：$LIST" >&2; exit 1; }
 mkdir -p "$OUT" "$BASE"
 

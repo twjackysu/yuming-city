@@ -2,11 +2,11 @@
 
 PC 單機、第三人稱的動漫風動作 RPG（Godot 4）。F 級冒險者諾恩的身體會把**所有異常狀態與詛咒反轉成增益**：別人中毒掉血，他中毒回血；別人麻痺倒地，他麻痺變快。只有他能把鍊金術師席菈那些「副作用超強的失敗作」當神藥用——所以這個遊戲裡，陷阱、毒霧、詛咒裝備都是補給，要**故意去踩**。
 
-> 狀態（2026-11-14）：劇情改版後**重新開始**，正在做第一章《毒瘤與破爛的共鳴》（[劇本](docs/story/chapter-1.md)、[實作計畫](docs/design/13-chapter-1-plan.md)）。現在玩得到的是「腐敗之森入口」的最小版：走進瘴氣、打三隻史萊姆。repo 名稱 `yuming-city` 是早期的名字（執行檔與存檔資料夾叫 `CursesTooUseful`）。
+> 狀態（2026-11-14）：劇情改版後**重新開始**，正在做第一章《毒瘤與破爛的共鳴》（[劇本](docs/story/chapter-1.md)、[實作計畫](docs/design/13-chapter-1-plan.md)）。現在玩得到的是「腐敗之森入口」的最小版：走進瘴氣、打三隻史萊姆。
 
 ## 怎麼開始玩
 
-1. 到 [Releases → latest](https://github.com/twjackysu/yuming-city/releases/tag/latest) 下載 `CursesTooUseful-windows-x64-*.zip`。
+1. 到 [Releases → latest](https://github.com/twjackysu/curses-too-useful/releases/tag/latest) 下載 `CursesTooUseful-windows-x64-*.zip`。
 2. 解壓縮，雙擊 `CursesTooUseful.exe`。
 3. 標題畫面按「**新遊戲**」。鍵鼠或 Xbox 類手把都可以；操作在 [docs/design/02-gameplay.md](docs/design/02-gameplay.md)。
 
@@ -31,11 +31,11 @@ PC 單機、第三人稱的動漫風動作 RPG（Godot 4）。F 級冒險者諾�
 - 安裝 [Godot 4.7.2 stable](https://godotengine.org/download/archive/4.7.2-stable/)（標準版，不是 .NET 版），在專案管理員「匯入」`game/project.godot`，按 F5。
 - Linux 可以直接執行 `scripts/get-godot.sh` 下載並驗證同一版本。
 - 檢查：`scripts/check.sh`（匯入＋全部測試）；`scripts/check.sh --export` 再匯出 Windows／Linux。
-- 每次推到 `main`，GitHub Actions 會跑測試、匯出，並把建置檔放到 [latest](https://github.com/twjackysu/yuming-city/releases/tag/latest)、截圖放到 [screens](https://github.com/twjackysu/yuming-city/releases/tag/screens)。
+- 每次推到 `main`，GitHub Actions 會跑測試、匯出，並把建置檔放到 [latest](https://github.com/twjackysu/curses-too-useful/releases/tag/latest)、截圖放到 [screens](https://github.com/twjackysu/curses-too-useful/releases/tag/screens)。
 
 ## 舊版去哪了
 
-2026-11-14 以前的版本（霜橋鎮、地下市場、戰鬥場）在分支 [`archive/pre-restart-2026-11-14`](https://github.com/twjackysu/yuming-city/tree/archive/pre-restart-2026-11-14)。更早的在 git 歷史裡。
+2026-11-14 以前的版本（霜橋鎮、地下市場、戰鬥場）在分支 [`archive/pre-restart-2026-11-14`](https://github.com/twjackysu/curses-too-useful/tree/archive/pre-restart-2026-11-14)。更早的在 git 歷史裡。
 
 ## 約定
 
