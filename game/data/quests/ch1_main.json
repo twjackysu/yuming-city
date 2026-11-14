@@ -21,6 +21,15 @@
       "done_when": {
         "flag": "ch1.slimes_cleared"
       }
+    },
+    {
+      "id": "after_fight",
+      "objective": "Q_CH1_OBJ_AFTER",
+      "checkpoint": "ch1_after_slimes",
+      "marker": "node:Sera",
+      "done_when": {
+        "flag": "ch1.after_slimes_talked"
+      }
     }
   ],
   "on_complete": {

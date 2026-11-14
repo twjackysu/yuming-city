@@ -9,6 +9,7 @@ extends RefCounted
 ## - 每一份狀態記得來源、強度、剩餘時間；存檔照原樣存（讀檔不補滿、不清掉）。
 
 const PARALYSIS: String = "paralysis"
+const DEFENSE_ZERO: String = "defense_zero"
 
 ## event："start"（新上身）、"refresh"（同種刷新）、"end"（時間到）、"clear"（被清掉）
 signal changed(status_id: String, event: String)
@@ -68,6 +69,15 @@ func attack_speed() -> float:
 	return clampf(rate(PARALYSIS), 1.0, maxf(rules.max_reversed_rate(PARALYSIS), 1.0))
 
 
+## 受到直接傷害時乘幾倍（防禦歸零）：沒反轉＝多吃（1 + 強度）；反轉＝少吃（1 − 強度，強度不超過 max_reversed_rate）。身上沒有＝1。
+func damage_taken_scale() -> float:
+	if not has(DEFENSE_ZERO):
+		return 1.0
+	if not reverses:
+		return 1.0 + rate(DEFENSE_ZERO)
+	return 1.0 - clampf(rate(DEFENSE_ZERO), 0.0, minf(rules.max_reversed_rate(DEFENSE_ZERO), 1.0))
+
+
 ## 上狀態。回傳 "start"／"refresh"／"ignored"（強度或時間不合法）。
 func apply(status_id: String, p_rate: float, duration: float, source: String = "") -> String:
 	if p_rate <= 0.0 or duration <= 0.0 or not rules.statuses.has(status_id):
@@ -90,12 +100,15 @@ func apply(status_id: String, p_rate: float, duration: float, source: String = "
 	return event
 
 
-## 用資料表裡的來源（"miasma"、"boss_miasma"）上狀態
+## 用資料表裡的來源（"miasma"、"slime_touch"）上狀態。來源有 also 的（一瓶藥帶兩種狀態）接著套用那一個；回傳第一種的結果。
 func apply_source(source_id: String) -> String:
 	var src: Dictionary = rules.source(source_id)
 	if src.is_empty():
 		return "ignored"
-	return apply(str(src["status"]), float(src["rate"]), float(src["duration"]), source_id)
+	var event: String = apply(str(src["status"]), float(src["rate"]), float(src["duration"]), source_id)
+	if src.has("also"):
+		apply_source(str(src["also"]))
+	return event
 
 
 func clear(status_id: String) -> void:
@@ -122,7 +135,7 @@ func tick(delta: float, health: Health) -> void:
 		var id: String = str(k)
 		var cur: Dictionary = _active[id] as Dictionary
 		var dt: float = minf(delta, float(cur["remaining"]))
-		# 麻痺這一類（kind=action）不碰生命：只計時，效果由 attack_speed()／blocks_attack() 問
+		# 麻痺（action）、防禦歸零（guard）不碰生命：只計時，效果由 attack_speed()／blocks_attack()／damage_taken_scale() 問
 		if health != null and dt > 0.0 and rules.kind(id) == "dot":
 			var info: Dictionary = {"status": id, "source": cur["source"]}
 			if reverses:

@@ -110,6 +110,8 @@ POTION_DRINK,Drink,喝
 POTION_KEEP,Keep it for now,先收著
 STATUS_PARALYSIS,Paralyzed,麻痺
 STATUS_PARALYSIS_REVERSED,Paralyzed → Faster attacks,麻痺 → 出手加速
+STATUS_DEFENSE_ZERO,Defense zero,防禦歸零
+STATUS_DEFENSE_ZERO_REVERSED,Defense zero → Less damage taken,防禦歸零 → 受傷減少
 GAME_TITLE,These Curses Are Far Too Useful to Me,這些詛咒對我太有用了
 GAME_SUBTITLE,"My ""infection-prone"" body turned out to be the cheat that flips everything",被嫌棄的易感染體質，其實是逆轉一切的外掛
 SPK_LILITH,Lilith,莉莉絲
@@ -117,14 +119,26 @@ SPK_LEO,Leo,雷歐
 Q_CH1_MAIN_TITLE,Chapter 1: The Tumor and the Junk,第一章　毒瘤與破爛的共鳴
 Q_CH1_OBJ_MIASMA,Walk into the miasma,走進瘴氣裡
 Q_CH1_OBJ_SLIMES,Defeat the poison slimes in the glade,打倒空地上的劇毒史萊姆
+Q_CH1_OBJ_AFTER,Hear Sera out,聽席菈說完
 Q_CH1_HINT_MOVE,{move} Move　{sprint} Run　{look} Look around,{move} 移動　{sprint} 跑　{look} 轉視角
 Q_CH1_HINT_FIGHT,{attack} Attack　{dodge} Dodge　{release} Burst the poison on you,{attack} 攻擊　{dodge} 閃避　{release} 把身上的毒炸出去
 CH1_REVERSAL_LINE1,Poisoned → Regenerating,中毒 → 回血
 CH1_REVERSAL_LINE2,Every ailment on you flips into a boon.,落在你身上的異常狀態，全都會反轉成增益。
 CH1_SLIMES_CLEARED,The glade is clear.,空地清乾淨了。
+BARK_SERA_PANIC,"S-slimes! H-hang on, I will back you up!",史、史萊姆！等、等一下，我來幫你——
+BARK_SERA_MISFIRE,"No no no! Norn, I am so sorry, I messed up again!",完了完了！諾恩，對不起我又搞砸了！
+CH1_MISFIRE_LINE1,Paralyzed → Faster attacks　Defense zero → Less damage taken,麻痺 → 出手加速　防禦歸零 → 受傷減少
+CH1_MISFIRE_LINE2,"You attack 150% faster and take 80% less damage. Cut them down!",出手快 150%，受到的傷害少 80%。趁現在砍！
 DLG_CH1_GATE_001,"W-wait, that is miasma! Normal people collapse in ten minutes!",等、等一下，那是瘴氣！普通人進去十分鐘就會倒下的！
 DLG_CH1_GATE_002,Funny. I feel better than I have all week.,奇怪。我覺得這是我這禮拜精神最好的一次。
 DLG_CH1_GATE_003,"...Y-you are glowing gold. Does poison just... not work on you?",……你、你身上在發金光耶。毒對你……沒有用嗎？
 DLG_CH1_GATE_004,"Looks like it does more than nothing. Come on, stay behind me.",好像不只是沒用。走吧，妳跟在我後面就好。
+DLG_CH1_AFTER_001,"I-I am so sorry! I grabbed the wrong vial again... Huh? You are... fine?",對、對不起！我又拿錯瓶了……咦？你……沒事？
+DLG_CH1_AFTER_002,Fine? That was the best thing anyone has ever shot at me.,沒事。應該說，那是我這輩子挨過最棒的一發。
+DLG_CH1_AFTER_003,Norn... you really do not get hurt by what I make?,諾恩……你真的不會因為我的能力而受傷嗎？
+DLG_CH1_AFTER_CHOICE_A,"Never. To me, your failures are the best medicine there is.",不會。妳的失敗作，對我來說是最好的藥。
+DLG_CH1_AFTER_CHOICE_B,It only startles me. Shout before you shoot next time.,只是會嚇一跳。下次射之前先喊一聲。
+DLG_CH1_AFTER_A,"...Nobody has ever said that to me. Th-then I will make lots more!",……第一次有人這樣說。那、那我之後多做一點！
+DLG_CH1_AFTER_B,"O-okay! I will shout! ...So, um, you will still let me shoot you?",好、好的！我會喊的！……那個，所以你還願意讓我射？
 ITEM_SERA_POISON,Sera's Failed Potion (Poison),席菈的失敗作（劇毒）
 ITEM_SERA_POISON_DESC,Poisons whoever drinks it for 20 seconds.,喝下去會中毒 20 秒。

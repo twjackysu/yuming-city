@@ -70,6 +70,7 @@ func test_every_status_reverses_at_once_with_nothing_to_unlock() -> void:
 	assert_false(fx.blocks_attack(), "也沒有任何一種擋住出手")
 	assert_true(h.hp > 50.0, "中毒在回血（%s）" % h.hp)
 	assert_true(fx.attack_speed() > 1.0, "麻痺在加速（%s）" % fx.attack_speed())
+	assert_true(fx.damage_taken_scale() < 1.0, "防禦歸零在減傷（%s）" % fx.damage_taken_scale())
 
 
 func test_poison_refresh_does_not_stack() -> void:
@@ -257,3 +258,68 @@ func test_paralysis_on_hit_refreshes_without_stacking_and_fades_when_you_stop() 
 	other.apply_source("slime_touch")
 	other.tick(1.0, oh)
 	assert_true(absf(oh.hp - 45.0) < 0.01, "沒反轉：一秒扣 5 點（%s）" % oh.hp)
+
+
+## 防禦歸零：不碰生命。沒反轉＝直接傷害多吃；反轉＝少吃（有上限，不會變成完全無敵）；時間到就恢復。
+func test_defense_zero_scales_direct_damage_both_ways() -> void:
+	assert_eq(_rules().kind("defense_zero"), "guard")
+	var other := StatusEffects.new(_rules())
+	assert_eq(other.damage_taken_scale(), 1.0, "身上沒有＝照扣")
+	other.apply("defense_zero", 0.8, 5.0, "test")
+	assert_true(absf(other.damage_taken_scale() - 1.8) < 0.001, "沒反轉：多吃八成")
+	var fx := StatusEffects.new(_rules(), true)
+	fx.apply("defense_zero", 0.8, 5.0, "test")
+	assert_true(absf(fx.damage_taken_scale() - 0.2) < 0.001, "反轉：少吃八成")
+	fx.apply("defense_zero", 5.0, 5.0, "test")
+	assert_true(fx.damage_taken_scale() >= 0.2 - 0.001, "再強也只減到上限，不會無敵（%s）" % fx.damage_taken_scale())
+	var h := _hurt(50.0)
+	fx.tick(1.0, h)
+	assert_eq(h.hp, 50.0, "不扣血也不回血")
+	# 接在生命上：同一下 10 點，反轉的人只扣 2、沒反轉的人扣 18
+	h.damage_scale = func(_info: Dictionary) -> float: return fx.damage_taken_scale()
+	h.apply_damage(10.0)
+	assert_true(absf(h.hp - 48.0) < 0.001, "反轉：10 點只扣 2（%s）" % h.hp)
+	var oh := _hurt(50.0)
+	oh.damage_scale = func(_info: Dictionary) -> float: return other.damage_taken_scale()
+	oh.apply_damage(10.0)
+	assert_true(absf(oh.hp - 32.0) < 0.001, "沒反轉：10 點扣 18（%s）" % oh.hp)
+	fx.tick(5.0, h)
+	assert_false(fx.has("defense_zero"), "時間到就退")
+	assert_eq(fx.damage_taken_scale(), 1.0)
+
+
+## 一瓶藥帶兩種狀態（來源的 also）：席菈慌了拿錯的那一瓶＝重度麻痺＋防禦歸零，落在諾恩身上兩種一起反轉。
+func test_one_source_can_carry_two_statuses() -> void:
+	var fx := StatusEffects.new(_rules(), true)
+	var started: Array[String] = []
+	fx.changed.connect(func(id: String, e: String) -> void:
+		if e == "start":
+			started.append(id))
+	assert_eq(fx.apply_source("sera_panic_vial"), "start")
+	assert_eq(started, ["paralysis", "defense_zero"] as Array[String], "兩種都是新上身（各自觸發回饋）")
+	assert_true(absf(fx.attack_speed() - 2.5) < 0.001, "重度麻痺 → 出手快 150%%（×%s）" % fx.attack_speed())
+	assert_true(absf(fx.damage_taken_scale() - 0.2) < 0.001, "防禦歸零 → 受到的傷害少 80%")
+	assert_eq(fx.source_of("defense_zero"), "sera_panic_vial_guard")
+	# 沒反轉的人吃到同一瓶：不能出手、多吃傷害——所以別人眼中這是災難
+	var other := StatusEffects.new(_rules())
+	other.apply_source("sera_panic_vial")
+	assert_true(other.blocks_attack())
+	assert_true(other.damage_taken_scale() > 1.0)
+
+
+## also 指到不存在的來源、或繞回自己：報錯並拿掉，套用時不會卡住。
+func test_bad_also_is_reported_and_dropped() -> void:
+	var path: String = "user://test_bad_also_%d.json" % Time.get_ticks_usec()
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(JSON.stringify({"statuses": {"poison": {}}, "sources": {
+		"a": {"status": "poison", "rate": 1.0, "duration": 1.0, "also": "b"},
+		"b": {"status": "poison", "rate": 1.0, "duration": 1.0, "also": "a"},
+		"c": {"status": "poison", "rate": 1.0, "duration": 1.0, "also": "nope"}}}))
+	f.close()
+	var r: StatusRules = StatusRules.load_file(path)
+	DirAccess.remove_absolute(path)
+	assert_true(r.errors.size() >= 2, "繞回來的、不存在的都要報：%s" % ", ".join(r.errors))
+	assert_false(r.source("c").has("also"))
+	var fx := StatusEffects.new(r, true)
+	assert_eq(fx.apply_source("a"), "start", "照樣能套用，不會無限繞")
+	assert_eq(fx.apply_source("c"), "refresh")

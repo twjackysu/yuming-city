@@ -1,7 +1,7 @@
 class_name StatusHud
 extends Control
 ## 狀態圖示：生命條上方一列，每種狀態一格。
-## 一格＝原類型的圖示（中毒：瓶子＋骷髏點）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
+## 一格＝原類型的圖示（中毒：瓶子＋骷髏點；麻痺：閃電；防禦歸零：裂開的盾）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
 ## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。
 ## **翻面**：狀態剛上身時先是紅的；會反轉的人（StatusEffects.reverses）ReversalCue.CURSE_SEC 秒後翻成金的（跟畫面碎裂同一刻），旁邊彈一圈金光。
 ## 純顯示：refresh(effects) 每幀從玩家的 StatusEffects 讀。
@@ -13,6 +13,7 @@ const COL_HARMFUL: Color = Color(0.95, 0.45, 0.4)
 const COL_ICON_BG: Color = Color(0.05, 0.06, 0.08, 0.7)
 const COL_BOTTLE: Color = Color(0.78, 0.86, 0.62)
 const COL_BOLT: Color = Color(1.0, 0.86, 0.35)
+const COL_SHIELD: Color = Color(0.72, 0.78, 0.88)
 
 ## 翻面那一刻彈出去的金圈多久散掉、散到多大（px）
 const PULSE_SEC: float = 0.45
@@ -106,6 +107,8 @@ func _draw() -> void:
 			_draw_bottle(Vector2.ZERO)
 		elif str(r["id"]) == "paralysis":
 			_draw_bolt(Vector2.ZERO)
+		elif str(r["id"]) == "defense_zero":
+			_draw_shield(Vector2.ZERO)
 		if gold:
 			_draw_reverse_mark(Vector2(ICON * 0.34, ICON * 0.34))
 		draw_set_transform(Vector2.ZERO)
@@ -133,6 +136,17 @@ func _draw_bolt(c: Vector2) -> void:
 		c + Vector2(-3.0, 10.0), c + Vector2(6.0, -2.5), c + Vector2(0.5, -2.5),
 	])
 	draw_colored_polygon(pts, COL_BOLT)
+
+
+## 防禦歸零的原圖示：一面盾，中間一道裂痕
+func _draw_shield(c: Vector2) -> void:
+	var pts := PackedVector2Array([
+		c + Vector2(-7.0, -8.0), c + Vector2(7.0, -8.0), c + Vector2(7.0, 1.0),
+		c + Vector2(0.0, 9.5), c + Vector2(-7.0, 1.0),
+	])
+	draw_colored_polygon(pts, COL_SHIELD)
+	var crack := PackedVector2Array([c + Vector2(1.5, -8.0), c + Vector2(-2.0, -2.0), c + Vector2(2.0, 1.0), c + Vector2(-0.5, 8.0)])
+	draw_polyline(crack, Color(0.1, 0.11, 0.14), 1.6)
 
 
 ## 反轉標記：右下角的金色迴轉箭頭

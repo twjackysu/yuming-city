@@ -297,6 +297,9 @@ func _update_barks(delta: float) -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	var view: Vector2 = get_viewport().get_visible_rect().size
 	var placed: Array[Rect2] = []
+	# 中間那兩行字亮著的時候，頭上的話讓開它（教學戰：席菈的道歉跟「反轉成什麼」同時出現，疊在一起兩邊都看不懂）
+	if not center_lines().is_empty():
+		placed.append(_center.get_global_rect())
 	for b: Dictionary in _barks:
 		var l: Label = b["label"] as Label
 		var age: float = float(b["age"])

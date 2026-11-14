@@ -58,7 +58,7 @@ func test_new_game_starts_chapter_one_and_autosaves() -> void:
 	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "corrupt_forest")
 
 
-func test_quest_follows_the_two_flags_and_continue_restores_it() -> void:
+func test_quest_follows_the_three_flags_and_continue_restores_it() -> void:
 	_game().call("new_game", false)
 	var s: GameSession = _session()
 	s.set_flag(CorruptForest.FLAG_REVERSAL, true)
@@ -69,6 +69,12 @@ func test_quest_follows_the_two_flags_and_continue_restores_it() -> void:
 	assert_eq(again.load_slot(GameSession.AUTO_SLOT), SaveCodec.Status.OK)
 	assert_eq(again.quests.stage_of("ch1_main"), "slimes", "讀檔回到第二段")
 	s.set_flag(CorruptForest.FLAG_SLIMES, true)
+	assert_eq(s.quests.stage_of("ch1_main"), "after_fight", "打完還有戰後那段話")
+	assert_eq(s.state.checkpoint, "ch1_after_slimes")
+	assert_eq(str(_game().call("level_for_checkpoint", s.state.checkpoint)), "corrupt_forest")
+	assert_eq(s.quests.marker_spec("ch1_main"), "node:Sera", "指引指向席菈")
+	assert_false(s.quests.is_done("ch1_main"))
+	s.set_flag(CorruptForest.FLAG_AFTER_TALK, true)
 	assert_true(s.quests.is_done("ch1_main"))
 	assert_eq(s.state.get_flag("ch1.forest_gate_done"), true)
 
@@ -78,7 +84,7 @@ func test_quest_and_dialogue_data_are_valid() -> void:
 	assert_true(db.errors.is_empty(), "任務資料：%s" % ", ".join(db.errors))
 	var dlg := DialogueDB.load_default()
 	assert_true(dlg.errors.is_empty(), "對話資料：%s" % ", ".join(dlg.errors))
-	assert_true(dlg.has_dialogue("ch1_forest_gate"))
+	assert_true(dlg.has_dialogue("ch1_forest_gate") and dlg.has_dialogue("ch1_after_slimes"))
 	assert_true(StatusRules.load_default().errors.is_empty(), "狀態資料")
 
 
@@ -191,7 +197,8 @@ func test_sera_starts_in_view_and_follows_behind_noen() -> void:
 	assert_true(sera.global_position.distance_to(player.global_position) < CombatTuning.num("sera.follow_far"), "被甩太遠就直接出現在後面")
 
 
-func test_in_a_fight_sera_shoots_a_vial_that_reverses_into_faster_attacks() -> void:
+## 教學戰照劇本：席菈慌了，第一瓶拿錯成【重度麻痺＋防禦歸零】→ 落在諾恩身上變成出手快 150%＋受傷少 80%；之後她射平常的那一瓶。
+func test_in_a_fight_sera_panics_and_her_wrong_vial_reverses_into_two_boons() -> void:
 	_game().call("new_game", false)
 	_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
 	var level: CorruptForest = _load_level()
@@ -204,6 +211,8 @@ func test_in_a_fight_sera_shoots_a_vial_that_reverses_into_faster_attacks() -> v
 	sera.global_position = player.global_position + Vector3(0, 0, 5)
 	assert_true(sera.threat_near(), "史萊姆就在前面")
 	assert_eq(player.status_effects.attack_speed(), 1.0)
+	assert_eq(sera.vial_source, CorruptForest.PANIC_VIAL, "第一瓶是拿錯的那一瓶")
+	var hud: Hud = level.get_node("Hud") as Hud
 	var frames: int = 0
 	var aimed: bool = false
 	while sera.vials_fired == 0 and frames < 400:
@@ -212,17 +221,72 @@ func test_in_a_fight_sera_shoots_a_vial_that_reverses_into_faster_attacks() -> v
 		aimed = aimed or sera.puppet().current_state() == "shoot"
 	assert_eq(sera.vials_fired, 1, "開打後射出第一瓶")
 	assert_true(aimed, "先舉弩瞄準")
+	assert_true(hud.bark_keys().has("BARK_SERA_PANIC"), "舉弩的時候她喊了一句")
 	assert_true(frames >= int(CombatTuning.num("sera.first_vial_delay") * 60.0), "不是一開打的那一幀就射（%d 幀）" % frames)
 	var vial: SeraVial = sera.last_vial
 	assert_false(player.status_effects.has("paralysis"), "藥瓶還在飛")
 	for i: int in int(CombatTuning.num("sera.vial_flight") * 60.0) + 6:
 		await tree.physics_frame
 	assert_true(vial.landed, "藥瓶砸在諾恩身上")
-	assert_true(player.status_effects.has("paralysis"), "麻痺上身")
-	assert_eq(player.status_effects.source_of("paralysis"), Sera.VIAL_SOURCE)
+	assert_true(player.status_effects.has("paralysis") and player.status_effects.has("defense_zero"), "麻痺與防禦歸零一起上身")
+	assert_eq(player.status_effects.source_of("paralysis"), CorruptForest.PANIC_VIAL)
 	assert_false(player.status_effects.blocks_attack(), "不會被麻痺定住")
-	assert_true(player.status_effects.attack_speed() > 1.2, "出手變快（×%.2f）" % player.status_effects.attack_speed())
+	assert_true(absf(player.status_effects.attack_speed() - 2.5) < 0.01, "出手快 150%%（×%.2f）" % player.status_effects.attack_speed())
 	assert_true(player.reversal_cue.is_playing(), "反轉的回饋自己播了（不用另外接）")
+	assert_true(hud.bark_keys().has("BARK_SERA_MISFIRE"), "砸中之後她抱頭道歉")
+	assert_eq(hud.center_lines(), PackedStringArray(["CH1_MISFIRE_LINE1", "CH1_MISFIRE_LINE2"]), "畫面中間寫這兩種狀態反轉成什麼")
+	assert_eq(_session().state.get_flag(CorruptForest.FLAG_MISFIRE), true)
+	assert_eq(sera.vial_source, Sera.VIAL_SOURCE, "只拿錯一次，之後是平常的那一瓶")
+	assert_eq(hud.status.rows.size(), 2, "狀態列兩格")
+	var hp0: float = player.health.hp
+	player.health.apply_damage(10.0, {})
+	assert_true(absf(hp0 - player.health.hp - 2.0) < 0.01, "這時候挨打只扣兩成（扣了 %.1f）" % (hp0 - player.health.hp))
+
+
+## 「趁現在砍」：像玩家那樣——往最近的那一隻小跑過去，夠得到就一直按出手。量三隻史萊姆全倒要幾幀；回傳 -1＝時間內沒清完。
+func _mash_until_clear(level: CorruptForest, player: PlayerController, max_frames: int) -> int:
+	for f: int in max_frames:
+		if level.slimes_alive() == 0:
+			return f
+		if player.puppet().action != "attack":
+			var nearest: Slime = null
+			for sl: Slime in level.slimes:
+				if is_instance_valid(sl) and not sl.health.is_dead() and (nearest == null or sl.global_position.distance_to(player.global_position) < nearest.global_position.distance_to(player.global_position)):
+					nearest = sl
+			var to: Vector3 = nearest.global_position - player.global_position
+			to.y = 0.0
+			player.yaw = atan2(-to.x, -to.z)
+			if to.length() > CombatTuning.num("noen.strike_range") - 0.3:
+				player.global_position += to.normalized() * (PlayerController.WALK_SPEED / 60.0)
+			else:
+				player.start_attack()
+		await tree.physics_frame
+	return -1
+
+
+## 劇本：超頻的諾恩把史萊姆群秒殺。吃了拿錯的那一瓶之後一直按出手，三隻要在 4 秒內清掉，而且明顯比沒吃的時候快。
+## （這個測試量出過一個真的問題：出手會自動轉向最近的敵人，以前連剛倒下的也算——打完第一隻之後一直砍屍體，旁邊活的打不到。）
+func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
+	var frames: Array[int] = []
+	for buffed: bool in [false, true]:
+		_game().call("new_game", false)
+		_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
+		_session().set_flag(CorruptForest.FLAG_MISFIRE, true)  # 席菈不插手：這裡只量諾恩自己
+		var level: CorruptForest = _load_level()
+		await tree.physics_frame
+		var player: PlayerController = level.get_node("Player") as PlayerController
+		level.sera.set_physics_process(false)
+		player.global_position = CorruptForest.GLADE_POS + Vector3(0, 0.05, 1.5)
+		if buffed:
+			player.status_effects.apply_source(CorruptForest.PANIC_VIAL)
+		frames.append(await _mash_until_clear(level, player, 1800))
+		assert_false(player.health.is_dead(), "諾恩沒倒")
+		level.queue_free()
+		await tree.process_frame
+	print("    三隻史萊姆全倒：沒吃藥 %d 幀、吃了拿錯的那一瓶 %d 幀" % [frames[0], frames[1]])
+	assert_true(frames[0] > 0 and frames[1] > 0, "兩次都清得掉：%s" % str(frames))
+	assert_true(frames[1] <= 240, "超頻：4 秒內清場（%d 幀）" % frames[1])
+	assert_true(float(frames[1]) <= float(frames[0]) * 0.7, "比沒吃藥快三成以上（%d 對 %d 幀）" % [frames[1], frames[0]])
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:
@@ -260,9 +324,33 @@ func test_clearing_the_slimes_finishes_the_slice() -> void:
 	for i: int in 3:
 		await tree.physics_frame
 	assert_eq(s.state.get_flag(CorruptForest.FLAG_SLIMES), true)
-	assert_true(s.quests.is_done("ch1_main"))
 	var hud: Hud = level.get_node("Hud") as Hud
 	assert_eq(hud.banner_text(), "CH1_SLIMES_CLEARED")
+	assert_eq(s.quests.stage_of("ch1_main"), "after_fight", "還有戰後那段話")
+	assert_eq(hud.objective_text_key(), "Q_CH1_OBJ_AFTER")
+	assert_false(bool(_game().call("is_in_dialogue")), "不是最後一刀的那一幀就講")
+	var frames: int = 0
+	while not bool(_game().call("is_in_dialogue")) and frames < 240:
+		await tree.physics_frame
+		frames += 1
+	assert_true(frames >= int(CorruptForest.AFTER_TALK_DELAY * 60.0) - 4, "等一下才開口（%d 幀）" % frames)
+	var runner: DialogueRunner = _game().get("dialogue") as DialogueRunner
+	assert_eq(runner.current_text(), "DLG_CH1_AFTER_001")
+	runner.advance()
+	runner.advance()
+	assert_eq(runner.current_text(), "DLG_CH1_AFTER_003", "席菈問：你真的不會因為我的能力而受傷嗎？")
+	assert_eq(runner.visible_choices.size(), 2, "兩個回答")
+	assert_true(runner.advance(), "有選項的時候不能直接跳過")
+	assert_true(runner.choose(0))
+	assert_eq(runner.current_text(), "DLG_CH1_AFTER_A")
+	assert_eq(int(s.state.get_flag("sera.affinity", 0)), 10, "回答記進好感度")
+	assert_eq(s.state.get_flag("ch1.after_slimes_answer"), "medicine")
+	runner.advance()
+	assert_false(bool(_game().call("is_in_dialogue")), "講完了")
+	assert_eq(s.state.get_flag(CorruptForest.FLAG_AFTER_TALK), true)
+	assert_true(s.quests.is_done("ch1_main"))
+	for i: int in 3:
+		await tree.physics_frame
 	assert_true(s.story_finished(), "目前的內容到底了")
 	assert_true(hud.is_objective_shown(), "做完之後左上還是有字")
 	assert_eq(hud.objective_text_key(), Hud.STORY_END_KEY, "寫的是「目前的內容到這裡」")
@@ -295,6 +383,23 @@ func test_cleared_glade_stays_cleared_after_reload() -> void:
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
 	assert_eq(level.slimes.size(), 0, "打完之後重進關卡不會再生")
+	# 打完、話還沒講就離開：讀回來席菈接著講，選另一個回答
+	var frames: int = 0
+	while not bool(_game().call("is_in_dialogue")) and frames < 240:
+		await tree.physics_frame
+		frames += 1
+	var runner: DialogueRunner = _game().get("dialogue") as DialogueRunner
+	assert_true(runner != null and runner.current_text() == "DLG_CH1_AFTER_001", "戰後那段話接著講")
+	runner.advance()
+	runner.advance()
+	assert_true(runner.choose(1))
+	assert_eq(runner.current_text(), "DLG_CH1_AFTER_B")
+	assert_eq(int(_session().state.get_flag("sera.affinity", 0)), 5)
+	runner.advance()
+	assert_true(_session().quests.is_done("ch1_main"))
+	for i: int in 120:
+		await tree.physics_frame
+	assert_false(bool(_game().call("is_in_dialogue")), "只講一次")
 
 
 func test_title_menu_has_four_entries_and_new_game_works() -> void:

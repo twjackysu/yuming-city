@@ -164,6 +164,7 @@ func _ready() -> void:
 	health = Health.new(CombatTuning.num("noen.max_hp", 100.0))
 	health.name = "Health"
 	health.invulnerable_check = is_invulnerable
+	health.damage_scale = func(_info: Dictionary) -> float: return status_effects.damage_taken_scale()
 	health.died.connect(_on_died)
 	health.damaged.connect(_on_hurt)
 	add_child(health)
@@ -696,7 +697,9 @@ func _begin_lunge() -> void:
 	if dist <= 0.0:
 		return
 	var seek: float = CombatTuning.num("noen.lunge_seek", 3.4)
-	var foes: Array = get_tree().get_nodes_in_group("enemies")
+	# 倒下的不算：屍體還會在場上躺幾秒，不濾掉的話下一刀會轉過去砍屍體，旁邊活著的那一隻反而打不到
+	var foes: Array = get_tree().get_nodes_in_group("enemies").filter(func(n: Node) -> bool:
+		return not (n is EnemyActor and (n as EnemyActor).health.is_dead()))
 	var foe: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else lunge_pick(global_position, -_body.global_basis.z, seek, foes)
 	if foe == null:
 		# 身體前面沒有人（例如正在往後退）：改看鏡頭前面——玩家看著誰就打誰

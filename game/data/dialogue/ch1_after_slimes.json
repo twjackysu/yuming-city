@@ -1,0 +1,64 @@
+{
+  "id": "ch1_after_slimes",
+  "start": "l00",
+  "nodes": {
+    "l00": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_AFTER_001",
+      "next": "l01"
+    },
+    "l01": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_AFTER_002",
+      "next": "ask"
+    },
+    "ask": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_AFTER_003",
+      "choices": [
+        {
+          "text": "DLG_CH1_AFTER_CHOICE_A",
+          "next": "a",
+          "do": {
+            "add": {
+              "sera.affinity": 10
+            },
+            "set": {
+              "ch1.after_slimes_answer": "medicine"
+            }
+          }
+        },
+        {
+          "text": "DLG_CH1_AFTER_CHOICE_B",
+          "next": "b",
+          "do": {
+            "add": {
+              "sera.affinity": 5
+            },
+            "set": {
+              "ch1.after_slimes_answer": "warn_me"
+            }
+          }
+        }
+      ]
+    },
+    "a": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_AFTER_A",
+      "do": {
+        "set": {
+          "ch1.after_slimes_talked": true
+        }
+      }
+    },
+    "b": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_AFTER_B",
+      "do": {
+        "set": {
+          "ch1.after_slimes_talked": true
+        }
+      }
+    }
+  }
+}

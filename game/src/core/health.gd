@@ -16,7 +16,7 @@ signal revived
 @export var max_hp: float = 100.0
 var hp: float = 100.0
 var invulnerable_check: Callable = Callable()
-## 受傷之前先問擁有者這一下打幾折（回傳 0～1；沒設＝照扣）。例：硬撐中的敵人只扣四分之一。
+## 受傷之前先問擁有者這一下乘幾倍（沒設＝照扣）。例：硬撐中的敵人只扣四分之一；防禦歸零的人多吃。
 ## 擁有者可以在 info 裡留記號（例如 info["braced"] = true），收 damaged 的人看得到。
 var damage_scale: Callable = Callable()
 
@@ -41,7 +41,7 @@ func apply_damage(amount: float, info: Dictionary = {}) -> bool:
 	if invulnerable_check.is_valid() and bool(invulnerable_check.call()):
 		return false
 	if damage_scale.is_valid():
-		amount *= clampf(float(damage_scale.call(info)), 0.0, 1.0)
+		amount *= maxf(float(damage_scale.call(info)), 0.0)
 		if amount <= 0.0:
 			return false
 	hp = maxf(hp - amount, 0.0)

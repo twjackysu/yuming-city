@@ -15,6 +15,8 @@ const CROSSBOW_ROT: Vector3 = Vector3(0, 0, 180)
 const CROSSBOW_OFFSET: Vector3 = Vector3(0.0, 0.02, 0.0)
 
 var brain: SeraBrain = SeraBrain.new()
+## 下一瓶射什麼（statuses.json 的來源）；關卡可以換（教學戰的第一瓶是她慌了拿錯的那一瓶）
+var vial_source: String = VIAL_SOURCE
 var target: PlayerController
 var vials_fired: int = 0
 var last_vial: SeraVial
@@ -88,7 +90,7 @@ func threat_near() -> bool:
 func fire() -> SeraVial:
 	vials_fired += 1
 	var from: Vector3 = _crossbow.global_position if _crossbow != null else global_position + Vector3.UP * 1.2
-	last_vial = SeraVial.launch(get_parent(), from, target, VIAL_SOURCE)
+	last_vial = SeraVial.launch(get_parent(), from, target, vial_source)
 	Sfx.play_at(self, "whoosh", from, -6.0)
 	return last_vial
 

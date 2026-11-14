@@ -1,6 +1,6 @@
 class_name StatusRules
 extends RefCounted
-## 新版（劇情重寫）狀態規則的資料：狀態定義、來源（毒霧、守衛噴毒）、可攜藥劑。
+## 狀態規則的資料：狀態定義、來源（瘴氣、史萊姆、席菈的藥瓶…）、可攜藥劑。
 ## 資料在 res://data/status/statuses.json；數值說明見 docs/design/13-chapter-1-plan.md。
 
 const DEFAULT_PATH: String = "res://data/status/statuses.json"
@@ -34,10 +34,23 @@ static func load_file(path: String) -> StatusRules:
 			var status_id: String = str((table[id] as Dictionary).get("status", ""))
 			if not r.statuses.has(status_id):
 				r.errors.append("%s 指到不存在的狀態 %s" % [id, status_id])
+	# also（同一下再套用另一個來源）：要指到存在的來源，而且不能繞回自己——有問題的拿掉，照樣能跑
+	for id: Variant in r.sources:
+		var seen: PackedStringArray = [str(id)]
+		var cur: Dictionary = r.sources[id] as Dictionary
+		while cur.has("also"):
+			var next_id: String = str(cur["also"])
+			if not r.sources.has(next_id) or seen.has(next_id):
+				r.errors.append("%s 的 also 指到不存在或繞回來的來源 %s" % [seen[seen.size() - 1], next_id])
+				cur.erase("also")
+				break
+			seen.append(next_id)
+			cur = r.sources[next_id] as Dictionary
 	return r
 
 
-## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺）
+## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺）；
+## "guard"＝不碰生命，影響受到的直接傷害（防禦歸零）
 func kind(status_id: String) -> String:
 	return str((statuses.get(status_id, {}) as Dictionary).get("kind", "dot"))
 

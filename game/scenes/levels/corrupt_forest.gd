@@ -5,8 +5,10 @@ extends StoryLevel
 ## （席菈跟在後面，開打後往諾恩背上射藥：scenes/actors/sera/）。
 ## 地面是一片平面（顏色、路與空地的邊緣、落葉都在 forest_ground.gdshader 裡算），上面長一團一團的草（GrassTufts）。
 ## 樹、毒蕈、灌木是 Tripo 的模型（scripts/gen_props.sh 擺正後放 assets/props/tripo/，不進 git）；檔案不在就用程式拼的替身。
-## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）——任務 data/quests/ch1_main.json 看這兩個；
-## ch1.gate_talked＝瘴氣裡那段對話（data/dialogue/ch1_forest_gate.json）講過了。
+## 教學戰照劇本：席菈慌了，第一瓶拿錯成【重度麻痺＋防禦歸零】（對諾恩＝出手快 150%＋受傷少 80%）→ 打完兩人講話（兩個選項）。
+## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）、ch1.after_slimes_talked（戰後那段話講完，
+## 對話資料自己設）——任務 data/quests/ch1_main.json 看這三個；ch1.gate_talked＝瘴氣裡那段對話講過了；
+## ch1.misfire_seen＝拿錯的那一瓶射過了。
 
 const GROUND_SIZE: float = 140.0
 const MIASMA_POS: Vector3 = Vector3(0, 0, 2)
@@ -28,7 +30,14 @@ const PATH_HALF_WIDTH: float = 4.0
 const FLAG_REVERSAL: String = "ch1.reversal_seen"
 const FLAG_SLIMES: String = "ch1.slimes_cleared"
 const FLAG_GATE_TALK: String = "ch1.gate_talked"
+const FLAG_MISFIRE: String = "ch1.misfire_seen"
+const FLAG_AFTER_TALK: String = "ch1.after_slimes_talked"
 const GATE_DIALOGUE: String = "ch1_forest_gate"
+const AFTER_DIALOGUE: String = "ch1_after_slimes"
+## 教學戰席菈拿錯的那一瓶（statuses.json 的來源）
+const PANIC_VIAL: String = "sera_panic_vial"
+## 史萊姆都倒了之後隔多久席菈才開口（等最後一刀的停頓與橫幅）
+const AFTER_TALK_DELAY: float = 1.6
 ## 第一次反轉之後隔多久席菈才開口（等碎裂與金光演完）
 const GATE_TALK_DELAY: float = 1.2
 ## 席菈一開始站在諾恩的左前方（玩家的鏡頭一開場就看得到她），之後自己跟在後面
@@ -39,6 +48,10 @@ var miasma: PoisonMist
 var sera: Sera
 ## 離瘴氣裡那段對話還有幾秒（< 0＝沒有在等）
 var _gate_talk_in: float = -1.0
+## 離戰後那段對話還有幾秒（< 0＝沒有在等）
+var _after_talk_in: float = -1.0
+## 拿錯的那一瓶演到哪：0＝還沒舉弩、1＝舉弩喊過了，等藥瓶砸中
+var _misfire_step: int = 0
 var _rng := RandomNumberGenerator.new()
 ## 每棵樹：x、z＝位置，y＝大小（地面的苔與草叢照這個長）
 var _trees := PackedVector3Array()
@@ -79,6 +92,8 @@ func _ready() -> void:
 				_player.status_effects.apply_source("miasma"))
 	if not bool(Game.session.state.get_flag(FLAG_SLIMES, false)):
 		_spawn_slimes()
+	elif not bool(Game.session.state.get_flag(FLAG_AFTER_TALK, false)):
+		_after_talk_in = AFTER_TALK_DELAY  # 打完、話還沒講就離開的存檔：讀回來接著講
 	QualityPreset.apply_tree(self, Settings.quality as QualityPreset.Level)
 
 
@@ -100,9 +115,31 @@ func _physics_process(delta: float) -> void:
 		_gate_talk_in -= delta
 		if _gate_talk_in < 0.0 and Game.start_dialogue(GATE_DIALOGUE):
 			Game.session.set_flag(FLAG_GATE_TALK, true)
+	_tick_misfire()
 	if not slimes.is_empty() and not bool(st.get_flag(FLAG_SLIMES, false)) and slimes_alive() == 0:
 		Game.session.set_flag(FLAG_SLIMES, true)
 		_hud.show_banner("CH1_SLIMES_CLEARED", 4.0)
+		_after_talk_in = AFTER_TALK_DELAY
+	if _after_talk_in >= 0.0:
+		_after_talk_in -= delta
+		if _after_talk_in < 0.0 and not Game.start_dialogue(AFTER_DIALOGUE):
+			_after_talk_in = 0.2  # 別的對話還沒講完：等一下再試
+
+
+## 教學戰的誤射（劇本節點 2）：舉弩的時候喊一句；藥瓶砸中之後抱頭道歉，畫面中間寫這兩種狀態反轉成什麼。
+## 只演一次——之後她射平常的那一瓶。倒下重來（旗標跟著退回檢查點）會再演。
+func _tick_misfire() -> void:
+	if sera.vial_source != PANIC_VIAL:
+		return
+	if _misfire_step == 0:
+		if sera.brain.is_aiming():
+			_misfire_step = 1
+			_hud.show_bark(sera, "BARK_SERA_PANIC")
+	elif sera.last_vial != null and (not is_instance_valid(sera.last_vial) or sera.last_vial.landed):
+		sera.vial_source = Sera.VIAL_SOURCE
+		Game.session.set_flag(FLAG_MISFIRE, true)
+		_hud.show_bark(sera, "BARK_SERA_MISFIRE", 3.4)
+		_hud.show_center_lines("CH1_MISFIRE_LINE1", "CH1_MISFIRE_LINE2", 5.0, Hud.CENTER_LINE2_COLOR)
 
 
 func slimes_alive() -> int:
@@ -120,6 +157,8 @@ func _spawn_sera() -> void:
 	sera.position = _player.global_position + SERA_START_OFFSET
 	# 面向諾恩（開場看得到她的臉）
 	sera.rotation.y = atan2(SERA_START_OFFSET.x, SERA_START_OFFSET.z)
+	if not bool(Game.session.state.get_flag(FLAG_MISFIRE, false)):
+		sera.vial_source = PANIC_VIAL
 	add_child(sera)
 
 
