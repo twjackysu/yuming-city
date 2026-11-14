@@ -5,6 +5,9 @@ Tripo 的產物塞在邊長 1 的方塊裡、朝向隨意（武器常常是斜�
       縮到 --length；原點在握的地方（從底端算 --grip 比例）。
       --like staff／sword：尺寸與原點照 KayKit 的法杖／雙手劍（遊戲裡原本用的），可以直接替換、不用改握法的數字。
   物件（--kind prop）：照原本的上下，底部中心放在原點，縮到 --height 公尺。
+      --sink：整個往下沉幾公尺（模型自帶一圈底座時，讓底座的邊緣埋進地面）。
+      --moss-below：這個高度以下的面，貼圖上黃綠色（草皮）的地方改塗成 MOSS（跟關卡地面的苔一樣的暗色）；
+          蘑菇、樹根這些不是黃綠色的不動。Tripo 的樹自帶一圈亮黃綠的土丘，放進暗紫的森林裡太搶眼。
 用法：python3 -I tools/blender/tripo_prop.py --src <glb> --out <glb> --kind weapon --like staff
 來源檔是外來的資料：只讀幾何與貼圖，不執行裡面的任何東西。
 """
@@ -18,6 +21,66 @@ from mathutils import Matrix
 
 # 照 KayKit 模型的量法（Blender 座標）：(底端 z, 頂端 z)
 LIKE = {"staff": (-0.90, 1.25), "sword": (-0.40, 1.96)}
+# --moss-below 改塗的顏色（sRGB）：跟 game/src/world/forest_ground.gdshader 的 moss 同一個
+MOSS = (0.12, 0.22, 0.18)
+
+
+def repaint_grass(meshes, below):
+    """高度 below 以下的面：貼圖上黃綠色的像素改塗成 MOSS（保留原本的明暗起伏）。回傳改了幾個像素。"""
+    changed = 0
+    for o in meshes:
+        me = o.data
+        uvs = me.uv_layers.active.data if me.uv_layers.active else None
+        img = next((n.image for mat in me.materials if mat and mat.node_tree for n in mat.node_tree.nodes
+                    if n.type == "TEX_IMAGE" and n.image and any(l.to_socket.name == "Base Color" for l in n.outputs[0].links)), None)
+        if uvs is None or img is None:
+            continue
+        w, h = img.size
+        px = np.empty(w * h * 4, dtype=np.float32)
+        img.pixels.foreach_get(px)
+        px = px.reshape(h, w, 4)
+        mask = np.zeros((h, w), dtype=bool)   # 低的面（土丘）蓋到的像素
+        other = np.zeros((h, w), dtype=bool)  # 其他面（樹幹、樹枝上的黏液）蓋到的像素
+        for p in me.polygons:
+            into = other if any(me.vertices[i].co.z >= below for i in p.vertices) else mask
+            t = np.array([uvs[li].uv for li in p.loop_indices], dtype=float) * (w, h)
+            x0, y0 = np.floor(t.min(0)).astype(int) - 1
+            x1, y1 = np.ceil(t.max(0)).astype(int) + 1
+            x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, w - 1), min(y1, h - 1)
+            if x1 < x0 or y1 < y0:
+                continue
+            gx, gy = np.meshgrid(np.arange(x0, x1 + 1) + 0.5, np.arange(y0, y1 + 1) + 0.5)
+            for k in range(1, len(t) - 1):  # 多邊形拆成扇形的三角形
+                a, b, c = t[0], t[k], t[k + 1]
+                d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1])
+                if abs(d) < 1e-9:
+                    continue
+                u = ((b[1] - c[1]) * (gx - c[0]) + (c[0] - b[0]) * (gy - c[1])) / d
+                v = ((c[1] - a[1]) * (gx - c[0]) + (a[0] - c[0]) * (gy - c[1])) / d
+                into[y0:y1 + 1, x0:x1 + 1] |= (u >= 0.0) & (v >= 0.0) & (u + v <= 1.0)
+        # 貼圖在每塊 UV 外面還多塗了一圈同色的邊（取樣時不漏底色）：土丘旁邊那一圈也要改，不然接縫會留一條亮綠
+        for _ in range(16):
+            grown = mask.copy()
+            grown[1:] |= mask[:-1]
+            grown[:-1] |= mask[1:]
+            grown[:, 1:] |= mask[:, :-1]
+            grown[:, :-1] |= mask[:, 1:]
+            mask = grown & ~other
+        r, g, b = px[..., 0], px[..., 1], px[..., 2]
+        grass = mask & (g > b * 1.35) & (g > r * 0.85) & (g > 0.25)
+        if not grass.any():
+            continue
+        luma = 0.3 * r + 0.6 * g + 0.1 * b
+        shade = np.clip(luma / max(float(luma[grass].mean()), 1e-4), 0.6, 1.35)
+        for ch in range(3):
+            px[..., ch] = np.where(grass, MOSS[ch] * shade, px[..., ch])
+        img.pixels.foreach_set(px.ravel())
+        img.update()
+        # 改過的圖匯出時會重新編碼。Blender 寫的 JPEG 帶 EXIF／ICC 區段，Godot 4.7 讀不了（整張貼圖會不見），所以存成 PNG：
+        # 匯出器看檔名決定格式
+        img.filepath_raw = "repainted.png"
+        changed += int(grass.sum())
+    return changed
 
 
 def main():
@@ -32,6 +95,8 @@ def main():
     ap.add_argument("--grip", type=float, default=0.15)
     ap.add_argument("--height", type=float, default=1.0)
     ap.add_argument("--turn", type=float, default=0.0, help="物件繞上下軸多轉幾度")
+    ap.add_argument("--sink", type=float, default=0.0, help="物件往下沉幾公尺")
+    ap.add_argument("--moss-below", type=float, default=0.0, help="這個高度（公尺）以下的黃綠色草皮改塗成地面的苔色")
     args = ap.parse_args()
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -87,12 +152,18 @@ def main():
         o.matrix_basis = Matrix.Identity(4)
         o.parent = None
         o.select_set(True)
+    note = ""
+    if args.moss_below > 0.0:
+        note = f"、草皮改塗 {repaint_grass(meshes, args.moss_below)} 像素"
+    if args.sink != 0.0:
+        for o in meshes:
+            o.data.transform(Matrix.Translation((0, 0, -args.sink)))
     bpy.context.view_layer.objects.active = meshes[0]
     args.out.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=str(args.out), export_format="GLB", use_selection=True,
                               export_animations=False, export_yup=True, export_image_format="AUTO")
     tris = sum(len(p.vertices) - 2 for o in meshes for p in o.data.polygons)
-    print(f"[{args.out.stem}] 已匯出（Tripo）：{tris} 個三角面、{size} m、{args.out.stat().st_size // 1024} KB")
+    print(f"[{args.out.stem}] 已匯出（Tripo）：{tris} 個三角面、{size} m{note}、{args.out.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":

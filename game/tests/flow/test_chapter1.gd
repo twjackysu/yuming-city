@@ -81,6 +81,17 @@ func test_quest_and_dialogue_data_are_valid() -> void:
 	assert_true(StatusRules.load_default().errors.is_empty(), "狀態資料")
 
 
+func test_moss_mask_is_white_under_trees_and_black_elsewhere() -> void:
+	var mask: Image = CorruptForest.moss_mask(PackedVector3Array([Vector3(10, 1.0, -20), Vector3(-69.9, 1.3, 69.9)]))
+	var per_meter: float = float(CorruptForest.MOSS_MASK_SIZE) / CorruptForest.GROUND_SIZE
+	var half: float = float(CorruptForest.MOSS_MASK_SIZE) * 0.5
+	assert_true(mask.get_pixel(int(10.0 * per_meter + half), int(-20.0 * per_meter + half)).r > 0.95, "樹腳下是白的")
+	assert_true(mask.get_pixel(int(12.0 * per_meter + half), int(-20.0 * per_meter + half)).r > 0.95, "離樹 2 m 還是白的（土丘在苔裡）")
+	assert_eq(mask.get_pixel(int(18.0 * per_meter + half), int(-20.0 * per_meter + half)).r, 0.0, "離樹 8 m 沒有苔")
+	assert_eq(mask.get_pixel(int(half), int(half)).r, 0.0, "沒有樹的地方是黑的")
+	assert_true(mask.get_pixel(0, CorruptForest.MOSS_MASK_SIZE - 1).r > 0.5, "地圖角落的樹不會畫到圖外面去")
+
+
 func test_level_builds_with_markers_miasma_slimes_and_a_clear_path() -> void:
 	_game().call("new_game", false)
 	var level: CorruptForest = _load_level()
@@ -94,6 +105,12 @@ func test_level_builds_with_markers_miasma_slimes_and_a_clear_path() -> void:
 	assert_false(CorruptForest.tree_spot_ok(CorruptForest.GLADE_POS), "空地不種樹")
 	assert_false(CorruptForest.tree_spot_ok(CorruptForest.MIASMA_POS), "瘴氣裡不種樹")
 	assert_true(CorruptForest.tree_spot_ok(Vector3(12, 0, 8)))
+	var grass: MultiMeshInstance3D = level.get_node_or_null("Forest/GrassTufts") as MultiMeshInstance3D
+	assert_not_null(grass, "有草叢")
+	assert_true(grass.multimesh.instance_count > 1000, "草叢不只幾叢（%d）" % grass.multimesh.instance_count)
+	assert_false(CorruptForest.grass_spot_ok(Vector3(0, 0, 8)), "路中間不長草")
+	assert_false(CorruptForest.grass_spot_ok(CorruptForest.GLADE_POS), "空地不長草")
+	assert_true(CorruptForest.grass_spot_ok(Vector3(12, 0, 8)))
 	var player: PlayerController = level.get_node("Player") as PlayerController
 	assert_true(player.global_position.distance_to((level.get_node("Spawn") as Node3D).global_position) < 0.5, "諾恩在出生點")
 	assert_not_null(player.weapon(), "手上有劍")

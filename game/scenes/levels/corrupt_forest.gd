@@ -2,6 +2,7 @@ class_name CorruptForest
 extends StoryLevel
 ## 腐敗之森入口（第一章的起點，docs/story/chapter-1.md 節點 2；計畫在 docs/design/13-chapter-1-plan.md）。
 ## 現在是最小的一塊：出生點 → 一團瘴氣（走進去中毒 → 反轉成回血）→ 林間空地的三隻劇毒史萊姆。
+## 地面是一片平面（顏色、路與空地的邊緣、落葉都在 forest_ground.gdshader 裡算），上面長一團一團的草（GrassTufts）。
 ## 樹、毒蕈、灌木是 Tripo 的模型（scripts/gen_props.sh 擺正後放 assets/props/tripo/，不進 git）；檔案不在就用程式拼的替身。
 ## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）——任務 data/quests/ch1_main.json 看這兩個。
 
@@ -15,6 +16,11 @@ const TREE_MODEL: String = "tripo/prop_corrupt_tree"
 const MUSHROOM_MODEL: String = "tripo/prop_glow_toxic_mushroom"
 const BUSH_MODEL: String = "tripo/prop_rotten_fruit_bush"
 const TREE_COUNT: int = 46
+const GRASS_PATCHES: int = 230
+const GROUND_SHADER: Shader = preload("res://src/world/forest_ground.gdshader")
+## 樹腳下那一圈苔的半徑（公尺，再乘上樹的大小）：比模型自帶的土丘（約 3 m）大一圈，土丘才會埋在苔裡
+const TREE_MOSS_RADIUS: float = 4.4
+const MOSS_MASK_SIZE: int = 256
 ## 路（x 在這個寬度內）與空地不種樹
 const PATH_HALF_WIDTH: float = 4.0
 const FLAG_REVERSAL: String = "ch1.reversal_seen"
@@ -23,6 +29,8 @@ const FLAG_SLIMES: String = "ch1.slimes_cleared"
 var slimes: Array[Slime] = []
 var miasma: PoisonMist
 var _rng := RandomNumberGenerator.new()
+## 每棵樹：x、z＝位置，y＝大小（地面的苔與草叢照這個長）
+var _trees := PackedVector3Array()
 
 @onready var _player: PlayerController = $Player
 @onready var _hud: Hud = $Hud
@@ -31,8 +39,8 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	_rng.seed = 20261114
 	_build_environment()
-	_build_ground()
 	_build_forest()
+	_build_ground()
 	_build_miasma()
 	_mark("MiasmaEdge", MIASMA_POS + Vector3(0, 0, MIASMA_RADIUS))
 	_mark("SlimeGlade", GLADE_POS)
@@ -42,6 +50,10 @@ func _ready() -> void:
 	var args: Dictionary = App.parse_user_args(OS.get_cmdline_user_args())
 	if args.has("cam-yaw"):
 		_player.yaw = deg_to_rad(float(str(args["cam-yaw"])))
+	# 截圖用：`--at=x,z` 把諾恩放到別的地方（空地前面＝--at=0,-5）
+	var at: PackedStringArray = str(args.get("at", "")).split(",")
+	if at.size() == 2:
+		_player.global_position = Vector3(float(at[0]), spawn.global_position.y, float(at[1]))
 	_player.snap_camera()
 	# 連拍用：`--burst-on=reversal` 進場 1.5 秒後讓諾恩吸到瘴氣，從那一刻開始拍（scripts/burst.sh）
 	if str(args.get("burst-on", "")) == "reversal":
@@ -94,17 +106,28 @@ func _mark(node_name: String, at: Vector3) -> void:
 	add_child(m)
 
 
-## 黃昏的紫黑森林：冷的月光、暗紫的環境光、薄的體積霧（畫質低時 QualityPreset 換成深度霧）。
+## 黃昏的紫黑森林：頭頂暗、地平線泛紫的天，冷的月光、暗紫的環境光，
+## 體積霧讓遠處的樹一層一層淡進紫色裡（畫質低時 QualityPreset 換成深度霧）。
 func _build_environment() -> void:
+	var dusk := ProceduralSkyMaterial.new()
+	dusk.sky_top_color = Color(0.05, 0.03, 0.1)
+	dusk.sky_horizon_color = Color(0.3, 0.19, 0.4)
+	dusk.sky_curve = 0.25
+	dusk.ground_horizon_color = dusk.sky_horizon_color
+	dusk.ground_bottom_color = Color(0.07, 0.05, 0.11)
+	dusk.sun_angle_max = 6.0
+	var sky := Sky.new()
+	sky.sky_material = dusk
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.07, 0.05, 0.11)
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.42, 0.36, 0.55)
 	env.ambient_light_energy = 0.9
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.012
+	env.volumetric_fog_density = 0.03
 	env.volumetric_fog_albedo = Color(0.5, 0.38, 0.62)
 	env.volumetric_fog_emission = Color(0.05, 0.03, 0.08)
 	env.volumetric_fog_length = 70.0
@@ -135,25 +158,18 @@ func _build_ground() -> void:
 	var mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(GROUND_SIZE, GROUND_SIZE)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.17, 0.2, 0.16)
-	mat.roughness = 1.0
+	var mat := ShaderMaterial.new()
+	mat.shader = GROUND_SHADER
+	mat.set_shader_parameter("path_half_width", PATH_HALF_WIDTH * 0.65)
+	mat.set_shader_parameter("path_z_from", GLADE_POS.z)
+	mat.set_shader_parameter("glade_center", Vector2(GLADE_POS.x, GLADE_POS.z))
+	mat.set_shader_parameter("glade_radius", GLADE_RADIUS)
+	mat.set_shader_parameter("ground_size", GROUND_SIZE)
+	mat.set_shader_parameter("moss_mask", ImageTexture.create_from_image(moss_mask(_trees)))
 	plane.material = mat
 	mesh.mesh = plane
 	body.add_child(mesh)
 	add_child(body)
-	# 路：比兩邊亮一點的土色，從出生點一路到空地
-	var path := MeshInstance3D.new()
-	path.name = "Path"
-	var strip := PlaneMesh.new()
-	strip.size = Vector2(PATH_HALF_WIDTH * 1.4, 60.0)
-	var dirt := StandardMaterial3D.new()
-	dirt.albedo_color = Color(0.3, 0.26, 0.24)
-	dirt.roughness = 1.0
-	strip.material = dirt
-	path.mesh = strip
-	path.position = Vector3(0, 0.01, -5.0)
-	add_child(path)
 
 
 ## 樹散在路的兩邊與空地外圍；毒蕈與灌木點在路邊。位置用固定的亂數種子，每次都一樣。
@@ -168,12 +184,55 @@ func _build_forest() -> void:
 		var p := Vector3(_rng.randf_range(-30.0, 30.0), 0.0, _rng.randf_range(-40.0, 26.0))
 		if not tree_spot_ok(p):
 			continue
-		forest.add_child(_tree(p, _rng.randf_range(0.85, 1.3), _rng.randf_range(0.0, TAU)))
+		var size: float = _rng.randf_range(0.85, 1.3)
+		forest.add_child(_tree(p, size, _rng.randf_range(0.0, TAU)))
+		_trees.append(Vector3(p.x, size, p.z))
 		placed += 1
 	for i: int in 9:
 		var side: float = -1.0 if i % 2 == 0 else 1.0
 		var at := Vector3(side * _rng.randf_range(PATH_HALF_WIDTH * 0.8, PATH_HALF_WIDTH + 2.0), 0.0, 16.0 - float(i) * 4.5)
 		forest.add_child(_small_prop(MUSHROOM_MODEL if i % 3 != 0 else BUSH_MODEL, at, _rng.randf_range(0.0, TAU), i % 3 != 0))
+	forest.add_child(GrassTufts.create(_grass_spots(), _rng))
+
+
+## 草叢的位置：一團一團地長（每團十幾叢），路邊與樹腳下（土丘的邊緣）多幾團。
+func _grass_spots() -> PackedVector3Array:
+	var spots := PackedVector3Array()
+	for c: int in GRASS_PATCHES:
+		var center := Vector3(_rng.randf_range(-28.0, 28.0), 0.0, _rng.randf_range(-38.0, 26.0))
+		if c % 5 == 0:
+			center.x = (-1.0 if c % 2 == 0 else 1.0) * _rng.randf_range(PATH_HALF_WIDTH * 0.7, PATH_HALF_WIDTH * 1.6)
+		elif c % 5 < 3 and not _trees.is_empty():
+			var tree: Vector3 = _trees[_rng.randi_range(0, _trees.size() - 1)]
+			center = Vector3(tree.x, 0.0, tree.z) + Vector3.RIGHT.rotated(Vector3.UP, _rng.randf_range(0.0, TAU)) * 3.0 * tree.y
+		var spread: float = _rng.randf_range(0.8, 2.4)
+		for i: int in _rng.randi_range(8, 22):
+			var p: Vector3 = center + Vector3(_rng.randfn(0.0, spread), 0.0, _rng.randfn(0.0, spread))
+			if grass_spot_ok(p):
+				spots.append(p)
+	return spots
+
+
+## 樹腳下的苔：一張 MOSS_MASK_SIZE 見方的灰階圖蓋住整片地面，離樹越近越白（forest_ground.gdshader 照它長苔）。純函式。
+static func moss_mask(trees: PackedVector3Array) -> Image:
+	var img := Image.create_empty(MOSS_MASK_SIZE, MOSS_MASK_SIZE, false, Image.FORMAT_R8)
+	var per_meter: float = float(MOSS_MASK_SIZE) / GROUND_SIZE
+	for tree: Vector3 in trees:
+		var center := Vector2(tree.x, tree.z) * per_meter + Vector2.ONE * float(MOSS_MASK_SIZE) * 0.5
+		var reach: float = TREE_MOSS_RADIUS * tree.y * per_meter
+		for y: int in range(maxi(int(center.y - reach), 0), mini(int(center.y + reach) + 2, MOSS_MASK_SIZE)):
+			for x: int in range(maxi(int(center.x - reach), 0), mini(int(center.x + reach) + 2, MOSS_MASK_SIZE)):
+				var near: float = 1.0 - smoothstep(0.55, 1.0, Vector2(float(x) + 0.5, float(y) + 0.5).distance_to(center) / reach)
+				if near > img.get_pixel(x, y).r:
+					img.set_pixel(x, y, Color(near, 0, 0))
+	return img
+
+
+## 這個位置可不可以長草：路的中間與空地（打架的地方）不長。純函式。
+static func grass_spot_ok(p: Vector3) -> bool:
+	if absf(p.x) < PATH_HALF_WIDTH * 0.6 and p.z > GLADE_POS.z:
+		return false
+	return Vector2(p.x - GLADE_POS.x, p.z - GLADE_POS.z).length() > GLADE_RADIUS - 1.0
 
 
 ## 這個位置可不可以種樹：不擋路、不在空地與瘴氣裡。純函式。
@@ -232,13 +291,30 @@ func _small_prop(model: String, at: Vector3, yaw: float, glows: bool) -> Node3D:
 		look = mesh
 	root.add_child(look)
 	if glows:
+		_self_lit(look, 0.45)
 		var light := OmniLight3D.new()
 		light.light_color = Color(0.45, 0.75, 1.0)
-		light.light_energy = 0.8
-		light.omni_range = 4.0
+		light.light_energy = 1.6
+		light.omni_range = 5.0
 		light.position = Vector3(0, 0.8, 0)
 		root.add_child(light)
 	return root
+
+
+## 讓模型自己發光（發光色＝它原本的顏色）：夜光毒蕈在暗處要看得出是亮的。
+static func _self_lit(model: Node3D, energy: float) -> void:
+	for n: Node in model.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		for surface: int in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(surface) as BaseMaterial3D
+			if src == null:
+				continue
+			var mat := src.duplicate() as BaseMaterial3D
+			mat.emission_enabled = true
+			mat.emission = Color.BLACK
+			mat.emission_texture = mat.albedo_texture
+			mat.emission_energy_multiplier = energy
+			mi.set_surface_override_material(surface, mat)
 
 
 func _build_miasma() -> void:
