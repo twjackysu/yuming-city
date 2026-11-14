@@ -410,6 +410,16 @@
    "note": "公會櫃檯"
   },
   {
+   "id": "prop_guild_counter_v2",
+   "model": "tripo-v3.1",
+   "params": {
+    "face_limit": 10000
+   },
+   "prompt": "stylized anime fantasy game environment prop, bright colors, vibrant hand-painted textures, game-ready, isolated single object on plain background, object only, nobody present. A long medieval wooden reception counter desk, sturdy carpentry with panel front, on top a stack of papers, a small brass bell, an ink bottle with a quill. Furniture only.",
+   "note": "公會櫃檯（v2：第一版把小人也做進模型裡，重產）",
+   "negative_prompt": "character, person, people, figure, silhouette, creature, mascot, face, eyes, animal, text, logo, pedestal"
+  },
+  {
    "id": "prop_glow_toxic_mushroom",
    "model": "tripo-v3.1",
    "params": {
@@ -437,6 +447,16 @@
    "note": "營火（休息事件）"
   },
   {
+   "id": "prop_campfire_v2",
+   "model": "tripo-v3.1",
+   "params": {
+    "face_limit": 6000
+   },
+   "prompt": "stylized anime fantasy game environment prop, bright colors, vibrant hand-painted textures, game-ready, isolated single object on plain background, object only, nobody present. A small campfire: a ring of grey stones around a pile of burning wooden logs with orange flames, a small iron cooking pot hanging on a simple wooden tripod above the fire, one short log lying beside it as a seat.",
+   "note": "營火（休息事件）（v2：第一版把小人也做進模型裡，重產）",
+   "negative_prompt": "character, person, people, figure, silhouette, creature, mascot, face, eyes, animal, text, logo, pedestal"
+  },
+  {
    "id": "prop_poison_vent",
    "model": "tripo-v3.1",
    "params": {
@@ -453,6 +473,16 @@
    },
    "prompt": "cute stylized anime manga fantasy game prop, bright appealing colors, vibrant hand-painted textures, readable silhouette, game-ready, no text, no logo, centered, standing on flat ground. A large spider web stretched between two dead branches, strands crackling with yellow electric sparks",
    "note": "麻痺蜘蛛網"
+  },
+  {
+   "id": "prop_paralysis_web_v2",
+   "model": "tripo-v3.1",
+   "params": {
+    "face_limit": 6000
+   },
+   "prompt": "stylized anime fantasy game environment prop, bright colors, vibrant hand-painted textures, game-ready, isolated single object on plain background, object only, nobody present. A large flat spider web stretched between two bare dead wooden branches stuck in the ground like a gate, thick pale silk strands with small glowing yellow lightning sparks on them, empty web with nothing caught in it.",
+   "note": "麻痺蜘蛛網（v2：第一版把小人也做進模型裡，重產）",
+   "negative_prompt": "character, person, people, figure, silhouette, creature, mascot, face, eyes, animal, text, logo, pedestal"
   },
   {
    "id": "prop_rotten_fruit_bush",
