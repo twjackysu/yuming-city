@@ -62,10 +62,10 @@ PC 單機、第三人稱的動作 RPG。主角諾恩的身體會把**負面狀�
 | `docs/story-reboot/` | 劇情：[入口](docs/story-reboot/README.md)、[故事大綱](docs/story-reboot/story-v2.md)、[開場](docs/story-reboot/opening-v2.zh-TW.txt)、[二十種反轉效果](docs/story-reboot/status-reversal.md) |
 | `docs/design/09-reboot-first-ten-minutes.md` | 前十分鐘的規則、數值、進度 |
 | `docs/design/10-reboot-underground-market.md` | 地下市場（第二段）：做好的部分與接下來的規劃 |
-| `docs/design/02-gameplay.md`／`04-architecture.md`／`06-terminology.md` | 操作與戰鬥規則、程式架構與技術規則、用詞 |
+| `docs/design/02-gameplay.md`／`04-architecture.md`／`05-code-map.md`／`06-terminology.md` | 操作與戰鬥規則、程式架構與技術規則、程式地圖（東西在哪個檔）、用詞 |
 | `docs/NEXT.md`／`docs/PROGRESS.md`／`docs/DECISIONS.md` | 待辦、每一輪做了什麼、決策紀錄 |
 | `docs/FOR_JACKY.md` | 需要 Jacky 看或回覆的事 |
-| `docs/ART_QUALITY_BAR.md` | 畫面品質的標準 |
+| `docs/ART_QUALITY_BAR.md`／`docs/ART_REQUESTS.md` | 畫面標準（漫畫風）、美術待辦與規格 |
 | `art-inbox/` | 交付的美術素材與接入說明 |
 | `scripts/` | 檢查、截圖、產生音效與字型的腳本 |
 

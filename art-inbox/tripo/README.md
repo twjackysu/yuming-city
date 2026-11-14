@@ -17,7 +17,7 @@
 {
   "id": "market_stall_herbs",            // 小寫英數底線，也是資料夾名；產過（有 SOURCE.json）就不會再產
   "prompt": "...英文描述：形狀、材質、風格、尺寸...",
-  "image": "art-inbox/concepts/xxx.png", // 二選一：用參考圖（必須是 repo 裡、已審過的圖）
+  "image": "art-inbox/refs/xxx.png",     // 二選一：用參考圖（必須是 repo 裡、已審過的圖）
   "model": "tripo-v3.1",                 // 小物／場景：tripo-v3.1（約 20 點，detailed 30 點）；要乾淨低面角色：tripo-p2（約 110 點）
   "params": {"face_limit": 8000, "texture_quality": "standard"},
   "negative_prompt": "text, logo, base, pedestal",

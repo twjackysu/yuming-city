@@ -34,4 +34,4 @@
 
 ## 舊紀錄
 
-11/8～11/10 本機試作（都沒接進遊戲）：[ART_DELIVERY_STATUS.md](ART_DELIVERY_STATUS.md)、[ART_PRODUCTION.md](ART_PRODUCTION.md)、`art-inbox/studies/`、`docs/art-trials/`。品質標準：[ART_QUALITY_BAR.md](ART_QUALITY_BAR.md)。
+11/8～11/10 的本機寫實試作（MakeHuman、TripoSR、TRELLIS）與概念圖已刪除（2026-11-14），要查看 git 歷史。

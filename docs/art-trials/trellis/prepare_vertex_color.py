@@ -1,7 +1,0 @@
-import json,struct,numpy as np
-from pathlib import Path
-root=Path.home()/'Documents/undertaker-trellis';raw=(root/'undertaker_trellis_raw.glb').read_bytes();size=struct.unpack_from('<I',raw,12)[0];g=json.loads(raw[20:20+size]);offset=20+size;binary_size=struct.unpack_from('<I',raw,offset)[0];binary=raw[offset+8:offset+8+binary_size];attrs=np.load(root/'vertex_attributes.npy');colors=attrs[:,:3].clip(0,1);linear=np.where(colors<=.04045,colors/12.92,((colors+.055)/1.055)**2.4).astype('<f4');view=len(g['bufferViews']);g['bufferViews'].append({'buffer':0,'byteOffset':len(binary),'byteLength':linear.nbytes,'target':34962});index=len(g['accessors']);g['accessors'].append({'bufferView':view,'componentType':5126,'count':len(linear),'type':'VEC3'});binary+=linear.tobytes();g['buffers'][0]['byteLength']=len(binary);g['materials']=[{'name':'Trellis_Vertex_Albedo','pbrMetallicRoughness':{'baseColorFactor':[1,1,1,1],'metallicFactor':0,'roughnessFactor':.9},'doubleSided':True}]
-for mesh in g['meshes']:
- for primitive in mesh['primitives']:
-  assert g['accessors'][primitive['attributes']['POSITION']]['count']==len(linear);primitive['attributes']['COLOR_0']=index;primitive['material']=0
-j=json.dumps(g,separators=(',',':')).encode();j+=b' '*((-len(j))%4);binary+=b'\0'*((-len(binary))%4);out=b'glTF'+struct.pack('<II',2,12+8+len(j)+8+len(binary))+struct.pack('<I4s',len(j),b'JSON')+j+struct.pack('<I4s',len(binary),b'BIN\0')+binary;(root/'undertaker_trellis_color.glb').write_bytes(out);print('GLB',len(out),'RGB linear float32')

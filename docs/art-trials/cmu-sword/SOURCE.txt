@@ -1,6 +1,0 @@
-CMU motion dataset, Subject 02 Trial 07 swordplay.
-http://mocap.cs.cmu.edu/
-Commercial product use permitted; direct resale of data prohibited, including converted data.
-Credit: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
-Study images: Blender renders of this project's Sheila candidate; character source credits remain in art-inbox/studies/sheila/SOURCE.txt.
-No accepted combat animation is delivered by this study.

@@ -1,9 +1,0 @@
-{
-  "bones": 71,
-  "triangles": 53259,
-  "posts": 2,
-  "crossbars": 3,
-  "chain_links": 52,
-  "required_material": "M_FrameJoint",
-  "status": "pose_and_material_review_pending"
-}

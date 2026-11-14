@@ -1,9 +1,0 @@
-Tool: OpenAI built-in image_gen through Codex (model identifier not exposed).
-Generated: 2026-11-08 (Asia/Taipei).
-AI generated: yes, including the revision pass.
-Inputs: original project text in docs/ART_REQUESTS.md and docs/design/03-art-audio-direction.md; no third-party reference images.
-Prompts: art-inbox/concepts/prompts.json; art-inbox/concepts/revision_prompts.json (repository-relative).
-Terms: https://openai.com/policies/terms-of-use/ (Content / Ownership of content; checked 2026-11-08).
-Rights: OpenAI assigns its rights in output to the user to the extent permitted by law, subject to applicable service terms. These are not CC0 assets; no third-party asset license is asserted. Commercial project use is subject to those terms.
-Purpose: concept direction, not imported runtime models or certified Steam capsule artwork.
-Validation: see manifest.json for actual dimensions, hashes, and delivery status; dimensions requested in prompts may differ from actual output.

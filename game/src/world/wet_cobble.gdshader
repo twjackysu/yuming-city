@@ -1,6 +1,6 @@
 shader_type spatial;
 render_mode specular_occlusion_disabled;
-// 濕石板路（參考 art-inbox/concepts 的冬夜概念圖：燈光在濕石頭上拉出倒影）。
+// 濕石板路（燈光在濕石頭上拉出倒影）。
 // 全部程序生成、用世界座標 XZ（合併後的幾何沒有可靠的 UV），不依賴貼圖。
 // - 石塊：每排錯開、長短不一的平石板（邊緣一圈倒角），每塊顏色、傾斜、磨損不同（D-095）
 // - 石縫：較暗、濕（粗糙度低）
