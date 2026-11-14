@@ -12,13 +12,13 @@
 
 ## 現況（2026-11-14 重新開始，D-273）
 
-舊劇情的關卡與角色都砍了，只留通用底層（清單在 [`04-architecture.md`](04-architecture.md)）。現在標題按「新遊戲」會進**腐敗之森入口**的最小版：諾恩拿【瘴氣生鏽鐵劍】→ 走進瘴氣中毒、反轉成回血 → 空地上三隻劇毒史萊姆。席菈還沒進場。Tripo 第二批 28 個模型都在 `art-inbox/tripo/`，大部分還沒接。
+舊劇情的關卡與角色都砍了，只留通用底層（清單在 [`04-architecture.md`](04-architecture.md)）。現在標題按「新遊戲」會進**腐敗之森入口**的最小版：諾恩拿【瘴氣生鏽鐵劍】、席菈拿【鍊金藥瓶手弩】站在旁邊 → 走進瘴氣中毒、反轉成回血 → 兩人講四句 → 空地上三隻劇毒史萊姆，席菈跟在後面往諾恩背上射藥（麻痺 → 出手加速）。Tripo 第二批 28 個模型都在 `art-inbox/tripo/`，大部分還沒接。
 
 ## 場景（照做的順序）
 
 | # | 場景 | 對應劇本 | 現況 |
 |---|---|---|---|
-| 1 | 腐敗之森入口＋一小段森林 | 節點 2 | **有最小版**（`scenes/levels/corrupt_forest.gd`）：苔與土的地面（shader）、草叢、Tripo 的樹與會發光的毒蕈、紫霧與孢子、一團瘴氣、三隻史萊姆。要補：席菈、開場對話；地形還是平的 |
+| 1 | 腐敗之森入口＋一小段森林 | 節點 2 | **有最小版**（`scenes/levels/corrupt_forest.gd`）：苔與土的地面（shader）、草叢、Tripo 的樹與會發光的毒蕈、紫霧與孢子、一團瘴氣、三隻史萊姆、席菈（跟隨＋射藥）、瘴氣裡的對話。要補：教學戰照劇本走（誤射、一刀清場、戰後對話）；地形還是平的 |
 | 2 | 森林完整版（營火、毒沼、陷阱、詛咒寶箱、5 朵夜光毒蕈） | 時段 B | 沒有。模型有：`prop_campfire_v2`、`prop_poison_vent`、`prop_paralysis_web_v2`、`prop_rotten_fruit_bush`、`prop_cursed_chest`、`enemy_mold_slime`、`enemy_miasma_wolf`、`enemy_spore_treant` |
 | 3 | 廢棄祭壇（Boss） | 節點 3 | 沒有。模型有：`prop_ruined_altar`、`boss_plague_golem`、`leo`、`leo_party_mage`、`leo_party_tank` |
 | 4 | 公會大廳 | 節點 1、結尾 | 沒有。模型有：`lilith`、`prop_guild_counter_v2`、`prop_aptitude_crystal`、`prop_guild_quest_board`、`prop_guild_signboard`、`guild_adventurer_a/b`、`royal_inspector` |
@@ -30,10 +30,10 @@
 
 | 系統 | 內容 | 現況 |
 |---|---|---|
-| 異常狀態 → 增益 | 中毒→回血、流血→攻速、麻痺→神經超頻（攻速 +150%）、防禦歸零→鋼鐵壁壘（減傷 80%）、致盲→鷹眼暴擊、衰弱→？、石化→霸體無敵、全能力下降→全能力提升 | 有中毒、麻痺；照 `data/status/statuses.json` 加（規則見 [`02-gameplay.md`](02-gameplay.md)） |
+| 異常狀態 → 增益 | 中毒→回血、流血→攻速、麻痺→神經超頻（攻速 +150%）、防禦歸零→鋼鐵壁壘（減傷 80%）、致盲→鷹眼暴擊、衰弱→？、石化→霸體無敵、全能力下降→全能力提升 | 有中毒、麻痺；照 `data/status/statuses.json` 加（規則見 [`02-gameplay.md`](02-gameplay.md)）。**反轉欄位（兩格）跟劇本不合，要拿掉**（NEXT ★1） |
 | 反轉的回饋 | 閃紫 → 0.3 秒 → 碎裂聲 → 金光；HUD 紅圖示翻金；劍的裂縫透金光 | **有了**（`ReversalCue`＋`ReversalOverlay`＋`StatusHud` 翻面＋兩個音效，每種狀態共用；規則在 `02`）。劍的金光是整把劍蓋一層（沿用敵人硬撐紅光的 shader），不是只有裂縫 |
 | 諾恩的武器 | 【瘴氣生鏽鐵劍】：近戰連段；每一刀給自己「微弱流血＋中毒」（越砍越快）。之後【不祥的裂刃】 | 劍在手上、一刀一刀砍；連段與自傷還沒有（來源 `rusty_sword_cut` 已經在表裡，接 `PlayerController.on_hit_source` 的做法） |
-| 席菈 | AI 隊友：跟在後面 4～6 m、定時用【鍊金藥瓶手弩】往諾恩射負面藥水或往敵人丟負面領域；按 Q 指定下一瓶 | 沒有（模型有；`weapon_alchemy_crossbow` 還沒加進 `gen_props.sh`）。新寫一個小的，不要照以前近戰版的做法 |
+| 席菈 | AI 隊友：跟在後面 4～6 m、定時用【鍊金藥瓶手弩】往諾恩射負面藥水或往敵人丟負面領域；按 Q 指定下一瓶 | **有第一版**（`Sera`＋`SeraBrain`＋`SeraVial`）：跟隨、附近有敵人時每 9 秒射一瓶麻痺。還沒有：第二種藥、往敵人丟領域、按鍵要藥（`SeraBrain.request()` 留好了）、會被打 |
 | 陷阱與毒物 | 毒氣噴發口、麻痺蜘蛛網、腐敗野果：碰到就上狀態 | `PoisonMist`／`MistZone` 可以直接當狀態區用 |
 | 裝備面板 | 飾品欄（詛咒飾品）、武器欄；面板上看得到紅圖示翻金 | 沒有（先做最小的：兩格） |
 | 委託 | 主線＋2 個支線、右上角目標清單（`[0/5] 採集夜光毒蕈`） | 任務引擎有；清單 UI 要做 |

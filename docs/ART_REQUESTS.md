@@ -14,12 +14,12 @@ loop 自己的美術待辦（不是給 Jacky 的需求單）。來源優先順�
 
 | 類別 | id | 接進遊戲了嗎 |
 |---|---|---|
-| 主角 | `noen_rank_f_v2`（諾恩）、`sheila_rank_f`（席菈） | 轉檔有（`gen_art.sh`）；諾恩在遊戲裡，席菈的角色還沒寫 |
+| 主角 | `noen_rank_f_v2`（諾恩）、`sheila_rank_f`（席菈） | **都在遊戲裡**（`PlayerController`、`Sera`） |
 | 人物（mixamo 骨架） | `lilith`、`leo`、`leo_party_mage`、`leo_party_tank`、`black_market_merchant`、`royal_inspector`、`guild_adventurer_a`、`guild_adventurer_b` | 還沒 |
 | 怪物 | `enemy_poison_slime` | **在遊戲裡**（`Slime`） |
 | 怪物 | `enemy_mold_slime`（已擺正）、`enemy_spore_treant`（雙足骨架）、`enemy_miasma_wolf`（四足骨架＋走路）、`boss_plague_golem`（雙足骨架） | 還沒 |
-| 武器 | `weapon_rusty_miasma_sword` | **在遊戲裡**（諾恩右手） |
-| 武器 | `weapon_ominous_split_blade`、`weapon_longsword`、`weapon_shortsword`、`weapon_axe`、`weapon_hammer`、`weapon_bow`、`weapon_staff`（都已擺正）、`weapon_alchemy_crossbow`（還沒擺正） | 還沒 |
+| 武器 | `weapon_rusty_miasma_sword`、`weapon_alchemy_crossbow` | **在遊戲裡**（諾恩右手、席菈右手） |
+| 武器 | `weapon_ominous_split_blade`、`weapon_longsword`、`weapon_shortsword`、`weapon_axe`、`weapon_hammer`、`weapon_bow`、`weapon_staff`（都已擺正） | 還沒 |
 | 森林 | `prop_corrupt_tree`、`prop_glow_toxic_mushroom`、`prop_rotten_fruit_bush` | **在遊戲裡**（腐敗之森入口） |
 | 森林 | `prop_campfire_v2`、`prop_cursed_chest`、`prop_ruined_altar`（已擺正）、`prop_poison_vent`、`prop_paralysis_web_v2`、`prop_cursed_ring`（還沒擺正） | 還沒 |
 | 公會 | `prop_guild_counter_v2`、`prop_aptitude_crystal`、`prop_guild_quest_board`、`prop_guild_signboard`（已擺正） | 還沒 |

@@ -23,14 +23,14 @@
 - 標題畫面背景（`game/scenes/boot/title_fog.gdshader`）
 - 遊戲圖示（`game/icon.svg`）
 - 音效與配樂：打擊、閃避風聲、腳步、毒霧、玻璃瓶、介面音、標題配樂（`scripts/gen_sfx.py`，只用 Python 標準函式庫合成，建置時產生、不進 git）
-- 人物的動作（站、走、跑、閃、出手、釋放；`tools/blender/common.py` 用程式寫的關鍵影格，套在 Tripo 的模型上）
+- 人物的動作（站、走、跑、閃、出手、舉弩射擊、釋放；`tools/blender/common.py` 用程式寫的關鍵影格，套在 Tripo 的模型上）
 - 模型找不到時的替身（程式拼的人偶、球、圓柱）
 
 ## 第三方素材
 
 | 名稱 | 作者 | 授權 | 來源 | 用在哪裡 | AI 生成 |
 |---|---|---|---|---|---|
-| KayKit Adventurers Character Pack 1.0 的雙手劍（`sword_2handed.gltf`＋`.bin`＋`knight_texture.png`；Tripo 的劍找不到時的替身，也是擺正武器時對齊的基準） | Kay Lousberg（www.kaylousberg.com） | **CC0 1.0**（素材包根目錄的 `LICENSE.txt`：`License: (Creative Commons Zero, CC0)`、「free to use in personal, educational and commercial projects」；該檔一起放進 `game/assets/props/kaykit/LICENSE-KayKit-Adventurers.txt`） | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 （commit 672074b，路徑 `addons/kaykit_character_pack_adventures/Assets/gltf/`；檔案小，直接放進本 repo） | 席菈手上的劍（`Sheila._build_sword()` 經 `PropModels` 載入；縮到 0.42 倍、劍尖朝下）。檔案照原樣，沒有改 | 否 |
+| KayKit Adventurers Character Pack 1.0 的雙手劍（`sword_2handed.gltf`＋`.bin`＋`knight_texture.png`；Tripo 的劍找不到時的替身，也是擺正武器時對齊的基準） | Kay Lousberg（www.kaylousberg.com） | **CC0 1.0**（素材包根目錄的 `LICENSE.txt`：`License: (Creative Commons Zero, CC0)`、「free to use in personal, educational and commercial projects」；該檔一起放進 `game/assets/props/kaykit/LICENSE-KayKit-Adventurers.txt`） | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 （commit 672074b，路徑 `addons/kaykit_character_pack_adventures/Assets/gltf/`；檔案小，直接放進本 repo） | 諾恩手上的劍找不到 Tripo 模型時的替身（`PlayerController.SWORD_MODELS` 的最後一個，經 `PropModels` 載入；縮到 0.42 倍）。檔案照原樣，沒有改 | 否 |
 | Fantasy Props MegaKit（免費的 Standard 版；94 個模型＋13 張貼圖） | Quaternius（quaternius.com） | **CC0 1.0**——根據是素材包裡附的 `License_Standard.txt`（原樣放在 `art-inbox/props/`）。作者網站另有一頁「Quaternius Asset License v1.0」（2026-08-28 更新）禁止把素材本身轉散布，也寫「以取得當時的版本為準」；素材包自己的頁面到 2026-11-13 還是標 CC0——以包裡附的授權檔為準（`art-inbox/props/README.md`） | https://quaternius.com/packs/fantasypropsmegakit.html （Jacky 2026-11-13 從 itch.io 下載，commit e4fdaa3；貼圖由 `scripts/compact_props.py` 縮成 1024² 的 JPEG） | **還沒用在遊戲裡**——放在 `art-inbox/props/` 當素材庫，用到哪個再複製到 `game/assets/props/quaternius/` 並更新這一格 | 否 |
 
 ## AI 生成素材
