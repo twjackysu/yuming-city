@@ -134,7 +134,7 @@ BARK_SERA_MISFIRE,"No no no! Norn, I am so sorry, I messed up again!",完了完�
 BARK_SERA_NOTICE,"Ah... u-um, excuse me!",啊……那、那個！
 BARK_SERA_MASK,"Mask, mask... okay, it is on!",面具、面具……好，戴好了！
 CH1_MISFIRE_LINE1,Paralyzed → Faster attacks　Defense zero → Less damage taken,麻痺 → 出手加速　防禦歸零 → 受傷減少
-CH1_MISFIRE_LINE2,"You attack 150% faster and take 80% less damage. Cut them down!",出手快 150%，受到的傷害少 80%。趁現在砍！
+CH1_MISFIRE_LINE2,"You attack 150% faster, every cut hits that much harder, and you take 80% less damage. Cut them down!",出手快 150%、每一刀也重 150%，受到的傷害少 80%。趁現在砍！
 DLG_CH1_GATE_001,"W-wait, that is miasma! Without a mask, normal people collapse in ten minutes!",等、等一下，那是瘴氣！沒戴面具進去，普通人十分鐘就會倒下的！
 DLG_CH1_GATE_002,Funny. I feel better than I have all week.,奇怪。我覺得這是我這禮拜精神最好的一次。
 DLG_CH1_GATE_003,"...Y-you are glowing gold. Does poison just... not work on you?",……你、你身上在發金光耶。毒對你……沒有用嗎？

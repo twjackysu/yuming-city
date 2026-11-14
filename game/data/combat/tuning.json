@@ -1,7 +1,8 @@
 {
   "noen": {
     "max_hp": 100,
-    "blunt_damage": 24,
+    "blunt_damage": 25,
+    "haste_damage": 1.0,
     "blunt_stagger": 10,
     "strike_window": [
       0.35,
@@ -33,7 +34,7 @@
     "burst_min_sec": 0.5,
     "status_refresh_gain": 0.75,
     "reversed_heal_scale": 0.2,
-    "_doc": "諾恩。release_*／burst_*＝「釋放」：把身上反轉中的中毒一次用掉炸開，傷害＝用掉的秒數 × burst_per_sec（上限 burst_max）。status_refresh_gain＝已經中毒時每再中一次多加幾秒；reversed_heal_scale＝反轉後的回血乘幾成。combo_window＝收招後幾秒內再出手算接著砍（三下一輪）；finisher_*＝第三下（收尾）的傷害倍率、掃多寬（度）、多夠得到幾公尺。"
+    "_doc": "諾恩。release_*／burst_*＝「釋放」：把身上反轉中的中毒一次用掉炸開，傷害＝用掉的秒數 × burst_per_sec（上限 burst_max）。status_refresh_gain＝已經中毒時每再中一次多加幾秒；reversed_heal_scale＝反轉後的回血乘幾成。combo_window＝收招後幾秒內再出手算接著砍（三下一輪）；finisher_*＝第三下（收尾）的傷害倍率、掃多寬（度）、多夠得到幾公尺。haste_damage＝出手越快砍得越重：出手加速的比例有幾成也加在傷害上（1＝出手 ×2.5 時傷害也 ×2.5，剛好一刀一隻劇毒史萊姆）。"
   },
   "poison_slime": {
     "_doc": "劇毒史萊姆（第一章教學戰）：慢、一招撲撞。",

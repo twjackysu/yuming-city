@@ -2,7 +2,7 @@ class_name StatusHud
 extends Control
 ## 狀態圖示：生命條上方一列，每種狀態一格。
 ## 一格＝原類型的圖示（中毒：瓶子＋骷髏點；麻痺：閃電；防禦歸零：裂開的盾；流血：一滴血）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
-## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。會疊的狀態（流血）字後面寫「×層數」。
+## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。會疊的狀態（流血）圖示右上角有一個小數字＝現在幾層。
 ## **翻面**：狀態剛上身時先是紅的；會反轉的人（StatusEffects.reverses）ReversalCue.CURSE_SEC 秒後翻成金的（跟畫面碎裂同一刻），旁邊彈一圈金光。
 ## 純顯示：refresh(effects) 每幀從玩家的 StatusEffects 讀。
 
@@ -72,10 +72,7 @@ func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") ->
 		if not l.visible:
 			continue
 		var r: Dictionary = rows[i]
-		l.text = tr(str(r["label"]))
-		if int(r["stacks"]) > 0:
-			l.text += " ×%d" % int(r["stacks"])
-		l.text += "  %d" % ceili(float(r["remaining"]))
+		l.text = "%s  %d" % [tr(str(r["label"])), ceili(float(r["remaining"]))]
 		if str(r.get("hint", "")) != "":
 			l.text += "　" + str(r["hint"])
 		l.add_theme_color_override("font_color", COL_REVERSED if float(r["face"]) < 0.0 else COL_HARMFUL)
@@ -119,6 +116,8 @@ func _draw() -> void:
 		if gold:
 			_draw_reverse_mark(Vector2(ICON * 0.34, ICON * 0.34))
 		draw_set_transform(Vector2.ZERO)
+		if int(r["stacks"]) > 0:
+			_draw_stacks(c + Vector2(ICON * 0.36, -ICON * 0.36), int(r["stacks"]), gold)
 		# 翻過去的那一刻：一圈金光往外散
 		var since_flip: float = float(r["age"]) - ReversalCue.CURSE_SEC
 		if bool(r["reversed"]) and since_flip >= 0.0 and since_flip < PULSE_SEC:
@@ -161,6 +160,15 @@ func _draw_drop(c: Vector2) -> void:
 	draw_circle(c + Vector2(0, 3.5), 6.0, COL_BLOOD)
 	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -10.0), c + Vector2(5.4, 1.0), c + Vector2(-5.4, 1.0)]), COL_BLOOD)
 	draw_circle(c + Vector2(-2.2, 4.0), 1.6, Color(1.0, 0.75, 0.72, 0.85))
+
+
+## 會疊的狀態：圖示右上角的層數
+func _draw_stacks(p: Vector2, stacks: int, gold: bool) -> void:
+	draw_circle(p, 8.0, Color(0.08, 0.06, 0.05, 0.95))
+	var font: Font = get_theme_default_font()
+	var text: String = str(stacks)
+	var size: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13)
+	draw_string(font, p + Vector2(-size.x * 0.5, 4.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13, COL_REVERSED if gold else COL_HARMFUL)
 
 
 ## 反轉標記：右下角的金色迴轉箭頭

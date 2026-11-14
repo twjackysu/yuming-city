@@ -349,7 +349,11 @@ func test_in_a_fight_sera_panics_and_her_wrong_vial_reverses_into_two_boons() ->
 
 
 ## 「趁現在砍」：像玩家那樣——往最近的那一隻小跑過去，夠得到就一直按出手。量三隻史萊姆全倒要幾幀；回傳 -1＝時間內沒清完。
+var _mash_swings: int = 0
+
+
 func _mash_until_clear(level: CorruptForest, player: PlayerController, max_frames: int) -> int:
+	_mash_swings = 0
 	for f: int in max_frames:
 		if level.slimes_alive() == 0:
 			return f
@@ -365,14 +369,17 @@ func _mash_until_clear(level: CorruptForest, player: PlayerController, max_frame
 				player.global_position += to.normalized() * (PlayerController.WALK_SPEED / 60.0)
 			else:
 				player.start_attack()
+				_mash_swings += 1
 		await tree.physics_frame
 	return -1
 
 
-## 劇本：超頻的諾恩把史萊姆群秒殺。吃了拿錯的那一瓶之後一直按出手，三隻要在 4 秒內清掉，而且明顯比沒吃的時候快。
+## 劇本：超頻的諾恩一刀秒殺史萊姆群。吃了拿錯的那一瓶之後一直按出手：一刀一隻（出手越快砍得越重），三隻 2.5 秒內清掉，
+## 而且明顯比沒吃的時候快、出的刀也少。
 ## （這個測試量出過一個真的問題：出手會自動轉向最近的敵人，以前連剛倒下的也算——打完第一隻之後一直砍屍體，旁邊活的打不到。）
 func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
 	var frames: Array[int] = []
+	var swings: Array[int] = []
 	for buffed: bool in [false, true]:
 		_new_game_joined()
 		_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
@@ -385,14 +392,16 @@ func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
 		if buffed:
 			player.status_effects.apply_source(CorruptForest.PANIC_VIAL)
 		frames.append(await _mash_until_clear(level, player, 1800))
+		swings.append(_mash_swings)
 		assert_false(player.health.is_dead(), "諾恩沒倒")
 		level.queue_free()
 		await tree.process_frame
-	print("    三隻史萊姆全倒：沒吃藥 %d 幀、吃了拿錯的那一瓶 %d 幀" % [frames[0], frames[1]])
+	print("    三隻史萊姆全倒：沒吃藥 %d 幀／%d 刀、吃了拿錯的那一瓶 %d 幀／%d 刀" % [frames[0], swings[0], frames[1], swings[1]])
 	assert_true(frames[0] > 0 and frames[1] > 0, "兩次都清得掉：%s" % str(frames))
-	assert_true(frames[1] <= 240, "超頻：4 秒內清場（%d 幀）" % frames[1])
-	# 劍自己就會越砍越快（流血），所以沒吃藥也不慢；那一瓶要再明顯快一截（之前是三成，劍有了連段與流血之後量到兩成多）
-	assert_true(float(frames[1]) <= float(frames[0]) * 0.8, "比沒吃藥快兩成以上（%d 對 %d 幀）" % [frames[1], frames[0]])
+	assert_true(frames[1] <= 150, "超頻：2.5 秒內清場（%d 幀）" % frames[1])
+	assert_true(swings[1] <= 4, "超頻：一刀一隻（三隻最多容許揮空一次，出了 %d 刀）" % swings[1])
+	assert_true(swings[0] >= swings[1] + 2, "沒吃藥要多砍好幾刀（%d 對 %d 刀）" % [swings[0], swings[1]])
+	assert_true(float(frames[1]) <= float(frames[0]) * 0.7, "比沒吃藥快三成以上（%d 對 %d 幀）" % [frames[1], frames[0]])
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:

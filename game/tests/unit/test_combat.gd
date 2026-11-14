@@ -96,7 +96,7 @@ func test_player_swing_hits_target_with_hit_stop_and_shake() -> void:
 
 
 ## 【瘴氣生鏽鐵劍】的三下連段：接著砍是 第一下 → 第二下 → 收尾（比較痛、側面也掃得到），再來從第一下重來；
-## 停手超過 combo_window 就重來。每砍中一刀身上多一層流血（對諾恩＝出手變快）＋微弱中毒。
+## 停手超過 combo_window 就重來。每砍中一刀身上多一層流血（對諾恩＝出手變快，出手越快砍得越重）＋微弱中毒。
 func test_three_hit_combo_ends_in_a_wide_finisher_and_each_cut_stacks_bleed() -> void:
 	var root := Node3D.new()
 	tree.root.add_child(root)
@@ -125,10 +125,11 @@ func test_three_hit_combo_ends_in_a_wide_finisher_and_each_cut_stacks_bleed() ->
 				break
 		took.append(before - front.hp)
 	assert_eq(steps, [0, 1, 2, 0] as Array[int], "三下一輪")
+	# 出手越快砍得越重：砍中第 n 刀的時候身上已經有 n 層流血（每層出手快 12%，傷害也多 12%）
 	assert_eq(took[0], dmg)
-	assert_eq(took[1], dmg)
-	assert_true(absf(took[2] - dmg * CombatTuning.num("noen.finisher_damage_mult")) < 0.01, "收尾比較痛（%s）" % took[2])
-	assert_eq(took[3], dmg, "第四下從頭來")
+	assert_true(absf(took[1] - dmg * 1.12) < 0.01, "第二刀：一層流血（%s）" % took[1])
+	assert_true(absf(took[2] - dmg * 1.24 * CombatTuning.num("noen.finisher_damage_mult")) < 0.01, "收尾比較痛（%s）" % took[2])
+	assert_true(absf(took[3] - dmg * 1.36) < 0.01, "第四下從頭來，三層流血（%s）" % took[3])
 	assert_eq(side_hits[0], 1, "側面的只有收尾那一刀掃得到")
 	assert_true(side.hp < 60.0)
 	assert_eq(player.on_hit_applied, 4, "每砍中一刀給自己一次")

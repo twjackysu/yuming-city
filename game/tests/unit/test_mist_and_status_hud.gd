@@ -71,6 +71,25 @@ func test_status_hud_shows_original_type_and_reversal() -> void:
 	hud.queue_free()
 
 
+## 會疊的狀態（流血）：狀態列那一格記得現在幾層（畫在圖示右上角）；不會疊的是 0
+func test_status_hud_counts_stacks_of_bleed() -> void:
+	var fx := StatusEffects.new(StatusRules.load_default(), true)
+	var hud := StatusHud.new()
+	tree.root.add_child(hud)
+	for i: int in 3:
+		fx.apply_source("rusty_sword_cut")
+	hud.refresh(fx)
+	assert_eq(hud.rows.size(), 2, "流血＋中毒")
+	assert_eq(hud.rows[0]["id"], "bleed")
+	assert_eq(hud.rows[0]["stacks"], 3, "砍中三刀＝三層")
+	assert_eq(hud.rows[1]["stacks"], 0, "中毒不會疊")
+	hud.advance(1.0)
+	hud.refresh(fx)
+	assert_true(hud.line_text(0).begins_with(tr("STATUS_BLEED_REVERSED")), "寫「流血 → 越砍越快」：%s" % hud.line_text(0))
+	hud.queue_free()
+	await tree.process_frame
+
+
 func test_restored_hp_keeps_saved_value_with_floor() -> void:
 	assert_eq(PlayerController.restored_hp(null, 100.0), 100.0, "沒存過＝滿血（新遊戲）")
 	assert_eq(PlayerController.restored_hp(72.5, 100.0), 72.5, "照存的，不偷偷補滿")

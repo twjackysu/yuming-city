@@ -786,13 +786,17 @@ func is_finisher() -> bool:
 	return combo_step == COMBO_LEN - 1
 
 
-## 對前方扇形內所有 damageable 群組的目標砍一刀。回傳命中數。連段收尾的那一刀比較痛、掃得比較寬、夠得比較遠（`noen.finisher_*`）。
+## 對前方扇形內所有 damageable 群組的目標砍一刀。回傳命中數。連段收尾的那一刀比較痛、掃得比較寬、夠得比較遠（`noen.finisher_*`）；
+## 出手被加速的時候每一刀也比較痛（`noen.haste_damage`）。
 func strike() -> int:
 	var forward: Vector3 = -_body.global_basis.z
 	var finisher: bool = is_finisher()
 	var reach: float = CombatTuning.num("noen.strike_range", 1.9) + (CombatTuning.num("noen.finisher_reach", 0.0) if finisher else 0.0)
 	var arc: float = CombatTuning.num("noen.finisher_arc_deg" if finisher else "noen.strike_arc_deg", 110.0)
 	var damage: float = CombatTuning.num("noen.blunt_damage", 6.0) * (CombatTuning.num("noen.finisher_damage_mult", 1.0) if finisher else 1.0)
+	# 出手越快砍得越重：出手加速了多少，傷害就多那麼多的 `noen.haste_damage` 成（1＝一樣多）。
+	# 吃了拿錯的那一瓶（出手 ×2.5）一刀就是 2.5 倍——劇本的「超頻一刀秒殺史萊姆」靠這個，不是把史萊姆的血調低
+	damage *= 1.0 + (status_effects.attack_speed() - 1.0) * CombatTuning.num("noen.haste_damage", 0.0)
 	var stagger: float = CombatTuning.num("noen.blunt_stagger", 20.0)
 	var weak_damage: float = CombatTuning.num("noen.weak_damage_mult", 2.0)
 	var weak_stagger: float = CombatTuning.num("noen.weak_stagger_mult", 2.0)
