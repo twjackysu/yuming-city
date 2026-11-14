@@ -21,10 +21,10 @@
 | `src/core/health.gd`、`combat_tuning.gd`、`enemy_brain.gd`、`sera_brain.gd` | 生命、戰鬥數值（`data/combat/tuning.json`，F5 重讀、`user://tuning.json` 可覆寫）、敵人狀態機、席菈要做什麼（跟隨距離、射藥節奏） |
 | `src/core/input_setup.gd`、`sfx.gd`、`ambience.gd`、`footsteps.gd`、`quality_preset.gd`、`frame_stats.gd`、`benchmark_run.gd` | 按鍵、音效、環境音與配樂、腳步、畫質三級、效能統計 |
 | `src/ui/` | 字型與主題、按鍵圖示（`GlyphLine`、`PadGlyph`）、狀態列（`StatusHud`，圖示會翻面）、反轉的畫面那一層（`ReversalOverlay`＋`reversal_overlay.gdshader`）、藥劑格、目標指引、章節卡（`ChapterCard`，還沒用到）、設定頁的小元件 |
-| `src/world/` | `CharacterModels`／`PropModels`（模型載入，找不到回傳 null）、`ContactShadow`、`CameraFade`、`HealMotes`、`PoisonBurst`、`ParticleLook`、`GrassTufts`（一整片草叢，一個 MultiMesh）、`forest_ground.gdshader`（森林的地面：苔／土／落葉、路與空地、樹腳下的苔）、毒霧與接地陰影的 shader |
+| `src/world/` | `CharacterModels`／`PropModels`（模型載入，找不到回傳 null）、`ContactShadow`、`CameraFade`、`HealMotes`、`PoisonBurst`、`ParticleLook`、`SlashTrail`＋`slash_trail.gdshader`（揮劍的劍光：跟著劍的帶子，每一段過了壽命就消失）、`GrassTufts`（一整片草叢，一個 MultiMesh）、`forest_ground.gdshader`（森林的地面：苔／土／落葉、路與空地、樹腳下的苔）、毒霧與接地陰影的 shader |
 | `scenes/boot/` | 標題畫面 |
 | `scenes/levels/story_level.gd`、`corrupt_forest.gd/.tscn` | 關卡基底；腐敗之森入口（建場景＋設劇情旗標） |
-| `scenes/actors/player/` | `PlayerController`：移動、過肩鏡頭、鎖定、閃避、出手、釋放、手上的劍 |
+| `scenes/actors/player/` | `PlayerController`：移動、過肩鏡頭、鎖定、閃避、出手、釋放、手上的劍、劍光與揮劍聲（`_update_trail`） |
 | `scenes/actors/puppet/` | `Puppet`：有模型就播模型的動作，沒有就用程式拼的人偶（同一套介面：`set_move_speed`、`play_action("dodge"／"attack"／"shoot")`、`hand()`） |
 | `scenes/actors/sera/` | `Sera`（席菈：結伴前站著等、走路、轉身、舉弩、右手的手弩、靠近瘴氣戴的防毒面具）、`SeraVial`（飛向諾恩的藥瓶，落地套用狀態來源） |
 | `scenes/actors/enemy/enemy_actor.gd`、`scenes/actors/slime/` | 敵人共用（追人、受擊、硬撐、跪地、倒下）；劇毒史萊姆 |
@@ -46,6 +46,8 @@
 - 新物件／武器模型：`scripts/gen_props.sh` 的 `ARGS` 加一行 → `PropModels.instance("tripo/<名字>")`（記得寫檔案不在時的替身）。模型自帶一圈亮色草皮底座的（樹）加 `--moss-below <高度> --sink <公尺>`：草皮改塗成地面的苔色、底座邊緣埋進地面；苔色在 `tripo_prop.py` 的 `MOSS` 與 `forest_ground.gdshader` 的 `moss`，兩邊要一樣。
 - 存檔格式要改：`SaveCodec.CURRENT_VERSION` +1、加遷移、加一個從舊 JSON 讀起的測試（現在 v4；看 `test_save.gd` 的 v3 → v4）。
 - 新狀態：`statuses.json` 加一筆（種類 dot／action／guard／bleed；要會疊就寫 `stack_max`）＋翻譯 key＋`StatusHud._draw` 的圖示；一樣東西要帶兩種狀態就在來源寫 `also`。反轉的回饋不用接。
+- 換武器：劍光不用調——劍尖的位置從武器模型的外框算（`PlayerController.blade_tip`），顏色與大小在 `SlashTrail` 的常數，哪一段動作有劍光是 `PlayerController.TRAIL_WINDOW`。
+- 要貼著「這一幀的姿勢」的特效（劍光）：用 `Puppet.joint_now("hand_R")` 從骨架現算，並把自己的 `process_priority` 排在動畫後面；直接讀掛點節點的位置會慢一幀。
 - 武器打中人時給自己的狀態：`PlayerController.on_hit_source` 填資料表的來源（現在是鏽劍的 `rusty_sword_cut`）；換武器就換這個。
 - 關卡裡要有人喊一句（不停下遊戲）：`Hud.show_bark(講的人, 翻譯 key)`；要玩家選擇的才用對話（`Game.start_dialogue`），對話要改旗標寫在對話資料的 `do`。
 - 量戰鬥的手感有沒有變：`test_chapter1.gd` 的 `_mash_until_clear`（像玩家那樣一直按出手，回傳清場要幾幀、`_mash_swings` 是出了幾刀；測試會印數字）。
