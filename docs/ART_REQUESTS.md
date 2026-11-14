@@ -1,35 +1,37 @@
-# 美術自製進度
+# 美術進度
 
-> 2026-11-13 起（Jacky 的指示、D-249）：這份**不再是給 Jacky 的需求單**。角色模型、動畫、敵人都由 loop 自己用 Blender（`bpy`）做——腳本在 `tools/blender/`，建置時由 `scripts/gen_art.sh` 產生，不進 git。Jacky 不用再用 ChatGPT 產模型；Tripo 改走佇列（`art-inbox/tripo/`，D-270），loop 排、他在本機跑一行產；他自己放進 `art-inbox/characters/<id>/<id>.glb` 的照舊優先接入。待辦的順序在 `docs/NEXT.md` 最上面「0000」。
+這份是 loop 自己的美術待辦，不是給 Jacky 的需求單（D-249）。來源優先順序：Jacky 放進 `art-inbox/` 的 → Tripo 佇列的產物（`art-inbox/tripo/`，D-270）→ 授權明確的現成 CC0 素材 → `tools/blender/` 自製。做的順序在 `docs/NEXT.md`。
+
+## Jacky 定下的方向（2026-11-13～14）
+
+- 畫風：**漫畫風，帥氣、漂亮、可愛**。人物吃場景的光（D-255）。
+- **諾恩保留 Q 版**（約 3.5 頭身）。席菈的比例待他決定（FOR_JACKY 第 2 項）。
+- 兩人是冒險者：一開始是剛進冒險者公會的 **F 級、破舊服裝**，裝備越好服裝越好，**最高 S 級**。之後的等級可以用 Tripo 再產，或用 bpy 在 F 級模型上加護甲、換配色。
+- **武器可換、男主角不拿燈籠**：角色是空手模型，武器是獨立模型，掛在手骨上依裝備切換（長劍、短劍、斧、槌、法杖、弓）。
+- 場景要有冒險感：建築、街道用 CC0 模組化套件拼，Tripo 只做有劇情意義的重點物件，光影、霧、材質在 Godot 裡做。
 
 ## 進度表
 
-| 項目 | 狀態 | 現在有什麼 | 還缺什麼 |
+| 項目 | 來源 | 狀態 | 下一步 |
 |---|---|---|---|
-| **諾恩、席菈（現成的 CC0 漫畫風角色，D-253）** | **第 103 輪接進遊戲**：諾恩只在戰鬥場、席菈所有場景 | VRoid 範例角色 `HairSample_Male`／`Sendagaya_Shino`（`scripts/gen_art.sh` 的 `VRM_SRC`）＋`common.py` 的五段動作；諾恩的上衣改深褐、加了自製的暗紅圍巾（第 104 輪，D-254）；吃場景的光（Jacky 選的，D-255）；**第 107 輪：冒險者服裝第二版接進遊戲（D-263、D-264；`tools/blender/outfit.py`）**——席菈：白胸甲＋小肩甲＋深藍長下襬（金邊）＋白長靴＋皮帶；諾恩：黑外套＋黑色長下襬（暗紅邊）＋斜背帶＋右手護甲＋皮靴；底下的衣服重畫貼圖。**諾恩的武器換成現成的 CC0 法杖**（KayKit；原本提燈的光在杖頭） | 下襬是硬的不會擺；甲片與布沒有分片線、花紋；諾恩沒有披風；圍巾像一圈粗管子；劇情關卡的諾恩身體還是人偶；翻滾／受擊／倒下的動作；頭髮不會擺；法杖的珠子偏大、不會發光 |
-| 席菈 模型 | **第一版（樣本），已接進遊戲**（第 101 輪） | MakeHuman CC0 身體＋深色短髮、米灰短披肩、深藍厚布上衣與下襬、皮護臂手套、長褲、皮靴、腰帶；28,136 面、22 根骨頭、一個材質（BaseColor／Normal／ORM 1024²）；通過 `check_character_glb.py` | 披肩胸口缺一塊、眼睛、手指沒握、靴子像襪子、頭髮耳邊、整體偏暗；左耳銅環、右眉疤、三劍銀徽、大劍 |
-| 席菈 動作 | 第一版 | `idle`、`walk`、`run`、`light_attack_01`（程式關鍵影格） | 除了跑步都沒有在遊戲畫面上看過；`hit_front`、`death`、`dodge_roll`、連段 |
-| 諾恩 模型與動作 | **第一版做好了，還沒接進遊戲**（第 102 輪，D-251；`tools/blender/noen.py`；被 `import_characters.py` 的 `HELD` 擋著——接上之後 12 個測試不過，見 NEXT「0000」第 0 點） | 男性身形 1.74 m、深褐色縫補過的長大衣（到膝蓋、前面開衩）、暗紅圍巾（背後垂一條）、右前臂纏繃帶的夾板、短髮；26,876 面；`idle`、`walk`、`run`、`light_attack_01`、`release` | **接進遊戲**（先只在戰鬥場）；走／跑／出手／釋放沒有在遊戲畫面上看過；沒有 `dodge_roll`（閃避是整個人前滾）；臉近看嚇人、髮際線鋸齒；手指張開；靴子像襪子；大衣沒有領子與扣子 |
-| 一般敵人（拿棍子的、戴護腕的、丟毒瓶的） | 席菈與諾恩的臉、頭髮之後做（程序人偶） | — | 同一套身體換服裝與配色 |
-| 送葬者、灰巡者 | 還沒開始（CSG／程序 mesh） | — | 鐵架、鐵鏈這種硬表面最適合程式做；弱點要獨立材質槽（`M_FrameJoint`、`M_Dial`） |
-| 概念圖 | Jacky 的 AI 概念草案在 `art-inbox/concepts/`（設計參考） | — | 不擋進度 |
-| Steam 素材、配音 | 暫緩／不需要 | — | — |
+| 諾恩 F 級 | Tripo `noen_rank_f`（Mixamo 骨架、idle／walk／run） | 已產生，未接進遊戲 | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
+| 席菈 F 級 | Tripo `sheila_rank_f`（同上） | 已產生，未接；比例待定 | 同上；等 Jacky 決定比例 |
+| 送葬者 | Tripo `undertaker`（walk／slash） | 已產生，未接 | 接進開場與戰鬥場；弱點要獨立材質槽 `M_FrameJoint` |
+| 六把武器 | Tripo `weapon_*` | 已產生，未接 | 做成手骨上的可換裝備；先給諾恩一把 |
+| 開場物件 | Tripo `prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board` | 已產生，未接 | 放進開場南街與公會 |
+| 地下市場小物 | Quaternius CC0（`art-inbox/props/`，D-258） | 已進 repo | 換掉攤位、木桶、木箱、瓶子 |
+| 現在遊戲裡的主角 | VRoid CC0＋自製服裝（D-253、D-264） | 使用中 | Tripo 版接好後退役 |
+| 一般敵人、灰巡者 | 程序人偶 | 未開始 | 點數不夠就用 bpy 改既有模型或找 CC0 |
+| 動作 | Tripo idle／walk／run；`common.py` 自製 | 部分 | 補 `dodge_roll`、攻擊、受擊、倒下（自製或 CC0 動捕） |
 
-## 模型要符合的規格（收件檢查 `scripts/check_character_glb.py`）
+## 模型規格（收件檢查 `scripts/check_character_glb.py`）
 
-- `.glb`、含骨架與蒙皮、Y 朝上、公尺、面向 −Z、身高 1.7～1.8 m。
-- 主角 15k～40k 三角面；送葬者 30k～60k；灰巡者 10k～20k。
-- 每個材質都要有 BaseColor、Normal、ORM（遮蔽與粗糙金屬同一張），貼圖內嵌、2048 以內。
-- 動作名稱照 `game/src/world/character_models.gd` 的 `ANIM_MAP`（`idle`、`walk`、`run`、`dodge_roll`、`light_attack_01`）。
-- 全年齡、不裸露；不用其他作品的角色、名字、美術。
+- `.glb`、Y 朝上、公尺、面向 −Z、原點在腳底；人物有骨架與蒙皮。
+- 主角 15k～40k 三角面（Q 版身高另訂）；送葬者 30k～60k；灰巡者 10k～20k。
+- 材質要有 BaseColor、Normal、ORM，貼圖內嵌、2048 以內。
+- 動作名稱照 `game/src/world/character_models.gd` 的 `ANIM_MAP`。
+- 全年齡、不裸露；不用其他作品的角色、名字、美術；AI 生成的記進 CREDITS 並列入 Steam 申報。
 
-## 外觀方向（原作第一部第一、二章）
+## 舊紀錄
 
-- **席菈**：約 25 歲，沾泥的白色短斗篷，背一把比肩膀還寬的斷劍，左耳一枚銅環，右眉一道舊疤，胸前銀徽（三把交錯的劍）；右手持劍。
-- **諾恩**：23 歲，北方小鎮出身的普通青年，縫補過的冬衣；右手骨折後夾著木板。
-- **送葬者**：約 2.6 m 高、駝背、黑色長袍，背上綁著生鏽的鐵架（兩根立柱＋三根橫桿），鐵鏈垂到地上，臉藏在兜帽裡；鐵架背面的關節是弱點。
-- **灰巡者**：約 1.7 m、佝僂灰色人形、胸口嵌一個鐘盤，雙手是長爪。
-
-## 以前的紀錄
-
-Jacky 11/8～11/10 在本機試作的模型與交件狀態（都沒有正式接進遊戲）：[ART_DELIVERY_STATUS.md](ART_DELIVERY_STATUS.md)、[ART_PRODUCTION.md](ART_PRODUCTION.md)、`art-inbox/studies/`、`docs/art-trials/`。品質標準：[ART_QUALITY_BAR.md](ART_QUALITY_BAR.md)。
+11/8～11/10 本機試作（都沒接進遊戲）：[ART_DELIVERY_STATUS.md](ART_DELIVERY_STATUS.md)、[ART_PRODUCTION.md](ART_PRODUCTION.md)、`art-inbox/studies/`、`docs/art-trials/`。品質標準：[ART_QUALITY_BAR.md](ART_QUALITY_BAR.md)。
