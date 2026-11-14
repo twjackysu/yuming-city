@@ -703,9 +703,8 @@ class Animator:
         return act
 
 
-def standard_actions(a, attack_style="swing"):
-    """idle、walk、run、light_attack_01、shoot（右手拿武器的站姿）。
-    attack_style："swing"＝舉過頭往下劈（席菈的大劍）；"thrust"＝從腰邊往前戳（諾恩的法杖，D-268）。"""
+def standard_actions(a):
+    """idle、walk、run、light_attack_01～03（右手拿劍的三下連段）、shoot（右手拿武器的站姿）。"""
 
     def idle(f, t):
         b = math.sin(t * math.tau)
@@ -736,57 +735,47 @@ def standard_actions(a, attack_style="swing"):
             a.arm_pose("Right", f, hang=13, swing=arm_amp * 0.55 * s + 8, elbow=elbow_r)
         return fn
 
-    def attack(f, t):
-        # 0～0.3 舉劍往後拉、0.3～0.55 往前劈、之後收回
-        def k(keys):
-            for i in range(len(keys) - 1):
-                (t0, v0), (t1, v1) = keys[i], keys[i + 1]
-                if t0 <= t <= t1:
-                    u = (t - t0) / (t1 - t0)
-                    u = u * u * (3 - 2 * u)
-                    return v0 + (v1 - v0) * u
-            return keys[-1][1]
-        twist = k([(0, 0), (0.3, 28), (0.55, -32), (1, 0)])
-        lean = k([(0, 0), (0.3, -4), (0.55, 14), (1, 0)])
-        a.rot("Hips", f, (Z, twist * 0.35 - 6))
-        a.move("Hips", f, (0, k([(0, 0), (0.55, 0.05), (1, 0)]), -0.012 - k([(0, 0), (0.55, 0.05), (1, 0)])))
-        a.rot("Spine", f, (X, -lean * 0.5), (Z, twist * 0.35 + 4))
-        a.rot("Chest", f, (X, -lean * 0.5), (Z, twist * 0.3 + 6))
-        a.rot("Head", f, (X, 3), (Z, -twist * 0.6 - 4))
-        a.arm_pose("Right", f, hang=k([(0, 13), (0.3, 55), (0.55, 30), (1, 13)]),
-                   swing=k([(0, 12), (0.3, 150), (0.55, 55), (1, 12)]),
-                   elbow=k([(0, 38), (0.3, 85), (0.55, 8), (1, 38)]))
-        a.arm_pose("Left", f, hang=k([(0, 9), (0.3, 25), (0.55, 30), (1, 9)]),
-                   swing=k([(0, -3), (0.3, 20), (0.55, -35), (1, -3)]), elbow=k([(0, 14), (0.55, 45), (1, 14)]))
-        a.leg_pose("Left", f, thigh=k([(0, 9), (0.55, 32), (1, 9)]), knee=k([(0, 10), (0.55, 38), (1, 10)]), foot=-2)
-        a.leg_pose("Right", f, thigh=k([(0, -5), (0.55, -18), (1, -5)]), knee=k([(0, 6), (0.55, 14), (1, 6)]), foot=6)
+    # 出手的三下連段（諾恩的劍；別的角色只用第一下）。遊戲裡每一下照 24 fps 播、0.55 秒就切到下一個動作
+    # （puppet.gd 的 ACTION_TIME），命中判定在 0.35 × 0.55 ＝ 0.19 秒＝t 0.29——所以劍要在 T_HIT 之前砍到位：
+    # 0～T_WIND 拉開、T_WIND～T_HIT 砍、到 T_END 順勢帶過去、之後收回。
+    T_WIND, T_HIT, T_END = 0.13, 0.29, 0.5
 
-    def thrust(f, t):
-        # 往前戳（D-268）。遊戲裡這個動作照 24 fps 播、0.55 秒就切走（puppet.gd 的 ACTION_TIME），
-        # 命中判定在 0.35 × 0.55 ＝ 0.19 秒＝第 4.6 格（t＝0.29）——手要在那之前伸直。
-        # 法杖出手的前 0.125 秒（3 格）從左手換到右手、杖頭順著右前臂指出去（player.gd 的 pose_staff），
-        # 所以右前臂從頭到尾都朝前：0～0.14 右手收到腰邊（上臂往後、手肘彎）、0.14～0.28 往前伸直、停到 0.6、之後收回。
-        # 0.6＝0.4 秒：法杖從這時候開始收回左手（player.gd 的 STAFF_RETURN_AT）——手先放下來的話杖頭會跟著前臂垂到地上。
-        T_BACK, T_HIT, T_HOLD, T_END = 0.14, 0.28, 0.6, 0.92
-        reach = keys(t, [(0, 0), (T_BACK, 0), (T_HIT, 1), (T_HOLD, 1), (T_END, 0), (1, 0)])    # 手伸出去多少
-        coil = keys(t, [(0, 0), (T_BACK, 1), (T_HIT, 0), (1, 0)])                               # 收到腰邊多少
-        twist = -24 * coil + 30 * reach         # 繞 Z 正的＝往左轉＝右肩往前：收的時候右肩往後、戳的時候右肩送出去
-        lean = -3 * coil + 15 * reach           # 正的＝上身往前
-        step = keys(t, [(0, 0), (T_BACK, 0.25), (T_HIT, 1), (T_HOLD, 1), (T_END, 0), (1, 0)])  # 左腳踏出去多少
-        a.rot("Hips", f, (Z, twist * 0.35 - 6))
-        a.move("Hips", f, (0, 0.07 * step, -0.012 - 0.06 * step))
-        a.rot("Spine", f, (X, -lean * 0.5), (Z, twist * 0.35 + 4))
-        a.rot("Chest", f, (X, -lean * 0.5), (Z, twist * 0.3 + 6))
-        a.rot("Head", f, (X, 3 + lean * 0.7), (Z, -twist * 0.6 - 4))
-        # twist：上身轉了多少，手臂就轉回來多少——杖頭一直朝著正前方（量過：不轉回來的話戳出去偏 30 度）
-        a.arm_pose("Right", f, hang=13 + 9 * coil - 17 * reach,
-                   swing=12 - 40 * coil + 80 * reach,
-                   elbow=38 + 60 * coil - 32 * reach, twist=10 * coil - 30 * reach)
-        # 左手：把杖交出去之後往後收，平衡往前伸的右手
-        a.arm_pose("Left", f, hang=9 + 6 * coil + 16 * reach,
-                   swing=-3 + 30 * coil - 34 * reach, elbow=14 + 40 * coil + 26 * reach)
-        a.leg_pose("Left", f, thigh=9 + 25 * step, knee=10 + 30 * step, foot=-2)
-        a.leg_pose("Right", f, thigh=-5 - 17 * step, knee=6 + 10 * step, foot=4 + 6 * step)
+    def swing(wind, hit, end, step_len):
+        """wind／hit／end：三個時間點的姿勢 {twist 上身轉（正＝右肩往前）, lean 往前傾, r 右手 (hang, swing, elbow), l 左手}；
+        step_len：左腳踏出去多少（1＝一般的一步）。"""
+        rest = {"twist": 0, "lean": 0, "r": (13, 12, 38), "l": (9, -3, 14)}
+
+        def fn(f, t):
+            def v(get):
+                return keys(t, [(0, get(rest)), (T_WIND, get(wind)), (T_HIT, get(hit)), (T_END, get(end)), (1, get(rest))])
+            twist, lean = v(lambda p: p["twist"]), v(lambda p: p["lean"])
+            step = keys(t, [(0, 0), (T_WIND, 0.2), (T_HIT, 1), (T_END, 1), (1, 0)]) * step_len
+            a.rot("Hips", f, (Z, twist * 0.35 - 6))
+            a.move("Hips", f, (0, 0.05 * step, -0.012 - 0.05 * step))
+            a.rot("Spine", f, (X, -lean * 0.5), (Z, twist * 0.35 + 4))
+            a.rot("Chest", f, (X, -lean * 0.5), (Z, twist * 0.3 + 6))
+            a.rot("Head", f, (X, 3), (Z, -twist * 0.6 - 4))
+            a.arm_pose("Right", f, hang=v(lambda p: p["r"][0]), swing=v(lambda p: p["r"][1]), elbow=v(lambda p: p["r"][2]))
+            a.arm_pose("Left", f, hang=v(lambda p: p["l"][0]), swing=v(lambda p: p["l"][1]), elbow=v(lambda p: p["l"][2]))
+            a.leg_pose("Left", f, thigh=9 + 23 * step, knee=10 + 28 * step, foot=-2)
+            a.leg_pose("Right", f, thigh=-5 - 13 * step, knee=6 + 8 * step, foot=4 + 2 * step)
+        return fn
+
+    # 第一下：舉過頭往下劈
+    attack_1 = swing(
+        {"twist": 28, "lean": -4, "r": (55, 150, 85), "l": (25, 20, 14)},
+        {"twist": -32, "lean": 14, "r": (30, 55, 8), "l": (30, -35, 45)},
+        {"twist": -36, "lean": 16, "r": (26, 40, 10), "l": (30, -35, 45)}, 1.0)
+    # 第二下：劍收到左肩前面，往右橫掃出去
+    attack_2 = swing(
+        {"twist": 36, "lean": 4, "r": (-18, 78, 96), "l": (20, 24, 50)},
+        {"twist": -12, "lean": 10, "r": (42, 80, 14), "l": (32, -20, 36)},
+        {"twist": -44, "lean": 8, "r": (86, 62, 10), "l": (34, -30, 30)}, 0.8)
+    # 第三下（收尾）：整個人往後拉滿，踏一大步重劈到底
+    attack_3 = swing(
+        {"twist": 34, "lean": -14, "r": (40, 172, 105), "l": (40, 60, 30)},
+        {"twist": -38, "lean": 30, "r": (22, 34, 4), "l": (38, -48, 50)},
+        {"twist": -42, "lean": 34, "r": (20, 20, 6), "l": (38, -50, 50)}, 1.7)
 
     a.action("idle", 72, idle, step=6)
     a.action("walk", 30, gait(27, 48, 20, 3, 0.012, 18, 34), step=2)
@@ -796,7 +785,7 @@ def standard_actions(a, attack_style="swing"):
         # 遊戲裡照 0.9 秒播（puppet.gd 的 ACTION_TIME），擊發在 0.6 秒（tuning.json 的 sera.aim_time）。
         aim = keys(t, [(0, 0), (0.3, 1), (0.8, 1), (1, 0)])
         kick = keys(t, [(0, 0), (0.64, 0), (0.7, 1), (0.86, 0), (1, 0)])
-        twist = 24 * aim                        # 右肩往前送；手臂轉回來同樣的角度，弩才朝正前方（跟 thrust 同一個做法）
+        twist = 24 * aim                        # 右肩往前送；手臂轉回來同樣的角度，弩才朝正前方
         a.rot("Hips", f, (Z, twist * 0.35 - 6))
         a.move("Hips", f, (0, 0, -0.012))
         a.rot("Spine", f, (X, -1.5 - 3 * kick), (Z, twist * 0.35 + 4))
@@ -808,7 +797,9 @@ def standard_actions(a, attack_style="swing"):
         a.leg_pose("Left", f, thigh=9 + 6 * aim, knee=10 + 6 * aim, foot=-2)
         a.leg_pose("Right", f, thigh=-5 - 5 * aim, knee=6, foot=4)
 
-    a.action("light_attack_01", 16, thrust if attack_style == "thrust" else attack, step=1)
+    a.action("light_attack_01", 16, attack_1, step=1)
+    a.action("light_attack_02", 16, attack_2, step=1)
+    a.action("light_attack_03", 16, attack_3, step=1)
     a.action("shoot", 22, shoot, step=1)
 
 

@@ -223,32 +223,50 @@ func test_reversed_paralysis_speeds_attacks_with_a_cap_and_does_not_stack() -> v
 	assert_true(again.attack_speed() > 1.0)
 
 
-## 打中人時給自己的麻痺：每次命中只是重新計時——一份、一樣快、不超過 6 秒；停手 6 秒就退，退了之後不擋出手。
-## 史萊姆的毒：諾恩回血、其他人扣血。
-func test_paralysis_on_hit_refreshes_without_stacking_and_fades_when_you_stop() -> void:
+## 【瘴氣生鏽鐵劍】：每砍中一刀給自己微弱中毒＋一層流血。對諾恩：流血不扣血，每一層出手快 12%，疊到 5 層為止；
+## 停手 5 秒流血就退。跟麻痺的加速是加起來的。史萊姆的毒：諾恩回血、其他人扣血。
+func test_sword_cut_stacks_bleed_into_attack_speed_and_fades_when_you_stop() -> void:
 	var fx := StatusEffects.new(_rules(), true)
 	var h := _hurt(50.0)
-	assert_eq(fx.apply_source("paralysis_on_hit"), "start")
-	assert_true(absf(fx.attack_speed() - 1.35) < 0.001)
-	assert_true(absf(fx.remaining("paralysis") - 6.0) < 0.001)
-	# 每 0.5 秒打中一下、連打 20 秒：一直是一份、一樣快、剩下的時間不超過 6 秒
+	assert_eq(fx.apply_source("rusty_sword_cut"), "start")
+	assert_true(fx.has("poison") and fx.has("bleed"), "一刀兩種：中毒＋流血")
+	assert_true(absf(fx.attack_speed() - 1.12) < 0.001, "一層：快 12%%（%s）" % fx.attack_speed())
+	# 每 0.5 秒砍中一下、連砍 20 秒：越砍越快，到 5 層（快 60%）為止；剩下的時間不超過 5 秒
+	var last: float = fx.attack_speed()
 	for i: int in 40:
-		fx.tick(0.5, h)
-		assert_eq(fx.apply_source("paralysis_on_hit"), "refresh")
-		assert_true(fx.remaining("paralysis") <= 6.0 + 0.001)
-	assert_eq(fx.ids().size(), 1, "只有一份")
-	assert_true(absf(fx.attack_speed() - 1.35) < 0.001, "不會越打越快")
-	assert_eq(h.hp, 50.0, "麻痺不碰生命")
-	# 停手：6 秒後退掉，出手回到原本的速度，也不會擋出手
-	fx.tick(5.9, h)
-	assert_true(fx.has("paralysis"))
+		fx.tick(0.5, null)
+		fx.apply_source("rusty_sword_cut")
+		assert_true(fx.attack_speed() >= last, "不會越砍越慢")
+		last = fx.attack_speed()
+		assert_true(fx.remaining("bleed") <= 5.0 + 0.001)
+	assert_eq(fx.rate("bleed"), 5.0, "最多 5 層")
+	assert_true(absf(fx.attack_speed() - 1.6) < 0.001, "5 層：快 60%%（%s）" % fx.attack_speed())
+	# 流血反轉了不碰生命（這段時間只有中毒在回血）
+	fx.clear("poison")
+	fx.tick(1.0, h)
+	assert_eq(h.hp, 50.0, "反轉的流血不扣血也不回血")
+	# 麻痺的加速（×2.5）加上流血的（+60%）
+	fx.apply_source("sera_panic_vial")
+	assert_true(absf(fx.attack_speed() - 3.1) < 0.001, "兩種加起來（%s）" % fx.attack_speed())
+	fx.clear("paralysis")
+	fx.clear("defense_zero")
+	# 停手：5 秒後退掉，出手回到原本的速度
+	fx.tick(3.9, h)
+	assert_true(fx.has("bleed"))
 	fx.tick(0.2, h)
-	assert_false(fx.has("paralysis"), "停手 6 秒就退")
+	assert_false(fx.has("bleed"), "停手 5 秒就退")
 	assert_eq(fx.attack_speed(), 1.0)
-	assert_false(fx.blocks_attack())
+	# 沒有反轉的人：流血就是每秒扣血（一層一點），出手不會變快
+	var foe := StatusEffects.new(_rules())
+	var fh := _hurt(50.0)
+	foe.apply_source("rusty_sword_bleed")
+	foe.apply_source("rusty_sword_bleed")
+	foe.tick(1.0, fh)
+	assert_true(absf(fh.hp - 48.0) < 0.01, "沒反轉：兩層一秒扣 2 點（%s）" % fh.hp)
+	assert_eq(foe.attack_speed(), 1.0)
 	# 被史萊姆撞到：回血（每秒 5 點），加上麻痺一共兩種狀態
 	fx.apply_source("slime_touch")
-	fx.apply_source("paralysis_on_hit")
+	fx.apply_source("sera_paralysis_vial")
 	fx.tick(1.0, h)
 	assert_true(absf(h.hp - 55.0) < 0.01, "一秒回 5 點（%s）" % h.hp)
 	assert_eq(fx.ids().size(), 2)

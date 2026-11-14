@@ -4,12 +4,14 @@ extends RefCounted
 ## 暫停、對話、過場時不呼叫＝不計時。
 ## 規則（docs/design/02-gameplay.md「異常狀態與反轉」）：
 ## - 同一種狀態只有一份：新來源比較強就換強度；時間取剩下的與新的較長者；不超過 max_duration。
+##   會疊的狀態（資料表有 stack_max：流血）再上一次是把強度加上去，最多到 stack_max。
 ## - 會反轉的人（reverses）身上的狀態**全部**反轉，而且發生在扣血之前：每幀直接變成好處（中毒 → 回血），不先扣再補。
 ## - 反轉後的好處有上限（max_reversed_rate）。直接傷害不歸這裡管（Health.apply_damage）。
 ## - 每一份狀態記得來源、強度、剩餘時間；存檔照原樣存（讀檔不補滿、不清掉）。
 
 const PARALYSIS: String = "paralysis"
 const DEFENSE_ZERO: String = "defense_zero"
+const BLEED: String = "bleed"
 
 ## event："start"（新上身）、"refresh"（同種刷新）、"end"（時間到）、"clear"（被清掉）
 signal changed(status_id: String, event: String)
@@ -61,12 +63,16 @@ func blocks_attack() -> bool:
 	return has(PARALYSIS) and not reverses
 
 
-## 出手的速度倍率：麻痺被反轉時＝它的強度（不超過 max_reversed_rate；同一種只有一份，所以不會越疊越快）；其他時候 1。
+## 出手的速度倍率（只有會反轉的人有）：麻痺＝它的強度（不超過 max_reversed_rate）；流血＝每一層再加 haste_per_rate
+## （層數在 apply 就擋在 stack_max，所以有上限）。兩種是加起來的：畫面上寫「快 150%」「快 36%」，合起來就是快 186%。
 ## 只加快自己的出手，不加快別的計時。
 func attack_speed() -> float:
-	if not has(PARALYSIS) or not reverses:
+	if not reverses:
 		return 1.0
-	return clampf(rate(PARALYSIS), 1.0, maxf(rules.max_reversed_rate(PARALYSIS), 1.0))
+	var speed: float = 1.0
+	if has(PARALYSIS):
+		speed = clampf(rate(PARALYSIS), 1.0, maxf(rules.max_reversed_rate(PARALYSIS), 1.0))
+	return speed + rate(BLEED) * rules.haste_per_rate(BLEED)
 
 
 ## 受到直接傷害時乘幾倍（防禦歸零）：沒反轉＝多吃（1 + 強度）；反轉＝少吃（1 − 強度，強度不超過 max_reversed_rate）。身上沒有＝1。
@@ -87,7 +93,11 @@ func apply(status_id: String, p_rate: float, duration: float, source: String = "
 	if _active.has(status_id):
 		event = "refresh"
 		var cur: Dictionary = _active[status_id] as Dictionary
-		if p_rate > float(cur["rate"]):
+		var stack_max: float = rules.stack_max(status_id)
+		if stack_max > 0.0:
+			cur["rate"] = minf(float(cur["rate"]) + p_rate, stack_max)
+			cur["source"] = source
+		elif p_rate > float(cur["rate"]):
 			cur["rate"] = p_rate
 			cur["source"] = source
 		var want: float = maxf(float(cur["remaining"]), duration)
@@ -135,15 +145,17 @@ func tick(delta: float, health: Health) -> void:
 		var id: String = str(k)
 		var cur: Dictionary = _active[id] as Dictionary
 		var dt: float = minf(delta, float(cur["remaining"]))
-		# 麻痺（action）、防禦歸零（guard）不碰生命：只計時，效果由 attack_speed()／blocks_attack()／damage_taken_scale() 問
-		if health != null and dt > 0.0 and rules.kind(id) == "dot":
+		# 麻痺（action）、防禦歸零（guard）不碰生命：只計時，效果由 attack_speed()／blocks_attack()／damage_taken_scale() 問。
+		# 流血（bleed）沒反轉跟中毒一樣每秒扣血；反轉了不碰生命（變成出手加速）
+		var kind: String = rules.kind(id)
+		if health != null and dt > 0.0 and (kind == "dot" or kind == "bleed"):
 			var info: Dictionary = {"status": id, "source": cur["source"]}
-			if reverses:
+			if not reverses:
+				health.apply_status_damage(float(cur["rate"]) * dt, info)
+			elif kind == "dot":
 				var capped: float = minf(float(cur["rate"]), rules.max_reversed_rate(id))
 				info["reversed"] = true
 				health.heal(capped * reversed_scale * dt, info)
-			else:
-				health.apply_status_damage(float(cur["rate"]) * dt, info)
 		cur["remaining"] = float(cur["remaining"]) - delta
 		if float(cur["remaining"]) <= 0.0:
 			ended.append(id)

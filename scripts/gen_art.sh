@@ -19,7 +19,7 @@ declare -A SRC=(
   [noen]="art-inbox/tripo/noen_rank_f_v2/noen_rank_f_v2_rig.glb"
   [sheila]="art-inbox/tripo/sheila_rank_f/sheila_rank_f_rig.glb"
 )
-# 給 tripo_character.py 的參數：--height 身高（m）、--attack swing|thrust（出手的動作，預設 swing＝往下劈）
+# 給 tripo_character.py 的參數：--height 身高（m）
 declare -A ARGS=(
   [noen]="--height 1.74"
   [sheila]="--height 1.65"

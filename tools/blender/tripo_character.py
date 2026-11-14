@@ -1,7 +1,7 @@
 """把 Tripo 產的角色（art-inbox/tripo/<id>/<id>_rig.glb，Mixamo 骨名、T 字站姿）轉成遊戲用的 glb（D-271）。
 
 跟 vrm_character.py 一樣的出口：骨頭改成 Godot 人形骨架的名字、臉朝 Blender 的 +Y（匯出後＝Godot 的 −Z）、
-腳底在原點、身高縮到指定的公尺數，再用 common.py 的 Animator 做 idle／walk／run／light_attack_01／release。
+腳底在原點、身高縮到指定的公尺數，再用 common.py 的 Animator 做 idle／walk／run／light_attack_01～03／release。
 Tripo 自己附的動作（<id>_anim.glb）不用：只有 idle／walk／run，沒有出手與釋放，而且兩套動作混著用站姿會跳。
 
 用法：python3 -I tools/blender/tripo_character.py --src art-inbox/tripo/sheila_rank_f/sheila_rank_f_rig.glb \
@@ -37,7 +37,6 @@ def main():
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--name", default="character")
     ap.add_argument("--height", type=float, default=1.65, help="腳底到頭頂（公尺）")
-    ap.add_argument("--attack", choices=("swing", "thrust"), default="swing")
     args = ap.parse_args()
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -96,7 +95,7 @@ def main():
           f"骨盆高 {head('Hips').z:.2f}、頭的骨頭高 {head('Head').z:.2f}")
 
     a = c.Animator(arm, segs)
-    c.standard_actions(a, args.attack)
+    c.standard_actions(a)
     c.release_action(a)
     c.activate(meshes[0])
     for o in meshes:

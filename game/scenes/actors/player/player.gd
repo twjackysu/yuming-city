@@ -53,8 +53,9 @@ var pitch: float = -0.18
 var invulnerable: bool = false
 ## 上一次揮擊打中弱點的數量（測試與音效用）
 var last_weak_hits: int = 0
-## 出手打中人時給自己的狀態來源（data/status/statuses.json 的 sources；空的＝沒有）
-var on_hit_source: String = ""
+## 出手打中人時給自己的狀態來源（data/status/statuses.json 的 sources；空的＝沒有）。
+## 【瘴氣生鏽鐵劍】：每砍中一刀給自己微弱中毒＋一層流血＝慢慢回血＋越砍越快；之後換武器就換這個。
+var on_hit_source: String = "rusty_sword_cut"
 ## 這樣給過幾次（測試用）
 var on_hit_applied: int = 0
 ## 目前鎖定的敵人（null＝沒鎖定）；席菈的「打弱點」也打這個
@@ -116,6 +117,11 @@ const RESTORE_MIN_HP_RATIO: float = 0.5
 ## 新版可攜藥劑（快捷鍵 use_item）
 const PORTABLE_ITEM: String = "sera_poison_vial"
 var _swing_resolved: bool = true
+## 連段：這一下是第幾下（0、1、2；最後一下＝收尾的重劈：比較痛、掃得比較寬、夠得比較遠）。
+## 上一下收招後 `noen.combo_window` 秒內再出手就接下一下，超過、或挨打，就從第一下重來。
+const COMBO_LEN: int = 3
+var combo_step: int = 0
+var _combo_left: float = 0.0
 ## 出手往前滑一小步（noen.lunge_dist，0＝不滑）：還剩多遠沒滑、往哪邊、這一次有沒有對準某個敵人
 var _lunge_left: float = 0.0
 var _lunge_dir: Vector3 = Vector3.ZERO
@@ -271,6 +277,8 @@ func _physics_process(delta: float) -> void:
 		toggle_lock()
 	_update_lock(delta)
 	_update_swing()
+	if _puppet.action != "attack":
+		_combo_left = maxf(_combo_left - delta, 0.0)
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	# 挨打被推開的那一步跟出手的滑步一樣：疊在上面、不算「自己在走」。
@@ -391,6 +399,7 @@ func _on_hurt(_amount: float, info: Dictionary) -> void:
 		_puppet.action_time = 0.0
 	_swing_resolved = true
 	_lunge_left = 0.0
+	_combo_left = 0.0
 	var src: Node3D = info.get("source") as Node3D
 	var away: Vector3 = global_position - src.global_position if src != null and is_instance_valid(src) else _body.global_basis.z
 	away.y = 0.0
@@ -683,6 +692,9 @@ func release() -> Dictionary:
 
 
 func start_attack() -> void:
+	combo_step = (combo_step + 1) % COMBO_LEN if _combo_left > 0.0 else 0
+	_combo_left = CombatTuning.num("noen.combo_window", 0.0)
+	_puppet.attack_variant = combo_step
 	_puppet.play_action("attack")
 	_swing_resolved = false
 	_begin_lunge()
@@ -769,12 +781,18 @@ func _update_swing() -> void:
 			strike()
 
 
-## 對前方扇形內所有 damageable 群組的目標造成鈍擊。回傳命中數。
+## 這一下是不是連段收尾的那一刀
+func is_finisher() -> bool:
+	return combo_step == COMBO_LEN - 1
+
+
+## 對前方扇形內所有 damageable 群組的目標砍一刀。回傳命中數。連段收尾的那一刀比較痛、掃得比較寬、夠得比較遠（`noen.finisher_*`）。
 func strike() -> int:
 	var forward: Vector3 = -_body.global_basis.z
-	var reach: float = CombatTuning.num("noen.strike_range", 1.9)
-	var arc: float = CombatTuning.num("noen.strike_arc_deg", 110.0)
-	var damage: float = CombatTuning.num("noen.blunt_damage", 6.0)
+	var finisher: bool = is_finisher()
+	var reach: float = CombatTuning.num("noen.strike_range", 1.9) + (CombatTuning.num("noen.finisher_reach", 0.0) if finisher else 0.0)
+	var arc: float = CombatTuning.num("noen.finisher_arc_deg" if finisher else "noen.strike_arc_deg", 110.0)
+	var damage: float = CombatTuning.num("noen.blunt_damage", 6.0) * (CombatTuning.num("noen.finisher_damage_mult", 1.0) if finisher else 1.0)
 	var stagger: float = CombatTuning.num("noen.blunt_stagger", 20.0)
 	var weak_damage: float = CombatTuning.num("noen.weak_damage_mult", 2.0)
 	var weak_stagger: float = CombatTuning.num("noen.weak_stagger_mult", 2.0)
@@ -802,10 +820,11 @@ func strike() -> int:
 			killed = killed or h.is_dead()
 	if hits > 0:
 		_apply_on_hit_source()
-		Sfx.play_at(self, "blunt_weak" if last_weak_hits > 0 else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
-		var stop_key: String = "feel.hit_stop_kill" if killed else ("feel.hit_stop_weak" if last_weak_hits > 0 else "feel.hit_stop")
+		var heavy: bool = finisher or last_weak_hits > 0
+		Sfx.play_at(self, "blunt_weak" if heavy else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
+		var stop_key: String = "feel.hit_stop_kill" if killed else ("feel.hit_stop_weak" if heavy else "feel.hit_stop")
 		Game.hit_stop(CombatTuning.num(stop_key, 0.06))
-		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))
+		shake(CombatTuning.num("feel.shake_kill" if killed or finisher else "feel.shake_hit", 0.2))
 	return hits
 
 

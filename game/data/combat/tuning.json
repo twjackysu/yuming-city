@@ -21,6 +21,10 @@
     "hurt_push": 0.7,
     "input_buffer": 0.2,
     "attack_face_lock": 1,
+    "combo_window": 0.45,
+    "finisher_damage_mult": 1.6,
+    "finisher_arc_deg": 170,
+    "finisher_reach": 0.4,
     "release_enabled": 1,
     "burst_per_sec": 8,
     "burst_max": 80,
@@ -29,7 +33,7 @@
     "burst_min_sec": 0.5,
     "status_refresh_gain": 0.75,
     "reversed_heal_scale": 0.2,
-    "_doc": "諾恩。release_*／burst_*＝「釋放」：把身上反轉中的中毒一次用掉炸開，傷害＝用掉的秒數 × burst_per_sec（上限 burst_max）。status_refresh_gain＝已經中毒時每再中一次多加幾秒；reversed_heal_scale＝反轉後的回血乘幾成。"
+    "_doc": "諾恩。release_*／burst_*＝「釋放」：把身上反轉中的中毒一次用掉炸開，傷害＝用掉的秒數 × burst_per_sec（上限 burst_max）。status_refresh_gain＝已經中毒時每再中一次多加幾秒；reversed_heal_scale＝反轉後的回血乘幾成。combo_window＝收招後幾秒內再出手算接著砍（三下一輪）；finisher_*＝第三下（收尾）的傷害倍率、掃多寬（度）、多夠得到幾公尺。"
   },
   "poison_slime": {
     "_doc": "劇毒史萊姆（第一章教學戰）：慢、一招撲撞。",

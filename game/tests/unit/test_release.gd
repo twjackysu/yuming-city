@@ -31,8 +31,8 @@ func test_refresh_gain_grows_poison_up_to_the_cap_and_zero_keeps_the_old_rule() 
 	assert_eq(fx.ids().size(), 1, "同一種狀態還是只有一份")
 	# 麻痺（不是持續傷害那一類）不會跟著越疊越久
 	for i: int in 30:
-		fx.apply_source("paralysis_on_hit")
-	assert_eq(fx.remaining(StatusEffects.PARALYSIS), 6.0, "麻痺照舊：每次命中只是重新計時")
+		fx.apply_source("sera_paralysis_vial")
+	assert_eq(fx.remaining(StatusEffects.PARALYSIS), 12.0, "麻痺照舊：再中一次只是重新計時")
 
 
 func test_consume_returns_the_seconds_and_removes_the_status() -> void:

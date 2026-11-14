@@ -15,6 +15,8 @@ const ANIM_MAP: Dictionary = {
 	"run": ["run", "run_loop", "sprint"],
 	"dodge": ["dodge_roll"],
 	"attack": ["light_attack_01"],
+	"attack2": ["light_attack_02"],
+	"attack3": ["light_attack_03"],
 	"release": ["release"],
 	"shoot": ["shoot"],
 }

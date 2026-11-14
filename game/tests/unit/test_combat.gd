@@ -95,6 +95,57 @@ func test_player_swing_hits_target_with_hit_stop_and_shake() -> void:
 	await tree.process_frame
 
 
+## 【瘴氣生鏽鐵劍】的三下連段：接著砍是 第一下 → 第二下 → 收尾（比較痛、側面也掃得到），再來從第一下重來；
+## 停手超過 combo_window 就重來。每砍中一刀身上多一層流血（對諾恩＝出手變快）＋微弱中毒。
+func test_three_hit_combo_ends_in_a_wide_finisher_and_each_cut_stacks_bleed() -> void:
+	var root := Node3D.new()
+	tree.root.add_child(root)
+	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
+	root.add_child(player)
+	var body: Node3D = player.get_node("Body") as Node3D
+	var forward: Vector3 = -body.global_basis.z
+	var front_hits: Array[int] = [0]
+	var side_hits: Array[int] = [0]
+	var front: Health = _target(root, player.global_position + forward * 1.2, front_hits)
+	front.max_hp = 500.0
+	front.hp = 500.0
+	# 正側面偏前一點（80 度）：平常的一刀（左右各 55 度）掃不到，收尾（左右各 85 度）掃得到
+	var side: Health = _target(root, player.global_position + (forward.rotated(Vector3.UP, deg_to_rad(80.0))) * 1.2, side_hits)
+	await tree.physics_frame
+	var dmg: float = CombatTuning.num("noen.blunt_damage")
+	var steps: Array[int] = []
+	var took: Array[float] = []
+	for swing: int in 4:
+		var before: float = front.hp
+		player.start_attack()
+		steps.append(player.combo_step)
+		for i: int in 90:
+			await tree.physics_frame
+			if player.puppet().action != "attack":
+				break
+		took.append(before - front.hp)
+	assert_eq(steps, [0, 1, 2, 0] as Array[int], "三下一輪")
+	assert_eq(took[0], dmg)
+	assert_eq(took[1], dmg)
+	assert_true(absf(took[2] - dmg * CombatTuning.num("noen.finisher_damage_mult")) < 0.01, "收尾比較痛（%s）" % took[2])
+	assert_eq(took[3], dmg, "第四下從頭來")
+	assert_eq(side_hits[0], 1, "側面的只有收尾那一刀掃得到")
+	assert_true(side.hp < 60.0)
+	assert_eq(player.on_hit_applied, 4, "每砍中一刀給自己一次")
+	assert_eq(player.status_effects.rate("bleed"), 4.0, "四刀四層流血")
+	assert_true(player.status_effects.has("poison"), "還有微弱中毒")
+	assert_true(player.puppet().attack_speed > 1.3, "越砍越快（%s）" % player.puppet().attack_speed)
+	# 停手超過 combo_window：下一刀從第一下開始
+	player.start_attack()
+	assert_eq(player.combo_step, 1)
+	for i: int in ceili((float(Puppet.ACTION_TIME["attack"]) + CombatTuning.num("noen.combo_window")) * 60.0) + 12:
+		await tree.physics_frame
+	player.start_attack()
+	assert_eq(player.combo_step, 0, "停手太久，從第一下重來")
+	root.queue_free()
+	await tree.process_frame
+
+
 func test_hit_stop_restores_time_scale() -> void:
 	var game: Node = tree.root.get_node("Game")
 	game.call("hit_stop", 0.05)

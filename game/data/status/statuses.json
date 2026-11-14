@@ -1,5 +1,5 @@
 {
-	"_doc": "異常狀態、來源與可攜藥劑。kind=dot：每秒扣血／反轉後回血；kind=action：不碰生命，影響出手（沒反轉＝不能出手；反轉＝出手加速，rate 是倍率）；kind=guard：不碰生命，影響受到的直接傷害（rate 是比例：沒反轉＝多吃這麼多；反轉＝少吃這麼多）。來源的 also＝同一下再套用另一個來源（一瓶藥帶兩種狀態）。新的狀態照這張表加（docs/design/13-chapter-1-plan.md「系統」）。",
+	"_doc": "異常狀態、來源與可攜藥劑。kind=dot：每秒扣血／反轉後回血；kind=action：不碰生命，影響出手（沒反轉＝不能出手；反轉＝出手加速，rate 是倍率）；kind=guard：不碰生命，影響受到的直接傷害（rate 是比例：沒反轉＝多吃這麼多；反轉＝少吃這麼多）；kind=bleed：rate 是層數，沒反轉＝每秒扣 rate 點血，反轉＝出手加速（每層快 haste_per_rate）。stack_max＝再上一次是把強度加上去（最多到這個數），沒寫的狀態只留比較強的那一份。來源的 also＝同一下再套用另一個來源（一瓶藥帶兩種狀態）。新的狀態照這張表加（docs/design/13-chapter-1-plan.md「系統」）。",
 	"statuses": {
 		"poison": {
 			"max_duration": 30.0,
@@ -20,6 +20,14 @@
 			"max_reversed_rate": 0.8,
 			"name_key": "STATUS_DEFENSE_ZERO",
 			"reversed_key": "STATUS_DEFENSE_ZERO_REVERSED"
+		},
+		"bleed": {
+			"kind": "bleed",
+			"stack_max": 5.0,
+			"haste_per_rate": 0.12,
+			"max_duration": 5.0,
+			"name_key": "STATUS_BLEED",
+			"reversed_key": "STATUS_BLEED_REVERSED"
 		}
 	},
 	"sources": {
@@ -42,10 +50,16 @@
 			"duration": 3.0
 		},
 		"rusty_sword_cut": {
-			"_doc": "【瘴氣生鏽鐵劍】每一刀給自己的微弱中毒（還沒接上）。",
+			"_doc": "【瘴氣生鏽鐵劍】每砍中一刀給自己的微弱中毒＋一層流血（PlayerController.on_hit_source）：對諾恩是慢慢回血＋越砍越快，停手 5 秒流血就退。",
 			"status": "poison",
 			"rate": 1.0,
-			"duration": 6.0
+			"duration": 6.0,
+			"also": "rusty_sword_bleed"
+		},
+		"rusty_sword_bleed": {
+			"status": "bleed",
+			"rate": 1.0,
+			"duration": 5.0
 		},
 		"sera_panic_vial": {
 			"_doc": "教學戰席菈慌了射錯的那一瓶（劇本節點 2）：重度麻痺＋防禦歸零 → 神經超頻（出手 +150%）＋鋼鐵壁壘（減傷 80%）。",
@@ -64,12 +78,6 @@
 			"status": "paralysis",
 			"rate": 1.35,
 			"duration": 12.0
-		},
-		"paralysis_on_hit": {
-			"_doc": "打中人時給自己的麻痺（PlayerController.on_hit_source）：每命中一次重新計時，停手 6 秒就退。",
-			"status": "paralysis",
-			"rate": 1.35,
-			"duration": 6.0
 		}
 	},
 	"items": {

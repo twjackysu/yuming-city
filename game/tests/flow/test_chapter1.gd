@@ -391,7 +391,8 @@ func test_overdrive_from_the_wrong_vial_clears_the_glade_in_seconds() -> void:
 	print("    三隻史萊姆全倒：沒吃藥 %d 幀、吃了拿錯的那一瓶 %d 幀" % [frames[0], frames[1]])
 	assert_true(frames[0] > 0 and frames[1] > 0, "兩次都清得掉：%s" % str(frames))
 	assert_true(frames[1] <= 240, "超頻：4 秒內清場（%d 幀）" % frames[1])
-	assert_true(float(frames[1]) <= float(frames[0]) * 0.7, "比沒吃藥快三成以上（%d 對 %d 幀）" % [frames[1], frames[0]])
+	# 劍自己就會越砍越快（流血），所以沒吃藥也不慢；那一瓶要再明顯快一截（之前是三成，劍有了連段與流血之後量到兩成多）
+	assert_true(float(frames[1]) <= float(frames[0]) * 0.8, "比沒吃藥快兩成以上（%d 對 %d 幀）" % [frames[1], frames[0]])
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:

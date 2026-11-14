@@ -1,8 +1,8 @@
 class_name StatusHud
 extends Control
 ## 狀態圖示：生命條上方一列，每種狀態一格。
-## 一格＝原類型的圖示（中毒：瓶子＋骷髏點；麻痺：閃電；防禦歸零：裂開的盾）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
-## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。
+## 一格＝原類型的圖示（中毒：瓶子＋骷髏點；麻痺：閃電；防禦歸零：裂開的盾；流血：一滴血）＋反轉時右下角一個金色迴轉箭頭＋剩餘秒數，旁邊一行字
+## 「中毒 → 回血」（反轉，金）／「中毒」（沒反轉，紅）。圖示保留原類型，看得出原本是什麼壞東西。會疊的狀態（流血）字後面寫「×層數」。
 ## **翻面**：狀態剛上身時先是紅的；會反轉的人（StatusEffects.reverses）ReversalCue.CURSE_SEC 秒後翻成金的（跟畫面碎裂同一刻），旁邊彈一圈金光。
 ## 純顯示：refresh(effects) 每幀從玩家的 StatusEffects 讀。
 
@@ -14,6 +14,7 @@ const COL_ICON_BG: Color = Color(0.05, 0.06, 0.08, 0.7)
 const COL_BOTTLE: Color = Color(0.78, 0.86, 0.62)
 const COL_BOLT: Color = Color(1.0, 0.86, 0.35)
 const COL_SHIELD: Color = Color(0.72, 0.78, 0.88)
+const COL_BLOOD: Color = Color(0.86, 0.2, 0.22)
 
 ## 翻面那一刻彈出去的金圈多久散掉、散到多大（px）
 const PULSE_SEC: float = 0.45
@@ -21,7 +22,7 @@ const PULSE_GROW: float = 16.0
 ## 已經在身上很久的（讀檔、換關卡接上的）：直接是翻好的那一面
 const SETTLED: float = 99.0
 
-## 每格：{"id", "reversed"（規則上有沒有反轉）, "face"（ReversalCue.icon_face：正＝紅的那一面，負＝金的）, "age", "remaining", "label", "hint"}
+## 每格：{"id", "reversed"（規則上有沒有反轉）, "stacks"（會疊的狀態現在幾層，不會疊的＝0）, "face"（ReversalCue.icon_face：正＝紅的那一面，負＝金的）, "age", "remaining", "label", "hint"}
 var rows: Array[Dictionary] = []
 var _labels: Array[Label] = []
 ## status_id -> 上身之後幾秒（只算這個 HUD 看著它的時間）
@@ -53,7 +54,8 @@ func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") ->
 		var age: float = float(_age[id])
 		var face: float = ReversalCue.icon_face(age) if reversed else 1.0
 		var key: String = str(def.get("reversed_key" if face < 0.0 else "name_key", id))
-		rows.append({"id": id, "reversed": reversed, "face": face, "age": age, "remaining": effects.remaining(id), "label": key, "hint": hint if id == hint_id else ""})
+		var stacks: int = roundi(effects.rate(id)) if effects.rules.stack_max(id) > 0.0 else 0
+		rows.append({"id": id, "reversed": reversed, "stacks": stacks, "face": face, "age": age, "remaining": effects.remaining(id), "label": key, "hint": hint if id == hint_id else ""})
 	while _labels.size() < rows.size():
 		var l := Label.new()
 		l.add_theme_font_size_override("font_size", 17)
@@ -70,7 +72,10 @@ func refresh(effects: StatusEffects, hint_id: String = "", hint: String = "") ->
 		if not l.visible:
 			continue
 		var r: Dictionary = rows[i]
-		l.text = "%s  %d" % [tr(str(r["label"])), ceili(float(r["remaining"]))]
+		l.text = tr(str(r["label"]))
+		if int(r["stacks"]) > 0:
+			l.text += " ×%d" % int(r["stacks"])
+		l.text += "  %d" % ceili(float(r["remaining"]))
 		if str(r.get("hint", "")) != "":
 			l.text += "　" + str(r["hint"])
 		l.add_theme_color_override("font_color", COL_REVERSED if float(r["face"]) < 0.0 else COL_HARMFUL)
@@ -109,6 +114,8 @@ func _draw() -> void:
 			_draw_bolt(Vector2.ZERO)
 		elif str(r["id"]) == "defense_zero":
 			_draw_shield(Vector2.ZERO)
+		elif str(r["id"]) == "bleed":
+			_draw_drop(Vector2.ZERO)
 		if gold:
 			_draw_reverse_mark(Vector2(ICON * 0.34, ICON * 0.34))
 		draw_set_transform(Vector2.ZERO)
@@ -147,6 +154,13 @@ func _draw_shield(c: Vector2) -> void:
 	draw_colored_polygon(pts, COL_SHIELD)
 	var crack := PackedVector2Array([c + Vector2(1.5, -8.0), c + Vector2(-2.0, -2.0), c + Vector2(2.0, 1.0), c + Vector2(-0.5, 8.0)])
 	draw_polyline(crack, Color(0.1, 0.11, 0.14), 1.6)
+
+
+## 流血的原圖示：一滴血（上尖下圓）
+func _draw_drop(c: Vector2) -> void:
+	draw_circle(c + Vector2(0, 3.5), 6.0, COL_BLOOD)
+	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -10.0), c + Vector2(5.4, 1.0), c + Vector2(-5.4, 1.0)]), COL_BLOOD)
+	draw_circle(c + Vector2(-2.2, 4.0), 1.6, Color(1.0, 0.75, 0.72, 0.85))
 
 
 ## 反轉標記：右下角的金色迴轉箭頭

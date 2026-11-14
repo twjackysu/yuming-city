@@ -104,6 +104,13 @@ func _ready() -> void:
 				sera.brain.request()
 			else:
 				_player.status_effects.apply_source("miasma"))
+	# `--burst-on=combo`：進場 1.5 秒後連砍三下（一下收招就接下一下），從第一下開始拍
+	if burst_on == "combo":
+		for i: int in PlayerController.COMBO_LEN:
+			get_tree().create_timer(1.5 + (float(Puppet.ACTION_TIME["attack"]) + 0.02) * float(i)).timeout.connect(func() -> void:
+				if i == 0:
+					App.burst_start_in(1)
+				_player.start_attack())
 	if not bool(Game.session.state.get_flag(FLAG_SLIMES, false)):
 		_spawn_slimes()
 	elif not bool(Game.session.state.get_flag(FLAG_AFTER_TALK, false)):

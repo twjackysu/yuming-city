@@ -50,7 +50,7 @@ static func load_file(path: String) -> StatusRules:
 
 
 ## 狀態的種類："dot"＝每秒扣血／反轉後回血（中毒）；"action"＝不碰生命，影響能不能出手、出手多快（麻痺）；
-## "guard"＝不碰生命，影響受到的直接傷害（防禦歸零）
+## "guard"＝不碰生命，影響受到的直接傷害（防禦歸零）；"bleed"＝沒反轉每秒扣血、反轉後出手加速（流血）
 func kind(status_id: String) -> String:
 	return str((statuses.get(status_id, {}) as Dictionary).get("kind", "dot"))
 
@@ -62,6 +62,16 @@ func max_duration(status_id: String) -> float:
 ## 反轉後每秒最多變成多少好處（中毒＝回血上限）
 func max_reversed_rate(status_id: String) -> float:
 	return float((statuses.get(status_id, {}) as Dictionary).get("max_reversed_rate", 0.0))
+
+
+## 會疊的狀態（流血）：再上一次是把強度加上去，最多到這個數。0＝不疊（只留比較強的那一份）
+func stack_max(status_id: String) -> float:
+	return float((statuses.get(status_id, {}) as Dictionary).get("stack_max", 0.0))
+
+
+## 流血被反轉：每一層出手快多少（0.12＝快 12%）
+func haste_per_rate(status_id: String) -> float:
+	return float((statuses.get(status_id, {}) as Dictionary).get("haste_per_rate", 0.0))
 
 
 func source(source_id: String) -> Dictionary:
