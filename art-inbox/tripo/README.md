@@ -1,4 +1,4 @@
-# Tripo 佇列：loop 排、Jacky 本機產（D-268）
+# Tripo 佇列：loop 排、Jacky 本機產（D-270）
 
 雲端 loop 連不到 Tripo（proxy 403），API 憑證也不放雲端；所以：
 

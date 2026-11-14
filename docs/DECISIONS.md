@@ -2,7 +2,7 @@
 
 新的放最上面。格式：編號、日期（台北時間）、決策、理由、影響。
 
-## D-268　2026-11-14　Tripo 改走「loop 排佇列、Jacky 本機產」
+## D-270　2026-11-14　Tripo 改走「loop 排佇列、Jacky 本機產」
 
 - 決策：
   1. Jacky 決定用 Tripo（付費 API／帳號）產角色、怪物與雕刻感重的道具。雲端 session 連不到 Tripo（proxy 403），憑證也不放雲端，所以 loop 只寫 `art-inbox/tripo/queue.json`；Jacky 在本機跑 `python scripts/tripo_queue.py --run --push`（用已安裝的 tripo-cli，先 dry-run 估點、每次有點數上限）。

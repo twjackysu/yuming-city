@@ -1,6 +1,6 @@
 # 美術自製進度
 
-> 2026-11-13 起（Jacky 的指示、D-249）：這份**不再是給 Jacky 的需求單**。角色模型、動畫、敵人都由 loop 自己用 Blender（`bpy`）做——腳本在 `tools/blender/`，建置時由 `scripts/gen_art.sh` 產生，不進 git。Jacky 不用再用 ChatGPT 產模型；Tripo 改走佇列（`art-inbox/tripo/`，D-268），loop 排、他在本機跑一行產；他自己放進 `art-inbox/characters/<id>/<id>.glb` 的照舊優先接入。待辦的順序在 `docs/NEXT.md` 最上面「0000」。
+> 2026-11-13 起（Jacky 的指示、D-249）：這份**不再是給 Jacky 的需求單**。角色模型、動畫、敵人都由 loop 自己用 Blender（`bpy`）做——腳本在 `tools/blender/`，建置時由 `scripts/gen_art.sh` 產生，不進 git。Jacky 不用再用 ChatGPT 產模型；Tripo 改走佇列（`art-inbox/tripo/`，D-270），loop 排、他在本機跑一行產；他自己放進 `art-inbox/characters/<id>/<id>.glb` 的照舊優先接入。待辦的順序在 `docs/NEXT.md` 最上面「0000」。
 
 ## 進度表
 
