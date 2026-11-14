@@ -25,12 +25,12 @@
 
 ## 0000. 人物與美術：接 Tripo 第一批（Jacky 2026-11-14；D-270）——美術最優先
 
-方向（Jacky 定的）：漫畫風、帥氣漂亮可愛；諾恩 Q 版；冒險者 F 級破舊 → S 級；武器是可換的獨立模型，男主角不拿燈籠。標準 `docs/ART_QUALITY_BAR.md`，進度表與規格 `docs/ART_REQUESTS.md`。
+方向（Jacky 定的）：漫畫風、帥氣漂亮可愛；兩個主角正常動漫比例（約 6 頭身，11/14 決定，諾恩重產 `noen_rank_f_v2`）；冒險者 F 級破舊 → S 級；武器是可換的獨立模型，男主角不拿燈籠。標準 `docs/ART_QUALITY_BAR.md`，進度表與規格 `docs/ART_REQUESTS.md`。
 
 1. **武器**（`art-inbox/tripo/weapon_*`）：bpy 修原點（握把）與朝向 → 掛在手骨的 socket，做成可換裝備（先給諾恩一把，取代現在的 KayKit 法杖或保留法杖並加長劍）。
 2. **送葬者**（`undertaker`）：取代程序人偶；鐵架關節的弱點獨立材質槽 `M_FrameJoint`；接 walk／slash。
 3. **開場物件**（`prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board`）：放進開場與之後的公會。
-4. **主角**（`noen_rank_f`、`sheila_rank_f`）：bpy 修朝向／原點／縮放 → Mixamo 骨架（`mixamorig:*`，匯入後變 `mixamorig_*`）重定向到 Godot humanoid → 接 idle／walk／run，缺的動作（出手、閃避、受擊、倒下）先沿用 `common.py` 或自製。**兩人比例不一致（諾恩約 3.5 頭身、席菈約 6 頭身），等 Jacky 回覆 FOR_JACKY 第 2 項再決定放進劇情**；技術接入可以先做。
+4. **主角**（`noen_rank_f`、`sheila_rank_f`）：bpy 修朝向／原點／縮放 → Mixamo 骨架（`mixamorig:*`，匯入後變 `mixamorig_*`）重定向到 Godot humanoid → 接 idle／walk／run，缺的動作（出手、閃避、受擊、倒下）先沿用 `common.py` 或自製。席菈已接（D-271）；諾恩用 `noen_rank_f_v2`（正常比例，只綁骨、沒有 Tripo 動作，動作用 `common.py`），Q 版 `noen_rank_f` 不用。
 5. 每接一樣：用玩家的鏡頭拍改前｜改後；記 CREDITS（Tripo、AI 生成）。
 6. VRoid 版與 `tools/blender/outfit.py` 的細節封存在 `docs/archive/NEXT_0000_vroid_selfmade.md`；Tripo 主角接好之後 VRoid 版退役。
 

@@ -5,7 +5,7 @@
 ## Jacky 定下的方向（2026-11-13～14）
 
 - 畫風：**漫畫風，帥氣、漂亮、可愛**。人物吃場景的光（D-255）。
-- **諾恩保留 Q 版**（約 3.5 頭身）。席菈的比例待他決定（FOR_JACKY 第 2 項）。
+- 兩個主角都是**正常動漫比例（約 6 頭身）**：Jacky 11/14 決定諾恩重產成 `noen_rank_f_v2`，Q 版的 `noen_rank_f` 不用。
 - 兩人是冒險者：一開始是剛進冒險者公會的 **F 級、破舊服裝**，裝備越好服裝越好，**最高 S 級**。之後的等級可以用 Tripo 再產，或用 bpy 在 F 級模型上加護甲、換配色。
 - **武器可換、男主角不拿燈籠**：角色是空手模型，武器是獨立模型，掛在手骨上依裝備切換（長劍、短劍、斧、槌、法杖、弓）。
 - 場景要有冒險感：建築、街道用 CC0 模組化套件拼，Tripo 只做有劇情意義的重點物件，光影、霧、材質在 Godot 裡做。
@@ -14,8 +14,8 @@
 
 | 項目 | 來源 | 狀態 | 下一步 |
 |---|---|---|---|
-| 諾恩 F 級 | Tripo `noen_rank_f`（Mixamo 骨架、idle／walk／run） | 已產生，未接進遊戲 | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
-| 席菈 F 級 | Tripo `sheila_rank_f`（同上） | 已產生，未接；比例待定 | 同上；等 Jacky 決定比例 |
+| 諾恩 F 級 | Tripo `noen_rank_f_v2`（正常比例，Mixamo 骨架；Q 版 `noen_rank_f` 不用） | 重產中 | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
+| 席菈 F 級 | Tripo `sheila_rank_f` | 已接進遊戲（D-271，`tools/blender/tripo_character.py`） | 補動作、武器掛點 |
 | 送葬者 | Tripo `undertaker`（walk／slash） | 已產生，未接 | 接進開場與戰鬥場；弱點要獨立材質槽 `M_FrameJoint` |
 | 六把武器 | Tripo `weapon_*` | 已產生，未接 | 做成手骨上的可換裝備；先給諾恩一把 |
 | 開場物件 | Tripo `prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board` | 已產生，未接 | 放進開場南街與公會 |
