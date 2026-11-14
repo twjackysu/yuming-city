@@ -176,7 +176,7 @@ func _ready() -> void:
 	_puppet = Puppet.new()
 	_puppet.name = "Puppet"
 	# 模型先只在戰鬥場用（D-253）：劇情關卡換成模型之後流程的測試走不下去（原因還沒查完），先維持程序人偶
-	_puppet.character_id = "noen" if Game.arena_mode else ""
+	_puppet.character_id = "noen"
 	_body.add_child(_puppet)
 	ContactShadow.attach(self, 0.55, 0.5)  # D-108
 	_build_staff()
@@ -844,6 +844,7 @@ func strike() -> int:
 	var weak_stagger: float = CombatTuning.num("noen.weak_stagger_mult", 2.0)
 	var hits: int = 0
 	var killed: bool = false
+	var struck: Array[Node] = []
 	last_weak_hits = 0
 	for n: Node in get_tree().get_nodes_in_group("damageable"):
 		var target: Node3D = n as Node3D
@@ -860,10 +861,12 @@ func strike() -> int:
 		var k_dmg: float = weak_damage if weak != "" else 1.0
 		var k_stg: float = weak_stagger if weak != "" else 1.0
 		if h.apply_damage(damage * k_dmg, {"source": self, "stagger": stagger * k_stg, "kind": "blunt", "weak": weak}):
+			struck.append(target)
 			hits += 1
 			if weak != "":
 				last_weak_hits += 1
 			killed = killed or h.is_dead()
+	_cast_fireball(forward, damage, stagger, struck)
 	if hits > 0:
 		_apply_on_hit_source()
 		Sfx.play_at(self, "blunt_weak" if last_weak_hits > 0 else "blunt", global_position + forward * reach * 0.7 + Vector3.UP * 0.6)
@@ -871,6 +874,30 @@ func strike() -> int:
 		Game.hit_stop(CombatTuning.num(stop_key, 0.06))
 		shake(CombatTuning.num("feel.shake_kill" if killed else "feel.shake_hit", 0.2))
 	return hits
+
+
+## 拿法杖的普通攻擊是射火球（Jacky 2026-11-14）：每次出手從杖頭往瞄的方向射一顆，飛到第一個敵人炸開。
+## 近身扇形那一下已經打到的人（struck）不會再被這一顆打到；身邊沒人的時候它就是遠距離攻擊。沒有法杖（程式拼的鐘錘）不射。
+var last_fireball: Fireball
+var fireballs_cast: int = 0
+
+
+func _cast_fireball(forward: Vector3, damage: float, stagger: float, struck: Array[Node]) -> void:
+	if _staff == null or not is_inside_tree():
+		return
+	var aim: Vector3 = forward
+	var at: Node3D = lock_target if lock_target != null and is_instance_valid(lock_target) else _lunge_target
+	if at != null and is_instance_valid(at):
+		var to_t := Vector3(at.global_position.x - global_position.x, 0.0, at.global_position.z - global_position.z)
+		if to_t.length() > 0.3:
+			aim = to_t.normalized()
+	var ball: Fireball = Fireball.create(self, aim, damage, stagger, struck)
+	var parent: Node = get_parent() if get_parent() != null else get_tree().root
+	parent.add_child(ball)
+	var from: Vector3 = _lantern.global_position if _lantern != null and _lantern.is_inside_tree() else global_position + Vector3.UP * 1.2
+	ball.global_position = Vector3(global_position.x, 0.0, global_position.z) + aim * 0.7 + Vector3.UP * clampf(from.y, global_position.y + 0.9, global_position.y + 1.5)
+	last_fireball = ball
+	fireballs_cast += 1
 
 
 ## 打中人的那一刻，身上戴的東西給的狀態（護腕 → 麻痺，D-235）。只有那個狀態已經裝在反轉欄位裡才給：

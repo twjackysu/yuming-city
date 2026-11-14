@@ -110,7 +110,8 @@ func test_player_drives_puppet() -> void:
 	assert_true(aim > 0.9, "命中的那一刻杖頭朝著身體前面（%.2f）" % aim)
 	var orb_ahead: float = -body.to_local(orb.global_position).z
 	assert_true(orb_ahead > 1.0, "命中的那一刻杖頭伸到身體前面（%.2f m）" % orb_ahead)
-	assert_true(orb.global_position.y - player.global_position.y > 0.8, "杖頭在胸口的高度、不是戳地板（%.2f m）" % (orb.global_position.y - player.global_position.y))
+	# 模型的出手（common.py 的 thrust）手比人偶低一點：杖頭在腰到胸口之間就算（火球另外從胸口的高度射出去）
+	assert_true(orb.global_position.y - player.global_position.y > 0.4, "杖頭在腰以上、不是戳地板（%.2f m）" % (orb.global_position.y - player.global_position.y))
 	# 動作還沒播完（72%）法杖就開始收回左手：手還伸著的時候收，杖頭不會跟著放下來的前臂垂到地上
 	player.puppet().advance(float(Puppet.ACTION_TIME["attack"]) * (PlayerController.STAFF_RETURN_AT - 0.35) + 0.01)
 	assert_eq(player.puppet().current_state(), "attack", "動作還在播")

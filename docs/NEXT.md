@@ -28,7 +28,8 @@
 方向（Jacky 定的）：漫畫風、帥氣漂亮可愛；兩個主角正常動漫比例（約 6 頭身，11/14 決定，諾恩重產 `noen_rank_f_v2`）；冒險者 F 級破舊 → S 級；武器是可換的獨立模型，男主角不拿燈籠。標準 `docs/ART_QUALITY_BAR.md`，進度表與規格 `docs/ART_REQUESTS.md`。
 
 1. ✅（11/14 對話裡做的）**諾恩** `noen_rank_f_v2` 接進戰鬥場（`gen_art.sh` 的 `TRIPO_SRC[noen]`，身高 1.74、出手往前戳）；**武器與物件的擺正工具** `tools/blender/tripo_prop.py`＋`scripts/gen_props.sh`（`gen-assets.sh` 會叫）→ `game/assets/props/tripo/<名字>.glb`（不進 git）；`PropModels.instance_first([...])`：諾恩拿 Tripo 法杖、席菈拿 Tripo 長劍，沒有就退回 KayKit。387 個測試全過；`scripts/shots.sh characters` 看過。
-2. **劇情關卡的諾恩換成模型**：`player.gd` 的 `_puppet.character_id = "noen" if Game.arena_mode else ""`——拿掉條件會有測試不過（人偶的幾何數、躺／坐的姿勢），一個一個修。
+2. ✅（11/14 對話裡做的）**劇情關卡的諾恩也用模型了**（`player.gd` 不再看 `Game.arena_mode`）；`tests/flow/test_story_facing.gd` 量過：劇情裡前後左右走，臉都朝著走的方向（Jacky 回報「主劇情向前會面向後面」——那是舊的程式人偶，現在不用了）。**還缺**：模型沒有坐、躺、倒下的姿勢（開場中毒靠著藥桶坐下那幾段現在是站著），用 `common.py` 補動作並在 `Puppet._animate_model()` 接上。
+2.5 ✅（11/14）**諾恩的普通攻擊會射火球**（Jacky：「拿法杖還用敲的太遜，普攻遠距離射火球之類的」）：`scenes/world/fireball.gd`（`Fireball`）、`player.gd::_cast_fireball()`、`tests/unit/test_fireball.gd`。每次出手從杖頭往鎖定／瞄的人射一顆（18 m/s、射程 14 m、傷害同近身那一下）；近身扇形照舊（已經打到的人不會被同一下的火球再打一次）。**接著要做（Jacky 要的是「法術或技能攻擊」，不要單調）**：①出手的動作改成施法（舉杖、往前一指），不要再往前戳；②火球的樣子與命中的爆炸做漂亮（現在是一顆發光的球＋拖尾）；③機器人的數字會變（遠距離打得到人了），重跑 `scripts/arena_bots.sh` 調平衡；④技能：蓄力的大火球、範圍技、把「釋放」做成看得出來的法術；⑤火球的音效（現在借用 `blunt`）。
 3. **送葬者**（`undertaker`）：`gen_art.sh` 的 `CHARACTERS` 與 `TRIPO_SRC` 加上去（身高 2.6）；`Undertaker` 現在是程式拼的、鐵架與弱點掛在人偶關節上，接模型要保留碰撞與弱點位置，弱點獨立材質槽 `M_FrameJoint`。
 4. **開場物件放進場景**：毒藥桶已換（✅ 11/14，`BARREL_MODEL`，`41-rb-mist` 看過；「有毒」的字留著）；還沒換的：`_build_cart()`／`Caravan`（推車，上面坐著波克）、斷掉的燈柱（送葬者跨過的那一根）；公會委託板等公會場景。換模型時碰撞與劇情判定不動。
 5. 其他四把武器（短劍、斧、槌、弓）做成依裝備切換。

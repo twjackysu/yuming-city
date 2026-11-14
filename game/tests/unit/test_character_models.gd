@@ -198,14 +198,14 @@ func test_model_joint_is_attachment_with_puppet_axes() -> void:
 	await tree.process_frame
 
 
-## D-253：玩家的模型先只在戰鬥場用；劇情關卡維持程序人偶。
-func test_player_uses_model_only_in_arena() -> void:
+## 玩家在戰鬥場與劇情關卡都用模型（2026-11-14；以前 D-253 只在戰鬥場用）。
+func test_player_uses_model_everywhere() -> void:
 	var was: bool = Game.arena_mode
 	for arena: bool in [false, true]:
 		Game.arena_mode = arena
 		var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
 		tree.root.add_child(player)
-		assert_eq(player.puppet().character_id, "noen" if arena else "", "arena_mode=%s" % str(arena))
+		assert_eq(player.puppet().character_id, "noen", "arena_mode=%s" % str(arena))
 		assert_not_null(player.puppet().hand("L"), "提燈有地方掛")
 		assert_not_null(player.puppet().hand("R"))
 		player.queue_free()

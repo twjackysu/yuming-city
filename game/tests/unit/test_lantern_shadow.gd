@@ -13,7 +13,7 @@ func test_lantern_does_not_shadow_noen() -> void:
 	assert_eq(light.shadow_caster_mask & PlayerController.SELF_LAYER, 0, "諾恩那一層不投提燈的影子")
 	assert_true((light.shadow_caster_mask & 1) != 0, "第 1 層（場景、其他角色）照樣投影")
 	var geoms: Array[Node] = player.get_node("Body").find_children("*", "GeometryInstance3D", true, false)
-	assert_true(geoms.size() >= 6, "諾恩身上有人偶的幾何（%d 個）" % geoms.size())
+	assert_true(geoms.size() >= 2, "諾恩身上有幾何（模型一個網格＋法杖；沒有模型時是人偶的十幾塊）（%d 個）" % geoms.size())
 	for g: Node in geoms:
 		var layers: int = (g as GeometryInstance3D).layers
 		assert_eq(layers, PlayerController.SELF_LAYER, "%s 只在諾恩那一層（留在第 1 層的話照樣會擋提燈：shadow_caster_mask 是任何一層命中就投影）" % g.name)
