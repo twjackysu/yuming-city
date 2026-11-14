@@ -14,11 +14,11 @@
 
 | 項目 | 來源 | 狀態 | 下一步 |
 |---|---|---|---|
-| 諾恩 F 級 | Tripo `noen_rank_f_v2`（正常比例，Mixamo 骨架；Q 版 `noen_rank_f` 不用） | 重產中 | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
+| 諾恩 F 級 | Tripo `noen_rank_f_v2`（正常比例；Q 版 `noen_rank_f` 不用） | **已接進遊戲（11/14，戰鬥場）**；劇情關卡的諾恩還是人偶（`player.gd`：`character_id` 只在 `Game.arena_mode` 設） | bpy 修朝向／原點／縮放 → 重定向到 Godot humanoid → 取代 VRoid 版 |
 | 席菈 F 級 | Tripo `sheila_rank_f` | 已接進遊戲（D-271，`tools/blender/tripo_character.py`） | 補動作、武器掛點 |
 | 送葬者 | Tripo `undertaker`（walk／slash） | 已產生，未接 | 接進開場與戰鬥場；弱點要獨立材質槽 `M_FrameJoint` |
-| 六把武器 | Tripo `weapon_*` | 已產生，未接 | 做成手骨上的可換裝備；先給諾恩一把 |
-| 開場物件 | Tripo `prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board` | 已產生，未接 | 放進開場南街與公會 |
+| 六把武器 | Tripo `weapon_*` | **六把都擺正了**（`scripts/gen_props.sh` → `game/assets/props/tripo/`，握把在原點、頭朝 +Y）；諾恩拿 Tripo 法杖、席菈拿 Tripo 長劍（沒有 bpy 時退回 KayKit） | 短劍、斧、槌、弓做成依裝備切換 |
+| 開場物件 | Tripo `prop_poison_barrel`、`prop_broken_lamppost`、`prop_supply_cart`；公會 `prop_guild_quest_board` | 已擺正、縮到實際大小（`PropModels.instance("tripo/prop_…")` 拿得到），**還沒放進場景** | 放進開場南街與公會 |
 | 地下市場小物 | Quaternius CC0（`art-inbox/props/`，D-258） | 已進 repo | 換掉攤位、木桶、木箱、瓶子 |
 | 現在遊戲裡的主角 | VRoid CC0＋自製服裝（D-253、D-264） | 使用中 | Tripo 版接好後退役 |
 | 一般敵人、灰巡者 | 程序人偶 | 未開始 | 點數不夠就用 bpy 改既有模型或找 CC0 |

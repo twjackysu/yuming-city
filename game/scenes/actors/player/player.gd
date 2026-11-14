@@ -85,6 +85,8 @@ const LANTERN_SHADOW_CASTERS: int = 0xFFFFF & ~SELF_LAYER
 ## 掛在右手原本鐘錘的節點（BellHammer）底下，平常的位置對到左手、出手時才回到右手往前戳（D-267、D-268，pose_staff）；
 ## 沒有這個檔就退回程式拼的鐘錘＋左手的提燈。
 const STAFF_MODEL: String = "kaykit/staff"
+## Tripo 產的法杖（建置時由 scripts/gen_props.sh 擺成跟 KayKit 那把一樣的大小與原點）；有就優先用
+const STAFF_MODEL_TRIPO: String = "tripo/weapon_staff"
 ## 這包素材是大頭的比例（珠子比頭大）：縮到 0.6——全長 1.3 m、珠子直徑 27 cm
 const STAFF_SCALE: float = 0.6
 ## 握在握把下面一點（模型往上挪），杖頭才會在頭旁邊、不擋身體
@@ -913,7 +915,7 @@ func _build_staff() -> void:
 	var hammer: Node3D = hand.get_node_or_null("BellHammer") as Node3D if hand != null else null
 	if hammer == null:
 		return
-	var model: Node3D = PropModels.instance(STAFF_MODEL)
+	var model: Node3D = PropModels.instance_first([STAFF_MODEL_TRIPO, STAFF_MODEL])
 	if model == null:
 		return
 	for c: Node in hammer.get_children():

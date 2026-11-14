@@ -44,9 +44,10 @@ declare -A VRM_SRC=([noen]="vroid/beta/HairSample_Male.vrm" [sheila]="vroid/beta
 declare -A VRM_ARGS=([noen]="--outfit noen --scarf 150,34,30 --attack thrust" [sheila]="--outfit sheila")
 # Tripo 產的角色（art-inbox/tripo/<id>/，Jacky 本機跑佇列產的，D-270）：寫在這裡、檔案也在的，優先於上面兩種（D-271）。
 # 用 tools/blender/tripo_character.py 轉（Mixamo 骨名 → Godot 人形骨架、轉向、縮到指定身高、做同一套動作）。
-#   諾恩的第一版（noen_rank_f）是三頭身的 Q 版，跟席菈站在一起比例不搭，先不接（重排了 noen_rank_f_v2）。
-declare -A TRIPO_SRC=([sheila]="art-inbox/tripo/sheila_rank_f/sheila_rank_f_rig.glb")
-declare -A TRIPO_ARGS=([sheila]="--height 1.65")
+#   諾恩用正常比例的第二版 noen_rank_f_v2（Jacky 11/14 決定；第一版 noen_rank_f 是三頭身的 Q 版，不用）。
+declare -A TRIPO_SRC=([sheila]="art-inbox/tripo/sheila_rank_f/sheila_rank_f_rig.glb"
+                      [noen]="art-inbox/tripo/noen_rank_f_v2/noen_rank_f_v2_rig.glb")
+declare -A TRIPO_ARGS=([sheila]="--height 1.65" [noen]="--height 1.74 --attack thrust")
 use_tripo() { [[ "${ART_NO_TRIPO:-0}" != "1" && -n "${TRIPO_SRC[$1]:-}" && -s "$ROOT/${TRIPO_SRC[$1]}" ]]; }
 # 要做的角色。各自一個 .stamp：只重做腳本有改的（共用的部分在 tools/blender/common.py）。
 CHARACTERS=(sheila noen)

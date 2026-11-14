@@ -17,3 +17,5 @@ python3 -P "$ROOT/scripts/gen_sfx.py"
 "$ROOT/scripts/gen_art.sh"
 # 角色模型（Jacky 的 art-inbox/characters 優先，沒有就用自製的 build/art/characters → game/assets/characters，收件檢查不過就用程序人偶）
 python3 -P "$ROOT/scripts/import_characters.py"
+# Tripo 產的武器與物件（art-inbox/tripo → build/art/props → game/assets/props/tripo；沒有 bpy 就略過，遊戲退回 KayKit 的）
+"$ROOT/scripts/gen_props.sh"

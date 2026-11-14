@@ -11,6 +11,8 @@ const DODGE_SPEED: float = 6.5
 const LINE_SEC: float = 1.6
 ## 她手上的劍：現成的 CC0 模型（KayKit 的雙手劍，CREDITS）；檔案不在就用程式拼的那一把
 const SWORD_MODEL: String = "kaykit/sword_2handed"
+## Tripo 產的長劍（建置時由 scripts/gen_props.sh 擺成跟 KayKit 那把一樣的大小與原點）；有就優先用
+const SWORD_MODEL_TRIPO: String = "tripo/weapon_longsword"
 ## 現成的劍原本長 2.37 m（KayKit 的尺寸比我們大），縮到配 1.65 m 的她
 const SWORD_MODEL_SCALE: float = 0.42
 const COMMAND_ACTIONS: Dictionary = {
@@ -395,7 +397,7 @@ func _build() -> void:
 func _build_sword() -> Node3D:
 	var sword := Node3D.new()
 	sword.name = "BrokenSword"
-	var model: Node3D = PropModels.instance(SWORD_MODEL)
+	var model: Node3D = PropModels.instance_first([SWORD_MODEL_TRIPO, SWORD_MODEL])
 	if model != null:
 		# 握的位置與方向是在遊戲裡試出來的（劍尖朝下垂在身邊）
 		model.name = "Model"
