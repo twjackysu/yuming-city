@@ -1,15 +1,15 @@
 shader_type fog;
-// 毒霧有體積的那一團（新版 →）：體積霧裡的一個綠色橢球（FogVolume）。
-// 原本用 FogMaterial：整團濃淡一樣，從旁邊看是一顆光滑均勻的綠色氣球。改成：
+// 瘴氣有體積的那一團：體積霧裡的一個紫色橢球（FogVolume）。
+// 原本用 FogMaterial：整團濃淡一樣，從旁邊看是一顆光滑均勻的氣球。改成：
 // - 底濃上淡（貼著地面最濃，往上變成一縷一縷）
 // - 輪廓用雜訊咬出不規則的邊（不是一顆正橢球）
 // - 裡面的濃淡慢慢流動（順著風往一邊走、往上飄一點）
 // 體積霧的格子很粗：雜訊只用大塊的（約 1～2 m 一團），更細的拍不出來。
 
 uniform float density = 1.2;
-uniform vec4 albedo : source_color = vec4(0.42, 0.92, 0.36, 1.0);
-uniform vec4 emission : source_color = vec4(0.07, 0.2, 0.05, 1.0);
-uniform float fade = 1.0;            // 1＝滿，0＝散掉（守衛噴的霧）
+uniform vec4 albedo : source_color = vec4(0.62, 0.3, 0.85, 1.0);
+uniform vec4 emission : source_color = vec4(0.124, 0.06, 0.17, 1.0);
+uniform float fade = 1.0;            // 1＝滿，0＝散掉（會散的霧）
 uniform float ground_offset = 0.68;  // 地面在這團中心下方多少公尺（腳本照擺放的高度設）
 uniform float flow_speed = 0.22;
 uniform float edge_soft = 0.6;       // 從邊界往裡多少公尺淡到滿

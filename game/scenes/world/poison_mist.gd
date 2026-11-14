@@ -2,17 +2,17 @@ class_name PoisonMist
 extends Node3D
 ## 毒霧／瘴氣：MistZone（規則）＋幾層貼地的霧盤（poison_mist.gdshader）＋一團有體積的霧。
 ## 每個物理幀把玩家（與 extra_targets 裡有 status_effects 的角色）餵給 MistZone；在霧裡就上狀態。
-## 守衛噴的霧 life > 0：最後 0.6 秒淡掉，時間到自己移除。
+## life > 0 的霧（會散的）：最後 0.6 秒淡掉，時間到自己移除。
 
 const LAYERS: int = 3
 const LAYER_GAP: float = 0.32
 const SHADER: Shader = preload("res://src/world/poison_mist.gdshader")
-## 真的有體積的那一團：體積霧裡的一個綠色橢球（FogVolume）。貼地的霧盤從上往下看是一個平的圓盤，
-## 加上這一團之後，從旁邊看霧有厚度、後面的人和牆被染綠。畫質低（沒有體積霧）時只剩霧盤。
+## 真的有體積的那一團：體積霧裡的一個紫色橢球（FogVolume）。貼地的霧盤從上往下看是一個平的圓盤，
+## 加上這一團之後，從旁邊看霧有厚度、後面的人和樹被染紫。畫質低（沒有體積霧）時只剩霧盤。
 const VOLUME_HEIGHT: float = 1.7
 const VOLUME_DENSITY: float = 1.2
-const VOLUME_ALBEDO: Color = Color(0.42, 0.92, 0.36)
-const VOLUME_EMISSION: Color = Color(0.07, 0.2, 0.05)
+const VOLUME_ALBEDO: Color = Color(0.62, 0.3, 0.85)
+const VOLUME_EMISSION: Color = Color(0.124, 0.06, 0.17)
 ## 那一團的濃淡與輪廓：底濃上淡、邊緣用雜訊咬不規則、裡面慢慢流動（poison_mist_volume.gdshader）。
 const VOLUME_SHADER: Shader = preload("res://src/world/poison_mist_volume.gdshader")
 ## 霧盤的面片比毒霧的範圍大一圈：邊緣用雜訊往裡外咬的時候不會被面片切出硬邊。
@@ -22,8 +22,6 @@ var zone: MistZone
 var radius: float = 3.0
 var source_id: String = "miasma"
 var life: float = -1.0
-## 有體積的那一團的顏色（預設綠；腐敗之森的瘴氣設成紫）。要在加進場景之前設。貼地霧盤的顏色在 shader 裡。
-var tint: Color = VOLUME_ALBEDO
 var _mats: Array[ShaderMaterial] = []
 var _volume_mat: ShaderMaterial
 
@@ -57,8 +55,8 @@ func _ready() -> void:
 	_volume_mat = ShaderMaterial.new()
 	_volume_mat.shader = VOLUME_SHADER
 	_volume_mat.set_shader_parameter("density", VOLUME_DENSITY)
-	_volume_mat.set_shader_parameter("albedo", tint)
-	_volume_mat.set_shader_parameter("emission", VOLUME_EMISSION if tint == VOLUME_ALBEDO else tint * 0.2)
+	_volume_mat.set_shader_parameter("albedo", VOLUME_ALBEDO)
+	_volume_mat.set_shader_parameter("emission", VOLUME_EMISSION)
 	_volume_mat.set_shader_parameter("fade", 1.0)
 	_volume_mat.set_shader_parameter("ground_offset", VOLUME_HEIGHT * 0.4)
 	var vol := FogVolume.new()

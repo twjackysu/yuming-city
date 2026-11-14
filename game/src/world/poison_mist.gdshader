@@ -1,20 +1,20 @@
 shader_type spatial;
-// 毒霧（新版）：貼地的幾層圓盤，綠色、往外淡、慢慢流動。
+// 瘴氣：貼地的幾層圓盤，紫黑色、往外淡、慢慢流動。
 // 邊界：原本是一圈正圓的亮線（看起來像地上畫的圈，跟噴毒前兆的圈分不出來）；
 // 改成用雜訊往裡外咬的不規則邊，邊上一道淡淡的、跟著雜訊走的亮緣——還是看得出在哪裡進出，但是一團霧的邊，不是一條線。
 // 面片比毒霧的範圍大一圈（overscan），咬出去的地方不會被面片切出硬邊。
 // 不受光（自己發一點光），景深接近牆／地面時淡掉（不會切出硬邊）。
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
 
-uniform vec3 mist_color : source_color = vec3(0.42, 0.78, 0.30);
-uniform vec3 edge_color : source_color = vec3(0.70, 1.0, 0.55);
-uniform float density = 0.42;
-uniform float edge_strength = 0.3;
+uniform vec3 mist_color : source_color = vec3(0.40, 0.12, 0.58);
+uniform vec3 edge_color : source_color = vec3(0.90, 0.52, 1.0);
+uniform float density = 0.8;
+uniform float edge_strength = 0.6;
 uniform float edge_bite = 0.2;   // 雜訊把邊界往裡外推多少（佔半徑的比例，±一半）
 uniform float overscan = 1.0;    // 面片邊長 ÷ 毒霧直徑
 uniform float layer = 0.0;     // 0＝貼地那層（最濃），越上層越淡
 uniform float flow_speed = 0.06;
-uniform float fade = 1.0;      // 1＝滿，0＝散掉（守衛噴的霧）
+uniform float fade = 1.0;      // 1＝滿，0＝散掉（會散的霧）
 uniform sampler2D depth_tex : hint_depth_texture, filter_linear;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }

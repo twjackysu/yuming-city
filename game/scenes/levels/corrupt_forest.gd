@@ -244,6 +244,5 @@ func _small_prop(model: String, at: Vector3, yaw: float, glows: bool) -> Node3D:
 func _build_miasma() -> void:
 	miasma = PoisonMist.create(MIASMA_RADIUS, "miasma")
 	miasma.name = "Miasma"
-	miasma.tint = Color(0.62, 0.3, 0.85)
 	miasma.position = MIASMA_POS
 	add_child(miasma)
