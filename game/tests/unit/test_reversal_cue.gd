@@ -94,3 +94,29 @@ func test_player_starts_the_cue_on_a_new_status_and_bursts_gold_on_shatter() -> 
 	assert_true(player.status_effects.attack_speed() > 1.0, "而且第一瓶就是出手加速")
 	player.queue_free()
 	await tree.process_frame
+
+
+## 一樣東西同時帶兩種狀態（劍的第一刀：中毒＋流血；拿錯的那一瓶）：紫紅的那一聲只響一次，不會疊成兩倍大聲。
+func test_two_statuses_in_the_same_moment_sting_once() -> void:
+	var player: PlayerController = (load("res://scenes/actors/player/player.tscn") as PackedScene).instantiate() as PlayerController
+	tree.root.add_child(player)
+	await tree.process_frame
+	var sting: AudioStream = Sfx.stream("curse_sting")
+	assert_not_null(sting, "音效有產出來")
+	var count: Callable = func() -> int:
+		var n: int = 0
+		for c: Node in player.get_children():
+			if c is AudioStreamPlayer3D and (c as AudioStreamPlayer3D).stream == sting:
+				n += 1
+		return n
+	player.status_effects.apply_source("rusty_sword_cut")
+	assert_true(player.status_effects.has("poison") and player.status_effects.has("bleed"), "一刀兩種狀態")
+	assert_true(player.reversal_cue.is_playing())
+	assert_eq(int(count.call()), 1, "同一下只響一聲")
+	# 過了幾幀才上身的另一種狀態是另一件事：再響一次
+	for i: int in 3:
+		await tree.physics_frame
+	player.status_effects.apply_source("sera_paralysis_vial")
+	assert_eq(int(count.call()), 2, "之後新上身的狀態照樣響")
+	player.queue_free()
+	await tree.process_frame

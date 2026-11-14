@@ -147,6 +147,18 @@ func joint(joint_name: String) -> Node3D:
 	return j
 
 
+## 關節這一幀在世界的哪裡。模型的掛點（BoneAttachment3D）要等這一幀全部的 _process 跑完才跟上骨架，
+## 在 _process 裡讀它的位置會慢一幀；要貼著這一幀的姿勢的東西（劍光）用這個，從骨架現算。
+func joint_now(joint_name: String) -> Transform3D:
+	var j: Node3D = joint(joint_name)
+	if j == null:
+		return global_transform
+	var att: BoneAttachment3D = j.get_parent() as BoneAttachment3D
+	if att == null or skeleton == null or att.bone_idx < 0:
+		return j.global_transform
+	return skeleton.global_transform * skeleton.get_bone_global_pose(att.bone_idx) * j.transform
+
+
 ## 模型上對應人偶關節的掛點：骨頭上的 BoneAttachment3D 底下再一層 Node3D，轉成跟人偶的關節同一個方向——
 ## 手臂、腿、手：−Y 沿著骨頭往下一節（手＝往指尖）、−Z 朝角色的前面；其他（骨盆、胸、頭）跟模型同方向。
 ## 這樣掛在上面的東西（劍、手弩）不用分人偶還是模型。

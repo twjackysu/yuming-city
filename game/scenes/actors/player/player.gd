@@ -86,6 +86,14 @@ var _puppet: Puppet
 var _weapon: Node3D
 var _sword_glow_mat: ShaderMaterial
 var _sword_glow: float = 0.0
+## 劍尖在 _weapon 座標裡的位置（劍光要知道劍有多長）
+var _blade_tip: Vector3 = Vector3.ZERO
+## 劍光（SlashTrail）兩條輪流用：出手很快的時候前一刀的還沒淡完
+var _trails: Array[SlashTrail] = []
+var _trail_i: int = 0
+var _trailing: bool = false
+## 出手動作的哪一段有劍光（動作時間比例）：拉開到頂（0.16）之後 → 砍到位（0.35）→ 順勢帶過去
+const TRAIL_WINDOW: Vector2 = Vector2(0.17, 0.56)
 ## 生命（數值在 data/combat/tuning.json 的 noen）；閃避無敵期間不扣血
 var health: Health
 ## 身上的持續狀態。【逆理之器】：落在諾恩身上的全部反轉成增益（StatusEffects.reverses）
@@ -277,6 +285,7 @@ func _physics_process(delta: float) -> void:
 		toggle_lock()
 	_update_lock(delta)
 	_update_swing()
+	_update_trail()
 	if _puppet.action != "attack":
 		_combo_left = maxf(_combo_left - delta, 0.0)
 
@@ -858,8 +867,11 @@ static func in_strike_arc(origin: Vector3, forward: Vector3, target: Vector3, re
 func _on_status_changed(_status_id: String, event: String) -> void:
 	if event != "start":
 		return
+	# 同一下上身兩種狀態（一瓶藥、劍的第一刀）只響一聲：回饋才剛開始（還沒走過任何一幀）就不再播
+	var same_moment: bool = reversal_cue.t == 0.0
 	reversal_cue.start()
-	Sfx.play_at(self, "curse_sting", global_position + Vector3.UP, -5.0, 0.03)
+	if not same_moment:
+		Sfx.play_at(self, "curse_sting", global_position + Vector3.UP, -5.0, 0.03)
 
 
 ## 碎裂的那一刻：碎裂聲＋身上一團金色光點與金光＋鏡頭輕輕震一下
@@ -903,6 +915,60 @@ func _build_weapon() -> void:
 	_sword_glow_mat.set_shader_parameter("strength", 0.0)
 	for n: Node in model.find_children("*", "GeometryInstance3D", true, false):
 		(n as GeometryInstance3D).material_overlay = _sword_glow_mat
+	_blade_tip = blade_tip(_weapon)
+	for i: int in 2:
+		_trails.append(SlashTrail.attach(_body, _blade_now))
+
+
+## 劍尖在武器節點座標裡的位置：所有網格的外框最長的那一軸上、離手（原點）比較遠的那一頭。純函式。
+static func blade_tip(weapon_root: Node3D) -> Vector3:
+	var box := AABB()
+	var found: bool = false
+	for n: Node in weapon_root.find_children("*", "MeshInstance3D", true, false):
+		var xf := Transform3D.IDENTITY
+		var p: Node3D = n as Node3D
+		while p != null and p != weapon_root:
+			xf = p.transform * xf
+			p = p.get_parent() as Node3D
+		var b: AABB = xf * (n as MeshInstance3D).get_aabb()
+		box = box.merge(b) if found else b
+		found = true
+	if not found:
+		return Vector3.ZERO
+	var axis: int = box.get_longest_axis_index()
+	var lo: Vector3 = box.get_center()
+	var hi: Vector3 = lo
+	lo[axis] = box.position[axis]
+	hi[axis] = box.end[axis]
+	return hi if hi.length() > lo.length() else lo
+
+
+## 這一幀手與劍尖在哪裡（世界座標）。從骨架現算，不讀掛點的節點——那個要等這一幀結束才更新。
+func _blade_now() -> PackedVector3Array:
+	var xf: Transform3D = _puppet.joint_now("hand_R") * _weapon.transform
+	return PackedVector3Array([xf.origin, xf * _blade_tip])
+
+
+## 劍光與揮劍的聲音：動作走到揮的那一段（TRAIL_WINDOW）開始記劍的位置、響一聲，過了、或動作被打斷就放手讓劍光淡掉。
+## 身上有反轉中的狀態是金的，不然是鏽色；收尾的那一刀最大。
+func _update_trail() -> void:
+	var t: float = _puppet.action_time / float(Puppet.ACTION_TIME["attack"]) if _puppet.action == "attack" else -1.0
+	var swinging: bool = not _trails.is_empty() and t >= TRAIL_WINDOW.x and t < TRAIL_WINDOW.y
+	if swinging and not _trailing:
+		_trail_i = (_trail_i + 1) % _trails.size()
+		_trails[_trail_i].begin(has_reversed_status(), is_finisher())
+		# 劍劃過空氣的那一聲（沒砍到東西也有）；收尾的那一刀比較低沉、比較大聲
+		var swish: AudioStreamPlayer3D = Sfx.play_at(self, "slash", global_position + Vector3.UP * 1.2, -4.0 if is_finisher() else -9.0, 0.08)
+		if swish != null and is_finisher():
+			swish.pitch_scale *= 0.78
+	elif _trailing and not swinging:
+		_trails[_trail_i].stop()
+	_trailing = swinging
+
+
+## 現在這一刀（或剛揮完的那一刀）的劍光；空手時是 null
+func slash_trail() -> SlashTrail:
+	return _trails[_trail_i] if not _trails.is_empty() else null
 
 
 ## 身上有沒有反轉中的狀態（任何一種）
