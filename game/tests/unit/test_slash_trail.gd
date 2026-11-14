@@ -23,6 +23,27 @@ func test_ribbon_stays_round_between_two_samples() -> void:
 	assert_eq((one[0] as PackedVector3Array).size(), 2, "只有一個取樣＝一對點，畫不出面")
 
 
+func test_ribbon_has_no_corner_at_a_sample() -> void:
+	# 手不動、劍每個取樣轉 40 度，轉的軸中途換了（先往前倒、再往旁邊掃）：外緣在那個取樣點要彎過去，不是折過去
+	var hands := PackedVector3Array([Vector3.ZERO, Vector3.ZERO, Vector3.ZERO, Vector3.ZERO])
+	var tips := PackedVector3Array([
+		Vector3.UP,
+		Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(-40.0)),
+		Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(-80.0)),
+		Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(-80.0)).rotated(Vector3.UP, deg_to_rad(-40.0)),
+	])
+	var built: Array = SlashTrail.ribbon(hands, tips, Vector2(0.0, 1.0))
+	var pts: PackedVector3Array = built[0]
+	var along: PackedFloat32Array = built[1]
+	var worst: float = 0.0
+	for i: int in range(1, along.size() - 1):
+		var a: Vector3 = pts[i * 2 + 1] - pts[i * 2 - 1]
+		var b: Vector3 = pts[i * 2 + 3] - pts[i * 2 + 1]
+		worst = maxf(worst, rad_to_deg(a.angle_to(b)))
+		assert_true(absf(pts[i * 2 + 1].length() - 1.0) < 0.001, "補出來的劍還是原本的長度")
+	assert_true(worst < 45.0, "外緣是彎過去的（相鄰兩小段最多差 %.1f 度；一段一段各自補的話，換軸的那一點是 90 度的折角）" % worst)
+
+
 func test_blade_tip_is_the_far_end_of_the_longest_axis() -> void:
 	var weapon := Node3D.new()
 	var model := Node3D.new()

@@ -119,8 +119,8 @@ func _rebuild() -> void:
 
 
 ## 帶子的點。回傳 [點, 位置]：點是一對一對（靠手的、靠劍尖的）照時間排；位置是每一對落在第幾個取樣（補出來的是小數）。
-## 兩個取樣之間手的位置直線補、劍的方向照角度補，所以劍轉了 90 度而中間只有兩個取樣時，
-## 帶子的外緣還是圓弧（不是一條弦）。純函式。
+## 兩個取樣之間用曲線補（看前後各一個取樣，接起來沒有折角），補出來的劍保持原本的長度，
+## 所以劍轉了 90 度而中間只有兩個取樣時，帶子的外緣還是圓弧（不是一條弦）。純函式。
 static func ribbon(hands: PackedVector3Array, tips: PackedVector3Array, span: Vector2) -> Array:
 	var pts := PackedVector3Array()
 	var along := PackedFloat32Array()
@@ -132,10 +132,13 @@ static func ribbon(hands: PackedVector3Array, tips: PackedVector3Array, span: Ve
 			var steps: int = 1
 			if prev.length() > 0.001 and blade.length() > 0.001:
 				steps = clampi(ceili(rad_to_deg(prev.angle_to(blade)) / STEP_DEG), 1, 24)
+			var before: int = maxi(i - 2, 0)
+			var after: int = mini(i + 1, n - 1)
 			for s: int in range(1, steps):
 				var k: float = float(s) / float(steps)
-				var dir: Vector3 = prev.normalized().slerp(blade.normalized(), k) * lerpf(prev.length(), blade.length(), k)
-				var hand: Vector3 = hands[i - 1].lerp(hands[i], k)
+				var hand: Vector3 = hands[i - 1].cubic_interpolate(hands[i], hands[before], hands[after], k)
+				var tip: Vector3 = tips[i - 1].cubic_interpolate(tips[i], tips[before], tips[after], k)
+				var dir: Vector3 = (tip - hand).normalized() * lerpf(prev.length(), blade.length(), k)
 				pts.append(hand + dir * span.x)
 				pts.append(hand + dir * span.y)
 				along.append(float(i - 1) + k)
