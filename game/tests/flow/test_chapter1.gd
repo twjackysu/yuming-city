@@ -1,5 +1,5 @@
 extends TestCase
-## 第一章的起點（腐敗之森入口）：新遊戲 → 任務與檢查點 → 走進瘴氣反轉 → 打倒三隻史萊姆。
+## 第一章的起點（腐敗之森入口）：新遊戲 → 任務與檢查點 → 走進瘴氣反轉 → 兩人講幾句 → 席菈跟著、開打後射藥 → 打倒三隻史萊姆。
 ## 劇本 docs/story/chapter-1.md，計畫 docs/design/13-chapter-1-plan.md。
 
 const LEVEL: String = "res://scenes/levels/corrupt_forest.tscn"
@@ -23,6 +23,7 @@ func after_each() -> void:
 	if _level != null and is_instance_valid(_level):
 		_level.free()
 	_game().set("session", _old_session)
+	_game().set("dialogue", null)
 	Engine.time_scale = 1.0
 	CombatTuning.load_tuning()
 	if DirAccess.dir_exists_absolute(_dir):
@@ -96,7 +97,7 @@ func test_level_builds_with_markers_miasma_slimes_and_a_clear_path() -> void:
 	_game().call("new_game", false)
 	var level: CorruptForest = _load_level()
 	await tree.physics_frame
-	for marker: String in ["MiasmaEdge", "SlimeGlade", "Spawn", "Player", "Hud", "Miasma", "Forest"]:
+	for marker: String in ["MiasmaEdge", "SlimeGlade", "Spawn", "Player", "Hud", "Miasma", "Forest", "Sera"]:
 		assert_not_null(level.get_node_or_null(marker), "有節點 %s" % marker)
 	assert_eq(level.slimes.size(), 3, "三隻史萊姆")
 	assert_eq(level.slimes_alive(), 3)
@@ -137,6 +138,96 @@ func test_walking_into_the_miasma_reverses_poison_into_healing() -> void:
 	var s: GameSession = _session()
 	assert_eq(s.state.get_flag(CorruptForest.FLAG_REVERSAL), true)
 	assert_eq(s.quests.stage_of("ch1_main"), "slimes", "任務往下一段")
+
+
+func test_after_the_first_reversal_sera_and_noen_talk_once() -> void:
+	_game().call("new_game", false)
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	player.global_position = CorruptForest.MIASMA_POS + Vector3(0, 0.05, 0)
+	assert_false(bool(_game().call("is_in_dialogue")), "一進場可以直接走，不先講話")
+	var frames: int = 0
+	while not bool(_game().call("is_in_dialogue")) and frames < 240:
+		await tree.physics_frame
+		frames += 1
+	assert_true(bool(_game().call("is_in_dialogue")), "反轉之後席菈開口")
+	assert_true(frames > int(CorruptForest.GATE_TALK_DELAY * 60.0), "等碎裂與金光演完才講（%d 幀）" % frames)
+	var s: GameSession = _session()
+	assert_eq(s.state.get_flag(CorruptForest.FLAG_GATE_TALK), true)
+	var runner: DialogueRunner = _game().get("dialogue") as DialogueRunner
+	assert_eq(runner.current_text(), "DLG_CH1_GATE_001")
+	var before: Vector3 = level.sera.global_position
+	for i: int in 20:
+		await tree.physics_frame
+	assert_true(level.sera.global_position.distance_to(before) < 0.05, "講話的時候席菈站著")
+	for i: int in 4:
+		runner.advance()
+	assert_false(bool(_game().call("is_in_dialogue")), "四句講完")
+	for i: int in 120:
+		await tree.physics_frame
+	assert_false(bool(_game().call("is_in_dialogue")), "只講一次")
+
+
+func test_sera_starts_in_view_and_follows_behind_noen() -> void:
+	_game().call("new_game", false)
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sera: Sera = level.sera
+	assert_true(sera.global_position.z < player.global_position.z, "開場站在諾恩前面（鏡頭看得到）")
+	assert_eq(sera.collision_layer, 0, "不擋路")
+	assert_not_null(sera.crossbow(), "手上有手弩")
+	assert_true(sera.puppet().hand("R").has_node("Crossbow"), "手弩在右手")
+	assert_false(sera.puppet().hand("R").has_node("BellHammer"))
+	for slime: Slime in level.slimes:
+		slime.set_physics_process(false)
+	player.global_position = Vector3(0, 0.05, 3)
+	for i: int in 300:
+		await tree.physics_frame
+	var dist: float = sera.global_position.distance_to(player.global_position)
+	assert_true(dist > 3.5 and dist <= CombatTuning.num("sera.follow_far"), "跟上來停在後面 4～6 m（%.1f）" % dist)
+	assert_true(sera.global_position.z > player.global_position.z, "在諾恩後面")
+	assert_eq(sera.vials_fired, 0, "附近沒有敵人不射")
+	sera.global_position = player.global_position + Vector3(0, 0, 30)
+	for i: int in 3:
+		await tree.physics_frame
+	assert_true(sera.global_position.distance_to(player.global_position) < CombatTuning.num("sera.follow_far"), "被甩太遠就直接出現在後面")
+
+
+func test_in_a_fight_sera_shoots_a_vial_that_reverses_into_faster_attacks() -> void:
+	_game().call("new_game", false)
+	_session().set_flag(CorruptForest.FLAG_REVERSAL, true)
+	var level: CorruptForest = _load_level()
+	await tree.physics_frame
+	var player: PlayerController = level.get_node("Player") as PlayerController
+	var sera: Sera = level.sera
+	for slime: Slime in level.slimes:
+		slime.set_physics_process(false)
+	player.global_position = CorruptForest.GLADE_POS + Vector3(0, 0.05, 6)
+	sera.global_position = player.global_position + Vector3(0, 0, 5)
+	assert_true(sera.threat_near(), "史萊姆就在前面")
+	assert_eq(player.status_effects.attack_speed(), 1.0)
+	var frames: int = 0
+	var aimed: bool = false
+	while sera.vials_fired == 0 and frames < 400:
+		await tree.physics_frame
+		frames += 1
+		aimed = aimed or sera.puppet().current_state() == "shoot"
+	assert_eq(sera.vials_fired, 1, "開打後射出第一瓶")
+	assert_true(aimed, "先舉弩瞄準")
+	assert_true(frames >= int(CombatTuning.num("sera.first_vial_delay") * 60.0), "不是一開打的那一幀就射（%d 幀）" % frames)
+	var vial: SeraVial = sera.last_vial
+	assert_false(player.status_effects.has("paralysis"), "藥瓶還在飛")
+	for i: int in int(CombatTuning.num("sera.vial_flight") * 60.0) + 6:
+		await tree.physics_frame
+	assert_true(vial.landed, "藥瓶砸在諾恩身上")
+	assert_true(player.status_effects.has("paralysis"), "麻痺上身")
+	assert_eq(player.status_effects.source_of("paralysis"), Sera.VIAL_SOURCE)
+	assert_true(player.status_effects.is_reversed("paralysis"), "而且是反轉的")
+	assert_false(player.status_effects.blocks_attack(), "不會被麻痺定住")
+	assert_true(player.status_effects.attack_speed() > 1.2, "出手變快（×%.2f）" % player.status_effects.attack_speed())
+	assert_true(player.reversal_cue.is_playing() and player.reversal_cue.reversed, "反轉的回饋自己播了（不用另外接）")
 
 
 func test_slime_chases_bumps_and_its_poison_heals_noen() -> void:

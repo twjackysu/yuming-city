@@ -1,10 +1,12 @@
 class_name CorruptForest
 extends StoryLevel
 ## 腐敗之森入口（第一章的起點，docs/story/chapter-1.md 節點 2；計畫在 docs/design/13-chapter-1-plan.md）。
-## 現在是最小的一塊：出生點 → 一團瘴氣（走進去中毒 → 反轉成回血）→ 林間空地的三隻劇毒史萊姆。
+## 現在是最小的一塊：出生點（席菈站在旁邊）→ 一團瘴氣（走進去中毒 → 反轉成回血 → 兩人講幾句）→ 林間空地的三隻劇毒史萊姆
+## （席菈跟在後面，開打後往諾恩背上射藥：scenes/actors/sera/）。
 ## 地面是一片平面（顏色、路與空地的邊緣、落葉都在 forest_ground.gdshader 裡算），上面長一團一團的草（GrassTufts）。
 ## 樹、毒蕈、灌木是 Tripo 的模型（scripts/gen_props.sh 擺正後放 assets/props/tripo/，不進 git）；檔案不在就用程式拼的替身。
-## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）——任務 data/quests/ch1_main.json 看這兩個。
+## 劇情旗標：ch1.reversal_seen（第一次反轉）、ch1.slimes_cleared（三隻都倒了）——任務 data/quests/ch1_main.json 看這兩個；
+## ch1.gate_talked＝瘴氣裡那段對話（data/dialogue/ch1_forest_gate.json）講過了。
 
 const GROUND_SIZE: float = 140.0
 const MIASMA_POS: Vector3 = Vector3(0, 0, 2)
@@ -25,9 +27,18 @@ const MOSS_MASK_SIZE: int = 256
 const PATH_HALF_WIDTH: float = 4.0
 const FLAG_REVERSAL: String = "ch1.reversal_seen"
 const FLAG_SLIMES: String = "ch1.slimes_cleared"
+const FLAG_GATE_TALK: String = "ch1.gate_talked"
+const GATE_DIALOGUE: String = "ch1_forest_gate"
+## 第一次反轉之後隔多久席菈才開口（等碎裂與金光演完）
+const GATE_TALK_DELAY: float = 1.2
+## 席菈一開始站在諾恩的左前方（玩家的鏡頭一開場就看得到她），之後自己跟在後面
+const SERA_START_OFFSET: Vector3 = Vector3(-1.7, 0.0, -2.6)
 
 var slimes: Array[Slime] = []
 var miasma: PoisonMist
+var sera: Sera
+## 離瘴氣裡那段對話還有幾秒（< 0＝沒有在等）
+var _gate_talk_in: float = -1.0
 var _rng := RandomNumberGenerator.new()
 ## 每棵樹：x、z＝位置，y＝大小（地面的苔與草叢照這個長）
 var _trees := PackedVector3Array()
@@ -56,11 +67,16 @@ func _ready() -> void:
 	if at.size() == 2:
 		_player.global_position = Vector3(float(at[0]), spawn.global_position.y, float(at[1]))
 	_player.snap_camera()
-	# 連拍用：`--burst-on=reversal` 進場 1.5 秒後讓諾恩吸到瘴氣，從那一刻開始拍（scripts/burst.sh）
-	if str(args.get("burst-on", "")) == "reversal":
+	_spawn_sera()
+	# 連拍用（scripts/burst.sh）：`--burst-on=reversal` 進場 1.5 秒後讓諾恩吸到瘴氣、`--burst-on=vial` 讓席菈射一瓶，從那一刻開始拍
+	var burst_on: String = str(args.get("burst-on", ""))
+	if burst_on == "reversal" or burst_on == "vial":
 		get_tree().create_timer(1.5).timeout.connect(func() -> void:
 			App.burst_start_in(1)
-			_player.status_effects.apply_source("miasma"))
+			if burst_on == "vial":
+				sera.brain.request()
+			else:
+				_player.status_effects.apply_source("miasma"))
 	if not bool(Game.session.state.get_flag(FLAG_SLIMES, false)):
 		_spawn_slimes()
 	QualityPreset.apply_tree(self, Settings.quality as QualityPreset.Level)
@@ -70,13 +86,20 @@ func footstep_surface(_p: Vector3) -> String:
 	return "snow"  # 現有的三種裡最像落葉軟土的；之後加「土」的腳步聲
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not Game.session.in_story():
 		return
 	var st: GameState = Game.session.state
 	if not bool(st.get_flag(FLAG_REVERSAL, false)) and _player.status_effects.is_reversed("poison") and _player.status_effects.has("poison"):
 		Game.session.set_flag(FLAG_REVERSAL, true)
 		_hud.show_center_lines("CH1_REVERSAL_LINE1", "CH1_REVERSAL_LINE2")
+		# 在瘴氣裡反轉的才講那段話（先被史萊姆撞到中毒的話，正在打架，不打斷）
+		if not bool(st.get_flag(FLAG_GATE_TALK, false)) and miasma.global_position.distance_to(_player.global_position) < MIASMA_RADIUS + 1.0:
+			_gate_talk_in = GATE_TALK_DELAY
+	if _gate_talk_in >= 0.0:
+		_gate_talk_in -= delta
+		if _gate_talk_in < 0.0 and Game.start_dialogue(GATE_DIALOGUE):
+			Game.session.set_flag(FLAG_GATE_TALK, true)
 	if not slimes.is_empty() and not bool(st.get_flag(FLAG_SLIMES, false)) and slimes_alive() == 0:
 		Game.session.set_flag(FLAG_SLIMES, true)
 		_hud.show_banner("CH1_SLIMES_CLEARED", 4.0)
@@ -88,6 +111,16 @@ func slimes_alive() -> int:
 		if is_instance_valid(s) and not s.health.is_dead():
 			n += 1
 	return n
+
+
+func _spawn_sera() -> void:
+	sera = Sera.new()
+	sera.name = "Sera"
+	sera.target = _player
+	sera.position = _player.global_position + SERA_START_OFFSET
+	# 面向諾恩（開場看得到她的臉）
+	sera.rotation.y = atan2(SERA_START_OFFSET.x, SERA_START_OFFSET.z)
+	add_child(sera)
 
 
 func _spawn_slimes() -> void:

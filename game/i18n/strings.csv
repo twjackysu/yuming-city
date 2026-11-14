@@ -95,8 +95,8 @@ SET_DIFFICULTY,Difficulty,難度
 DIFF_STORY,Story,故事
 DIFF_STANDARD,Standard,標準
 DIFF_HARD,Hard,困難
-SPK_NOEN,Noen,諾恩
-SPK_SHEILA,Sheila,席菈
+SPK_NOEN,Norn,諾恩
+SPK_SHEILA,Sera,席菈
 Q_RB_MAIN_TITLE,This Bottle Isn't the Cure,這瓶不是解藥
 STATUS_POISON,Poisoned,中毒
 STATUS_POISON_REVERSED,Poisoned → Regenerating,中毒 → 回血
@@ -117,5 +117,7 @@ CH1_REVERSAL_LINE2,Every ailment on you flips into a boon.,落在你身上的異
 CH1_SLIMES_CLEARED,The glade is clear.,空地清乾淨了。
 DLG_CH1_GATE_001,"W-wait, that is miasma! Normal people collapse in ten minutes!",等、等一下，那是瘴氣！普通人進去十分鐘就會倒下的！
 DLG_CH1_GATE_002,Funny. I feel better than I have all week.,奇怪。我覺得這是我這禮拜精神最好的一次。
+DLG_CH1_GATE_003,"...Y-you are glowing gold. Does poison just... not work on you?",……你、你身上在發金光耶。毒對你……沒有用嗎？
+DLG_CH1_GATE_004,"Looks like it does more than nothing. Come on, stay behind me.",好像不只是沒用。走吧，妳跟在我後面就好。
 ITEM_SERA_POISON,Sera's Failed Potion (Poison),席菈的失敗作（劇毒）
 ITEM_SERA_POISON_DESC,Poisons whoever drinks it for 20 seconds.,喝下去會中毒 20 秒。

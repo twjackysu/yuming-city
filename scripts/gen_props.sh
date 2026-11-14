@@ -18,6 +18,7 @@ declare -A ARGS=(
   [weapon_axe]="--kind weapon --head wide --length 0.85 --grip 0.15"
   [weapon_hammer]="--kind weapon --head wide --length 0.85 --grip 0.15"
   [weapon_bow]="--kind weapon --head keep --length 1.20 --grip 0.50"
+  [weapon_alchemy_crossbow]="--kind weapon --head wide --length 0.50 --grip 0.30"
   [enemy_poison_slime]="--kind prop --height 0.80"
   [enemy_mold_slime]="--kind prop --height 0.80"
   [prop_corrupt_tree]="--kind prop --height 6.50 --moss-below 0.80 --sink 0.25"

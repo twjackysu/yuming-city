@@ -704,7 +704,7 @@ class Animator:
 
 
 def standard_actions(a, attack_style="swing"):
-    """idle、walk、run、light_attack_01（右手拿武器的站姿）。
+    """idle、walk、run、light_attack_01、shoot（右手拿武器的站姿）。
     attack_style："swing"＝舉過頭往下劈（席菈的大劍）；"thrust"＝從腰邊往前戳（諾恩的法杖，D-268）。"""
 
     def idle(f, t):
@@ -791,7 +791,25 @@ def standard_actions(a, attack_style="swing"):
     a.action("idle", 72, idle, step=6)
     a.action("walk", 30, gait(27, 48, 20, 3, 0.012, 18, 34), step=2)
     a.action("run", 18, gait(42, 78, 38, 11, 0.03, 70, 62), step=1)
+    def shoot(f, t):
+        # 單手舉弩（席菈）：0～0.3 抬手瞄準、停著、0.67 擊發（後座一下）、0.8 之後放下。
+        # 遊戲裡照 0.9 秒播（puppet.gd 的 ACTION_TIME），擊發在 0.6 秒（tuning.json 的 sera.aim_time）。
+        aim = keys(t, [(0, 0), (0.3, 1), (0.8, 1), (1, 0)])
+        kick = keys(t, [(0, 0), (0.64, 0), (0.7, 1), (0.86, 0), (1, 0)])
+        twist = 24 * aim                        # 右肩往前送；手臂轉回來同樣的角度，弩才朝正前方（跟 thrust 同一個做法）
+        a.rot("Hips", f, (Z, twist * 0.35 - 6))
+        a.move("Hips", f, (0, 0, -0.012))
+        a.rot("Spine", f, (X, -1.5 - 3 * kick), (Z, twist * 0.35 + 4))
+        a.rot("Chest", f, (X, -1.0 - 4 * kick), (Z, twist * 0.3 + 6))
+        a.rot("Head", f, (X, 3), (Z, -twist * 0.6 - 4))
+        a.arm_pose("Right", f, hang=13 - 17 * aim, swing=12 + 76 * aim + 16 * kick,
+                   elbow=38 - 30 * aim + 12 * kick, twist=-twist)
+        a.arm_pose("Left", f, hang=9 + 8 * aim, swing=-3 - 14 * aim, elbow=14 + 22 * aim)
+        a.leg_pose("Left", f, thigh=9 + 6 * aim, knee=10 + 6 * aim, foot=-2)
+        a.leg_pose("Right", f, thigh=-5 - 5 * aim, knee=6, foot=4)
+
     a.action("light_attack_01", 16, thrust if attack_style == "thrust" else attack, step=1)
+    a.action("shoot", 22, shoot, step=1)
 
 
 class Spec:

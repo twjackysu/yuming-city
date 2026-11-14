@@ -16,6 +16,7 @@ const ANIM_MAP: Dictionary = {
 	"dodge": ["dodge_roll"],
 	"attack": ["light_attack_01"],
 	"release": ["release"],
+	"shoot": ["shoot"],
 }
 ## 會循環播放的動作
 const LOOPING: PackedStringArray = ["idle", "walk", "run"]

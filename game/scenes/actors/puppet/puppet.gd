@@ -4,18 +4,18 @@ extends Node3D
 ## 關節是 Node3D 樞紐（不是 Skeleton3D），膠囊肢體掛在樞紐上；角色面向 -Z。
 ##
 ## 對外介面固定，之後換成有骨架的模型＋AnimationTree 時，外部（PlayerController 等）不用改：
-##   set_move_speed(m/s)、play_action("dodge"|"attack")、current_state() ∈ STATES、hand("L"|"R")
+##   set_move_speed(m/s)、play_action("dodge"|"attack"|"shoot")、current_state() ∈ STATES、hand("L"|"R")
 ## STATES 也就是將來 AnimationTree 狀態機的狀態名。
 ##
 ## 正式模型：設 character_id（"noen"、"sheila"…），CharacterModels 找得到匯入過的 GLB 就用模型＋AnimationPlayer，
 ## 找不到（或模型沒有骨架）就用程序人偶。模型缺的動作：閃避退回整個人前滾、其他退回 idle。
 ## 碰撞、AI、弱點判定都不跟模型走（04-architecture「角色模型接入點」）。
 
-const STATES: PackedStringArray = ["idle", "walk", "run", "dodge", "attack"]
+const STATES: PackedStringArray = ["idle", "walk", "run", "dodge", "attack", "shoot"]
 const WALK_MIN_SPEED: float = 0.3
 const RUN_MIN_SPEED: float = 4.6
 const RUN_SPEED: float = 5.8
-const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55}
+const ACTION_TIME: Dictionary = {"dodge": 0.35, "attack": 0.55, "shoot": 0.9}
 ## 「釋放」的姿勢播多久。它不是 action：疊在站姿／走路／出手上面，不佔出手與閃避（放完同一幀照樣能出手）
 const RELEASE_POSE_TIME: float = 0.36
 ## 模型的手骨頭在手腕：手上的掛點往指尖移這麼多（掌心）
@@ -345,6 +345,8 @@ func _pose(speed_t: float) -> void:
 				_pose_thrust(action_time / float(ACTION_TIME["attack"]))
 			else:
 				_pose_attack(action_time / float(ACTION_TIME["attack"]))
+		"shoot":
+			_pose_shoot(action_time / float(ACTION_TIME["shoot"]))
 
 
 ## 仰躺（車上的傷者）：整個人繞骨盆轉成水平、臉朝上、頭朝 +Z，胸口慢慢起伏。
@@ -428,6 +430,13 @@ func _pose_dodge(t: float) -> void:
 		_rot("shoulder_" + side, Vector3(1.2 * tuck, 0, 0))
 		_rot("elbow_" + side, Vector3(1.6 * tuck, 0, 0))
 	_rot("spine", Vector3(0.6 * tuck, 0, 0))
+
+
+## 單手舉弩（席菈）：抬手瞄準 → 停著 → 放下。
+func _pose_shoot(t: float) -> void:
+	var aim: float = smoothstep(0.0, 0.3, t) * (1.0 - smoothstep(0.8, 1.0, t))
+	_rot("shoulder_R", Vector3(1.5 * aim, 0, 0.1))
+	_rot("elbow_R", Vector3(0.25 * (1.0 - aim), 0, 0))
 
 
 ## 鐘錘下劈：舉起（0～35%）→ 劈下（35～60%）→ 收回。

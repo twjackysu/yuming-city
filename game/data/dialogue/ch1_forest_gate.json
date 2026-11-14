@@ -9,7 +9,17 @@
     },
     "l01": {
       "speaker": "SPK_NOEN",
-      "text": "DLG_CH1_GATE_002"
+      "text": "DLG_CH1_GATE_002",
+      "next": "l02"
+    },
+    "l02": {
+      "speaker": "SPK_SHEILA",
+      "text": "DLG_CH1_GATE_003",
+      "next": "l03"
+    },
+    "l03": {
+      "speaker": "SPK_NOEN",
+      "text": "DLG_CH1_GATE_004"
     }
   }
 }
